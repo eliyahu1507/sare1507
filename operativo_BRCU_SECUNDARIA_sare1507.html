@@ -778,9 +778,32 @@ function renderInline(scope) {
     rows.length.toLocaleString() + ' beneficiario' + (rows.length!==1?'s':'') +
     (rows.length >= 500 ? ' (mostrando primeros 500)' : '');
 
+  // ── Alerta de audio para homónimos (solo en página 1) ──
+  if(st.page === 1){
+    var exactos = rows.filter(function(r){ return r.exacto; });
+    if(exactos.length >= 2){
+      var fechas = exactos.map(function(r){ return r.fecha; });
+      var unicasFechas = fechas.filter(function(f,i){ return fechas.indexOf(f)===i; });
+      var mismaFecha = unicasFechas.length === 1;
+      // Small delay so the UI renders before speaking
+      setTimeout(function(){ alertaHomonimo(mismaFecha); }, 400);
+    }
+  }
+
   var html = '';
-  page.forEach(function(r) {
-    html += '<tr>' +
+  var exactosEnPagina = page.filter(function(r){return r.exacto;}).length;
+  var parcialStart = -1; // index where partials begin in this page
+  page.forEach(function(r, i){ if(!r.exacto && parcialStart===-1) parcialStart=i; });
+
+  page.forEach(function(r, i) {
+    // Insert separator row between exact and partial results
+    if(i === parcialStart && exactosEnPagina > 0){
+      html += '<tr><td colspan="6" style="padding:4px 11px;background:#F5F5F5;border-top:2px solid #E0E0E0">' +
+        '<span style="font-size:.68rem;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:.5px">' +
+        '▼ Coincidencias parciales</span></td></tr>';
+    }
+    var rowBg = r.exacto ? 'background:#F0FFF4;border-left:3px solid #4CAF50' : '';
+    html += '<tr style="'+rowBg+'">' +
       '<td><div class="res-ben-nombre">' + resaltar(r.nombre, r.q) + '</div>' +
       (r.obs ? '<span class="obs-chip" style="font-size:.62rem;margin-top:2px;display:inline-block">' + esc(r.obs) + '</span>' : '') +
       '</td>' +
@@ -822,6 +845,10 @@ function matchAll(texto, q) {
   var tn = norm(texto);
   return norm(q).split(/\s+/).filter(Boolean).every(function(tok){ return tn.includes(tok); });
 }
+// Coincidencia exacta: el nombre normalizado es igual al query normalizado
+function esExacto(nombre, q) {
+  return norm(nombre) === norm(q);
+}
 
 function buscarGlobal(){
   var qOrig = document.getElementById('scan-input').value.trim();
@@ -844,7 +871,8 @@ function buscarGlobal(){
         s.beneficiarios.forEach(function(b){
           if(matchAll(b.n, qOrig))
             rows.push({nombre:b.n, obs:b.o||'', escuela:s.nombre, cct:s.cct,
-              municipio:s.municipio, nivel:s.nivel||'', fecha:s.fecha, prog:prog, q:qOrig});
+              municipio:s.municipio, nivel:s.nivel||'', fecha:s.fecha, prog:prog, q:qOrig,
+              exacto: esExacto(b.n, qOrig)});
         });
       }
     });
@@ -860,6 +888,11 @@ function buscarGlobal(){
   }
   noRes.classList.remove('visible');
   document.getElementById('spin-scan').classList.remove('active');
+  rows.sort(function(a,b){
+    if(a.exacto && !b.exacto) return -1;
+    if(!a.exacto && b.exacto) return 1;
+    return (a.fecha||'').localeCompare(b.fecha||'');
+  });
   inlineState.scan.rows = rows.slice(0,500); // cap at 500 for performance
   inlineState.scan.page = 1;
   renderInline('scan');
@@ -911,17 +944,25 @@ function buscarTab(prog){
     if(matchEsc){
       s.beneficiarios.forEach(function(b){
         rows.push({nombre:b.n, obs:b.o||'', escuela:s.nombre, cct:s.cct,
-          municipio:s.municipio, nivel:s.nivel||'', fecha:s.fecha, q:qOrig});
+          municipio:s.municipio, nivel:s.nivel||'', fecha:s.fecha, q:qOrig,
+          exacto: false});
       });
     } else {
       s.beneficiarios.forEach(function(b){
         if(matchAll(b.n, qOrig))
           rows.push({nombre:b.n, obs:b.o||'', escuela:s.nombre, cct:s.cct,
-            municipio:s.municipio, nivel:s.nivel||'', fecha:s.fecha, q:qOrig});
+            municipio:s.municipio, nivel:s.nivel||'', fecha:s.fecha, q:qOrig,
+            exacto: esExacto(b.n, qOrig)});
       });
     }
   });
   document.getElementById('spin-'+prog).classList.remove('active');
+  // Sort: exact matches first, then partials; within each group by fecha
+  rows.sort(function(a,b){
+    if(a.exacto && !b.exacto) return -1;
+    if(!a.exacto && b.exacto) return 1;
+    return (a.fecha||'').localeCompare(b.fecha||'');
+  });
   inlineState[prog].rows = rows.slice(0,500);
   inlineState[prog].page = 1;
   var total = rows.length;
@@ -1176,6 +1217,39 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')cerrarModal(
 
 buildMiniCal();
 buildNivelStats();
+
+// ── ALERTAS DE AUDIO (Web Speech API) ──
+function hablar(texto) {
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel(); // cancelar si hay algo hablando
+  var msg = new SpeechSynthesisUtterance(texto);
+  msg.lang = 'es-MX';
+  msg.rate = 0.92;
+  msg.pitch = 1;
+  msg.volume = 1;
+  // Intentar voz en español
+  var voices = window.speechSynthesis.getVoices();
+  var vozEs = voices.find(function(v){ return v.lang.startsWith('es'); });
+  if(vozEs) msg.voice = vozEs;
+  window.speechSynthesis.speak(msg);
+}
+
+function alertaHomonimo(mismaFecha) {
+  if(mismaFecha){
+    hablar('Alerta. Los beneficiarios pertenecen al mismo día de atención. Tener cuidado con la CCT para no cometer errores.');
+  } else {
+    hablar('Alerta. Validar beneficiario homónimo. Verificar CCT y fecha de atención.');
+  }
+}
+
+// Cargar voces al inicio (necesario en algunos navegadores)
+if(window.speechSynthesis){
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = function(){
+    window.speechSynthesis.getVoices();
+  };
+}
+
 
 </script>
 </body>
