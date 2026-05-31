@@ -152,6 +152,21 @@ mark.hit{background:var(--verde-bg);color:#1A5C2A;border-radius:3px;padding:0 2p
 .res-curp-row{display:flex;align-items:center;padding:10px 15px;border-bottom:1px solid #F0E8EC;cursor:pointer;gap:10px;transition:background .13s}.res-curp-row:hover{background:#FFF8F0}
 .res-pag{display:flex;justify-content:center;gap:4px;padding:10px 0;flex-wrap:wrap;border-top:1px solid #F0E8EC}
 
+
+/* ── SPINNER / RELOJ DE BÚSQUEDA ── */
+.search-spinner{display:none;align-items:center;gap:8px;font-size:.8rem;color:var(--guinda);font-weight:600;margin-top:6px}
+.search-spinner.active{display:flex}
+.spinner-ring{width:18px;height:18px;border:3px solid rgba(122,0,50,.15);border-top-color:var(--guinda);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.curp-aviso{background:#FFF8E1;border:1px solid #FFD54F;border-radius:8px;padding:8px 12px;font-size:.76rem;color:#795548;margin-top:8px;display:none}
+.curp-aviso.visible{display:block}
+
+.header-clock{text-align:right;line-height:1.3;flex-shrink:0}
+.clock-time{font-family:'Montserrat',sans-serif;font-size:1.35rem;font-weight:800;letter-spacing:1.5px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+.clock-date{font-size:.68rem;color:rgba(255,255,255,.8);font-weight:500;margin-top:2px;white-space:nowrap}
+.logo-row{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important}
+.logo-left{display:flex;align-items:center;gap:10px}
+
 footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;padding:15px;font-size:.72rem;border-top:3px solid var(--dorado)}footer strong{color:var(--dorado-c)}
 @media(max-width:560px){.stats-bar{grid-template-columns:repeat(2,1fr)}.nivel-stats-bar{grid-template-columns:repeat(2,1fr)}.header-content{padding:15px}.tabs .tab-btn{font-size:.63rem;padding:9px 3px}.obs-res-cards{grid-template-columns:repeat(2,1fr)}}</style>
 </head>
@@ -167,7 +182,7 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 
 <header>
 <div class="header-content">
-<div class="logo-row"><div class="escudo">&#x1F393;</div><div class="logo-text"><div class="gob-label">SARE 1507 — Sistema de Consulta</div><div class="prog-name">Becas Bienestar · ¡Educar es Transformar!</div></div></div>
+<div class="logo-row"><div class="logo-left"><div class="escudo">&#x1F393;</div><div class="logo-text"><div class="gob-label">SARE 1507 — Sistema de Consulta</div><div class="prog-name">Becas Bienestar · ¡Educar es Transformar!</div></div></div><div class="header-clock"><div class="clock-time" id="clock-time">--:--:--</div><div class="clock-date" id="clock-date">---</div></div></div>
 <h1 class="tit">Nominal de Beneficiarios<br><span class="hl">Básica · BUEMS · JEF</span> — 2026</h1>
 <div class="sub-h">Escaneo CURP · Búsqueda por nombre · Verificación de beneficiario</div>
 <div class="badge-row"><div class="badge gold">&#x1F4F7; Escaneo CURP</div><div class="badge">&#x1F3EB; Básica</div><div class="badge">&#x1F393; BUEMS</div><div class="badge">&#x1F3DB;&#xFE0F; JEF</div></div>
@@ -184,22 +199,23 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 <div id="tab-scan" class="tab-panel active">
 <div class="scanner-card"><div class="scan-header basica"><span style="font-size:1.3rem">&#x1F4F7;</span><div><h2>Buscar / Escanear CURP</h2><div style="font-size:.72rem;opacity:.85;margin-top:1px">Busca en los 3 programas simultáneamente</div></div></div>
 <div class="scan-body"><div class="mode-row"><button class="mode-btn active" id="btn-txt" onclick="setMode('texto')">&#x2328;&#xFE0F; Texto</button><button class="mode-btn" id="btn-cam-mode" onclick="setMode('camara')">&#x1F4F7; Cámara</button></div><div id="video-container"><video id="video" autoplay playsinline muted></video><div class="scan-overlay"><div class="scan-frame"></div><div class="scan-line"></div></div></div><div class="scan-status" id="scan-status"></div><div class="alerta-curp" id="alerta-curp" style="display:none"><span class="icon">&#x1F50D;</span><div class="txt"><strong>CURP escaneada — búsqueda por datos extraídos</strong><div id="curp-extraido-val" class="curp-extraido"></div><div id="curp-datos-extraidos" class="curp-datos"></div></div></div><div class="search-row"><input type="text" class="main-input" id="scan-input" placeholder="Apellido, nombre o CURP del beneficiario…" onkeydown="if(event.key==='Enter')buscarGlobal()" oninput="debounceScan()"><button class="btn-cam" id="btn-cam-tog" onclick="toggleCam()" title="Cámara">&#x1F4F7;</button><button class="btn-buscar" onclick="buscarGlobal()">Buscar</button><button class="btn-limpiar" onclick="limpiarScan()">Limpiar</button></div><div class="search-hint">&#x1F4A1; Escribe apellido, nombre o escanea el CURP impreso</div></div></div>
+<div class="search-spinner" id="spin-scan"><div class="spinner-ring"></div><span>Buscando…</span></div><div class="curp-aviso" id="curp-aviso-resultado">⚠️ <strong>Resultados aproximados por CURP</strong> — Verifique el nombre completo; los resultados se basan en iniciales y pueden incluir coincidencias parciales.</div>
 <div class="res-inline" id="res-scan"><div class="res-hdr global-hdr"><span id="res-scan-hdr">Resultados</span></div><div style="overflow-x:auto"><table class="res-table"><thead><tr><th>Beneficiario</th><th>Escuela / CCT</th><th>Municipio</th><th>Prog.</th><th>Fecha</th></tr></thead><tbody id="res-scan-body"></tbody></table></div><div class="res-pag" id="res-scan-pag"></div></div>
 <div class="no-result" id="no-result-scan"><div style="font-size:2rem;margin-bottom:8px">&#x1F50D;</div><div style="font-family:Montserrat,sans-serif;font-weight:800;color:var(--guinda-o);font-size:.93rem;margin-bottom:4px">Sin resultados</div><div style="font-size:.79rem;color:#888" id="no-result-txt"></div></div>
 </div>
 
 <div id="tab-basica" class="tab-panel">
-<div class="scanner-card"><div class="scan-header basica"><span style="font-size:1.3rem">&#x1F3EB;</span><h2>Nominal Básica</h2></div><div class="scan-body"><div class="search-row"><input type="text" class="main-input" id="basica-input" placeholder="CCT, nombre de escuela o beneficiario…" onkeydown="if(event.key==='Enter')buscarTab('basica')" oninput="debounceTab('basica')"><button class="btn-buscar" onclick="buscarTab('basica')">Buscar</button><button class="btn-limpiar" onclick="limpiarTab('basica')">Limpiar</button></div><div class="result-info-bar" id="basica-info"></div></div></div>
+<div class="scanner-card"><div class="scan-header basica"><span style="font-size:1.3rem">&#x1F3EB;</span><h2>Nominal Básica</h2></div><div class="scan-body"><div class="search-row"><input type="text" class="main-input" id="basica-input" placeholder="CCT, nombre de escuela o beneficiario…" onkeydown="if(event.key==='Enter')buscarTab('basica')" oninput="debounceTab('basica')"><button class="btn-buscar" onclick="buscarTab('basica')">Buscar</button><button class="btn-limpiar" onclick="limpiarTab('basica')">Limpiar</button></div><div class="search-spinner" id="spin-basica"><div class="spinner-ring"></div><span>Buscando…</span></div><div class="result-info-bar" id="basica-info"></div></div></div>
 <div class="res-inline" id="basica-res"><div class="res-hdr basica-hdr"><span id="basica-res-hdr">Resultados</span></div><div style="overflow-x:auto"><table class="res-table"><thead><tr><th>Beneficiario</th><th>Escuela / CCT</th><th>Municipio</th><th>Nivel</th><th>Fecha</th></tr></thead><tbody id="basica-body"></tbody></table></div><div class="res-pag" id="basica-pag"></div></div>
 </div>
 
 <div id="tab-buems" class="tab-panel">
-<div class="scanner-card"><div class="scan-header buems"><span style="font-size:1.3rem">&#x1F393;</span><h2>Nominal BUEMS — Media Superior</h2></div><div class="scan-body"><div class="search-row"><input type="text" class="main-input" id="buems-input" placeholder="CCT, nombre de escuela o beneficiario…" onkeydown="if(event.key==='Enter')buscarTab('buems')" oninput="debounceTab('buems')"><button class="btn-buscar buems-btn" onclick="buscarTab('buems')">Buscar</button><button class="btn-limpiar" onclick="limpiarTab('buems')">Limpiar</button></div><div class="result-info-bar" id="buems-info"></div></div></div>
+<div class="scanner-card"><div class="scan-header buems"><span style="font-size:1.3rem">&#x1F393;</span><h2>Nominal BUEMS — Media Superior</h2></div><div class="scan-body"><div class="search-row"><input type="text" class="main-input" id="buems-input" placeholder="CCT, nombre de escuela o beneficiario…" onkeydown="if(event.key==='Enter')buscarTab('buems')" oninput="debounceTab('buems')"><button class="btn-buscar buems-btn" onclick="buscarTab('buems')">Buscar</button><button class="btn-limpiar" onclick="limpiarTab('buems')">Limpiar</button></div><div class="search-spinner" id="spin-buems"><div class="spinner-ring"></div><span>Buscando…</span></div><div class="result-info-bar" id="buems-info"></div></div></div>
 <div class="res-inline" id="buems-res"><div class="res-hdr buems-hdr"><span id="buems-res-hdr">Resultados</span></div><div style="overflow-x:auto"><table class="res-table"><thead><tr><th>Beneficiario</th><th>Escuela / CCT</th><th>Municipio</th><th>Fecha</th></tr></thead><tbody id="buems-body"></tbody></table></div><div class="res-pag" id="buems-pag"></div></div>
 </div>
 
 <div id="tab-jef" class="tab-panel">
-<div class="scanner-card"><div class="scan-header jef"><span style="font-size:1.3rem">&#x1F3DB;&#xFE0F;</span><h2>Nominal JEF — Universidad</h2></div><div class="scan-body"><div class="search-row"><input type="text" class="main-input" id="jef-input" placeholder="CCT, nombre de escuela o beneficiario…" onkeydown="if(event.key==='Enter')buscarTab('jef')" oninput="debounceTab('jef')"><button class="btn-buscar jef-btn" onclick="buscarTab('jef')">Buscar</button><button class="btn-limpiar" onclick="limpiarTab('jef')">Limpiar</button></div><div class="result-info-bar" id="jef-info"></div></div></div>
+<div class="scanner-card"><div class="scan-header jef"><span style="font-size:1.3rem">&#x1F3DB;&#xFE0F;</span><h2>Nominal JEF — Universidad</h2></div><div class="scan-body"><div class="search-row"><input type="text" class="main-input" id="jef-input" placeholder="CCT, nombre de escuela o beneficiario…" onkeydown="if(event.key==='Enter')buscarTab('jef')" oninput="debounceTab('jef')"><button class="btn-buscar jef-btn" onclick="buscarTab('jef')">Buscar</button><button class="btn-limpiar" onclick="limpiarTab('jef')">Limpiar</button></div><div class="search-spinner" id="spin-jef"><div class="spinner-ring"></div><span>Buscando…</span></div><div class="result-info-bar" id="jef-info"></div></div></div>
 <div class="res-inline" id="jef-res"><div class="res-hdr jef-hdr"><span id="jef-res-hdr">Resultados</span></div><div style="overflow-x:auto"><table class="res-table"><thead><tr><th>Beneficiario</th><th>Escuela / CCT</th><th>Municipio</th><th>Fecha</th></tr></thead><tbody id="jef-body"></tbody></table></div><div class="res-pag" id="jef-pag"></div></div>
 </div>
 
@@ -634,6 +650,8 @@ function buscarPorCurpExtraido(datos){
   });
   document.getElementById('res-scan').classList.add('visible');
   document.getElementById('res-scan-pag').innerHTML='';
+  document.getElementById('curp-aviso-resultado').classList.add('visible');
+  document.getElementById('spin-scan').classList.remove('active');
 }
 
 function selCoin(sData,prog){ abrirModal(sData,prog,''); }
@@ -715,6 +733,8 @@ function matchAll(texto, q) {
 function buscarGlobal(){
   var qOrig = document.getElementById('scan-input').value.trim();
   if(!qOrig){ ocultarScan(); return; }
+  document.getElementById('spin-scan').classList.add('active');
+  document.getElementById('curp-aviso-resultado').classList.remove('visible');
   document.getElementById('alerta-curp').style.display='none';
   var rows = [];
   ['basica','buems','jef'].forEach(function(prog){
@@ -742,9 +762,11 @@ function buscarGlobal(){
     noRes.classList.add('visible');
     document.getElementById('no-result-txt').textContent = 'Sin resultados para "'+qOrig+'"';
     document.getElementById('res-scan').classList.remove('visible');
+    document.getElementById('spin-scan').classList.remove('active');
     return;
   }
   noRes.classList.remove('visible');
+  document.getElementById('spin-scan').classList.remove('active');
   inlineState.scan.rows = rows.slice(0,500); // cap at 500 for performance
   inlineState.scan.page = 1;
   renderInline('scan');
@@ -782,10 +804,12 @@ function buscarTab(prog){
   var qOrig = document.getElementById(prog+'-input').value.trim();
   var resId = prog+'-res';
   var infoId = prog+'-info';
+  document.getElementById('spin-'+prog).classList.add('active');
   if(!qOrig){
     inlineState[prog].rows = [];
     document.getElementById(resId).classList.remove('visible');
     document.getElementById(infoId).innerHTML = '';
+    document.getElementById('spin-'+prog).classList.remove('active');
     return;
   }
   var rows = [];
@@ -804,6 +828,7 @@ function buscarTab(prog){
       });
     }
   });
+  document.getElementById('spin-'+prog).classList.remove('active');
   inlineState[prog].rows = rows.slice(0,500);
   inlineState[prog].page = 1;
   var total = rows.length;
@@ -1024,6 +1049,25 @@ function debounceScan() {
 }
 
 document.addEventListener('keydown',function(e){if(e.key==='Escape')cerrarModal();});
+
+// ── RELOJ EN TIEMPO REAL ──
+(function initClock(){
+  var dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  var meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  function tick(){
+    var now = new Date();
+    var h = String(now.getHours()).padStart(2,'0');
+    var m = String(now.getMinutes()).padStart(2,'0');
+    var s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clock-time').textContent = h+':'+m+':'+s;
+    var dia = dias[now.getDay()];
+    var fecha = dia+' '+now.getDate()+' '+meses[now.getMonth()]+'. '+now.getFullYear();
+    document.getElementById('clock-date').textContent = fecha;
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
 buildMiniCal();
 buildNivelStats();
 
