@@ -540,7 +540,7 @@ function procesarCurpEscaneado(curp){
     document.getElementById('alerta-curp').style.display='flex';
     document.getElementById('curp-extraido-val').textContent=curp;
     document.getElementById('curp-datos-extraidos').innerHTML=
-      '<span>AP inicia: <strong>'+datos.inicAP+'</strong></span>'+
+      '<span>AP: <strong>'+datos.inicAP+'</strong> (vocal: <strong>'+datos.curp[1].toUpperCase()+'</strong>)</span>'+
       '<span>AM inicia: <strong>'+datos.inicAM+'</strong></span>'+
       '<span>Nombre inicia: <strong>'+datos.inicNom+'</strong></span>'+
       '<span>'+(datos.sexo==='HOMBRE'?'\ud83d\udc68':'\ud83d\udc69')+' '+datos.sexo+'</span>'+
@@ -553,64 +553,61 @@ function procesarCurpEscaneado(curp){
   }
 }
 
-// ── BÚSQUEDA POR CURP CORREGIDA ──
-// Usa: inicAP + inicNom + sexo como filtros principales
-// inicAM solo como filtro secundario opcional (puede fallar por artículos)
+// ── BÚSQUEDA POR CURP ──
+// Extrae de la CURP: iAP, vocal_interna_AP, iAM, iNom, sexo
+// El nombre en DB tiene formato: APPATERNO APMATERNO NOMBRE(S)
+// Aplica filtros en cascada: estricto → suave → mínimo
 function buscarPorCurpExtraido(datos){
   ocultarScan();
-  var resultados=[];
-  ['basica','buems','jef'].forEach(function(prog){
-    DB[prog].forEach(function(s){
-      var hits=s.beneficiarios.filter(function(b){
-        var partes=b.n.trim().split(/\s+/);
-        if(partes.length<2) return false;
 
-        // Apellido paterno = primera palabra del nombre completo
-        var iAP = partes[0][0] ? partes[0][0].toUpperCase() : '';
+  // Datos extra de la CURP
+  var iAP   = datos.inicAP;   // pos 0 — inicial AP
+  var vocAP = datos.curp[1].toUpperCase(); // pos 1 — vocal interna AP
+  var iAM   = datos.inicAM;   // pos 2 — inicial AM
+  var iNom  = datos.inicNom;  // pos 3 — inicial nombre
 
-        // Nombre: puede ser la 3ra, 4ta palabra (hay apellido materno antes)
-        // Intentar múltiples posiciones para el nombre
-        var iNom2 = partes[2] ? partes[2][0].toUpperCase() : '';
-        var iNom3 = partes[3] ? partes[3][0].toUpperCase() : '';
+  function infoNombre(bn){
+    var p = bn.trim().toUpperCase().split(/\s+/);
+    // Esperado: [AP, AM, NOM1, NOM2?]
+    return {
+      iAP:   p[0] ? p[0][0] : '',
+      vocAP: p[0] ? (p[0].slice(1).match(/[AEIOU]/)||[''])[0] : '',
+      iAM:   p[1] ? p[1][0] : '',
+      iNom:  p[2] ? p[2][0] : '',
+      partes: p
+    };
+  }
 
-        // Apellido materno = segunda palabra
-        var iAM  = partes[1] ? partes[1][0].toUpperCase() : '';
+  var resultados = [];
 
-        // Filtro principal: AP + nombre (pos 2 o 3) + sexo implícito
-        var matchAP  = iAP  === datos.inicAP;
-        var matchNom = iNom2 === datos.inicNom || iNom3 === datos.inicNom;
-
-        // inicAM como filtro adicional SUAVE (no bloqueante)
-        // porque la CURP puede usar vocal interna o saltarse artículos
-        var matchAM_estricto = iAM === datos.inicAM;
-        var matchAM_suave    = true; // siempre pasa si AP y Nom coinciden
-
-        return matchAP && matchNom;
-      });
-      if(hits.length) resultados.push({s:s,prog:prog,hits:hits});
-    });
-  });
-
-  if(!resultados.length){
-    // Segundo intento: solo por inicAP + inicNom sin importar posición
+  // ── Intento 1: ESTRICTO — iAP + vocAP + iAM + iNom ──
+  var usarFiltro = function(nivel){
+    var res = [];
     ['basica','buems','jef'].forEach(function(prog){
       DB[prog].forEach(function(s){
-        var hits=s.beneficiarios.filter(function(b){
-          var partes=b.n.trim().split(/\s+/);
-          if(!partes.length) return false;
-          var iAP=partes[0][0]?partes[0][0].toUpperCase():'';
-          var nombreConcat=b.n.toUpperCase();
-          // Verificar que alguna palabra (excepto la primera) empiece con inicNom
-          var matchNom=partes.slice(1).some(function(p){
-            return p[0] && p[0].toUpperCase()===datos.inicNom;
-          });
-          return iAP===datos.inicAP && matchNom;
+        var hits = s.beneficiarios.filter(function(b){
+          var n = infoNombre(b.n);
+          if(n.iAP !== iAP) return false;
+          if(nivel >= 2 && vocAP && n.vocAP !== vocAP) return false;
+          if(nivel >= 1 && n.iAM !== iAM) return false;
+          if(n.iNom !== iNom) return false;
+          return true;
         });
-        if(hits.length && !resultados.some(function(r){return r.s===s;}))
-          resultados.push({s:s,prog:prog,hits:hits});
+        if(hits.length) res.push({s:s, prog:prog, hits:hits});
       });
     });
-  }
+    return res;
+  };
+
+  // Nivel 3: iAP + vocAP + iAM + iNom (más estricto)
+  resultados = usarFiltro(2);
+
+  // Nivel 2: iAP + iAM + iNom (sin vocal interna)
+  if(!resultados.length) resultados = usarFiltro(1);
+
+  // Nivel 1: iAP + iNom (mínimo — igual que antes pero es el último recurso)
+  if(!resultados.length) resultados = usarFiltro(0);
+
 
   if(!resultados.length){
     document.getElementById('no-result-scan').classList.add('visible');
@@ -621,8 +618,8 @@ function buscarPorCurpExtraido(datos){
 
   var totalHits=resultados.reduce(function(a,r){return a+r.hits.length;},0);
   document.getElementById('res-scan-hdr').textContent=
-    '\ud83d\udd0d '+totalHits+' coincidencia'+(totalHits!==1?'s':'')+
-    ' por CURP (AP: '+datos.inicAP+', Nombre: '+datos.inicNom+', '+datos.sexo+')';
+    '\ud83d\udd0d '+totalHits+' posible'+(totalHits!==1?'s coincidencias':' coincidencia')+
+    ' — AP:'+datos.inicAP+datos.curp[1].toUpperCase()+' AM:'+datos.inicAM+' Nom:'+datos.inicNom;
 
   var listHTML='';
   resultados.forEach(function(item){
