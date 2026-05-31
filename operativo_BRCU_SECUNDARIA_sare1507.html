@@ -1043,7 +1043,7 @@ function cerrarModal(){
 }
 function cerrarModalEv(e){if(e.target===document.getElementById('modal-overlay'))cerrarModal();}
 
-var OBS_DATA=[],obsOrd='municipio',obsPage=1,OBS_PER=100;
+var OBS_DATA=[],obsOrd='fecha',obsPage=1,OBS_PER=100;
 function initObs(){
   OBS_DATA=[];
   ['basica','buems','jef'].forEach(function(prog){
@@ -1071,7 +1071,7 @@ function getObsFilt(){
   });
   list.sort(function(a,b){
     if(obsOrd==='municipio') return a.municipio.localeCompare(b.municipio,'es')||a.cct.localeCompare(b.cct)||(a.fecha||'').localeCompare(b.fecha||'');
-    if(obsOrd==='fecha')     return (a.fecha||'').localeCompare(b.fecha||'')||a.municipio.localeCompare(b.municipio,'es');
+    if(obsOrd==='fecha')     return (a.fecha||'').localeCompare(b.fecha||'')||a.nombre.localeCompare(b.nombre,'es')||a.municipio.localeCompare(b.municipio,'es');
     if(obsOrd==='nombre')    return a.nombre.localeCompare(b.nombre,'es');
     if(obsOrd==='escuela')   return a.escuela.localeCompare(b.escuela,'es');
     if(obsOrd==='obs')       return a.obs.localeCompare(b.obs,'es');
@@ -1079,7 +1079,20 @@ function getObsFilt(){
   });
   return list;
 }
-function setObsOrd(col){obsOrd=col;obsPage=1;renderObs();}
+function setObsOrd(col){
+  obsOrd=col; obsPage=1;
+  // Update header indicators
+  document.querySelectorAll('.obs-head th').forEach(function(th){
+    th.style.color='';
+    th.innerHTML=th.innerHTML.replace(' ▲','').replace(' ▼','');
+  });
+  var headers={'nombre':0,'escuela':1,'municipio':2,'fecha':3,'obs':5};
+  if(headers[col]!==undefined){
+    var th=document.querySelectorAll('.obs-head th')[headers[col]];
+    if(th){ th.style.color='var(--dorado)'; th.innerHTML=th.innerHTML+' ▲'; }
+  }
+  renderObs();
+}
 function renderObs(){
   var list=getObsFilt(),q=document.getElementById('obs-input').value.trim();
   document.getElementById('obs-info').innerHTML='<strong>'+list.length+'</strong> de <strong>'+OBS_DATA.length+'</strong> registros con observaci\u00f3n';
