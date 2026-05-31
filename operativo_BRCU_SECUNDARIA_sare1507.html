@@ -496,12 +496,20 @@ function iniciarCam(){
     }
     codeReader.decodeFromStream(stream,video,function(result,err){
       if(result){
-        var txt=result.getText();
-        var match=txt.match(/[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]/i);
-        var curp=match?match[0].toUpperCase():txt.trim().toUpperCase();
-        status.innerHTML='\u2705 CURP detectada: <strong>'+curp+'</strong>';
+        var txt=result.getText().trim();
+        // PDF417 del CURP impreso entrega: CURP|num|APPATERNO|APMATERNO|NOMBRE|...
+        var partesPipe = txt.split('|');
+        var curpRaw = partesPipe[0].toUpperCase();
+        // Extraer solo el código CURP (18 chars) si viene con basura antes
+        var matchCurp = curpRaw.match(/[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]/);
+        var curp = matchCurp ? matchCurp[0] : curpRaw;
+        // Si viene nombre en los pipes, guardarlo para búsqueda directa
+        var apPaterno = partesPipe[2] ? partesPipe[2].toUpperCase().trim() : '';
+        var apMaterno = partesPipe[3] ? partesPipe[3].toUpperCase().trim() : '';
+        var nombre    = partesPipe[4] ? partesPipe[4].toUpperCase().trim() : '';
+        status.innerHTML='\u2705 CURP: <strong>'+curp+'</strong>'+(apPaterno?' · '+apPaterno+' '+apMaterno+' '+nombre:'');
         detenerCam();
-        procesarCurpEscaneado(curp);
+        procesarCurpEscaneado(curp, apPaterno, apMaterno, nombre);
       }
     });
   })
@@ -549,24 +557,109 @@ function extraerDatosCURP(curp){
   }catch(e){return null;}
 }
 
-function procesarCurpEscaneado(curp){
+function procesarCurpEscaneado(curp, apPaterno, apMaterno, nombre){
+  apPaterno = apPaterno||''; apMaterno = apMaterno||''; nombre = nombre||'';
   document.getElementById('scan-input').value=curp;
   var datos=extraerDatosCURP(curp);
   if(datos){
     document.getElementById('alerta-curp').style.display='flex';
     document.getElementById('curp-extraido-val').textContent=curp;
+    // Show pipe-extracted name if available, otherwise show initials
+    var infoNombre = apPaterno
+      ? '<span>\ud83d\udc64 <strong>'+apPaterno+' '+apMaterno+' '+nombre+'</strong></span>'
+      : '<span>AP: <strong>'+datos.inicAP+'</strong> (vocal: <strong>'+datos.curp[1].toUpperCase()+'</strong>)</span>'+
+        '<span>AM: <strong>'+datos.inicAM+'</strong></span>'+
+        '<span>Nombre: <strong>'+datos.inicNom+'</strong></span>';
     document.getElementById('curp-datos-extraidos').innerHTML=
-      '<span>AP: <strong>'+datos.inicAP+'</strong> (vocal: <strong>'+datos.curp[1].toUpperCase()+'</strong>)</span>'+
-      '<span>AM inicia: <strong>'+datos.inicAM+'</strong></span>'+
-      '<span>Nombre inicia: <strong>'+datos.inicNom+'</strong></span>'+
+      infoNombre+
       '<span>'+(datos.sexo==='HOMBRE'?'\ud83d\udc68':'\ud83d\udc69')+' '+datos.sexo+'</span>'+
       '<span>\ud83c\udf82 '+datos.fechaNac+'</span>'+
       '<span>\ud83d\udcc5 '+datos.edad+' a\u00f1os</span>';
-    buscarPorCurpExtraido(datos);
+    // If we have the full name from PDF417 pipes, search directly by name
+    if(apPaterno && nombre){
+      buscarPorNombreCompleto(apPaterno, apMaterno, nombre);
+    } else {
+      buscarPorCurpExtraido(datos);
+    }
   } else {
     document.getElementById('alerta-curp').style.display='none';
     buscarGlobal();
   }
+}
+
+// ── BÚSQUEDA DIRECTA POR NOMBRE COMPLETO (datos del PDF417) ──
+function buscarPorNombreCompleto(apPat, apMat, nom){
+  ocultarScan();
+  document.getElementById('spin-scan').classList.add('active');
+  document.getElementById('curp-aviso-resultado').classList.remove('visible');
+
+  var rows = [];
+  // Build full name variants to match (order can vary in DB: AP AM NOM or NOM AP AM)
+  var full1 = norm(apPat+' '+apMat+' '+nom);   // RODRIGUEZ GARCIA DIEGO
+  var full2 = norm(nom+' '+apPat+' '+apMat);   // DIEGO RODRIGUEZ GARCIA
+  var tokensPat = [norm(apPat), norm(apMat), norm(nom)];
+
+  ['basica','buems','jef'].forEach(function(prog){
+    DB[prog].forEach(function(s){
+      s.beneficiarios.forEach(function(b){
+        var bn = norm(b.n);
+        // Match: all three tokens must appear in the name
+        var allTokens = tokensPat.every(function(tok){ return tok && bn.includes(tok); });
+        if(allTokens){
+          rows.push({nombre:b.n, obs:b.o||'', escuela:s.nombre, cct:s.cct,
+            municipio:s.municipio, nivel:s.nivel||'', fecha:s.fecha, prog:prog,
+            q: apPat+' '+apMat+' '+nom});
+        }
+      });
+    });
+  });
+
+  document.getElementById('spin-scan').classList.remove('active');
+  var noRes = document.getElementById('no-result-scan');
+
+  if(!rows.length){
+    // Fallback: try with just AP + NOM
+    ['basica','buems','jef'].forEach(function(prog){
+      DB[prog].forEach(function(s){
+        s.beneficiarios.forEach(function(b){
+          var bn = norm(b.n);
+          if(bn.includes(norm(apPat)) && bn.includes(norm(nom))){
+            rows.push({nombre:b.n, obs:b.o||'', escuela:s.nombre, cct:s.cct,
+              municipio:s.municipio, nivel:s.nivel||'', fecha:s.fecha, prog:prog,
+              q: apPat+' '+nom});
+          }
+        });
+      });
+    });
+  }
+
+  if(!rows.length){
+    noRes.classList.add('visible');
+    document.getElementById('no-result-txt').textContent =
+      'No se encontró a '+apPat+' '+apMat+' '+nom+' en ningún programa.';
+    document.getElementById('res-scan').classList.remove('visible');
+    return;
+  }
+
+  noRes.classList.remove('visible');
+  inlineState.scan.rows = rows;
+  inlineState.scan.page = 1;
+
+  // Show match quality notice
+  var aviso = document.getElementById('curp-aviso-resultado');
+  if(rows.length === 1){
+    aviso.innerHTML = '✅ <strong>Coincidencia encontrada</strong> por nombre completo del CURP escaneado.';
+    aviso.style.background = '#E8F5E9';
+    aviso.style.borderColor = '#81C784';
+    aviso.style.color = '#2E7D32';
+  } else {
+    aviso.innerHTML = '⚠️ <strong>'+rows.length+' coincidencias</strong> por nombre — verifique el registro correcto.';
+    aviso.style.background = '#FFF8E1';
+    aviso.style.borderColor = '#FFD54F';
+    aviso.style.color = '#795548';
+  }
+  aviso.classList.add('visible');
+  renderInline('scan');
 }
 
 // ── BÚSQUEDA POR CURP ──
