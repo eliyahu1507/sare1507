@@ -167,6 +167,19 @@ mark.hit{background:var(--verde-bg);color:#1A5C2A;border-radius:3px;padding:0 2p
 .logo-row{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important}
 .logo-left{display:flex;align-items:center;gap:10px}
 
+.cct-panel{display:none;margin-bottom:12px;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px var(--sombra)}
+.cct-panel.visible{display:block;animation:slideup .22s ease}
+.cct-panel-hdr{padding:9px 14px;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cct-panel-hdr.basica-hdr{background:linear-gradient(135deg,var(--guinda-o,#8B0040),var(--guinda))}
+.cct-panel-hdr.buems-hdr{background:linear-gradient(135deg,#1A3C6B,#1565C0)}
+.cct-panel-hdr.jef-hdr{background:linear-gradient(135deg,#1A4A2E,var(--verde))}
+.cct-list{background:#fff;padding:10px 12px;display:flex;flex-wrap:wrap;gap:7px}
+.cct-tag{display:flex;flex-direction:column;background:#F9F4F6;border:1px solid #E8DDE2;border-radius:8px;padding:6px 10px;min-width:0;cursor:default;transition:background .15s}
+.cct-tag:hover{background:#F0E6EC}
+.cct-tag-cct{font-family:monospace;font-size:.68rem;color:var(--guinda);font-weight:700;letter-spacing:.3px}
+.cct-tag-nombre{font-size:.72rem;color:#444;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.cct-tag-bens{font-size:.65rem;color:#aaa;margin-top:1px}
+
 footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;padding:15px;font-size:.72rem;border-top:3px solid var(--dorado)}footer strong{color:var(--dorado-c)}
 @media(max-width:560px){.stats-bar{grid-template-columns:repeat(2,1fr)}.nivel-stats-bar{grid-template-columns:repeat(2,1fr)}.header-content{padding:15px}.tabs .tab-btn{font-size:.63rem;padding:9px 3px}.obs-res-cards{grid-template-columns:repeat(2,1fr)}}</style>
 </head>
@@ -206,16 +219,19 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 
 <div id="tab-basica" class="tab-panel">
 <div class="scanner-card"><div class="scan-header basica"><span style="font-size:1.3rem">&#x1F3EB;</span><h2>Nominal Básica</h2></div><div class="scan-body"><div class="search-row"><input type="text" class="main-input" id="basica-input" placeholder="CCT, nombre de escuela o beneficiario…" onkeydown="if(event.key==='Enter')buscarTab('basica')" oninput="debounceTab('basica')"><button class="btn-buscar" onclick="buscarTab('basica')">Buscar</button><button class="btn-limpiar" onclick="limpiarTab('basica')">Limpiar</button></div><div class="search-spinner" id="spin-basica"><div class="spinner-ring"></div><span>Buscando…</span></div><div class="result-info-bar" id="basica-info"></div></div></div>
+<div class="cct-panel" id="basica-cct-panel"><div class="cct-panel-hdr basica-hdr"><span id="basica-cct-titulo">📋 CCT convocados</span></div><div class="cct-list" id="basica-cct-list"></div></div>
 <div class="res-inline" id="basica-res"><div class="res-hdr basica-hdr"><span id="basica-res-hdr">Resultados</span></div><div style="overflow-x:auto"><table class="res-table"><thead><tr><th>Beneficiario</th><th>Escuela / CCT</th><th>Municipio</th><th>Nivel</th><th>Fecha</th></tr></thead><tbody id="basica-body"></tbody></table></div><div class="res-pag" id="basica-pag"></div></div>
 </div>
 
 <div id="tab-buems" class="tab-panel">
 <div class="scanner-card"><div class="scan-header buems"><span style="font-size:1.3rem">&#x1F393;</span><h2>Nominal BUEMS — Media Superior</h2></div><div class="scan-body"><div class="search-row"><input type="text" class="main-input" id="buems-input" placeholder="CCT, nombre de escuela o beneficiario…" onkeydown="if(event.key==='Enter')buscarTab('buems')" oninput="debounceTab('buems')"><button class="btn-buscar buems-btn" onclick="buscarTab('buems')">Buscar</button><button class="btn-limpiar" onclick="limpiarTab('buems')">Limpiar</button></div><div class="search-spinner" id="spin-buems"><div class="spinner-ring"></div><span>Buscando…</span></div><div class="result-info-bar" id="buems-info"></div></div></div>
+<div class="cct-panel" id="buems-cct-panel"><div class="cct-panel-hdr buems-hdr"><span id="buems-cct-titulo">📋 CCT convocados</span></div><div class="cct-list" id="buems-cct-list"></div></div>
 <div class="res-inline" id="buems-res"><div class="res-hdr buems-hdr"><span id="buems-res-hdr">Resultados</span></div><div style="overflow-x:auto"><table class="res-table"><thead><tr><th>Beneficiario</th><th>Escuela / CCT</th><th>Municipio</th><th>Fecha</th></tr></thead><tbody id="buems-body"></tbody></table></div><div class="res-pag" id="buems-pag"></div></div>
 </div>
 
 <div id="tab-jef" class="tab-panel">
 <div class="scanner-card"><div class="scan-header jef"><span style="font-size:1.3rem">&#x1F3DB;&#xFE0F;</span><h2>Nominal JEF — Universidad</h2></div><div class="scan-body"><div class="search-row"><input type="text" class="main-input" id="jef-input" placeholder="CCT, nombre de escuela o beneficiario…" onkeydown="if(event.key==='Enter')buscarTab('jef')" oninput="debounceTab('jef')"><button class="btn-buscar jef-btn" onclick="buscarTab('jef')">Buscar</button><button class="btn-limpiar" onclick="limpiarTab('jef')">Limpiar</button></div><div class="search-spinner" id="spin-jef"><div class="spinner-ring"></div><span>Buscando…</span></div><div class="result-info-bar" id="jef-info"></div></div></div>
+<div class="cct-panel" id="jef-cct-panel"><div class="cct-panel-hdr jef-hdr"><span id="jef-cct-titulo">📋 CCT convocados</span></div><div class="cct-list" id="jef-cct-list"></div></div>
 <div class="res-inline" id="jef-res"><div class="res-hdr jef-hdr"><span id="jef-res-hdr">Resultados</span></div><div style="overflow-x:auto"><table class="res-table"><thead><tr><th>Beneficiario</th><th>Escuela / CCT</th><th>Municipio</th><th>Fecha</th></tr></thead><tbody id="jef-body"></tbody></table></div><div class="res-pag" id="jef-pag"></div></div>
 </div>
 
@@ -435,6 +451,29 @@ function filtrarPorFecha(fecha){
   var tabBtn = document.querySelectorAll('.tab-btn')[tabIdx];
   showTab('tab-'+primerProg, tabBtn);
 
+  // ── Mostrar CCT panel por programa ──
+  function buildCctPanel(prog, escuelas) {
+    var panel = document.getElementById(prog+'-cct-panel');
+    var list  = document.getElementById(prog+'-cct-list');
+    var titulo= document.getElementById(prog+'-cct-titulo');
+    if(!escuelas || !escuelas.length){ panel.classList.remove('visible'); return; }
+    titulo.textContent = '📋 ' + escuelas.length + ' CCT convocado' + (escuelas.length!==1?'s':'') + ' — ' + fechaLabel;
+    var h = '';
+    escuelas.forEach(function(s){
+      h += '<div class="cct-tag">'
+         + '<span class="cct-tag-cct">' + s.cct + '</span>'
+         + '<span class="cct-tag-nombre">' + esc(s.nombre) + '</span>'
+         + '<span class="cct-tag-bens">' + s.beneficiarios.length + ' beneficiario' + (s.beneficiarios.length!==1?'s':'') + '</span>'
+         + '</div>';
+    });
+    list.innerHTML = h;
+    panel.classList.add('visible');
+  }
+
+  if(enBasica) buildCctPanel('basica', tabState.basica.filtered);
+  if(enBuems)  buildCctPanel('buems',  tabState.buems.filtered);
+  if(enJef)    buildCctPanel('jef',    tabState.jef.filtered);
+
   // Aplicar info a todos los programas con esa fecha
   if(enBasica){ renderTabTable('basica'); document.getElementById('basica-info').innerHTML=infoMsg; }
   if(enBuems) { renderTabTable('buems');  document.getElementById('buems-info').innerHTML=infoMsg; }
@@ -459,6 +498,11 @@ function limpiarTodas(){
   document.getElementById('stat-total-lbl').textContent = 'Total registros';
   document.getElementById('stats-bar').style.outline = '';
   document.getElementById('stats-bar').style.outlineOffset = '';
+  // Ocultar paneles CCT
+  ['basica','buems','jef'].forEach(function(p){
+    var panel = document.getElementById(p+'-cct-panel');
+    if(panel) panel.classList.remove('visible');
+  });
 }
 
 // ── CÁMARA ──
