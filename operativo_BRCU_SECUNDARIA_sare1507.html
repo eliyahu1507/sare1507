@@ -180,6 +180,9 @@ mark.hit{background:var(--verde-bg);color:#1A5C2A;border-radius:3px;padding:0 2p
 .cct-tag-nombre{font-size:.72rem;color:#444;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
 .cct-tag-bens{font-size:.65rem;color:#aaa;margin-top:1px}
 
+tr[data-exacto="1"] mark.hit { background: #b7f0c0; color: #1B5E20; }
+tr[data-exacto="1"] .res-ben-nombre { color: #1B5E20; font-weight: 800; }
+
 footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;padding:15px;font-size:.72rem;border-top:3px solid var(--dorado)}footer strong{color:var(--dorado-c)}
 @media(max-width:560px){.stats-bar{grid-template-columns:repeat(2,1fr)}.nivel-stats-bar{grid-template-columns:repeat(2,1fr)}.header-content{padding:15px}.tabs .tab-btn{font-size:.63rem;padding:9px 3px}.obs-res-cards{grid-template-columns:repeat(2,1fr)}}</style>
 </head>
@@ -270,21 +273,25 @@ function esc(t){
 }
 function resaltar(texto,q){
   if(!q) return esc(texto);
-  // Highlight each token separately
   var tokens = norm(q).split(/\s+/).filter(Boolean);
-  var result = esc(texto);
-  tokens.forEach(function(tok){
-    var tn = norm(texto);
-    var idx = tn.indexOf(tok);
-    if(idx === -1) return;
-    // Find and wrap the matched slice (case-insensitive, accent-insensitive)
-    var before = esc(texto.slice(0, idx));
-    var match  = esc(texto.slice(idx, idx + tok.length));
-    var after  = resaltar(texto.slice(idx + tok.length), tokens.filter(function(t){return t!==tok;}).join(' '));
-    result = before + '<mark class="hit">' + match + '</mark>' + after;
-    texto = texto; // keep original for further tokens
-  });
-  return result;
+  if(!tokens.length) return esc(texto);
+  // Work entirely on the normalized text to find positions,
+  // then map those positions back to the original word-by-word
+  // to avoid accent-length mismatch issues.
+  // Strategy: split original text into words, normalize each word,
+  // and wrap those that match any token.
+  var palabras = texto.split(/\b/);
+  var out = palabras.map(function(p){
+    var pn = norm(p);
+    var matched = tokens.some(function(tok){
+      // full token must match the whole word or be contained in it
+      return pn === tok || pn.includes(tok);
+    });
+    return matched && pn.length > 1
+      ? '<mark class="hit">' + esc(p) + '</mark>'
+      : esc(p);
+  }).join('');
+  return out;
 }
 function fmtFecha(f){
   if(!f) return '\u2013';
@@ -609,8 +616,9 @@ function procesarCurpEscaneado(curp, apPaterno, apMaterno, nombre){
     document.getElementById('alerta-curp').style.display='flex';
     document.getElementById('curp-extraido-val').textContent=curp;
     // Show pipe-extracted name if available, otherwise show initials
+    // Show as printed on CURP: NOMBRE(S) APELLIDO_PATERNO APELLIDO_MATERNO
     var infoNombre = apPaterno
-      ? '<span>\ud83d\udc64 <strong>'+apPaterno+' '+apMaterno+' '+nombre+'</strong></span>'
+      ? '<span>\ud83d\udc64 <strong>'+nombre+' '+apPaterno+' '+apMaterno+'</strong></span>'
       : '<span>AP: <strong>'+datos.inicAP+'</strong> (vocal: <strong>'+datos.curp[1].toUpperCase()+'</strong>)</span>'+
         '<span>AM: <strong>'+datos.inicAM+'</strong></span>'+
         '<span>Nombre: <strong>'+datos.inicNom+'</strong></span>';
@@ -620,6 +628,10 @@ function procesarCurpEscaneado(curp, apPaterno, apMaterno, nombre){
       '<span>\ud83c\udf82 '+datos.fechaNac+'</span>'+
       '<span>\ud83d\udcc5 '+datos.edad+' a\u00f1os</span>';
     // If we have the full name from PDF417 pipes, search directly by name
+    // Always attach pipe-extracted name to datos for CURP search
+    datos.apellidoPaterno = apPaterno;
+    datos.apellidoMaterno = apMaterno;
+    datos.nombre = nombre;
     if(apPaterno && nombre){
       buscarPorNombreCompleto(apPaterno, apMaterno, nombre);
     } else {
@@ -769,26 +781,54 @@ function buscarPorCurpExtraido(datos){
     return;
   }
 
-  var totalHits=resultados.reduce(function(a,r){return a+r.hits.length;},0);
-  document.getElementById('res-scan-hdr').textContent=
-    '\ud83d\udd0d '+totalHits+' posible'+(totalHits!==1?'s coincidencias':' coincidencia')+
-    ' — AP:'+datos.inicAP+datos.curp[1].toUpperCase()+' AM:'+datos.inicAM+' Nom:'+datos.inicNom;
+  // Nombre completo extraído de la CURP para detectar exacta
+  // DB stores: NOMBRE(S) AP AM — use all tokens for highlight (order doesn't matter for matchAll)
+  var nombreCurp = (datos.nombre||'') + ' ' + (datos.apellidoPaterno||'') + ' ' + (datos.apellidoMaterno||'');
 
-  var listHTML='';
+  // Convertir a rows para renderInline
+  var rows = [];
   resultados.forEach(function(item){
-    var idxC=DB[item.prog].indexOf(item.s);
     item.hits.forEach(function(b){
-      listHTML+='<div class="coin-row" onclick="abrirPorIdx(\''+item.prog+'\','+idxC+'\',\'\')">' +
-        '<div style="flex:1"><div class="coin-nombre">'+esc(b.n)+'</div>'+
-        '<div class="coin-esc">'+esc(item.s.nombre)+' \u00b7 '+item.s.cct+' \u00b7 '+item.s.municipio+'</div></div>'+
-        '<span class="coin-prog-badge '+item.prog+'">'+PROG_LABEL[item.prog]+'</span>'+
-        '<span style="font-size:.72rem;color:#888">'+fmtFecha(item.s.fecha)+'</span></div>';
+      rows.push({
+        nombre: b.n, obs: b.o||'',
+        escuela: item.s.nombre, cct: item.s.cct,
+        municipio: item.s.municipio, nivel: item.s.nivel||'',
+        fecha: item.s.fecha, prog: item.prog,
+        q: nombreCurp.trim(),
+        exacto: esExacto(b.n, nombreCurp.trim())
+      });
     });
   });
-  document.getElementById('res-scan').classList.add('visible');
-  document.getElementById('res-scan-pag').innerHTML='';
-  document.getElementById('curp-aviso-resultado').classList.add('visible');
+
+  // Exactas primero, parciales después; dentro de cada grupo por fecha
+  rows.sort(function(a,b){
+    if(a.exacto && !b.exacto) return -1;
+    if(!a.exacto && b.exacto) return 1;
+    return (a.fecha||'').localeCompare(b.fecha||'');
+  });
+
+  var exactas = rows.filter(function(r){ return r.exacto; });
+  var parciales = rows.filter(function(r){ return !r.exacto; });
+
+  inlineState.scan.rows = rows;
+  inlineState.scan.page = 1;
+
+  // Update aviso based on results
+  var aviso = document.getElementById('curp-aviso-resultado');
+  if(exactas.length === 1){
+    aviso.innerHTML = '✅ <strong>1 coincidencia exacta encontrada</strong>' +
+      (parciales.length ? ' · ' + parciales.length + ' parcial' + (parciales.length!==1?'es':'') + ' abajo' : '');
+    aviso.style.background='#E8F5E9'; aviso.style.borderColor='#81C784'; aviso.style.color='#2E7D32';
+  } else if(exactas.length > 1){
+    aviso.innerHTML = '⚠️ <strong>' + exactas.length + ' coincidencias exactas</strong> — verifique CCT y fecha de atención.';
+    aviso.style.background='#FFF8E1'; aviso.style.borderColor='#FFD54F'; aviso.style.color='#795548';
+  } else {
+    aviso.innerHTML = '⚠️ <strong>' + rows.length + ' coincidencias por iniciales</strong> — no se encontró nombre exacto. Verifique manualmente.';
+    aviso.style.background='#FFF3E0'; aviso.style.borderColor='#FFCC80'; aviso.style.color='#E65C00';
+  }
+  aviso.classList.add('visible');
   document.getElementById('spin-scan').classList.remove('active');
+  renderInline('scan');
 }
 
 function selCoin(sData,prog){ abrirModal(sData,prog,''); }
@@ -846,9 +886,9 @@ function renderInline(scope) {
         '<span style="font-size:.68rem;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:.5px">' +
         '▼ Coincidencias parciales</span></td></tr>';
     }
-    var rowBg = r.exacto ? 'background:#F0FFF4;border-left:3px solid #4CAF50' : '';
-    html += '<tr style="'+rowBg+'">' +
-      '<td><div class="res-ben-nombre">' + resaltar(r.nombre, r.q) + '</div>' +
+    var rowBg = r.exacto ? 'background:#E8F5E9;border-left:4px solid #2E7D32' : '';
+    html += '<tr style="'+rowBg+'" '+(r.exacto?'data-exacto="1"':'')+' >' +
+      '<td><div class="res-ben-nombre" style="' + (r.exacto?'color:#1B5E20;font-size:.92rem':'') + '">' + resaltar(r.nombre, r.q) + '</div>' +
       (r.obs ? '<span class="obs-chip" style="font-size:.62rem;margin-top:2px;display:inline-block">' + esc(r.obs) + '</span>' : '') +
       '</td>' +
       '<td><div class="res-esc-nombre">' + esc(r.escuela) + '</div>' +
