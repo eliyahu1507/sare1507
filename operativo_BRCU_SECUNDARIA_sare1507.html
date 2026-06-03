@@ -203,7 +203,7 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 <div class="sub-h">Escaneo CURP · Búsqueda por nombre · Verificación de beneficiario</div>
 <div class="badge-row"><div class="badge gold">&#x1F4F7; Escaneo CURP</div><div class="badge">&#x1F3EB; Básica</div><div class="badge">&#x1F393; BUEMS</div><div class="badge">&#x1F3DB;&#xFE0F; JEF</div></div>
 </div>
-<div class="stats-bar" id="stats-bar"><div class="stat-item"><div class="stat-num" id="stat-basica">59,095</div><div class="stat-label" id="stat-basica-lbl">Básica</div></div><div class="stat-item"><div class="stat-num" id="stat-buems">221</div><div class="stat-label" id="stat-buems-lbl">BUEMS</div></div><div class="stat-item"><div class="stat-num" id="stat-jef">106</div><div class="stat-label" id="stat-jef-lbl">JEF</div></div><div class="stat-item"><div class="stat-num" id="stat-total">59,422</div><div class="stat-label" id="stat-total-lbl">Total registros</div></div></div>
+<div class="stats-bar" id="stats-bar"><div class="stat-item"><div class="stat-num" id="stat-basica">59,095</div><div class="stat-label" id="stat-basica-lbl">Básica</div></div><div class="stat-item" id="stat-item-prim" style="display:none"><div class="stat-num" id="stat-prim">0</div><div class="stat-label" id="stat-prim-lbl">Primaria</div></div><div class="stat-item" id="stat-item-sec" style="display:none"><div class="stat-num" id="stat-sec">0</div><div class="stat-label" id="stat-sec-lbl">Secundaria</div></div><div class="stat-item"><div class="stat-num" id="stat-buems">221</div><div class="stat-label" id="stat-buems-lbl">BUEMS</div></div><div class="stat-item"><div class="stat-num" id="stat-jef">106</div><div class="stat-label" id="stat-jef-lbl">JEF</div></div><div class="stat-item"><div class="stat-num" id="stat-total">59,422</div><div class="stat-label" id="stat-total-lbl">Total registros</div></div></div>
 <div class="nivel-stats-bar" id="nivel-stats"></div>
 <div class="mini-cal-wrap"><div class="mini-cal-label">&#x1F4C5; Calendario de Atención — Básica · BUEMS · JEF</div><div class="mini-cal-row" id="mini-cal"></div></div>
 <div class="elab-bar">&#x270F;&#xFE0F; Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong></div>
@@ -481,6 +481,24 @@ function filtrarPorFecha(fecha){
   if(enBuems)  buildCctPanel('buems',  tabState.buems.filtered);
   if(enJef)    buildCctPanel('jef',    tabState.jef.filtered);
 
+  // ── Básica: desglosar Primaria vs Secundaria en stats bar ──
+  if(enBasica){
+    var primEsc  = tabState.basica.filtered.filter(function(s){ return s.nivel==='PRIMARIA'; });
+    var secEsc   = tabState.basica.filtered.filter(function(s){ return s.nivel==='SECUNDARIA'; });
+    var primBens = primEsc.reduce(function(a,s){ return a+s.beneficiarios.length; }, 0);
+    var secBens  = secEsc.reduce(function(a,s){ return a+s.beneficiarios.length; }, 0);
+    if(primEsc.length){
+      document.getElementById('stat-item-prim').style.display='';
+      document.getElementById('stat-prim').textContent = primBens.toLocaleString();
+      document.getElementById('stat-prim-lbl').innerHTML = 'Primaria &mdash; '+primEsc.length+' esc.';
+    } else { document.getElementById('stat-item-prim').style.display='none'; }
+    if(secEsc.length){
+      document.getElementById('stat-item-sec').style.display='';
+      document.getElementById('stat-sec').textContent = secBens.toLocaleString();
+      document.getElementById('stat-sec-lbl').innerHTML = 'Secundaria &mdash; '+secEsc.length+' esc.';
+    } else { document.getElementById('stat-item-sec').style.display='none'; }
+  }
+
   // Aplicar info a todos los programas con esa fecha
   if(enBasica){ renderTabTable('basica'); document.getElementById('basica-info').innerHTML=infoMsg; }
   if(enBuems) { renderTabTable('buems');  document.getElementById('buems-info').innerHTML=infoMsg; }
@@ -505,11 +523,13 @@ function limpiarTodas(){
   document.getElementById('stat-total-lbl').textContent = 'Total registros';
   document.getElementById('stats-bar').style.outline = '';
   document.getElementById('stats-bar').style.outlineOffset = '';
-  // Ocultar paneles CCT
+  // Ocultar paneles CCT y desglose nivel
   ['basica','buems','jef'].forEach(function(p){
     var panel = document.getElementById(p+'-cct-panel');
     if(panel) panel.classList.remove('visible');
   });
+  document.getElementById('stat-item-prim').style.display='none';
+  document.getElementById('stat-item-sec').style.display='none';
 }
 
 // ── CÁMARA ──
