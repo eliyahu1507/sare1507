@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Captura de Entregas · SARE 1507</title>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --verde:#1B5E20;--verde-m:#2E7D32;--verde-l:#4CAF50;--verde-xl:#E8F5E9;
+  --dorado:#C8930A;--dorado-l:#FFF8E1;--guinda:#7A0032;
+  --rojo:#B71C1C;--rojo-l:#FFEBEE;--azul:#1565C0;
+  --bg:#F4F6F4;--card:#fff;--texto:#1a1a1a;--texto-s:#555;
+  --borde:#D8E4D8;--sombra:rgba(27,94,32,.10);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--texto);min-height:100vh;overflow-x:hidden}
+
+.header{background:linear-gradient(135deg,#1a3d1a 0%,var(--verde-m) 60%,#388E3C 100%);padding:16px 18px 14px;position:relative;overflow:hidden}
+.header::before{content:'';position:absolute;top:-30px;right:-30px;width:160px;height:160px;border-radius:50%;background:rgba(200,147,10,.15);pointer-events:none}
+.header-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.header-left{display:flex;align-items:center;gap:10px}
+.header-title{font-family:'Montserrat',sans-serif;font-size:1.05rem;font-weight:900;color:#fff;line-height:1.15}
+.header-sub{font-size:.7rem;color:rgba(255,255,255,.75);margin-top:1px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.counter-box{text-align:right;flex-shrink:0}
+.counter-num{font-family:'Montserrat',sans-serif;font-size:1.6rem;font-weight:900;color:var(--dorado);line-height:1}
+.counter-lbl{font-size:.58rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px}
+
+.main{padding:12px 13px 80px}
+.card{background:var(--card);border-radius:14px;box-shadow:0 2px 12px var(--sombra);padding:15px;margin-bottom:11px}
+.card-title{font-family:'Montserrat',sans-serif;font-size:.83rem;font-weight:800;color:var(--verde-m);margin-bottom:11px;display:flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.4px}
+.step-badge{background:var(--verde-m);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0}
+
+.btn{border:none;border-radius:10px;padding:10px 14px;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s;justify-content:center;touch-action:manipulation}
+.btn-primary{background:var(--verde-m);color:#fff}
+.btn-secondary{background:var(--dorado);color:#fff}
+.btn-outline{background:#fff;border:2px solid var(--borde);color:var(--texto-s)}
+.btn-danger{background:var(--rojo);color:#fff}
+.btn-full{width:100%}
+.scan-btns{display:flex;gap:8px;margin-bottom:10px}
+.scan-btns .btn{flex:1}
+
+.input-row{display:flex;gap:8px}
+.input-field{flex:1;border:2px solid var(--borde);border-radius:10px;padding:10px 13px;font-family:'Source Sans 3',sans-serif;font-size:.92rem;color:var(--texto);outline:none;transition:border-color .15s}
+.input-field:focus{border-color:var(--verde-m)}
+
+/* Video scanner */
+.video-wrap{position:relative;margin-top:10px;border-radius:12px;overflow:hidden;background:#000;display:none}
+.video-wrap.active{display:block}
+.video-wrap video{width:100%;display:block;max-height:240px;object-fit:cover}
+.scan-line{position:absolute;left:10%;right:10%;height:2px;background:rgba(76,175,80,.8);top:40%;animation:scanmove 2s ease-in-out infinite;box-shadow:0 0 8px rgba(76,175,80,.6)}
+@keyframes scanmove{0%,100%{top:25%}50%{top:70%}}
+.scan-status{font-size:.75rem;color:var(--texto-s);margin-top:6px;min-height:18px;text-align:center}
+
+/* CURP info box */
+.curp-box{background:var(--dorado-l);border:1.5px solid var(--dorado);border-radius:10px;padding:11px 13px;margin-top:9px;display:none}
+.curp-box.show{display:block;animation:fadein .2s ease}
+.curp-code{font-family:monospace;font-weight:700;font-size:.9rem;color:var(--guinda);margin-bottom:5px}
+.curp-chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{padding:3px 8px;border-radius:10px;font-size:.7rem;font-weight:700;background:rgba(0,0,0,.08)}
+
+/* Nominal result */
+.nom-box{border-radius:10px;padding:11px 13px;margin-top:9px;display:none}
+.nom-box.found{display:block;background:var(--verde-xl);border:1.5px solid var(--verde-l)}
+.nom-box.notfound{display:block;background:var(--rojo-l);border:1.5px solid #EF9A9A}
+.nom-nombre{font-family:'Montserrat',sans-serif;font-weight:800;font-size:.96rem;color:var(--verde);margin-bottom:3px}
+.nom-nombre.warn{color:var(--rojo)}
+.nom-meta{font-size:.76rem;color:var(--texto-s);line-height:1.6}
+.nb{display:inline-block;padding:2px 7px;border-radius:7px;font-size:.66rem;font-weight:700;margin-right:3px}
+.nb-prim{background:#FCE4EC;color:var(--guinda)}
+.nb-sec{background:#E3F2FD;color:var(--azul)}
+.nb-buems{background:#E3F2FD;color:var(--azul)}
+.nb-jef{background:#E8F5E9;color:var(--verde)}
+.match-ok{color:var(--verde-m);font-weight:700;font-size:.8rem;margin-top:5px}
+.match-warn{color:var(--rojo);font-weight:700;font-size:.8rem;margin-top:5px}
+
+/* Manual results */
+.man-item{border:1.5px solid var(--borde);border-radius:9px;padding:9px 11px;margin-bottom:6px;cursor:pointer;background:#fff;transition:background .12s}
+.man-item:active{background:var(--verde-xl)}
+.man-nombre{font-weight:700;font-size:.84rem}
+.man-meta{font-size:.7rem;color:var(--texto-s)}
+
+/* Edad selector */
+.edad-row{display:flex;gap:8px;margin-top:8px}
+.edad-btn{flex:1;border:2px solid var(--borde);border-radius:10px;padding:11px 6px;text-align:center;cursor:pointer;background:#fff;font-weight:700;font-size:.82rem;transition:all .15s;touch-action:manipulation}
+.edad-btn.sel{border-color:var(--verde-m);background:var(--verde-xl);color:var(--verde)}
+
+/* Foto grid */
+.foto-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.foto-slot{border:2px dashed var(--borde);border-radius:10px;min-height:108px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;position:relative;overflow:hidden;background:#FAFAFA;touch-action:manipulation;transition:border-color .15s}
+.foto-slot.done{border-style:solid;border-color:var(--verde-l);background:var(--verde-xl)}
+.foto-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:8px}
+.foto-slot .foto-retake{position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;border-radius:8px;opacity:0;transition:opacity .15s;color:#fff;font-size:.72rem;font-weight:700}
+.foto-slot:active .foto-retake{opacity:1}
+.foto-check{position:absolute;top:5px;right:5px;background:var(--verde-m);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.7rem}
+.foto-num{font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;color:var(--texto-s);text-transform:uppercase}
+.foto-lbl{font-size:.72rem;font-weight:600;color:var(--texto-s);text-align:center;padding:0 5px;line-height:1.3}
+.foto-icon{font-size:1.4rem}
+.foto-progress{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.78rem;font-weight:600;color:var(--texto-s)}
+.foto-bar{flex:1;height:6px;background:#E0E0E0;border-radius:3px;overflow:hidden}
+.foto-bar-fill{height:100%;background:var(--verde-m);border-radius:3px;transition:width .3s}
+
+/* Confirm */
+.confirm-box{background:var(--verde-xl);border:1.5px solid var(--verde-l);border-radius:12px;padding:13px;margin-top:10px;display:none}
+.confirm-box.show{display:block;animation:fadein .2s ease}
+.confirm-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:.8rem}
+.confirm-lbl{color:var(--texto-s)}
+.confirm-val{font-weight:700;text-align:right;max-width:60%}
+.confirm-btns{display:flex;gap:8px;margin-top:11px}
+.confirm-btns .btn{flex:1;padding:11px}
+
+/* Registros */
+.reg-item{border:1.5px solid var(--borde);border-radius:10px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px}
+.reg-n{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.1rem;color:var(--verde-m);width:26px;text-align:center;flex-shrink:0}
+.reg-info{flex:1;min-width:0}
+.reg-nombre{font-weight:700;font-size:.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reg-meta{font-size:.7rem;color:var(--texto-s)}
+
+/* ZIP panel */
+.zip-panel{background:linear-gradient(135deg,var(--verde),var(--verde-m));border-radius:14px;padding:18px;text-align:center;color:#fff}
+.zip-icon{font-size:2.2rem;margin-bottom:6px}
+.zip-title{font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900;margin-bottom:3px}
+.zip-sub{font-size:.76rem;opacity:.85;margin-bottom:13px}
+.btn-zip{background:#fff;color:var(--verde);border:none;border-radius:10px;padding:12px;font-family:'Montserrat',sans-serif;font-size:.86rem;font-weight:800;cursor:pointer;width:100%;touch-action:manipulation}
+
+/* Bottom nav */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1.5px solid var(--borde);display:flex;z-index:100;box-shadow:0 -2px 12px rgba(0,0,0,.07)}
+.nav-item{flex:1;padding:9px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;border:none;background:none;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.3px;touch-action:manipulation}
+.nav-item.active,.nav-item:hover{color:var(--verde-m)}
+.nav-icon{font-size:1.15rem}
+
+/* Screens */
+.screen{display:none}
+.screen.active{display:block;animation:fadein .22s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+
+/* Alerts */
+.alerta{border-radius:10px;padding:9px 12px;font-size:.8rem;line-height:1.5;margin-top:8px;display:flex;gap:8px;align-items:flex-start}
+.alerta.verde{background:var(--verde-xl);border:1px solid var(--verde-l);color:var(--verde)}
+.alerta.amarillo{background:var(--dorado-l);border:1px solid #FFD54F;color:#5D4037}
+.alerta.rojo{background:var(--rojo-l);border:1px solid #EF9A9A;color:var(--rojo)}
+
+/* Toast */
+.toast{position:fixed;top:76px;left:13px;right:13px;z-index:400;border-radius:10px;padding:11px 14px;font-weight:700;font-size:.84rem;display:flex;align-items:center;gap:8px;animation:fadein .2s ease;pointer-events:none}
+.toast.ok{background:#1B5E20;color:#fff}
+.toast.err{background:var(--rojo);color:#fff}
+
+/* Lock screen */
+.lock{position:fixed;inset:0;background:linear-gradient(160deg,#1a3d1a,var(--verde-m));z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;text-align:center}
+.lock-icon{font-size:3rem;margin-bottom:10px}
+.lock-title{font-family:'Montserrat',sans-serif;font-size:1.3rem;font-weight:900;color:#fff;margin-bottom:3px}
+.lock-sub{color:rgba(255,255,255,.72);font-size:.84rem;margin-bottom:20px}
+.lock-list{width:100%;max-width:340px;display:grid;gap:8px;margin-bottom:16px}
+.lock-btn{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.22);border-radius:11px;padding:13px 14px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:all .18s;text-align:left;width:100%;touch-action:manipulation}
+.lock-btn:active,.lock-btn.sel{background:rgba(255,255,255,.2);border-color:var(--dorado)}
+.lock-btn-n{font-weight:700;color:#fff;font-size:.88rem}
+.lock-btn-c{font-size:.7rem;color:rgba(255,255,255,.65)}
+.lock-start{background:var(--dorado);color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:800;cursor:pointer;width:100%;max-width:340px;opacity:.45;pointer-events:none;transition:all .15s;touch-action:manipulation}
+.lock-start.on{opacity:1;pointer-events:all}
+
+/* Carga nominal */
+.carga-box{background:rgba(255,255,255,.08);border:1.5px dashed rgba(255,255,255,.3);border-radius:12px;padding:16px;text-align:center;margin-bottom:16px;width:100%;max-width:340px;cursor:pointer;touch-action:manipulation}
+.carga-box.ok{border-color:var(--dorado);background:rgba(200,147,10,.15)}
+.carga-txt{color:rgba(255,255,255,.8);font-size:.82rem;line-height:1.5}
+.carga-ok{color:var(--dorado);font-weight:700;font-size:.82rem}
+
+/* Spinner inline */
+.spin{display:none;align-items:center;gap:7px;font-size:.78rem;color:var(--verde-m);font-weight:600;margin-top:7px}
+.spin.on{display:flex}
+.spin-ring{width:15px;height:15px;border:2.5px solid rgba(46,125,50,.15);border-top-color:var(--verde-m);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ── LOCK SCREEN ── -->
+<div class="lock" id="lockScreen">
+  <div class="lock-icon">📋</div>
+  <div class="lock-title">Captura de Entregas</div>
+  <div class="lock-sub">SARE 1507 · Becas Bienestar</div>
+
+  <!-- Carga nominal -->
+  <div class="carga-box" id="cargaBox" onclick="document.getElementById('inputNominal').click()">
+    <div style="font-size:1.5rem;margin-bottom:5px">📂</div>
+    <div class="carga-txt">Toca aquí para cargar el<br><strong style="color:#fff">index.html</strong> (nominal)</div>
+  </div>
+  <div class="carga-ok" id="cargaOk" style="display:none;margin-bottom:12px"></div>
+  <input type="file" id="inputNominal" accept=".html" style="display:none" onchange="cargarNominal(event)">
+
+  <!-- Capturistas -->
+  <div class="lock-list" id="lockList"></div>
+  <button class="lock-start" id="lockStart" onclick="iniciarSesion()">Iniciar sesión →</button>
+</div>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <div class="header-row">
+    <div class="header-left">
+      <div style="font-size:1.5rem">📋</div>
+      <div>
+        <div class="header-title">Captura de Entregas</div>
+        <div class="header-sub" id="hdrCap">—</div>
+      </div>
+    </div>
+    <div class="counter-box">
+      <div class="counter-num" id="cntNum">0</div>
+      <div class="counter-lbl">Entregadas</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BOTTOM NAV ── -->
+<div class="bottom-nav">
+  <button class="nav-item active" id="nav0" onclick="showScreen('sCap')">
+    <span class="nav-icon">📷</span>Capturar
+  </button>
+  <button class="nav-item" id="nav1" onclick="showScreen('sReg')">
+    <span class="nav-icon">📋</span>Registros
+  </button>
+  <button class="nav-item" id="nav2" onclick="showScreen('sCierre')">
+    <span class="nav-icon">📦</span>Cierre
+  </button>
+</div>
+
+<!-- ── MAIN ── -->
+<div class="main">
+
+<!-- SCREEN CAPTURA -->
+<div class="screen active" id="sCap">
+
+  <div class="card">
+    <div class="card-title"><span class="step-badge">1</span>Buscar beneficiario</div>
+
+    <div class="scan-btns">
+      <button class="btn btn-secondary" onclick="toggleCam()">📷 Escanear CURP</button>
+      <button class="btn btn-outline" onclick="toggleManual()">✏️ Manual</button>
+    </div>
+
+    <!-- Video -->
+    <div class="video-wrap" id="videoWrap">
+      <video id="videoEl" playsinline muted autoplay></video>
+      <div class="scan-line"></div>
+    </div>
+    <div class="scan-status" id="scanStatus"></div>
+
+    <!-- Manual -->
+    <div id="manualArea" style="display:none;margin-top:8px">
+      <div class="input-row">
+        <input class="input-field" id="manInput" placeholder="Apellido, nombre o CURP…" oninput="buscarManual()">
+        <button class="btn btn-outline" onclick="limpiarManual()" style="padding:10px 13px;flex-shrink:0">✕</button>
+      </div>
+      <div class="spin" id="spinBuscar"><div class="spin-ring"></div>Buscando…</div>
+      <div id="manResults"></div>
+    </div>
+
+    <!-- CURP info -->
+    <div class="curp-box" id="curpBox">
+      <div class="curp-code" id="curpCode"></div>
+      <div class="curp-chips" id="curpChips"></div>
+    </div>
+
+    <!-- Nominal result -->
+    <div class="nom-box" id="nomBox">
+      <div class="nom-nombre" id="nomNombre"></div>
+      <div class="nom-meta" id="nomMeta"></div>
+      <div id="nomMatch"></div>
+    </div>
+  </div>
+
+  <!-- PASO 2: Fotos -->
+  <div class="card" id="cardFotos" style="display:none">
+    <div class="card-title"><span class="step-badge">2</span>Fotografías</div>
+
+    <div id="edadArea" style="display:none">
+      <div style="font-size:.8rem;color:var(--texto-s);margin-bottom:4px">¿El/la becario/a es…?</div>
+      <div class="edad-row">
+        <div class="edad-btn" id="btnMenor" onclick="setEdad(true)">👦 Menor de edad</div>
+        <div class="edad-btn" id="btnMayor" onclick="setEdad(false)">🧑 Mayor de edad</div>
+      </div>
+    </div>
+
+    <div class="foto-grid" id="fotoGrid"></div>
+    <div class="foto-progress">
+      <span id="fotoCount">0/0</span>
+      <div class="foto-bar"><div class="foto-bar-fill" id="fotoBFill" style="width:0%"></div></div>
+    </div>
+
+    <div class="alerta amarillo" id="alertaIne" style="display:none">
+      <span>ℹ️</span><span>Si la ID no es INE, captura 2 fotos del anverso.</span>
+    </div>
+
+    <button class="btn btn-primary btn-full" id="btnConfirmar" style="margin-top:11px" onclick="mostrarConfirmar()" disabled>
+      ✅ Confirmar entrega
+    </button>
+  </div>
+
+  <!-- Confirmar -->
+  <div class="confirm-box" id="confirmBox">
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:.86rem;color:var(--verde-m);margin-bottom:9px">✅ Resumen de entrega</div>
+    <div id="confirmRows"></div>
+    <div class="confirm-btns">
+      <button class="btn btn-outline" onclick="cancelarConfirmar()">Cancelar</button>
+      <button class="btn btn-primary" style="background:var(--verde)" onclick="guardarEntrega()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN REGISTROS -->
+<div class="screen" id="sReg">
+  <div class="card">
+    <div class="card-title">📋 Registros del operativo</div>
+    <div id="regList"><div style="text-align:center;padding:22px;color:#aaa;font-size:.83rem">Sin registros aún</div></div>
+  </div>
+</div>
+
+<!-- SCREEN CIERRE -->
+<div class="screen" id="sCierre">
+  <div class="card">
+    <div class="card-title">📊 Resumen</div>
+    <div id="resumenDiv" style="font-size:.84rem;color:var(--texto-s);line-height:1.9"></div>
+  </div>
+  <div class="zip-panel">
+    <div class="zip-icon">📦</div>
+    <div class="zip-title">Generar respaldo ZIP</div>
+    <div class="zip-sub">Fotos organizadas por capturista, nivel y CURP</div>
+    <button class="btn-zip" onclick="generarZip()">⬇️ Descargar ZIP del operativo</button>
+  </div>
+  <div class="alerta amarillo" style="margin-top:11px">
+    <span>⚠️</span><span>Guarda el ZIP en un lugar seguro antes de cerrar la app.</span>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- Input fotos oculto -->
+<input type="file" id="fotoInput" accept="image/*" capture="environment" style="display:none" onchange="fotoCapturada(event)">
+
+<script>
+// ══════════════════════════════════════════════
+// DATOS Y ESTADO
+// ══════════════════════════════════════════════
+var CAPTURISTAS = [
+  {cupo:159415, nombre:'JOSE ELIAS CERVANTES JIMENEZ'}
+];
+
+var DB = {basica:[], buems:[], jef:[]};
+var DB_OK = false;
+var sesion = {cap: null};
+var registros = [];
+var actual = null;        // entrega en curso
+var FOTOS_DEF = [];       // definición de fotos requeridas
+var fotoIdx = -1;         // slot activo
+var codeReader = null;
+var camActiva = false;
+var _debT;
+
+// ══════════════════════════════════════════════
+// CARGA DEL NOMINAL (desde index.html subido)
+// ══════════════════════════════════════════════
+function cargarNominal(ev) {
+  var file = ev.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var html = e.target.result;
+    var ok = 0;
+    ['basica','buems','jef'].forEach(function(prog){
+      var re = new RegExp('<script[^>]+id="d-'+prog+'"[^>]*>([\\s\\S]*?)<\\/script>','i');
+      var m = html.match(re);
+      if(m){
+        try{ DB[prog] = JSON.parse(m[1].trim()); ok++; }catch(ex){}
+      }
+    });
+    if(ok === 3) {
+      DB_OK = true;
+      var total = DB.basica.reduce(function(a,s){return a+s.beneficiarios.length;},0)
+                + DB.buems.reduce(function(a,s){return a+s.beneficiarios.length;},0)
+                + DB.jef.reduce(function(a,s){return a+s.beneficiarios.length;},0);
+      document.getElementById('cargaBox').classList.add('ok');
+      document.getElementById('cargaBox').innerHTML = '<div style="font-size:1.5rem">✅</div><div class="carga-ok">'+total.toLocaleString()+' beneficiarios cargados</div>';
+      document.getElementById('cargaOk').style.display = 'none';
+      verificarLock();
+    } else {
+      alert('No se encontró el nominal en ese archivo. Asegúrate de subir el index.html correcto.');
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+// ══════════════════════════════════════════════
+// SESIÓN
+// ══════════════════════════════════════════════
+function initLock() {
+  var list = document.getElementById('lockList');
+  CAPTURISTAS.forEach(function(c){
+    var btn = document.createElement('button');
+    btn.className = 'lock-btn';
+    btn.innerHTML = '<span style="font-size:1.3rem">👤</span><div><div class="lock-btn-n">'+c.nombre+'</div><div class="lock-btn-c">CUPO: '+c.cupo+'</div></div>';
+    btn.onclick = function(){
+      document.querySelectorAll('.lock-btn').forEach(function(b){b.classList.remove('sel');});
+      btn.classList.add('sel');
+      sesion.cap = c;
+      verificarLock();
+    };
+    list.appendChild(btn);
+  });
+}
+
+function verificarLock() {
+  var btn = document.getElementById('lockStart');
+  if(sesion.cap && DB_OK) btn.classList.add('on');
+  else btn.classList.remove('on');
+}
+
+function iniciarSesion() {
+  if(!sesion.cap || !DB_OK) return;
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('hdrCap').textContent = sesion.cap.nombre + ' · ' + sesion.cap.cupo;
+}
+
+// ══════════════════════════════════════════════
+// NAVEGACIÓN
+// ══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  var map = {sCap:0, sReg:1, sCierre:2};
+  document.querySelectorAll('.nav-item').forEach(function(b,i){b.classList.toggle('active',i===map[id]);});
+  if(id==='sReg') renderReg();
+  if(id==='sCierre') renderResumen();
+}
+
+// ══════════════════════════════════════════════
+// UTILIDADES
+// ══════════════════════════════════════════════
+function norm(t){ return t?t.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''):''; }
+function matchAll(texto,q){
+  var tn=norm(texto);
+  return norm(q).split(/\s+/).filter(Boolean).every(function(tok){return tn.includes(tok);});
+}
+function esExacto(nombre,q){return norm(nombre)===norm(q);}
+function fmtFecha(f){if(!f||f==='—')return '—';var p=f.split('-').map(Number);return p[2]+'/'+p[1]+'/'+p[0];}
+
+function toast(msg, tipo) {
+  var t = document.createElement('div');
+  t.className = 'toast '+(tipo||'ok');
+  t.innerHTML = (tipo==='err'?'❌ ':'✅ ')+msg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.remove();}, 2600);
+}
+
+// ══════════════════════════════════════════════
+// CÁMARA / ESCÁNER (mismo patrón que index.html)
+// ══════════════════════════════════════════════
+function toggleCam() {
+  if(camActiva) detenerCam(); else iniciarCam();
+}
+
+function iniciarCam() {
+  var status = document.getElementById('scanStatus');
+  if(location.protocol !== 'https:' && location.hostname !== 'localhost') {
+    status.innerHTML = '<span style="color:var(--rojo)">⚠️ Cámara requiere HTTPS.</span>';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280}}})
+  .then(function(stream){
+    var video = document.getElementById('videoEl');
+    video.srcObject = stream; video.play();
+    document.getElementById('videoWrap').classList.add('active');
+    camActiva = true;
+    status.innerHTML = '🔍 Apunta al código de barras PDF417 del CURP…';
+    if(!codeReader) {
+      var hints = new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+        ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.PDF_417,
+        ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.DATA_MATRIX, ZXing.BarcodeFormat.AZTEC
+      ]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      codeReader = new ZXing.BrowserMultiFormatReader(hints);
+    }
+    codeReader.decodeFromStream(stream, video, function(result, err){
+      if(result) {
+        var txt = result.getText().trim();
+        var partes = txt.split('|');
+        var curpRaw = partes[0].toUpperCase();
+        var mC = curpRaw.match(/[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]/);
+        var curp = mC ? mC[0] : curpRaw;
+        var apPat = partes[2] ? partes[2].toUpperCase().trim() : '';
+        var apMat = partes[3] ? partes[3].toUpperCase().trim() : '';
+        var nomS  = partes[4] ? partes[4].toUpperCase().trim() : '';
+        status.innerHTML = '✅ CURP: <strong>'+curp+'</strong>'+(apPat?' · '+nomS+' '+apPat+' '+apMat:'');
+        detenerCam();
+        procesarCurp(curp, apPat, apMat, nomS);
+      }
+    });
+  })
+  .catch(function(e){
+    var msg = e.name==='NotAllowedError'?'Permiso denegado.':
+              e.name==='NotFoundError'?'No se encontró cámara.':e.message;
+    document.getElementById('scanStatus').innerHTML='<span style="color:var(--rojo)">⚠️ '+msg+'</span>';
+    camActiva=false;
+  });
+}
+
+function detenerCam() {
+  if(codeReader) codeReader.reset();
+  var v = document.getElementById('videoEl');
+  if(v.srcObject){v.srcObject.getTracks().forEach(function(t){t.stop();});v.srcObject=null;}
+  document.getElementById('videoWrap').classList.remove('active');
+  camActiva=false;
+}
+
+// ══════════════════════════════════════════════
+// PROCESAR CURP ESCANEADA
+// ══════════════════════════════════════════════
+function procesarCurp(curp, apPat, apMat, nomS) {
+  var sexo = curp[10]==='H'?'HOMBRE':'MUJER';
+  var yr = parseInt(curp.substr(4,2)); yr += (yr>25?1900:2000);
+  var edad = new Date().getFullYear()-yr;
+  var menor = edad < 18;
+
+  // Mostrar datos escaneados
+  document.getElementById('curpCode').textContent = curp;
+  var chips = document.getElementById('curpChips');
+  var nombreS = apPat?(nomS+' '+apPat+' '+apMat).trim():'';
+  chips.innerHTML =
+    (nombreS?'<span class="chip">👤 '+nombreS+'</span>':'')+
+    '<span class="chip">'+(sexo==='HOMBRE'?'👨':'👩')+' '+sexo+'</span>'+
+    '<span class="chip">🎂 '+edad+' años</span>';
+  document.getElementById('curpBox').classList.add('show');
+
+  // Buscar en nominal
+  var enc = null;
+  if(apPat && nomS) {
+    ['basica','buems','jef'].forEach(function(prog){
+      if(enc) return;
+      DB[prog].forEach(function(s){
+        if(enc) return;
+        s.beneficiarios.forEach(function(b){
+          if(enc) return;
+          var bn = norm(b.n);
+          if(bn.includes(norm(apPat)) && bn.includes(norm(nomS)))
+            enc = {b:b, s:s, prog:prog};
+        });
+      });
+    });
+  }
+
+  var nomBox = document.getElementById('nomBox');
+  if(enc) {
+    nomBox.className = 'nom-box found';
+    document.getElementById('nomNombre').className = 'nom-nombre';
+    document.getElementById('nomNombre').textContent = enc.b.n;
+    var nc = enc.prog==='basica'?(enc.s.nivel==='PRIMARIA'?'nb-prim':'nb-sec'):
+             enc.prog==='buems'?'nb-buems':'nb-jef';
+    document.getElementById('nomMeta').innerHTML =
+      '<span class="nb '+nc+'">'+enc.s.nivel+'</span> '+enc.s.nombre+' · '+enc.s.cct+'<br>'+enc.s.municipio;
+    document.getElementById('nomMatch').innerHTML = '<div class="match-ok">✅ Encontrado en el nominal</div>';
+    prepActual({curp:curp,nombre:enc.b.n,escuela:enc.s.nombre,cct:enc.s.cct,
+      nivel:enc.s.nivel||enc.prog.toUpperCase(),prog:enc.prog,municipio:enc.s.municipio,
+      fecha:enc.s.fecha,menorDeEdad:menor});
+  } else {
+    nomBox.className = 'nom-box notfound';
+    document.getElementById('nomNombre').className = 'nom-nombre warn';
+    document.getElementById('nomNombre').textContent = '⚠️ No encontrado en el nominal';
+    document.getElementById('nomMeta').textContent = nombreS||curp;
+    document.getElementById('nomMatch').innerHTML =
+      '<div class="match-warn">Puede ser otra CCT o fecha — verifique</div>';
+    prepActual({curp:curp,nombre:nombreS||curp,escuela:'—',cct:'—',
+      nivel:'—',prog:'basica',municipio:'—',fecha:'—',menorDeEdad:menor});
+  }
+}
+
+// ══════════════════════════════════════════════
+// BÚSQUEDA MANUAL
+// ══════════════════════════════════════════════
+function toggleManual() {
+  var a = document.getElementById('manualArea');
+  a.style.display = a.style.display==='none'?'block':'none';
+  if(a.style.display==='block') document.getElementById('manInput').focus();
+}
+
+function buscarManual() {
+  clearTimeout(_debT);
+  var q = document.getElementById('manInput').value.trim();
+  var res = document.getElementById('manResults');
+  if(!q){res.innerHTML='';return;}
+  document.getElementById('spinBuscar').classList.add('on');
+  _debT = setTimeout(function(){
+    document.getElementById('spinBuscar').classList.remove('on');
+    var rows=[];
+    ['basica','buems','jef'].forEach(function(prog){
+      DB[prog].forEach(function(s){
+        s.beneficiarios.forEach(function(b){
+          if(matchAll(b.n,q))
+            rows.push({b:b,s:s,prog:prog});
+        });
+      });
+    });
+    if(!rows.length){
+      res.innerHTML='<div class="alerta amarillo"><span>🔍</span><span>Sin resultados para "'+q+'"</span></div>';
+      return;
+    }
+    // Exactas primero
+    rows.sort(function(a,b){return esExacto(b.b.n,q)?1:esExacto(a.b.n,q)?-1:0;});
+    var h='<div style="font-size:.73rem;color:var(--texto-s);margin-bottom:5px">'+rows.length+' resultado'+(rows.length!==1?'s':'')+'</div>';
+    rows.slice(0,15).forEach(function(r){
+      var nc=r.prog==='basica'?(r.s.nivel==='PRIMARIA'?'nb-prim':'nb-sec'):
+             r.prog==='buems'?'nb-buems':'nb-jef';
+      var exacto=esExacto(r.b.n,q);
+      h+='<div class="man-item'+(exacto?' done':'')+'" style="'+(exacto?'border-color:var(--verde-l);background:var(--verde-xl)':'')+'" onclick="selBenef(\''+r.prog+'\','+DB[r.prog].indexOf(r.s)+',\''+r.b.n.replace(/'/g,"\\'")+'\')">'
+        +'<div class="man-nombre">'+r.b.n+(exacto?' <span style="color:var(--verde-m);font-size:.68rem">✓ exacto</span>':'')+'</div>'
+        +'<div class="man-meta"><span class="nb '+nc+'">'+r.s.nivel+'</span> '+r.s.nombre+' · '+r.s.cct+'</div>'
+        +'</div>';
+    });
+    res.innerHTML=h;
+  },280);
+}
+
+function selBenef(prog, idx, nombre) {
+  var s = DB[prog][idx];
+  var b = s.beneficiarios.find(function(x){return x.n===nombre;}) || s.beneficiarios[0];
+  document.getElementById('manResults').innerHTML='';
+  document.getElementById('manInput').value=nombre;
+  var nomBox=document.getElementById('nomBox');
+  nomBox.className='nom-box found';
+  var nc=prog==='basica'?(s.nivel==='PRIMARIA'?'nb-prim':'nb-sec'):prog==='buems'?'nb-buems':'nb-jef';
+  document.getElementById('nomNombre').className='nom-nombre';
+  document.getElementById('nomNombre').textContent=b.n;
+  document.getElementById('nomMeta').innerHTML='<span class="nb '+nc+'">'+s.nivel+'</span> '+s.nombre+' · '+s.cct+'<br>'+s.municipio;
+  document.getElementById('nomMatch').innerHTML='<div class="match-ok">✅ Seleccionado del nominal</div>';
+  prepActual({curp:'',nombre:b.n,escuela:s.nombre,cct:s.cct,
+    nivel:s.nivel||prog.toUpperCase(),prog:prog,municipio:s.municipio,
+    fecha:s.fecha,menorDeEdad:null});
+}
+
+function limpiarManual() {
+  document.getElementById('manInput').value='';
+  document.getElementById('manResults').innerHTML='';
+  resetCaptura();
+}
+
+// ══════════════════════════════════════════════
+// FOTOS
+// ══════════════════════════════════════════════
+function getFotos(prog, menor) {
+  if(prog==='basica') return [
+    {l:'Acuse lleno\ny firmado',ic:'📄'},
+    {l:'Anverso ID\ntutor/madre/padre',ic:'🪪'},
+    {l:'Reverso ID\ntutor/madre/padre',ic:'🔄'},
+    {l:'Beneficiario\ncon sobre + ID',ic:'📸'}
+  ];
+  if(menor===null) return [];
+  if(menor) return [
+    {l:'Acuse lleno\ny firmado',ic:'📄'},
+    {l:'CURP becario/a',ic:'📋'},
+    {l:'Anverso ID\ntutor',ic:'🪪'},
+    {l:'Reverso ID\ntutor',ic:'🔄'},
+    {l:'Beneficiario+sobre\ntutor+ID',ic:'📸'}
+  ];
+  return [
+    {l:'Acuse lleno\ny firmado',ic:'📄'},
+    {l:'CURP becario/a',ic:'📋'},
+    {l:'Anverso ID\nestudiante',ic:'🪪'},
+    {l:'Reverso ID\nestudiante',ic:'🔄'},
+    {l:'Beneficiario+sobre\n+ ID',ic:'📸'}
+  ];
+}
+
+function prepActual(data) {
+  actual = Object.assign({fotos:[]}, data);
+  document.getElementById('cardFotos').style.display='block';
+  var esBasica = actual.prog==='basica';
+  document.getElementById('edadArea').style.display = esBasica?'none':'block';
+  document.getElementById('alertaIne').style.display = esBasica?'flex':'none';
+  document.getElementById('btnMenor').classList.remove('sel');
+  document.getElementById('btnMayor').classList.remove('sel');
+  if(esBasica) { actual.menorDeEdad=true; renderFotoGrid(); }
+  else if(actual.menorDeEdad!==null) { setEdad(actual.menorDeEdad); }
+  else {
+    document.getElementById('fotoGrid').innerHTML=
+      '<div style="grid-column:1/-1;text-align:center;padding:14px;color:#aaa;font-size:.8rem">Selecciona la edad del becario/a</div>';
+    actualizarProg();
+  }
+}
+
+function setEdad(menor) {
+  actual.menorDeEdad = menor;
+  actual.fotos = [];
+  document.getElementById('btnMenor').classList.toggle('sel', menor===true);
+  document.getElementById('btnMayor').classList.toggle('sel', menor===false);
+  renderFotoGrid();
+}
+
+function renderFotoGrid() {
+  FOTOS_DEF = getFotos(actual.prog, actual.menorDeEdad);
+  while(actual.fotos.length < FOTOS_DEF.length) actual.fotos.push(null);
+  var grid = document.getElementById('fotoGrid');
+  grid.innerHTML='';
+  FOTOS_DEF.forEach(function(f,i){
+    var slot = document.createElement('div');
+    slot.className = 'foto-slot'+(actual.fotos[i]?' done':'');
+    slot.onclick = (function(idx){return function(){abrirFoto(idx);};})(i);
+    if(actual.fotos[i]) {
+      slot.innerHTML='<img src="'+actual.fotos[i]+'">'
+        +'<div class="foto-retake">📷 Repetir</div>'
+        +'<div class="foto-check">✓</div>';
+    } else {
+      slot.innerHTML='<div class="foto-num">Foto '+(i+1)+'</div>'
+        +'<div class="foto-icon">'+f.ic+'</div>'
+        +'<div class="foto-lbl">'+f.l.replace('\n','<br>')+'</div>';
+    }
+    grid.appendChild(slot);
+  });
+  actualizarProg();
+}
+
+function abrirFoto(idx) {
+  fotoIdx=idx;
+  document.getElementById('fotoInput').value='';
+  document.getElementById('fotoInput').click();
+}
+
+function fotoCapturada(e) {
+  var file=e.target.files[0];
+  if(!file||fotoIdx<0) return;
+  var r=new FileReader();
+  r.onload=function(ev){
+    actual.fotos[fotoIdx]=ev.target.result;
+    renderFotoGrid();
+  };
+  r.readAsDataURL(file);
+}
+
+function actualizarProg() {
+  var total=FOTOS_DEF.length;
+  var done=actual?actual.fotos.filter(Boolean).length:0;
+  document.getElementById('fotoCount').textContent=done+'/'+total+' foto'+(total!==1?'s':'');
+  document.getElementById('fotoBFill').style.width=(total?(done/total*100):0)+'%';
+  document.getElementById('btnConfirmar').disabled=(done<total||total===0);
+}
+
+// ══════════════════════════════════════════════
+// CONFIRMAR Y GUARDAR
+// ══════════════════════════════════════════════
+function mostrarConfirmar() {
+  var box=document.getElementById('confirmBox');
+  box.classList.add('show');
+  var e=actual;
+  document.getElementById('confirmRows').innerHTML=[
+    ['Beneficiario',e.nombre],['CURP',e.curp||'—'],
+    ['Nivel',e.nivel],['Escuela',e.escuela],['CCT',e.cct],
+    ['Fecha atención',fmtFecha(e.fecha)],
+    ['Fotos',actual.fotos.filter(Boolean).length+'/'+FOTOS_DEF.length],
+    ['Capturista',sesion.cap.nombre],
+    ['Hora',new Date().toLocaleTimeString('es-MX')]
+  ].map(function(r){
+    return '<div class="confirm-row"><span class="confirm-lbl">'+r[0]+'</span><span class="confirm-val">'+r[1]+'</span></div>';
+  }).join('');
+  box.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function cancelarConfirmar(){document.getElementById('confirmBox').classList.remove('show');}
+
+function guardarEntrega() {
+  var e=JSON.parse(JSON.stringify(actual));
+  e.hora=new Date().toLocaleTimeString('es-MX');
+  e.fecha_reg=new Date().toLocaleDateString('es-MX');
+  e.capturista=sesion.cap;
+  registros.push(e);
+  document.getElementById('cntNum').textContent=registros.length;
+  document.getElementById('confirmBox').classList.remove('show');
+  resetCaptura();
+  toast('Entrega #'+registros.length+' guardada');
+}
+
+function resetCaptura() {
+  actual=null; FOTOS_DEF=[];
+  document.getElementById('curpBox').classList.remove('show');
+  document.getElementById('nomBox').className='nom-box';
+  document.getElementById('cardFotos').style.display='none';
+  document.getElementById('confirmBox').classList.remove('show');
+  document.getElementById('scanStatus').innerHTML='';
+  document.getElementById('manInput').value='';
+  document.getElementById('manResults').innerHTML='';
+}
+
+// ══════════════════════════════════════════════
+// REGISTROS
+// ══════════════════════════════════════════════
+function renderReg() {
+  var div=document.getElementById('regList');
+  if(!registros.length){
+    div.innerHTML='<div style="text-align:center;padding:22px;color:#aaa;font-size:.82rem">Sin registros aún</div>';
+    return;
+  }
+  var h='';
+  registros.forEach(function(r,i){
+    var nc=r.prog==='basica'?(r.nivel==='PRIMARIA'?'nb-prim':'nb-sec'):
+           r.prog==='buems'?'nb-buems':'nb-jef';
+    h+='<div class="reg-item"><div class="reg-n">'+(i+1)+'</div>'
+      +'<div class="reg-info"><div class="reg-nombre">'+r.nombre+'</div>'
+      +'<div class="reg-meta">'+r.cct+' · '+r.hora+'</div></div>'
+      +'<span class="nb '+nc+'">'+r.nivel+'</span></div>';
+  });
+  div.innerHTML=h;
+}
+
+// ══════════════════════════════════════════════
+// CIERRE / ZIP
+// ══════════════════════════════════════════════
+function renderResumen() {
+  var t=registros.length;
+  var p=registros.filter(function(r){return r.nivel==='PRIMARIA';}).length;
+  var s=registros.filter(function(r){return r.nivel==='SECUNDARIA';}).length;
+  var b=registros.filter(function(r){return r.prog==='buems';}).length;
+  var j=registros.filter(function(r){return r.prog==='jef';}).length;
+  document.getElementById('resumenDiv').innerHTML=
+    '<b>Total entregas:</b> '+t+'<br>'
+    +'🏫 Primaria: '+p+'<br>🏛 Secundaria: '+s+'<br>🎓 BUEMS: '+b+'<br>📚 JEF: '+j+'<br>'
+    +'<br><b>Capturista:</b> '+(sesion.cap?sesion.cap.nombre+' ('+sesion.cap.cupo+')':'—')
+    +'<br><b>Fecha:</b> '+new Date().toLocaleDateString('es-MX');
+}
+
+async function generarZip() {
+  if(!registros.length){toast('Sin registros para exportar','err');return;}
+  if(typeof JSZip==='undefined'){
+    await new Promise(function(res){
+      var s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+      s.onload=res; document.head.appendChild(s);
+    });
+  }
+  var zip=new JSZip();
+  var cap=sesion.cap;
+  var root=zip.folder((cap.nombre+'_'+cap.cupo).replace(/\s+/g,'_'));
+  registros.forEach(function(r){
+    var curpDir=(r.curp||r.nombre.replace(/\s+/g,'_').substring(0,20));
+    var folder=root.folder(r.nivel||r.prog.toUpperCase()).folder(curpDir);
+    r.fotos.forEach(function(dUrl,i){
+      if(!dUrl)return;
+      var def=getFotos(r.prog,r.menorDeEdad)[i]||{};
+      var nom=String(i+1).padStart(2,'0')+'_'+(def.l||'foto').replace(/[\n\/\\]/g,'_').replace(/\s+/g,'_')+'.jpg';
+      folder.file(nom,dUrl.split(',')[1],{base64:true});
+    });
+  });
+  var blob=await zip.generateAsync({type:'blob'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=(cap.nombre+'_'+cap.cupo+'_'+new Date().toISOString().slice(0,10)+'.zip').replace(/\s+/g,'_');
+  a.click();
+  toast('ZIP generado correctamente');
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+initLock();
+</script>
+</body>
+</html>
