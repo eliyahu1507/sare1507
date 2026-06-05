@@ -530,21 +530,33 @@ function procesarCurp(curp, apPat, apMat, nomS) {
     '<span class="chip">🎂 '+edad+' años</span>';
   document.getElementById('curpBox').classList.add('show');
 
-  // Buscar en nominal
+  // Buscar en nominal — búsqueda estricta por los tres tokens AP+AM+NOM
   var enc = null;
+  var encParcial = null; // fallback si no hay exacto
   if(apPat && nomS) {
     ['basica','buems','jef'].forEach(function(prog){
-      if(enc) return;
       DB[prog].forEach(function(s){
-        if(enc) return;
         s.beneficiarios.forEach(function(b){
           if(enc) return;
           var bn = norm(b.n);
-          if(bn.includes(norm(apPat)) && bn.includes(norm(nomS)))
+          var nAP = norm(apPat);
+          var nAM = norm(apMat);
+          var nNom = norm(nomS);
+          // Nivel 1: los TRES tokens presentes (AP + AM + nombre)
+          var tieneAP  = nAP  && bn.includes(nAP);
+          var tieneAM  = nAM  && bn.includes(nAM);
+          var tieneNom = nNom && bn.includes(nNom);
+          if(tieneAP && tieneAM && tieneNom) {
             enc = {b:b, s:s, prog:prog};
+          } else if(!encParcial && tieneAP && tieneNom) {
+            // Guardar como fallback (AP + nombre, sin AM)
+            encParcial = {b:b, s:s, prog:prog};
+          }
         });
       });
     });
+    // Si no hubo coincidencia con los 3 tokens, usar el parcial (AP+nombre)
+    if(!enc && encParcial) enc = encParcial;
   }
 
   var nomBox = document.getElementById('nomBox');
@@ -725,12 +737,30 @@ function abrirFoto(idx) {
 function fotoCapturada(e) {
   var file=e.target.files[0];
   if(!file||fotoIdx<0) return;
-  var r=new FileReader();
-  r.onload=function(ev){
-    actual.fotos[fotoIdx]=ev.target.result;
-    renderFotoGrid();
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    // Comprimir imagen con canvas antes de guardar
+    var img=new Image();
+    img.onload=function(){
+      var canvas=document.createElement('canvas');
+      var maxW=1280, maxH=1280;
+      var w=img.width, h=img.height;
+      // Escalar manteniendo proporción
+      if(w>maxW||h>maxH){
+        var ratio=Math.min(maxW/w,maxH/h);
+        w=Math.round(w*ratio); h=Math.round(h*ratio);
+      }
+      canvas.width=w; canvas.height=h;
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      // Calidad 0.75 → ~400-700KB para fotos de documento
+      var compressed=canvas.toDataURL('image/jpeg',0.75);
+      actual.fotos[fotoIdx]=compressed;
+      renderFotoGrid();
+    };
+    img.src=ev.target.result;
   };
-  r.readAsDataURL(file);
+  reader.readAsDataURL(file);
 }
 
 function actualizarProg() {
