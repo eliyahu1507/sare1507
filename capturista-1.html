@@ -185,6 +185,11 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--tex
     <div style="font-size:1.5rem;margin-bottom:5px">📂</div>
     <div class="carga-txt">Toca aquí para cargar el<br><strong style="color:#fff">index.html</strong> (nominal)</div>
   </div>
+  <div id="recargaArea" style="display:none;width:100%;max-width:340px;margin-bottom:12px;text-align:center">
+    <button onclick="document.getElementById('inputNominal').click()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:9px;color:#fff;padding:9px 16px;font-size:.8rem;font-weight:700;cursor:pointer;width:100%">
+      🔄 Cargar nominal diferente
+    </button>
+  </div>
   <div class="carga-ok" id="cargaOk" style="display:none;margin-bottom:12px"></div>
   <input type="file" id="inputNominal" accept=".html" style="display:none" onchange="cargarNominal(event)">
 
@@ -363,40 +368,90 @@ function cargarNominal(ev) {
   if(!file) return;
   var reader = new FileReader();
   reader.onload = function(e) {
-    var html = e.target.result;
+    var txt = e.target.result;
     var ok = 0;
     ['basica','buems','jef'].forEach(function(prog){
       var re = new RegExp('<script[^>]+id="d-'+prog+'"[^>]*>([\\s\\S]*?)<\\/script>','i');
-      var m = html.match(re);
+      var m = txt.match(re);
       if(m){
-        try{ DB[prog] = JSON.parse(m[1].trim()); ok++; }catch(ex){}
+        try{
+          DB[prog] = JSON.parse(m[1].trim());
+          try{ localStorage.setItem('sare1507_'+prog, m[1].trim()); }catch(ex){}
+          ok++;
+        }catch(ex){}
       }
     });
     if(ok === 3) {
       DB_OK = true;
-      var total = DB.basica.reduce(function(a,s){return a+s.beneficiarios.length;},0)
-                + DB.buems.reduce(function(a,s){return a+s.beneficiarios.length;},0)
-                + DB.jef.reduce(function(a,s){return a+s.beneficiarios.length;},0);
-      document.getElementById('cargaBox').classList.add('ok');
-      document.getElementById('cargaBox').innerHTML = '<div style="font-size:1.5rem">✅</div><div class="carga-ok">'+total.toLocaleString()+' beneficiarios cargados</div>';
-      document.getElementById('cargaOk').style.display = 'none';
+      try{ localStorage.setItem('sare1507_fecha', new Date().toLocaleDateString('es-MX')); }catch(ex){}
+      var total = contarTotal();
+      mostrarNominalOk(total, false);
       verificarLock();
     } else {
-      alert('No se encontró el nominal en ese archivo. Asegúrate de subir el index.html correcto.');
+      alert('No se encontró el nominal. Asegúrate de subir el index.html correcto.');
     }
   };
   reader.readAsText(file, 'utf-8');
 }
 
+function contarTotal() {
+  return DB.basica.reduce(function(a,s){return a+s.beneficiarios.length;},0)
+       + DB.buems.reduce(function(a,s){return a+s.beneficiarios.length;},0)
+       + DB.jef.reduce(function(a,s){return a+s.beneficiarios.length;},0);
+}
+
+function mostrarNominalOk(total, desdeCache) {
+  var box = document.getElementById('cargaBox');
+  box.classList.add('ok');
+  var fecha = '';
+  try{ fecha = localStorage.getItem('sare1507_fecha') || ''; }catch(ex){}
+  box.innerHTML = '<div style="font-size:1.5rem">&#x2705;</div>'
+    + '<div class="carga-ok">'+total.toLocaleString()+' beneficiarios cargados</div>'
+    + (desdeCache ? '<div style="font-size:.68rem;color:rgba(255,255,255,.75);margin-top:2px">&#x1F4E6; Guardado el '+fecha+'</div>'
+                  + '<div style="font-size:.65rem;color:rgba(255,255,255,.55);text-decoration:underline;cursor:pointer;margin-top:2px" onclick="document.getElementById(\'inputNominal\').click()">Actualizar nominal</div>' : '');
+}
+
+function cargarDesdeCache() {
+  try {
+    var ok = 0;
+    ['basica','buems','jef'].forEach(function(prog){
+      var raw = localStorage.getItem('sare1507_'+prog);
+      if(raw){ DB[prog] = JSON.parse(raw); ok++; }
+    });
+    if(ok === 3) {
+      DB_OK = true;
+      mostrarNominalOk(contarTotal(), true);
+      return true;
+    }
+  } catch(ex){}
+  return false;
+}
+
+
 // ══════════════════════════════════════════════
 // SESIÓN
 // ══════════════════════════════════════════════
+var CAPTURISTAS = [
+  {cupo:159415, nombre:'JOSE ELIAS CERVANTES JIMENEZ'}
+];
+var DB = {basica:[], buems:[], jef:[]};
+var DB_OK = false;
+var sesion = {cap: null};
+var registros = [];
+var actual = null;
+var FOTOS_DEF = [];
+var fotoIdx = -1;
+var codeReader = null;
+var camActiva = false;
+var _debT;
+
 function initLock() {
+  if(cargarDesdeCache()) verificarLock();
   var list = document.getElementById('lockList');
   CAPTURISTAS.forEach(function(c){
     var btn = document.createElement('button');
     btn.className = 'lock-btn';
-    btn.innerHTML = '<span style="font-size:1.3rem">👤</span><div><div class="lock-btn-n">'+c.nombre+'</div><div class="lock-btn-c">CUPO: '+c.cupo+'</div></div>';
+    btn.innerHTML = '<span style="font-size:1.3rem">&#x1F464;</span><div><div class="lock-btn-n">'+c.nombre+'</div><div class="lock-btn-c">CUPO: '+c.cupo+'</div></div>';
     btn.onclick = function(){
       document.querySelectorAll('.lock-btn').forEach(function(b){b.classList.remove('sel');});
       btn.classList.add('sel');
@@ -417,6 +472,15 @@ function iniciarSesion() {
   if(!sesion.cap || !DB_OK) return;
   document.getElementById('lockScreen').style.display = 'none';
   document.getElementById('hdrCap').textContent = sesion.cap.nombre + ' · ' + sesion.cap.cupo;
+  // Mostrar estado del nominal en el header
+  var totalBen = DB.basica.reduce(function(a,s){return a+s.beneficiarios.length;},0)
+               + DB.buems.reduce(function(a,s){return a+s.beneficiarios.length;},0)
+               + DB.jef.reduce(function(a,s){return a+s.beneficiarios.length;},0);
+  document.getElementById('hdrCap').title = totalBen.toLocaleString() + ' beneficiarios cargados';
+  // Mostrar alerta si DB está vacía
+  if(totalBen === 0) {
+    alert('⚠️ El nominal se cargó vacío. Vuelve a cargar el index.html correcto.');
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -434,7 +498,7 @@ function showScreen(id) {
 // ══════════════════════════════════════════════
 // UTILIDADES
 // ══════════════════════════════════════════════
-function norm(t){ return t?t.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''):''; }
+function norm(t){ return t?t.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,''):''; }
 function matchAll(texto,q){
   var tn=norm(texto);
   return norm(q).split(/\s+/).filter(Boolean).every(function(tok){return tn.includes(tok);});
@@ -445,22 +509,20 @@ function fmtFecha(f){if(!f||f==='—')return '—';var p=f.split('-').map(Number
 function toast(msg, tipo) {
   var t = document.createElement('div');
   t.className = 'toast '+(tipo||'ok');
-  t.innerHTML = (tipo==='err'?'❌ ':'✅ ')+msg;
+  t.innerHTML = (tipo==='err'?'&#x274C; ':'&#x2705; ')+msg;
   document.body.appendChild(t);
   setTimeout(function(){t.remove();}, 2600);
 }
 
 // ══════════════════════════════════════════════
-// CÁMARA / ESCÁNER (mismo patrón que index.html)
+// CÁMARA / ESCÁNER
 // ══════════════════════════════════════════════
-function toggleCam() {
-  if(camActiva) detenerCam(); else iniciarCam();
-}
+function toggleCam() { if(camActiva) detenerCam(); else iniciarCam(); }
 
 function iniciarCam() {
   var status = document.getElementById('scanStatus');
   if(location.protocol !== 'https:' && location.hostname !== 'localhost') {
-    status.innerHTML = '<span style="color:var(--rojo)">⚠️ Cámara requiere HTTPS.</span>';
+    status.innerHTML = '<span style="color:var(--rojo)">&#x26A0;&#xFE0F; Cámara requiere HTTPS.</span>';
     return;
   }
   navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280}}})
@@ -469,7 +531,7 @@ function iniciarCam() {
     video.srcObject = stream; video.play();
     document.getElementById('videoWrap').classList.add('active');
     camActiva = true;
-    status.innerHTML = '🔍 Apunta al código de barras PDF417 del CURP…';
+    status.innerHTML = '&#x1F50D; Apunta al código de barras PDF417 del CURP…';
     if(!codeReader) {
       var hints = new Map();
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
@@ -489,7 +551,7 @@ function iniciarCam() {
         var apPat = partes[2] ? partes[2].toUpperCase().trim() : '';
         var apMat = partes[3] ? partes[3].toUpperCase().trim() : '';
         var nomS  = partes[4] ? partes[4].toUpperCase().trim() : '';
-        status.innerHTML = '✅ CURP: <strong>'+curp+'</strong>'+(apPat?' · '+nomS+' '+apPat+' '+apMat:'');
+        status.innerHTML = '&#x2705; CURP: <strong>'+curp+'</strong>'+(apPat?' · '+nomS+' '+apPat+' '+apMat:'');
         detenerCam();
         procesarCurp(curp, apPat, apMat, nomS);
       }
@@ -498,7 +560,7 @@ function iniciarCam() {
   .catch(function(e){
     var msg = e.name==='NotAllowedError'?'Permiso denegado.':
               e.name==='NotFoundError'?'No se encontró cámara.':e.message;
-    document.getElementById('scanStatus').innerHTML='<span style="color:var(--rojo)">⚠️ '+msg+'</span>';
+    document.getElementById('scanStatus').innerHTML='<span style="color:var(--rojo)">&#x26A0;&#xFE0F; '+msg+'</span>';
     camActiva=false;
   });
 }
@@ -512,7 +574,7 @@ function detenerCam() {
 }
 
 // ══════════════════════════════════════════════
-// PROCESAR CURP ESCANEADA
+// PROCESAR CURP
 // ══════════════════════════════════════════════
 function procesarCurp(curp, apPat, apMat, nomS) {
   var sexo = curp[10]==='H'?'HOMBRE':'MUJER';
@@ -520,27 +582,23 @@ function procesarCurp(curp, apPat, apMat, nomS) {
   var edad = new Date().getFullYear()-yr;
   var menor = edad < 18;
 
-  // Mostrar datos escaneados
   document.getElementById('curpCode').textContent = curp;
   var chips = document.getElementById('curpChips');
   var nombreS = apPat?(nomS+' '+apPat+' '+apMat).trim():'';
   chips.innerHTML =
-    (nombreS?'<span class="chip">👤 '+nombreS+'</span>':'')+
-    '<span class="chip">'+(sexo==='HOMBRE'?'👨':'👩')+' '+sexo+'</span>'+
-    '<span class="chip">🎂 '+edad+' años</span>';
+    (nombreS?'<span class="chip">&#x1F464; '+nombreS+'</span>':'')+
+    '<span class="chip">'+(sexo==='HOMBRE'?'&#x1F468;':'&#x1F469;')+' '+sexo+'</span>'+
+    '<span class="chip">&#x1F382; '+edad+' años</span>';
   document.getElementById('curpBox').classList.add('show');
 
-  // Buscar en nominal — verificación POSICIONAL con tolerancia de nombre compuesto
-  // DB format: "APPATERNO APMATERNO NOMBRE(S)"
-  // El PDF417 puede dar nombre compuesto "SERGIO EDRIC" pero DB solo tiene "SERGIO"
-  // Por eso usamos solo el PRIMER token del nombre para comparar
+  // Búsqueda POSICIONAL con tolerancia de nombre compuesto
   var enc = null;
   var encParcial = null;
   if(apPat && nomS) {
     var nAP   = norm(apPat);
     var nAM   = norm(apMat);
     var nNom  = norm(nomS);
-    var nNom1 = nNom.split(/\s+/)[0]; // primer nombre (por si es compuesto)
+    var nNom1 = nNom.split(/\s+/)[0];
     ['basica','buems','jef'].forEach(function(prog){
       DB[prog].forEach(function(s){
         s.beneficiarios.forEach(function(b){
@@ -548,13 +606,11 @@ function procesarCurp(curp, apPat, apMat, nomS) {
           var partes = norm(b.n).split(/\s+/);
           var resto  = partes.slice(2).join(' ');
           var resto1 = partes.slice(1).join(' ');
-          // Nivel 1 ESTRICTO: AP[0] + AM[1] + primer nombre en [2+]
           if(partes.length >= 3 &&
              partes[0] === nAP &&
              partes[1] === nAM &&
              (resto.includes(nNom) || resto.includes(nNom1))) {
             enc = {b:b, s:s, prog:prog};
-          // Nivel 2: AP[0] correcto + primer nombre en resto
           } else if(!encParcial && partes.length >= 2 &&
                     partes[0] === nAP &&
                     (resto1.includes(nNom) || resto1.includes(nNom1))) {
@@ -564,6 +620,12 @@ function procesarCurp(curp, apPat, apMat, nomS) {
       });
     });
     if(!enc && encParcial) enc = encParcial;
+    console.log('🔍 Resultado búsqueda nombre:', enc ? enc.b.n + ' en ' + enc.s.cct : 'no encontrado');
+    console.log('🔍 Primeros 3 del DB basica:', DB.basica.slice(0,3).map(function(s){return s.beneficiarios[0] ? s.beneficiarios[0].n : '?';}));
+  }
+
+  if(!enc) {
+    console.log('❌ No encontrado. DB sizes:', DB.basica.length, DB.buems.length, DB.jef.length);
   }
 
   var nomBox = document.getElementById('nomBox');
@@ -575,14 +637,14 @@ function procesarCurp(curp, apPat, apMat, nomS) {
              enc.prog==='buems'?'nb-buems':'nb-jef';
     document.getElementById('nomMeta').innerHTML =
       '<span class="nb '+nc+'">'+enc.s.nivel+'</span> '+enc.s.nombre+' · '+enc.s.cct+'<br>'+enc.s.municipio;
-    document.getElementById('nomMatch').innerHTML = '<div class="match-ok">✅ Encontrado en el nominal</div>';
+    document.getElementById('nomMatch').innerHTML = '<div class="match-ok">&#x2705; Encontrado en el nominal</div>';
     prepActual({curp:curp,nombre:enc.b.n,escuela:enc.s.nombre,cct:enc.s.cct,
       nivel:enc.s.nivel||enc.prog.toUpperCase(),prog:enc.prog,municipio:enc.s.municipio,
       fecha:enc.s.fecha,menorDeEdad:menor});
   } else {
     nomBox.className = 'nom-box notfound';
     document.getElementById('nomNombre').className = 'nom-nombre warn';
-    document.getElementById('nomNombre').textContent = '⚠️ No encontrado en el nominal';
+    document.getElementById('nomNombre').textContent = '&#x26A0;&#xFE0F; No encontrado en el nominal';
     document.getElementById('nomMeta').textContent = nombreS||curp;
     document.getElementById('nomMatch').innerHTML =
       '<div class="match-warn">Puede ser otra CCT o fecha — verifique</div>';
@@ -618,20 +680,19 @@ function buscarManual() {
       });
     });
     if(!rows.length){
-      res.innerHTML='<div class="alerta amarillo"><span>🔍</span><span>Sin resultados para "'+q+'"</span></div>';
+      res.innerHTML='<div class="alerta amarillo"><span>&#x1F50D;</span><span>Sin resultados para "'+q+'"</span></div>';
       return;
     }
-    // Exactas primero
     rows.sort(function(a,b){return esExacto(b.b.n,q)?1:esExacto(a.b.n,q)?-1:0;});
     var h='<div style="font-size:.73rem;color:var(--texto-s);margin-bottom:5px">'+rows.length+' resultado'+(rows.length!==1?'s':'')+'</div>';
     rows.slice(0,15).forEach(function(r){
       var nc=r.prog==='basica'?(r.s.nivel==='PRIMARIA'?'nb-prim':'nb-sec'):
              r.prog==='buems'?'nb-buems':'nb-jef';
       var exacto=esExacto(r.b.n,q);
-      h+='<div class="man-item'+(exacto?' done':'')+'" style="'+(exacto?'border-color:var(--verde-l);background:var(--verde-xl)':'')+'" onclick="selBenef(\''+r.prog+'\','+DB[r.prog].indexOf(r.s)+',\''+r.b.n.replace(/'/g,"\\'")+'\')">'
-        +'<div class="man-nombre">'+r.b.n+(exacto?' <span style="color:var(--verde-m);font-size:.68rem">✓ exacto</span>':'')+'</div>'
-        +'<div class="man-meta"><span class="nb '+nc+'">'+r.s.nivel+'</span> '+r.s.nombre+' · '+r.s.cct+'</div>'
-        +'</div>';
+      h+='<div class="man-item" style="'+(exacto?'border-color:var(--verde-l);background:var(--verde-xl)':'')+'" onclick="selBenef(''+r.prog+'','+DB[r.prog].indexOf(r.s)+',''+r.b.n.replace(/\/g,'\\').replace(/'/g,"\'")+'')">'+
+        '<div class="man-nombre">'+r.b.n+(exacto?' <span style="color:var(--verde-m);font-size:.68rem">&#x2713; exacto</span>':'')+'</div>'+
+        '<div class="man-meta"><span class="nb '+nc+'">'+r.s.nivel+'</span> '+r.s.nombre+' · '+r.s.cct+'</div>'+
+        '</div>';
     });
     res.innerHTML=h;
   },280);
@@ -648,7 +709,7 @@ function selBenef(prog, idx, nombre) {
   document.getElementById('nomNombre').className='nom-nombre';
   document.getElementById('nomNombre').textContent=b.n;
   document.getElementById('nomMeta').innerHTML='<span class="nb '+nc+'">'+s.nivel+'</span> '+s.nombre+' · '+s.cct+'<br>'+s.municipio;
-  document.getElementById('nomMatch').innerHTML='<div class="match-ok">✅ Seleccionado del nominal</div>';
+  document.getElementById('nomMatch').innerHTML='<div class="match-ok">&#x2705; Seleccionado del nominal</div>';
   prepActual({curp:'',nombre:b.n,escuela:s.nombre,cct:s.cct,
     nivel:s.nivel||prog.toUpperCase(),prog:prog,municipio:s.municipio,
     fecha:s.fecha,menorDeEdad:null});
@@ -665,25 +726,37 @@ function limpiarManual() {
 // ══════════════════════════════════════════════
 function getFotos(prog, menor) {
   if(prog==='basica') return [
-    {l:'Acuse lleno\ny firmado',ic:'📄'},
-    {l:'Anverso ID\ntutor/madre/padre',ic:'🪪'},
-    {l:'Reverso ID\ntutor/madre/padre',ic:'🔄'},
-    {l:'Beneficiario\ncon sobre + ID',ic:'📸'}
+    {l:'Acuse lleno
+y firmado',ic:'&#x1F4C4;'},
+    {l:'Anverso ID
+tutor/madre/padre',ic:'&#x1FAA6;'},
+    {l:'Reverso ID
+tutor/madre/padre',ic:'&#x1F504;'},
+    {l:'Beneficiario
+con sobre + ID',ic:'&#x1F4F8;'}
   ];
   if(menor===null) return [];
   if(menor) return [
-    {l:'Acuse lleno\ny firmado',ic:'📄'},
-    {l:'CURP becario/a',ic:'📋'},
-    {l:'Anverso ID\ntutor',ic:'🪪'},
-    {l:'Reverso ID\ntutor',ic:'🔄'},
-    {l:'Beneficiario+sobre\ntutor+ID',ic:'📸'}
+    {l:'Acuse lleno
+y firmado',ic:'&#x1F4C4;'},
+    {l:'CURP becario/a',ic:'&#x1F4CB;'},
+    {l:'Anverso ID
+tutor',ic:'&#x1FAA6;'},
+    {l:'Reverso ID
+tutor',ic:'&#x1F504;'},
+    {l:'Beneficiario+sobre
+tutor+ID',ic:'&#x1F4F8;'}
   ];
   return [
-    {l:'Acuse lleno\ny firmado',ic:'📄'},
-    {l:'CURP becario/a',ic:'📋'},
-    {l:'Anverso ID\nestudiante',ic:'🪪'},
-    {l:'Reverso ID\nestudiante',ic:'🔄'},
-    {l:'Beneficiario+sobre\n+ ID',ic:'📸'}
+    {l:'Acuse lleno
+y firmado',ic:'&#x1F4C4;'},
+    {l:'CURP becario/a',ic:'&#x1F4CB;'},
+    {l:'Anverso ID
+estudiante',ic:'&#x1FAA6;'},
+    {l:'Reverso ID
+estudiante',ic:'&#x1F504;'},
+    {l:'Beneficiario+sobre
++ ID',ic:'&#x1F4F8;'}
   ];
 }
 
@@ -723,12 +796,13 @@ function renderFotoGrid() {
     slot.onclick = (function(idx){return function(){abrirFoto(idx);};})(i);
     if(actual.fotos[i]) {
       slot.innerHTML='<img src="'+actual.fotos[i]+'">'
-        +'<div class="foto-retake">📷 Repetir</div>'
-        +'<div class="foto-check">✓</div>';
+        +'<div class="foto-retake">&#x1F4F7; Repetir</div>'
+        +'<div class="foto-check">&#x2713;</div>';
     } else {
       slot.innerHTML='<div class="foto-num">Foto '+(i+1)+'</div>'
         +'<div class="foto-icon">'+f.ic+'</div>'
-        +'<div class="foto-lbl">'+f.l.replace('\n','<br>')+'</div>';
+        +'<div class="foto-lbl">'+f.l.replace('
+','<br>')+'</div>';
     }
     grid.appendChild(slot);
   });
@@ -746,23 +820,18 @@ function fotoCapturada(e) {
   if(!file||fotoIdx<0) return;
   var reader=new FileReader();
   reader.onload=function(ev){
-    // Comprimir imagen con canvas antes de guardar
     var img=new Image();
     img.onload=function(){
       var canvas=document.createElement('canvas');
       var maxW=1280, maxH=1280;
       var w=img.width, h=img.height;
-      // Escalar manteniendo proporción
       if(w>maxW||h>maxH){
         var ratio=Math.min(maxW/w,maxH/h);
         w=Math.round(w*ratio); h=Math.round(h*ratio);
       }
       canvas.width=w; canvas.height=h;
-      var ctx=canvas.getContext('2d');
-      ctx.drawImage(img,0,0,w,h);
-      // Calidad 0.75 → ~400-700KB para fotos de documento
-      var compressed=canvas.toDataURL('image/jpeg',0.75);
-      actual.fotos[fotoIdx]=compressed;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      actual.fotos[fotoIdx]=canvas.toDataURL('image/jpeg',0.75);
       renderFotoGrid();
     };
     img.src=ev.target.result;
@@ -855,7 +924,7 @@ function renderResumen() {
   var j=registros.filter(function(r){return r.prog==='jef';}).length;
   document.getElementById('resumenDiv').innerHTML=
     '<b>Total entregas:</b> '+t+'<br>'
-    +'🏫 Primaria: '+p+'<br>🏛 Secundaria: '+s+'<br>🎓 BUEMS: '+b+'<br>📚 JEF: '+j+'<br>'
+    +'&#x1F3EB; Primaria: '+p+'<br>&#x1F3DB; Secundaria: '+s+'<br>&#x1F393; BUEMS: '+b+'<br>&#x1F4DA; JEF: '+j+'<br>'
     +'<br><b>Capturista:</b> '+(sesion.cap?sesion.cap.nombre+' ('+sesion.cap.cupo+')':'—')
     +'<br><b>Fecha:</b> '+new Date().toLocaleDateString('es-MX');
 }
