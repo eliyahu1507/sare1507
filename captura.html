@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Captura · SARE 1507</title>
+<!-- Librerías de Decodificación y Compresión en ZIP -->
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
@@ -22,10 +23,6 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
 .lock{position:fixed;inset:0;background:linear-gradient(160deg,#1a3d1a,var(--vm));z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;overflow-y:auto}
 .lock h1{font-family:'Montserrat',sans-serif;font-size:1.3rem;font-weight:900;color:#fff;margin:10px 0 4px}
 .lock p{color:rgba(255,255,255,.7);font-size:.82rem;margin-bottom:18px}
-.carga-box{width:100%;max-width:340px;background:rgba(255,255,255,.1);border:2px dashed rgba(255,255,255,.3);border-radius:12px;padding:16px;text-align:center;cursor:pointer;margin-bottom:12px;transition:all .2s}
-.carga-box.ok{border-color:var(--d);background:rgba(200,147,10,.2)}
-.carga-box p{color:rgba(255,255,255,.85);font-size:.82rem;line-height:1.5;margin:0}
-.carga-ok{color:var(--d);font-weight:700;font-size:.85rem}
 .lock-list{width:100%;max-width:340px;display:grid;gap:8px;margin:12px 0}
 .lock-btn{background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .18s;width:100%;text-align:left}
 .lock-btn.sel{background:rgba(255,255,255,.22);border-color:var(--d)}
@@ -91,7 +88,6 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
 .nmeta{font-size:.76rem;color:var(--ts);line-height:1.6}
 .nb{display:inline-block;padding:2px 7px;border-radius:7px;font-size:.66rem;font-weight:700;margin-right:3px}
 .nb-p{background:#FCE4EC;color:var(--g)}.nb-s{background:#E3F2FD;color:var(--az)}
-.nb-b{background:#E1F5FE;color:#0288D1}.nb-j{background:#EDE7F6;color:#5E35B1}
 .mok{color:var(--vm);font-weight:700;font-size:.8rem;margin-top:4px}
 .mko{color:var(--r);font-weight:700;font-size:.8rem;margin-top:4px}
 
@@ -131,14 +127,18 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
 /* REGS LIST */
 .ritem{border:1.5px solid var(--b);border-radius:10px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px}
 .rn{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.1rem;color:var(--vm);width:26px;text-align:center;flex-shrink:0}
-.ri{flex:1;min-width:0}
 .ri-n{font-weight:700;font-size:.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ri-m{font-size:.7rem;color:var(--ts)}
 
-/* CIERRE CONTROL PANEL */
+/* CIERRE CONTROL PANEL AND TABLES */
 .zpanel{background:linear-gradient(135deg,var(--v),var(--vm));border-radius:14px;padding:18px;text-align:center;color:#fff}
 .zpanel p{font-size:.76rem;opacity:.85;margin:5px 0 14px}
 .zbtn{background:var(--w);color:var(--v);border:none;border-radius:10px;padding:12px;font-family:'Montserrat',sans-serif;font-size:.85rem;font-weight:800;cursor:pointer;width:100%}
+
+.stat-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.82rem}
+.stat-table th{background:var(--vx);color:var(--v);font-family:'Montserrat',sans-serif;font-weight:700;padding:8px;text-align:left;border-bottom:2px solid var(--vl)}
+.stat-table td{padding:8px;border-bottom:1px solid var(--b);color:var(--t)}
+.stat-table tr:last-child{font-weight:700;background:#fafafa}
 
 /* GENERAL ALERTS */
 .al{border-radius:10px;padding:9px 12px;font-size:.8rem;line-height:1.5;margin-top:8px;display:flex;gap:7px}
@@ -147,28 +147,25 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
 .al.ar{background:var(--rx);border:1px solid #EF9A9A;color:var(--r)}
 
 /* INTERACTIVE TOASTS */
-.toast{position:fixed;top:74px;left:13px;right:13px;z-index:400;border-radius:10px;padding:11px 14px;font-weight:700;font-size:.83rem;display:flex;gap:8px;animation:fi .2s ease;pointer-events:none}
+.toast{position:fixed;top:15px;left:13px;right:13px;z-index:600;border-radius:10px;padding:11px 14px;font-weight:700;font-size:.83rem;display:flex;gap:8px;animation:fi .2s ease;pointer-events:none;box-shadow:0 3px 10px rgba(0,0,0,.2)}
 .toast.ok{background:var(--v);color:#fff}.toast.er{background:var(--r);color:#fff}
 </style>
 </head>
 <body>
 
+<!-- LOCK LOGIN SCREEN -->
 <div class="lock" id="lock">
   <div style="font-size:2.8rem">📋</div>
   <h1>Captura de Entregas</h1>
   <p>SARE 1507 · Becas Bienestar</p>
 
-  <div class="carga-box" id="cargaBox" onclick="document.getElementById('inNom').click()">
-    <div style="font-size:1.4rem;margin-bottom:5px">📂</div>
-    <p>Toca aquí para cargar el<br><strong style="color:#fff">index.html</strong> (nominal)</p>
-  </div>
-  <input type="file" id="inNom" accept=".html" style="display:none" onchange="cargarNominal(this)">
-
-  <div style="color:rgba(255,255,255,.9);font-size:.8rem;margin-top:8px;font-weight:600">Selecciona tu Nombre:</div>
   <div class="lock-list" id="lockList"></div>
   <button class="lock-go" id="lockGo" onclick="iniciar()">Iniciar sesión →</button>
+  
+  <div style="margin-top:20px; font-size:.75rem; color:rgba(255,255,255,.5);" id="dbStatus">Comprobando base nominal integrada...</div>
 </div>
 
+<!-- HEADER LOGISTICS -->
 <div class="hdr">
   <div class="hdr-l">
     <div style="font-size:1.4rem">📋</div>
@@ -183,14 +180,17 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
   </div>
 </div>
 
+<!-- BOTTOM NAVIGATION -->
 <div class="nav">
   <button class="on" id="n0" onclick="ir('s1',0)"><i>📷</i>Capturar</button>
   <button id="n1" onclick="ir('s2',1)"><i>📋</i>Registros</button>
   <button id="n2" onclick="ir('s3',2)"><i>📦</i>Cierre</button>
 </div>
 
+<!-- MAIN APPLICATIONS WINDOW -->
 <div class="main">
 
+  <!-- CAPTURA SCREEN -->
   <div class="scr on" id="s1">
     <div class="card">
       <div class="ct"><span class="badge">1</span>Buscar beneficiario</div>
@@ -199,12 +199,14 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
         <button class="btn bo" onclick="togMan()">✏️ Búsqueda Manual</button>
       </div>
 
+      <!-- Live Video Target -->
       <div class="vwrap" id="vwrap">
         <video id="vid" playsinline muted autoplay></video>
         <div class="scanline"></div>
       </div>
       <div class="sstatus" id="ss"></div>
 
+      <!-- Manual Matching Box -->
       <div id="mArea" style="display:none;margin-top:8px">
         <div class="irow">
           <input class="inp" id="mInp" placeholder="Escribe Apellidos, Nombre o CURP..." oninput="buscar()">
@@ -213,11 +215,13 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
         <div id="mRes" style="margin-top:8px"></div>
       </div>
 
+      <!-- Render Scanner Read Values -->
       <div class="cbox" id="cbox">
         <div class="ccode" id="ccode"></div>
         <div class="cchips" id="cchips"></div>
       </div>
 
+      <!-- Data Base Nominal Check Result -->
       <div class="nbox" id="nbox">
         <div class="nnm" id="nnm"></div>
         <div class="nmeta" id="nmeta"></div>
@@ -225,9 +229,11 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
       </div>
     </div>
 
+    <!-- PHOTOS INTEGRATION SCREEN -->
     <div class="card" id="cFotos" style="display:none">
       <div class="ct"><span class="badge">2</span>Evidencias Fotográficas</div>
 
+      <!-- Condition Toggle for Higher Education Modalities -->
       <div id="eArea" style="display:none;margin-bottom:12px">
         <div style="font-size:.8rem;color:var(--ts);margin-bottom:4px">¿El/la becario/a es…?</div>
         <div class="erow">
@@ -236,6 +242,7 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
         </div>
       </div>
 
+      <!-- Photo Matrix -->
       <div class="fgrid" id="fGrid"></div>
       <div class="fprog">
         <span id="fProgTxt">0/4</span>
@@ -245,6 +252,7 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
       <button class="btn bp" style="width:100%;margin-top:14px" id="bConf" onclick="mostrarConf()" disabled>✅ Confirmar captura</button>
     </div>
 
+    <!-- CONFIRMATION SUMMARY STEP -->
     <div class="cfbox" id="cfbox">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:.85rem;color:var(--vm);margin-bottom:9px">✅ Resumen de Entrega</div>
       <div id="cfRows"></div>
@@ -255,6 +263,7 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
     </div>
   </div>
 
+  <!-- REGISTROS LIST SCREEN -->
   <div class="scr" id="s2">
     <div class="card">
       <div class="ct">📋 Registros Capturados Localmente</div>
@@ -262,11 +271,19 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
     </div>
   </div>
 
+  <!-- CIERRE Y RESPALDO SCREEN -->
   <div class="scr" id="s3">
+    <!-- MÓDULO DE ESTADÍSTICA GLOBAL PARA CONCILIACIÓN FÍSICA -->
     <div class="card">
-      <div class="ct">📊 Resumen del Turno</div>
-      <div id="rResumen" style="font-size:.84rem;color:var(--ts);line-height:1.9"></div>
+      <div class="ct">📊 Estadística Global de Monitoreo</div>
+      <p style="font-size:.76rem;color:var(--ts);margin-bottom:8px">Usa esta tabla para validar la cantidad de tarjetas procesadas contra tus expedientes en físico.</p>
+      <div id="wrapperTablaGlobal"></div>
     </div>
+
+    <div class="card" style="display:none">
+      <div id="rResumen"></div>
+    </div>
+
     <div class="zpanel">
       <div style="font-size:2rem">📦</div>
       <h3 style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900">Generar Respaldo Estructurado</h3>
@@ -277,30 +294,30 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);
   </div>
 </div>
 
+<!-- HIDDEN INPUT DEVICE CAMERA TRIGGER -->
 <input type="file" id="fInp" accept="image/*" capture="environment" style="display:none" onchange="fotoOk(this)">
 
 <script>
 // ==========================================
-// ESTADO GLOBAL Y OPERADORES
+// ESTADO GLOBAL Y OPERADORES (ACTUALIZADO)
 // ==========================================
 var CAPS = [
   {cupo:159415, nombre:'JOSE ELIAS CERVANTES JIMENEZ'},
-  {cupo:150701, nombre:'MICHELLE MACIAS'},
   {cupo:150702, nombre:'EMMA ESCOBAR'},
   {cupo:150703, nombre:'JOSELYN MORALES'}
 ];
 var DB = {basica:[], buems:[], jef:[]};
 var SES = {cap:null, dbOk:false};
 var REGS = [];
-var ACT = null;       // Entrega activa en proceso
-var FDEF = [];        // Definiciones de fotos dinámicas asignadas
-var FIDX = -1;        // Índice del slot fotográfico activo
-var CR = null;        // ZXing Reader
-var CAM = false;      // Bandera de control de cámara activa
-var DT;               // Debounce timer búsquedas
+var ACT = null;       
+var FDEF = [];        
+var FIDX = -1;        
+var CR = null;        
+var CAM = false;      
+var DT;               
 
 // ==========================================
-// LOCK SCREEN INITIALIZATION
+// LOCK SCREEN INITIALIZATION & AUTO-LOAD
 // ==========================================
 (function initLock(){
   var list = document.getElementById('lockList');
@@ -316,36 +333,38 @@ var DT;               // Debounce timer búsquedas
     };
     list.appendChild(b);
   });
+  
+  setTimeout(verificarBloquesIntegrados, 300);
 })();
+
+function verificarBloquesIntegrados(){
+  var ok = 0;
+  ['basica','buems','jef'].forEach(function(p){
+    var tag = document.getElementById('d-' + p);
+    if(tag){
+      try {
+        DB[p] = JSON.parse(tag.textContent.trim());
+        ok++;
+      } catch(ex) { console.error("Error al parsear el bloque interno: " + p, ex); }
+    }
+  });
+
+  var statusDiv = document.getElementById('dbStatus');
+  if(ok > 0){
+    SES.dbOk = true;
+    var tot = ['basica','buems','jef'].reduce(function(a,p){
+      return a + (DB[p] ? DB[p].reduce(function(b,s){return b + (s.beneficiarios ? s.beneficiarios.length : 0);},0) : 0);
+    },0);
+    statusDiv.innerHTML = '<span style="color:#FFF8E1">✔️ Base de datos cargada automáticamente ('+tot.toLocaleString()+' registros).</span>';
+    chkLock();
+  } else {
+    statusDiv.innerHTML = '<span style="color:#FFEBEE">⚠️ No se encontraron bloques integrados. Pégalos al final de este archivo.</span>';
+  }
+}
 
 function chkLock(){
   var go = document.getElementById('lockGo');
   (SES.cap && SES.dbOk) ? go.classList.add('on') : go.classList.remove('on');
-}
-
-function cargarNominal(inp){
-  var f = inp.files[0]; if(!f) return;
-  var r = new FileReader();
-  r.onload = function(e){
-    var h = e.target.result; var ok = 0;
-    ['basica','buems','jef'].forEach(function(p){
-      var m = h.match(new RegExp('<script[^>]+id="d-'+p+'"[^>]*>([\\s\\S]*?)<\\/script>','i'));
-      if(m){ try{ DB[p]=JSON.parse(m[1].trim()); ok++; }catch(ex){} }
-    });
-    if(ok>0){
-      SES.dbOk = true;
-      var tot = ['basica','buems','jef'].reduce(function(a,p){
-        return a+DB[p].reduce(function(b,s){return b+s.beneficiarios.length;},0);
-      },0);
-      var box = document.getElementById('cargaBox');
-      box.classList.add('ok');
-      box.innerHTML = '<div style="font-size:1.4rem">✅</div><p class="carga-ok">'+tot.toLocaleString()+' beneficiarios listados en base nominal.</p>';
-      chkLock();
-    } else {
-      alert('Error: No se detectaron bloques de datos nominales estructurados. Asegúrate de subir un archivo con etiquetas JSON correctas.');
-    }
-  };
-  r.readAsText(f,'utf-8');
 }
 
 function iniciar(){
@@ -377,6 +396,7 @@ function buscarEnDB(apPat, apMat, nomS, curp){
   var enc=null;
   if(curp){
     ['basica','buems','jef'].forEach(function(prog){
+      if(!DB[prog]) return;
       DB[prog].forEach(function(s){
         s.beneficiarios.forEach(function(b){
           if(b.curp && norm(b.curp)===norm(curp)) enc={b:b,s:s,prog:prog};
@@ -387,6 +407,7 @@ function buscarEnDB(apPat, apMat, nomS, curp){
   if(!enc && apPat && nomS){
     var fullQ = (nomS + " " + apPat + " " + (apMat||"")).trim();
     ['basica','buems','jef'].forEach(function(prog){
+      if(!DB[prog]) return;
       DB[prog].forEach(function(s){
         s.beneficiarios.forEach(function(b){
           if(!enc && matchAll(b.n, fullQ)) enc={b:b,s:s,prog:prog};
@@ -408,7 +429,7 @@ function inicCam(){
   .then(function(stream){
     var v=document.getElementById('vid'); v.srcObject=stream; v.play();
     document.getElementById('vwrap').classList.add('on'); CAM=true;
-    ss.innerHTML = '🔍 Enfoca el código QR o código de barras del CURP...';
+    ss.innerHTML = '🔍 Enfoca el código QR o barras del documento...';
     if(!CR){
       var h=new Map(); h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.PDF_417]);
       CR=new ZXing.BrowserMultiFormatReader(h);
@@ -424,7 +445,7 @@ function inicCam(){
       detCam();
       procesarCurp(curp,apPat,apMat,nomS);
     });
-  }).catch(function(e){ ss.innerHTML='<span style="color:var(--r)">⚠️ No se pudo acceder a la cámara.</span>'; CAM=false; });
+  }).catch(function(e){ ss.innerHTML='<span style="color:var(--r)">⚠️ Sin acceso a cámara.</span>'; CAM=false; });
 }
 function detCam(){
   if(CR) CR.reset(); var v=document.getElementById('vid');
@@ -432,9 +453,6 @@ function detCam(){
   document.getElementById('vwrap').classList.remove('on'); CAM=false;
 }
 
-// ==========================================
-// CORE DATA INTERPRETER & PROFILE BUILDER
-// ==========================================
 function procesarCurp(curp,apPat,apMat,nomS){
   var sexo=curp[10]==='H'?'HOMBRE':'MUJER';
   var yr=parseInt(curp.substr(4,2)); yr+=(yr>25?1900:2000);
@@ -451,12 +469,11 @@ function procesarCurp(curp,apPat,apMat,nomS){
   if(enc){
     mostrarEncontrado(enc, curp, menor);
   } else {
-    // Escenario No Encontrado: Inicializar Objeto Manual
     var nb=document.getElementById('nbox'); nb.className='nbox ko';
     document.getElementById('nnm').className='nnm w';
-    document.getElementById('nnm').textContent='⚠️ No localizado en padrón nominal';
+    document.getElementById('nnm').textContent='⚠️ Fuera de padrón nominal';
     document.getElementById('nmeta').textContent=nombreShow;
-    document.getElementById('nmatch').innerHTML='<div class="mko">El beneficiario no se encuentra en las listas de esta sección. Puedes forzar captura asignando parámetros manuales.</div>';
+    document.getElementById('nmatch').innerHTML='<div class="mko">No localizado de manera automática. Revisa usando la barra manual o fuerza su registro.</div>';
     
     document.getElementById('mArea').style.display='block';
     document.getElementById('mInp').value=nombreShow;
@@ -471,14 +488,11 @@ function mostrarEncontrado(enc,curp,menor){
   document.getElementById('nnm').className='nnm';
   document.getElementById('nnm').textContent=enc.b.n;
   document.getElementById('nmeta').innerHTML='<span class="nb nb-p">'+enc.s.nivel+'</span> '+enc.s.nombre+' · '+enc.s.cct;
-  document.getElementById('nmatch').innerHTML='<div class="mok">✅ Beneficiario Validado en Padrón</div>';
+  document.getElementById('nmatch').innerHTML='<div class="mok">✅ Beneficiario Validado</div>';
   
   prepActual({curp:curp||enc.b.curp||'SIN_CURP', nombre:enc.b.n, escuela:enc.s.nombre, cct:enc.s.cct, nivel:enc.s.nivel||'BÁSICA', prog:enc.prog, municipio:enc.s.municipio||'ECATEPEC', fecha:enc.s.fecha, menorDeEdad:menor});
 }
 
-// ==========================================
-// MANUAL NAVIGATION OVERRIDE
-// ==========================================
 function togMan(){
   var a=document.getElementById('mArea');
   a.style.display=a.style.display==='none'?'block':'none';
@@ -491,6 +505,7 @@ function buscar(){
   DT=setTimeout(function(){
     var rows=[];
     ['basica','buems','jef'].forEach(function(prog){
+      if(!DB[prog]) return;
       DB[prog].forEach(function(s){
         s.beneficiarios.forEach(function(b){
           if(matchAll(b.n,q) || (b.curp && norm(b.curp).includes(norm(q)))) rows.push({b:b,s:s,prog:prog});
@@ -498,7 +513,7 @@ function buscar(){
       });
     });
     if(!rows.length){
-      res.innerHTML='<div class="mitem" onclick="forzarManual()"><div class="mi-n">➕ Forzar Alta fuera de Catálogo</div><div class="mi-m">Registrar con datos del documento escaneado</div></div>';
+      res.innerHTML='<div class="mitem" onclick="forzarManual()"><div class="mi-n">➕ Forzar Alta Manual</div><div class="mi-m">Registrar con datos del documento escaneado</div></div>';
       return;
     }
     var h='';
@@ -520,7 +535,7 @@ function selMan(prog, sIdx, bCurp){
 
 function forzarManual(){
   document.getElementById('mArea').style.display='none';
-  toast('Modo captura manual activado');
+  toast('Modo forzado configurado.');
 }
 
 function limpiarTodo(){
@@ -528,33 +543,31 @@ function limpiarTodo(){
 }
 
 // ==========================================
-// PHOTOGRAPHIC MATRICES DEFINITION & LOGIC
+// PHOTOGRAPHIC MATRICES DEFINITION
 // ==========================================
 function getFotoLineamiento(nivel, menorDeEdad){
   var n=norm(nivel);
-  // Regla para Educación Básica (Rita Cetina)
   if(n.includes('BASICA') || n.includes('PRIMARIA') || n.includes('SECUNDARIA')){
     return [
-      {t:'1. ACUSE LLENO Y FIRMADO', d:'Formato de entrega legible con firma autógrafa.'},
-      {t:'2. ANVERSO ID TUTOR', d:'Identificación Oficial del padre, madre o tutor legal.'},
-      {t:'3. REVERSO ID TUTOR', d:'Reverso de la identificación con firma visible.'},
-      {t:'4. BENEFICIARIO CON SOBRE', d:'Fotografía del tutor/alumno mostrando la tarjeta recibida.'}
+      {t:'1. ACUSE LLENO Y FIRMADO', d:'Formato de entrega con firma.'},
+      {t:'2. ANVERSO ID TUTOR', d:'Identificación Oficial del tutor legal.'},
+      {t:'3. REVERSO ID TUTOR', d:'Reverso de la identificación.'},
+      {t:'4. BENEFICIARIO CON SOBRE', d:'Fotografía del tutor/alumno mostrando la tarjeta.'}
     ];
   }
-  // Reglas para Media Superior (BUEMS) y Superior (JEF)
   if(menorDeEdad){
     return [
-      {t:'1. ACUSE LLENO Y FIRMADO', d:'Formato firmado por el estudiante y el tutor responsable.'},
-      {t:'2. CURP DEL BECARIO', d:'Clave Única de Registro impresa o digital.'},
-      {t:'3. ANVERSO ID TUTOR', d:'Identificación oficial vigente del tutor asignado.'},
-      {t:'4. EXPEDIENTE INTEGRADO', d:'Estudiante menor junto al tutor mostrando sobre e ID.'}
+      {t:'1. ACUSE LLENO Y FIRMADO', d:'Formato firmado por estudiante y tutor.'},
+      {t:'2. CURP DEL BECARIO', d:'Clave Única de Registro impresa.'},
+      {t:'3. ANVERSO ID TUTOR', d:'Identificación oficial vigente del tutor.'},
+      {t:'4. EXPEDIENTE INTEGRADO', d:'Estudiante menor junto al tutor mostrando sobre.'}
     ];
   } else {
     return [
-      {t:'1. ACUSE LLENO Y FIRMADO', d:'Formato requisitado y firmado directamente por el becario.'},
-      {t:'2. CURP DEL BECARIO', d:'Copia legible de la CURP certificada.'},
-      {t:'3. ANVERSO ID ESTUDIANTE', d:'Identificación Oficial (INE) del alumno mayor de edad.'},
-      {t:'4. BENEFICIARIO CON SOBRE', d:'Estudiante mostrando de frente su medio de pago e identificación.'}
+      {t:'1. ACUSE LLENO Y FIRMADO', d:'Formato firmado por el becario mayor de edad.'},
+      {t:'2. CURP DEL BECARIO', d:'Copia de la CURP certificada.'},
+      {t:'3. ANVERSO ID ESTUDIANTE', d:'Identificación Oficial (INE) del alumno.'},
+      {t:'4. BENEFICIARIO CON SOBRE', d:'Estudiante mostrando medio de pago.'}
     ];
   }
 }
@@ -562,22 +575,15 @@ function getFotoLineamiento(nivel, menorDeEdad){
 function prepActual(d){
   ACT=Object.assign({fotos:[null,null,null,null]},d);
   document.getElementById('cFotos').style.display='block';
-  
   var esSuperior=!norm(ACT.nivel).includes('BASICA') && !norm(ACT.nivel).includes('PRIMARIA') && !norm(ACT.nivel).includes('SECUNDARIA');
   document.getElementById('eArea').style.display=esSuperior?'block':'none';
-  
-  if(ACT.menorDeEdad!==null){
-    setEdad(ACT.menorDeEdad);
-  } else {
-    setEdad(true); // Default
-  }
+  if(ACT.menorDeEdad!==null) setEdad(ACT.menorDeEdad); else setEdad(true);
 }
 
 function setEdad(isMenor){
   ACT.menorDeEdad=isMenor;
   document.getElementById('eMen').className='ebtn '+(isMenor?'on':'');
   document.getElementById('eMay').className='ebtn '+( !isMenor?'on':'');
-  
   FDEF=getFotoLineamiento(ACT.nivel, ACT.menorDeEdad);
   renderGrid();
 }
@@ -587,7 +593,6 @@ function renderGrid(){
   FDEF.forEach(function(f,i){
     var slot=document.createElement('div');
     slot.className='fslot '+(ACT.fotos[i]?'ok':'');
-    
     if(ACT.fotos[i]){
       slot.innerHTML='<div class="fcheck">✓</div><img src="'+ACT.fotos[i]+'"><div class="fover">Cambiar</div>';
     } else {
@@ -599,72 +604,51 @@ function renderGrid(){
   actualizarProgreso();
 }
 
-function triggerCamera(idx){
-  FIDX=idx; document.getElementById('fInp').click();
-}
+function triggerCamera(idx){ FIDX=idx; document.getElementById('fInp').click(); }
 
-// ==========================================
-// PHOTO PROCESSING, COMPRESSION AND RESIZING
-// ==========================================
 function fotoOk(inp){
   var file=inp.files[0]; if(!file) return;
   var reader=new FileReader();
   reader.onload=function(e){
     var img=new Image();
     img.onload=function(){
-      var canvas=document.createElement('canvas');
-      var ctx=canvas.getContext('2d');
-      
-      // Lógica de Redimensionamiento Óptimo para Ahorro de Memoria
-      var MAX_WIDTH = 1020;
-      var width=img.width; var height=img.height;
+      var canvas=document.createElement('canvas'); var ctx=canvas.getContext('2d');
+      var MAX_WIDTH = 1020; var width=img.width; var height=img.height;
       if(width>MAX_WIDTH){ height *= MAX_WIDTH/width; width=MAX_WIDTH; }
-      
       canvas.width=width; canvas.height=height;
       ctx.drawImage(img,0,0,width,height);
-      
-      // Conversión controlada a Base64 JPEG con factor de calidad 0.7
-      var compressedData=canvas.toDataURL('image/jpeg', 0.7);
-      
-      ACT.fotos[FIDX]=compressedData;
+      ACT.fotos[FIDX]=canvas.toDataURL('image/jpeg', 0.7);
       renderGrid();
     };
     img.src=e.target.result;
   };
-  reader.readAsDataURL(file);
-  inp.value=''; // Reset file input descriptor
+  reader.readAsDataURL(file); inp.value='';
 }
 
 function actualizarProgreso(){
   var ready=ACT.fotos.filter(Boolean).length;
-  document.getElementById('fProgTxt').textContent=ready+'/4 Fotos Guardadas';
+  document.getElementById('fProgTxt').textContent=ready+'/4 Fotos';
   document.getElementById('fBarF').style.width=(ready/4*100)+'%';
   document.getElementById('bConf').disabled=(ready!==4);
 }
 
-// ==========================================
-// REGISTRATION MANAGEMENT AND DATA BASE STORAGE
-// ==========================================
 function mostrarConf(){
   var cbox=document.getElementById('cfbox'); cbox.classList.add('on');
   var rows=document.getElementById('cfRows');
   rows.innerHTML=
      '<div class="cfr"><span class="cfl">Beneficiario:</span><span class="cfv">'+ACT.nombre+'</span></div>'
     +'<div class="cfr"><span class="cfl">CURP:</span><span class="cfv">'+ACT.curp+'</span></div>'
-    +'<div class="cfr"><span class="cfl">CCT Procedencia:</span><span class="cfv">'+ACT.cct+'</span></div>'
-    +'<div class="cfr"><span class="cfl">Nivel Educativo:</span><span class="cfv">'+ACT.nivel+'</span></div>';
+    +'<div class="cfr"><span class="cfl">CCT:</span><span class="cfv">'+ACT.cct+'</span></div>'
+    +'<div class="cfr"><span class="cfl">Nivel:</span><span class="cfv">'+ACT.nivel+'</span></div>';
 }
 
 function cancelConf(){ document.getElementById('cfbox').classList.remove('on'); }
 
 function guardar(){
-  var reg=Object.assign({},ACT, {
-    operador: SES.cap.nombre,
-    timestamp: new Date().toISOString()
-  });
+  var reg=Object.assign({},ACT, { operador: SES.cap.nombre, timestamp: new Date().toISOString() });
   REGS.push(reg);
   document.getElementById('hCnt').textContent=REGS.length;
-  toast('Registro salvado localmente con éxito.');
+  toast('Registro salvado localmente.');
   resetCap();
 }
 
@@ -677,81 +661,148 @@ function resetCap(){
   document.getElementById('mInp').value='';
 }
 
-// ==========================================
-// RECORD VIEWER AND LIST REPORTING
-// ==========================================
 function renderRegs(){
   var container=document.getElementById('rList');
-  if(!REGS.length){ container.innerHTML='<div style="text-align:center;padding:22px;color:#aaa;font-size:.82rem">Sin registros en este bloque</div>'; return; }
+  if(!REGS.length){ container.innerHTML='<div style="text-align:center;padding:22px;color:#aaa;font-size:.82rem">Sin registros</div>'; return; }
   var h='';
   REGS.forEach(function(r,i){
-    h+='<div class="ritem">'
-      +'<div class="rn">'+(i+1)+'</div>'
-      +'<div class="ri">'
-      +'<div class="ri-n">'+r.nombre+'</div>'
-      +'<div class="ri-m">'+r.curp+' · <b>'+r.nivel+'</b></div>'
-      +'</div></div>';
+    h+='<div class="ritem"><div class="rn">'+(i+1)+'</div><div class="ri"><div class="ri-n">'+r.nombre+'</div><div class="ri-m">'+r.curp+' · <b>'+r.nivel+'</b></div></div></div>';
   });
   container.innerHTML=h;
 }
 
+// ==========================================
+// ESTADÍSTICA GLOBAL POR CAPTURISTA
+// ==========================================
 function renderResumen(){
   var res=document.getElementById('rResumen');
   var bas=REGS.filter(function(x){return norm(x.nivel).includes('BASICA') || norm(x.nivel).includes('PRI') || norm(x.nivel).includes('SEC');}).length;
-  var sup=REGS.length - bas;
-  res.innerHTML=
-     '👤 <b>Capturista:</b> '+SES.cap.nombre+'<br>'
-    +'📦 <b>Total Capturados:</b> '+REGS.length+' folios<br>'
-    +'└ 🏫 Básica (Rita Cetina): '+bas+'<br>'
-    +'└ 🎓 Media Sup / Superior: '+sup;
+  res.innerHTML='👤 <b>Operador:</b> '+SES.cap.nombre+'<br>📦 <b>Total Capturados:</b> '+REGS.length+' folios<br>└ Básica: '+bas+'<br>└ Media Sup / Superior: '+(REGS.length-bas);
+
+  var wrapper = document.getElementById('wrapperTablaGlobal');
+  
+  // Construir matriz indexada de capturistas mapeados
+  var conteos = {};
+  CAPS.forEach(function(c){
+    conteos[c.nombre] = { basica: 0, msuperior: 0, total: 0 };
+  });
+
+  // Clasificar registros guardados en memoria
+  REGS.forEach(function(r){
+    var op = r.operador;
+    if(!conteos[op]) { conteos[op] = { basica: 0, msuperior: 0, total: 0 }; }
+    
+    var esBasica = norm(r.nivel).includes('BASICA') || norm(r.nivel).includes('PRI') || norm(r.nivel).includes('SEC') || norm(r.nivel).includes('MANUAL');
+    if(esBasica){
+      conteos[op].basica++;
+    } else {
+      conteos[op].msuperior++;
+    }
+    conteos[op].total++;
+  });
+
+  // Inyección dinámica de tabla HTML responsiva
+  var htmlTable = '<table class="stat-table">'
+    +'<thead>'
+      +'<tr>'
+        +'<th>Capturista</th>'
+        +'<th style="text-align:center;">Básica</th>'
+        +'<th style="text-align:center;">M. Sup/Sup</th>'
+        +'<th style="text-align:center; background:rgba(0,0,0,0.03)">Total Tarjetas</th>'
+      +'</tr>'
+    +'</thead>'
+    +'<tbody>';
+
+  var tB = 0, tM = 0, tT = 0;
+  
+  CAPS.forEach(function(c){
+    var o = conteos[c.nombre];
+    tB += o.basica; tM += o.msuperior; tT += o.total;
+    htmlTable += '<tr>'
+      +'<td><b>'+c.nombre.split(' ')[0]+'</b> <span style="font-size:0.65rem; color:#666;">'+(c.nombre.split(' ')[1]||'')+'</span></td>'
+      +'<td style="text-align:center; color:var(--v)">'+o.basica+'</td>'
+      +'<td style="text-align:center; color:var(--az)">'+o.msuperior+'</td>'
+      +'<td style="text-align:center; font-weight:700; background:rgba(0,0,0,0.01)">'+o.total+'</td>'
+    +'</tr>';
+  });
+
+  htmlTable += '<tr>'
+      +'<td>CONTEO TOTAL</td>'
+      +'<td style="text-align:center; color:var(--v)">'+tB+'</td>'
+      +'<td style="text-align:center; color:var(--az)">'+tM+'</td>'
+      +'<td style="text-align:center; background:var(--dx); color:var(--g)">'+tT+'</td>'
+    +'</tr>'
+    +'</tbody>'
+  +'</table>';
+
+  wrapper.innerHTML = htmlTable;
 }
 
 // ==========================================
-// AUTOMATED COMPRESSED BACKUP DIRECTORIES ENGINE (ZIP)
+// AUTOMATED COMPRESSED BACKUP DIRECTORIES (ESTRUCTURA ORIGINAL)
 // ==========================================
 function genZip(){
-  if(!REGS.length){ alert('No existen registros para compilar en el archivo de respaldo.'); return; }
-  
+  if(!REGS.length){ alert('No existen registros para respaldar.'); return; }
   var zip = new JSZip();
-  toast('Procesando compresión e indexado de imágenes...', 'ok');
+  toast('Compilando árbol de carpetas...', 'ok');
   
   REGS.forEach(function(r){
-    // Formatear Nomenclatura Estricta de Directorio de Destino solicitado
     var carpetaOperador = norm(r.operador).replace(/\s+/g, '_');
     var carpetaNivel = norm(r.nivel).replace(/\s+/g, '_');
     var carpetaCct = norm(r.cct).replace(/\s+/g, '_');
-    var carpetaCurp = norm(r.curp).replace(/\s+/g, '_');
     
-    // Ruta estructurada: OPERADOR/NIVEL/CCT/CURP/
-    var path = carpetaOperador + '/' + carpetaNivel + '/' + carpetaCct + '/' + carpetaCurp + '/';
+    // CAMBIO: Estructura corregida NOMBRE_COMPLETO_CURP conservando la profundidad del árbol original
+    var cleanNombre = norm(r.nombre).replace(/\s+/g, '_');
+    var carpetaIdentificador = cleanNombre + '_' + norm(r.curp).replace(/\s+/g, '_');
     
-    // Mapear e inyectar las 4 fotos en formato binario base64
+    var path = carpetaOperador + '/' + carpetaNivel + '/' + carpetaCct + '/' + carpetaIdentificador + '/';
+    
     var titulosFotos = getFotoLineamiento(r.nivel, r.menorDeEdad);
-    
     for(var i=0; i<4; i++){
       if(r.fotos[i]){
         var base64Data = r.fotos[i].split(',')[1];
+        // Los archivos mantienen los títulos largos completos e institucionales (sin simplificar)
         var fileTitle = norm(titulosFotos[i].t).replace(/\s+/g, '_') + '.jpg';
         zip.file(path + fileTitle, base64Data, {base64: true});
       }
     }
   });
   
-  // Compilar metadatos nominales complementarios en formato JSON para auditoría rápida
-  var metaDataString = JSON.stringify(REGS, null, 2);
-  zip.file("METADATOS_OPERATIVO.json", metaDataString);
+  zip.file("METADATOS_LOGISTICA.json", JSON.stringify(REGS, null, 2));
   
-  // Lanzamiento de Descarga de Archivo
   zip.generateAsync({type:"blob"}).then(function(content) {
     var link = document.createElement("a");
     link.href = URL.createObjectURL(content);
     link.download = "RESPALDO_ENTREGAS_" + norm(SES.cap.nombre).replace(/\s+/g, '_') + ".zip";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast('Descarga de respaldo ZIP iniciada.');
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    toast('Archivo ZIP descargado.');
   });
 }
 </script>
+
+<!-- ==========================================
+     BLOQUES DE DATOS NOMINALES (INYECTA AQUÍ)
+     ========================================== -->
+<script type="application/json" id="d-basica">
+[
+  {
+    "nombre": "ESCUELA SECUNDARIA TECNICA 44",
+    "cct": "15DST0044Z",
+    "nivel": "BÁSICA",
+    "beneficiarios": [
+      {"n": "CERVANTES JIMENEZ ALMA", "curp": "CEJA950814MDFRRR01"}
+    ]
+  }
+]
+</script>
+
+<script type="application/json" id="d-buems">
+[]
+</script>
+
+<script type="application/json" id="d-jef">
+[]
+</script>
+
 </body>
 </html>
