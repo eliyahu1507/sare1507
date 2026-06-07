@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo Capturista - SARE 1507</title>
+    <!-- Iconos de Bootstrap para los botones -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --mex-wine: #691C32;   /* El guinda de tus botones principales */
+            --mex-gold: #BC955C;   /* El dorado texturizado de tu panel */
+            --bg-light: #F8F9FA;   /* El fondo claro y limpio */
+            --text-dark: #212529;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            color: var(--text-dark);
+        }
+
+        /* Encabezado con el Estilo de tu Panel */
+        .app-header {
+            background-color: white;
+            border-bottom: 4px solid var(--mex-wine);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .header-info h1 {
+            font-size: 1.1rem;
+            margin: 0;
+            font-weight: bold;
+            color: var(--mex-wine);
+        }
+        .header-info p {
+            font-size: 0.85rem;
+            margin: 2px 0 0 0;
+            color: var(--mex-gold);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .counter-badge {
+            text-align: center;
+            background: var(--bg-light);
+            border: 1px solid #E5E7EB;
+            padding: 6px 12px;
+            border-radius: 10px;
+        }
+        .counter-badge .num {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--mex-wine);
+            display: block;
+        }
+        .counter-badge .lbl {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #6B7280;
+            font-weight: bold;
+        }
+
+        /* Contenedor Principal (Estilo Tarjeta de la diapositiva) */
+        .app-container {
+            padding: 20px 15px;
+            flex: 1;
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 80px; /* Espacio libre para la navegación */
+        }
+
+        /* Secciones con diseño idéntico a tus tarjetas */
+        .card-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Misma sombra suave de tu imagen */
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+        .section-title {
+            color: var(--mex-wine);
+            font-size: 0.95rem;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+        .section-number {
+            background: var(--mex-gold);
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* Botones de Acción integrados al estilo */
+        .search-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .btn-action {
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+        .btn-scan {
+            background-color: var(--mex-wine);
+            color: white;
+        }
+        .btn-scan:active {
+            background-color: #521425;
+        }
+        .btn-manual {
+            background-color: var(--mex-gold);
+            color: white;
+        }
+        .btn-manual:active {
+            background-color: #A37F4C;
+        }
+
+        /* Barra de estado CURP */
+        .curp-status-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-light);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: #4B5563;
+            border-left: 4px solid var(--mex-gold);
+            margin-bottom: 15px;
+        }
+
+        /* Bloque Tutor */
+        .data-block-tutor {
+            background-color: #FAF6F0;
+            border: 1px solid #EFE5D3;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+        .tutor-curp {
+            font-weight: bold;
+            color: var(--mex-wine);
+            font-size: 1.05rem;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        .badge-info {
+            background: rgba(188, 149, 92, 0.15);
+            color: #846231;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-right: 5px;
+            margin-top: 4px;
+        }
+
+        /* Bloque Nominal (Verde éxito suavizado) */
+        .data-block-nominal {
+            background-color: #F0Fdf4;
+            border: 1px solid #DCFCE7;
+            border-radius: 12px;
+            padding: 14px;
+        }
+        .nominal-title {
+            color: #14532D;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+        .nominal-sub {
+            font-size: 0.85rem;
+            color: #166534;
+            margin-bottom: 6px;
+        }
+        .nominal-cct {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        .status-success {
+            color: #15803D;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+        }
+
+        /* Cuadrícula de Evidencias */
+        .photos-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .photo-box {
+            border: 2px dashed #D1D5DB;
+            border-radius: 12px;
+            padding: 20px 10px;
+            text-align: center;
+            position: relative;
+            cursor: pointer;
+            background: #FAFAFA;
+            transition: background 0.2s;
+        }
+        .photo-box:hover {
+            background: #F3F4F6;
+        }
+        .photo-box i {
+            font-size: 1.6rem;
+            color: var(--mex-gold);
+            display: block;
+            margin-bottom: 6px;
+        }
+        .photo-box span {
+            font-size: 0.8rem;
+            color: #4B5563;
+            font-weight: 600;
+        }
+        .photo-box input[type="file"] {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .preview-img {
+            width: 100%;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 8px;
+            display: none;
+        }
+
+        /* NUEVA NAVEGACIÓN INFERIOR (Con botón Volver) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: white;
+            border-top: 1px solid #E5E7EB;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 8px 0;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+        .nav-item {
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.7rem;
+            color: #9CA3AF;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            gap: 2px;
+        }
+        .nav-item i {
+            font-size: 1.25rem;
+        }
+        .nav-item.active {
+            color: var(--mex-wine);
+        }
+        .nav-item.btn-back-panel {
+            color: #4B5563;
+        }
+        .nav-item.btn-back-panel:hover {
+            color: var(--mex-wine);
+        }
+
+        /* Estilos del Ventana Emergente (Modal) */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 200;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.2s;
+        }
+        .modal.open {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-top: 6px solid var(--mex-wine);
+        }
+        .modal-content h3 {
+            margin-top: 0;
+            color: var(--mex-wine);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        .input-text {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .btn-modal-save {
+            background: var(--mex-wine);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+        .btn-modal-close {
+            background: #F3F4F6;
+            color: #4B5563;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CABECERA -->
+    <header class="app-header">
+        <div class="header-info">
+            <h1>Sistema de Control Operativo</h1>
+            <p>SARE 1507 • ECATEPEC</p>
+        </div>
+        <div class="counter-badge">
+            <span class="num" id="global-counter">0</span>
+            <span class="lbl">Entregadas</span>
+        </div>
+    </header>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <main class="app-container">
+
+        <!-- BLOQUE 1: VALIDACIÓN -->
+        <section class="card-section">
+            <div class="section-title">
+                <span class="section-number">1</span> BÚSQUEDA NOMINAL
+            </div>
+
+            <div class="search-grid">
+                <button class="btn-action btn-scan" onclick="alert('Iniciando cámara para escaneo de código...')">
+                    <i class="bi bi-camera-fill"></i> Escanear CURP
+                </button>
+                <button class="btn-action btn-manual" onclick="toggleModal(true)">
+                    <i class="bi bi-keyboard-fill"></i> Manual
+                </button>
+            </div>
+
+            <div class="curp-status-bar">
+                <i class="bi bi-info-circle-fill" style="color: var(--mex-gold);"></i>
+                <span>CURP seleccionada: <strong id="active-curp-lbl">Ninguna</strong></span>
+            </div>
+
+            <!-- Caja de Datos del Tutor (Oculta hasta encontrar) -->
+            <div class="data-block-tutor" id="tutor-box" style="display:none;">
+                <div class="tutor-curp" id="tutor-curp-txt">CURP</div>
+                <div style="font-weight: 600;"><i class="bi bi-person-circle" style="color: var(--mex-gold);"></i> <span id="tutor-name-txt">Nombre</span></div>
+                <div>
+                    <span class="badge-info" id="tutor-sex-txt">Sexo</span>
+                    <span class="badge-info" id="tutor-age-txt">Edad</span>
+                </div>
+            </div>
+
+            <!-- Caja de Datos del Excel/CCT (Oculta hasta encontrar) -->
+            <div class="data-block-nominal" id="nominal-box" style="display:none;">
+                <div class="nominal-title" id="becario-name-txt">BECARIO</div>
+                <div class="nominal-sub">
+                    <span style="background:var(--mex-wine); color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;" id="becario-level-txt">NIVEL</span> 
+                    • <span id="school-name-txt">Escuela</span>
+                </div>
+                <div class="nominal-cct" id="school-cct-txt">CCT</div>
+                <div class="nominal-cct" id="school-loc-txt">Municipio</div>
+                <div class="status-success">
+                    <i class="bi bi-check-circle-fill"></i> Validado en padrón nominal
+                </div>
+            </div>
+        </section>
+
+        <!-- BLOQUE 2: FOTOGRAFÍAS -->
+        <section class="card-section">
+            <div class="section-title">
+                <span class="section-number">2</span> EVIDENCIAS FOTOGRÁFICAS
+            </div>
+
+            <div class="photos-grid">
+                <div class="photo-box" id="box-foto1">
+                    <i class="bi bi-file-earmark-text-fill"></i>
+                    <span id="lbl-foto1">Acuse lleno</span>
+                    <img id="prev-foto1" class="preview-img">
+                    <input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this, 'foto1')">
+                </div>
+                <div class="photo-box" id="box-foto2">
+                    <i class="bi bi-card-image"></i>
+                    <span id="lbl-foto2">Anverso ID</span>
+                    <img id="prev-foto2" class="preview-img">
+                    <input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this, 'foto2')">
+                </div>
+            </div>
+            
+            <div style="margin-top: 25px;">
+                <button class="btn-action btn-scan" style="width:100%; padding: 15px; font-size: 1rem;" onclick="saveRegistration()">
+                    <i class="bi bi-cloud-arrow-up-fill"></i> Guardar Registro
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- NAVEGACIÓN INFERIOR MEJORADA -->
+    <nav class="bottom-nav">
+        <!-- BOTÓN PARA REGRESAR AL PANEL PRINCIPAL -->
+        <button class="nav-item btn-back-panel" onclick="window.location.href='index.html'">
+            <i class="bi bi-house-door-fill"></i>
+            <span>Volver Panel</span>
+        </button>
+        <button class="nav-item active">
+            <i class="bi bi-plus-circle-fill"></i>
+            <span>Capturar</span>
+        </button>
+        <button class="nav-item" onclick="exportData()">
+            <i class="bi bi-download"></i>
+            <span>Descargar</span>
+        </button>
+    </nav>
+
+    <!-- MODAL MANUAL -->
+    <div class="modal" id="manual-modal">
+        <div class="modal-content">
+            <h3>Búsqueda por CURP</h3>
+            <input type="text" id="manual-curp-input" class="input-text" placeholder="Introduce los 18 caracteres" maxlength="18">
+            <div class="modal-buttons">
+                <button class="btn-modal-close" onclick="toggleModal(false)">Cerrar</button>
+                <button class="btn-modal-save" onclick="searchCURP()">Buscar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CÓDIGO OPERATIVO -->
+    <script>
+        // BASE NOMINAL EJEMPLO (Aquí pones los datos de tu Excel)
+        const baseNominal = [
+            {
+                curpTutor: "DIMJ980423MDFNNZ00",
+                nombreTutor: "JAZMIN DIONICIO MENDOZA",
+                sexoTutor: "MUJER",
+                edadTutor: "28 años",
+                nombreBecario: "DENISSE MONDRAGON JUAREZ",
+                nivel: "PRIMARIA",
+                cct: "15EPR2857E",
+                escuela: "LIC. ADOLFO LOPEZ MATEOS",
+                municipio: "ECATEPEC DE MORELOS"
+            }
+        ];
+
+        let registrosCapturados = JSON.parse(localStorage.getItem('entregas_ecatepec')) || [];
+        let currentRecord = null;
+        let foto1Base64 = null;
+        let foto2Base64 = null;
+
+        document.addEventListener("DOMContentLoaded", () => { updateCounter(); });
+        function toggleModal(show) {
+            const modal = document.getElementById('manual-modal');
+            if(show) modal.classList.add('open');
+            else modal.classList.remove('open');
+        }
+        function updateCounter() { document.getElementById('global-counter').innerText = registrosCapturados.length; }
+
+        function searchCURP() {
+            const inputVal = document.getElementById('manual-curp-input').value.trim().toUpperCase();
+            const resultado = baseNominal.find(item => item.curpTutor === inputVal);
+
+            if(resultado) {
+                currentRecord = resultado;
+                document.getElementById('active-curp-lbl').innerText = resultado.curpTutor;
+                document.getElementById('tutor-curp-txt').innerText = resultado.curpTutor;
+                document.getElementById('tutor-name-txt').innerText = resultado.nombreTutor;
+                document.getElementById('tutor-sex-txt').innerText = "🔹 " + resultado.sexoTutor;
+                document.getElementById('tutor-age-txt').innerText = "🎂 " + resultado.edadTutor;
+                document.getElementById('tutor-box').style.display = 'block';
+
+                document.getElementById('becario-name-txt').innerText = resultado.nombreBecario;
+                document.getElementById('becario-level-txt').innerText = resultado.nivel;
+                document.getElementById('school-name-txt').innerText = resultado.escuela;
+                document.getElementById('school-cct-txt').innerText = "CCT: " + resultado.cct;
+                document.getElementById('school-loc-txt').innerText = resultado.municipio;
+                document.getElementById('nominal-box').style.display = 'block';
+                toggleModal(false);
+            } else {
+                alert("No se encontró en el padrón nominal.");
+            }
+        }
+
+        function handlePhoto(input, type) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    if(type === 'foto1') { foto1Base64 = e.target.result; togglePreview('foto1', true, e.target.result); }
+                    else { foto2Base64 = e.target.result; togglePreview('foto2', true, e.target.result); }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function togglePreview(type, hasPhoto, src = "") {
+            const icon = document.querySelector(`#box-${type} i`);
+            const lbl = document.getElementById(`lbl-${type}`);
+            const prev = document.getElementById(`prev-${type}`);
+            if(hasPhoto) { icon.style.display = 'none'; lbl.style.display = 'none'; prev.src = src; prev.style.display = 'block'; }
+            else { icon.style.display = 'block'; lbl.style.display = 'block'; prev.style.display = 'none'; }
+        }
+
+        function saveRegistration() {
+            if(!currentRecord || !foto1Base64 || !foto2Base64) { alert("Falta validar CURP o capturar fotos."); return; }
+            registrosCapturados.push({ ...currentRecord, fecha: new Date().toISOString(), foto1: foto1Base64, foto2: foto2Base64 });
+            localStorage.setItem('entregas_ecatepec', JSON.stringify(registrosCapturados));
+            alert("¡Registro Exitoso!");
+            updateCounter();
+            resetForm();
+        }
+
+        function resetForm() {
+            currentRecord = null; foto1Base64 = null; foto2Base64 = null;
+            document.getElementById('active-curp-lbl').innerText = "Ninguna";
+            document.getElementById('tutor-box').style.display = 'none'; document.getElementById('nominal-box').style.display = 'none';
+            togglePreview('foto1', false); togglePreview('foto2', false);
+        }
+
+        function exportData() {
+            if(registrosCapturados.length === 0) { alert("Sin registros."); return; }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(registrosCapturados));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "Entregas_Ecatepec.json");
+            document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove();
+        }
+    </script>
+</body>
+</html>
