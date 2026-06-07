@@ -55,7 +55,7 @@ h1.tit .hl{color:var(--dorado-c)}
 
 main{max-width:800px;margin:0 auto;padding:18px 12px}
 
-.scanner-card{background:#fff;border-radius:12px;box-shadow:0 2px 14px var(--sombra);overflow:hidden;margin-bottom:166px}
+.scanner-card{background:#fff;border-radius:12px;box-shadow:0 2px 14px var(--sombra);overflow:hidden;margin-bottom:40px}
 .scan-header{color:#fff;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--dorado);background:linear-gradient(135deg,var(--guinda-o),var(--guinda))}
 .scan-header h2{font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:800;text-transform:uppercase}
 .scan-body{padding:16px 18px}
@@ -82,7 +82,6 @@ video{width:100%;display:block}
 .btn-buscar{padding:10px 16px;background:var(--guinda);color:#fff;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;text-transform:uppercase}
 .btn-limpiar{padding:10px 11px;background:transparent;color:var(--guinda);border:2px solid var(--guinda);border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer}
 
-/* Paneles Dinámicos de Respuesta */
 .resultado-validacion{border-radius:10px;padding:15px;margin-top:15px;display:none;flex-direction:column;gap:10px}
 .resultado-validacion.padrón-si{display:flex; background:var(--verde-c); border:2px solid var(--verde)}
 .resultado-validacion.padrón-no{display:flex; background:var(--rojo-bg); border:2px solid var(--rojo)}
@@ -90,18 +89,16 @@ video{width:100%;display:block}
 .padrón-si .badge-status{background:var(--verde)}
 .padrón-no .badge-status{background:var(--rojo)}
 
-/* Módulo de Evidencias Adaptativas */
 .evidencias-box{margin-top:12px; padding-top:12px; border-top:1px dashed #DDD0D5; display:none}
 .evidencias-box.active{display:block}
-.evidencias-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
-.foto-input-wrapper{background:#fff; border:1px dashed var(--texto-s); padding:10px; border-radius:6px; text-align:center; position:relative}
-.foto-input-wrapper label{font-size:.7rem; font-weight:700; display:block; margin-bottom:4px; color:var(--texto-s)}
-.foto-input-wrapper input[type="file"]{font-size:.65rem; width:100%}
+.evidencias-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px}
+.foto-input-wrapper{background:#fff; border:2px dashed var(--guinda); padding:12px; border-radius:8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.05)}
+.foto-input-wrapper label{font-family:'Montserrat',sans-serif; font-size:.75rem; font-weight:800; display:block; margin-bottom:8px; color:var(--guinda-o)}
+.foto-input-wrapper input[type="file"]{font-size:.75rem; width:100%; color:var(--texto-s)}
 
-.btn-confirmar-archivo{width:100%; margin-top:14px; padding:12px; background:var(--guinda); color:#fff; border:none; border-radius:6px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:.82rem; cursor:pointer; text-transform:uppercase}
+.btn-confirmar-archivo{width:100%; margin-top:16px; padding:14px; background:var(--guinda); color:#fff; border:none; border-radius:8px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:.85rem; cursor:pointer; text-transform:uppercase; box-shadow:0 3px 8px rgba(0,0,0,0.2)}
 
-/* Cierre de Turno */
-.cierre-container{margin-top:20px; background:#fff; border-radius:12px; padding:15px; box-shadow:0 2px 14px var(--sombra); border:2px solid var(--dorado)}
+.cierre-container{margin-top:10px; background:#fff; border-radius:12px; padding:15px; box-shadow:0 2px 14px var(--sombra); border:2px solid var(--dorado); margin-bottom:40px}
 .cierre-header{font-family:'Montserrat',sans-serif; font-size:.85rem; font-weight:800; color:var(--guinda-o); text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:8px}
 .btn-cierre{width:100%; padding:12px; background:linear-gradient(135deg, var(--dorado), #A6761E); color:var(--guinda-o); border:none; border-radius:8px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:.85rem; cursor:pointer; text-transform:uppercase}
 
@@ -159,7 +156,7 @@ footer strong{color:var(--dorado-c)}
       <div class="scan-status" id="scan-status">Cámara inactiva</div>
 
       <div class="search-row">
-        <button type="button" class="btn-cam" id="btn-cam">📷 Activar Cámara</button>
+        <button type="button" class="btn-cam" id="btn-cam">📷 Activar Escáner QR</button>
         <input type="text" id="curp-input" class="main-input" placeholder="INGRESA CURP (18 CARACTERES)" maxlength="18" autocomplete="off">
         <button type="button" class="btn-buscar" id="btn-registrar">Validar</button>
         <button type="button" class="btn-limpiar" id="btn-limpiar">Limpiar</button>
@@ -171,10 +168,11 @@ footer strong{color:var(--dorado-c)}
         <div style="font-size:.82rem; line-height:1.5;" id="meta-detalles"></div>
         
         <div class="evidencias-box" id="evidencias-seccion">
-          <label id="titulo-evidencias" style="font-family:'Montserrat',sans-serif; font-size:.7rem; font-weight:800; color:var(--guinda); display:block; margin-bottom:6px; text-transform:uppercase;"></label>
+          <label id="titulo-evidencias" style="font-family:'Montserrat',sans-serif; font-size:.75rem; font-weight:800; color:var(--guinda); display:block; margin-bottom:8px; text-transform:uppercase; text-align:center; border-bottom:1px solid var(--dorado); padding-bottom:4px;"></label>
           
           <div class="evidencias-grid" id="contenedor-fotos-dinamicas">
-            </div>
+            <!-- Inyección de inputs de cámara nativa -->
+          </div>
           
           <button type="button" class="btn-confirmar-archivo" id="btn-guardar-expediente">Confirmar y Archivar Datos</button>
         </div>
@@ -193,7 +191,7 @@ footer strong{color:var(--dorado-c)}
 <footer>Coordinación Nacional de Becas para el Bienestar — Oficina <strong>SARE 1507 Ecatepec</strong></footer>
 
 <script>
-// ESTA ES TU BASE DE DATOS EXTRAÍDA DIRECTAMENTE DE TU ARCHIVO OPERATIVO_BRCU_SECUNDARIA
+// --- IMPORTANTE: REMPLACE ESTE OBJETO CON SU LISTADO COMPLETO DE CCT Y ALUMNOS REALES ---
 const d_basica = {
   "15DES0257G": {
     "escuela": "OFIC TV NO 0257 \"ALFREDO DEL MAZO VELEZ\"",
@@ -264,14 +262,13 @@ function startScanning() {
 }
 
 function stopScanning() {
-    isScanning = false; btnCam.textContent = "📷 Activar Cámara"; btnCam.classList.remove('activo');
+    isScanning = false; btnCam.textContent = "📷 Activar Escáner QR"; btnCam.classList.remove('activo');
     videoContainer.classList.remove('active'); scanStatus.textContent = "Cámara inactiva";
     if (codeReader) codeReader.reset();
 }
 
 btnRegistrar.addEventListener('click', ejecutarValidacion);
 
-// EL MOTOR DE BÚSQUEDA EXACTO DE TU APLICACIÓN ORIGINAL
 function ejecutarValidacion() {
     const curpVal = curpInput.value.trim().toUpperCase();
     const capturistaVal = selectCapturista.value;
@@ -283,7 +280,6 @@ function ejecutarValidacion() {
     let escuelaData = null;
     let cctEncontrada = "";
 
-    // Ciclo idéntico al tuyo para rastrear dentro del objeto d_basica
     for (let cct in d_basica) {
         let registroEscuela = d_basica[cct];
         let busqueda = registroEscuela.alumnos.find(a => a.curp.toUpperCase() === curpVal);
@@ -299,7 +295,6 @@ function ejecutarValidacion() {
     curpTitular.textContent = curpVal;
 
     if (alumnoEncontrado) {
-        // RESPUESTA VERDE: LOCALIZADO EN EL NOMINAL
         resultadoPanel.className = "resultado-validacion padrón-si";
         padrónBadge.textContent = "✓ LOCALIZADO EN PADRÓN NOMINAL";
         
@@ -311,11 +306,9 @@ function ejecutarValidacion() {
             <strong>Atendió:</strong> ${nombreCapturista}
         `;
 
-        // REGLA DE ORO DE LAS FOTOS POR TIPO/NIVEL EDUCATIVO
         generarCamposFotos(alumnoEncontrado.tipo);
         evidenciasSeccion.classList.add('active');
     } else {
-        // RESPUESTA ROJA: FUERA DEL NOMINAL DIARIO
         resultadoPanel.className = "resultado-validacion padrón-no";
         padrónBadge.textContent = "⚠ NO LOCALIZADO / REVISIÓN EN MESA";
         
@@ -327,44 +320,47 @@ function ejecutarValidacion() {
     }
 }
 
-// ARQUITECTURA DE FOTOGRAFÍAS DINÁMICAS (2 O 4 SEGÚN EL CASO)
+// CORRECCIÓN DE DISPARADOR NATIVO DE CÁMARA Y NOMBRES DE ARCHIVO OFICIALES
 function generarCamposFotos(tipoBeca) {
     contenedorFotos.innerHTML = "";
     
     if (tipoBeca === "BRCU" || tipoBeca === "SECUNDARIA") {
-        tituloEvidencias.textContent = "📸 EXPEDIENTE DIGITAL BRCU — SECUNDARIA (4 FOTOS OBLIGATORIAS):";
+        tituloEvidencias.textContent = "📸 EVIDENCIAS OBLIGATORIAS DE LA JORNADA:";
+        
+        // Nombres corregidos según la operación real
         const catalogo = [
-            "1. Identificación Oficial (Frente)",
-            "2. Identificación Oficial (Anverso)",
-            "3. Acuse de Entrega / Formato",
-            "4. Tarjeta Bienestar Recibida"
+            "Identificación Tutor (Frente)",
+            "Identificación Tutor (Vuelta)",
+            "Documento Escolar (Cotejo)",
+            "Formato de Entrega Firmado"
         ];
-        catalogo.forEach((label, idx) => {
+        
+        // Uso estricto de 'capture="camera"' para forzar la apertura del lente trasero del Honor
+        catalogo.forEach((label) => {
             contenedorFotos.innerHTML += `
                 <div class="foto-input-wrapper">
-                    <label>${label}</label>
-                    <input type="file" id="foto-${idx+1}" accept="image/*" capture="environment">
+                    <label>📌 ${label}</label>
+                    <input type="file" accept="image/*" capture="camera">
                 </div>
             `;
         });
     } else {
-        tituloEvidencias.textContent = "📸 EXPEDIENTE DIGITAL BÁSICA REQUISITOS (2 FOTOS OBLIGATORIAS):";
+        tituloEvidencias.textContent = "📸 EXPEDIENTE DIGITAL BÁSICA REQUISITOS:";
         const catalogo = [
-            "1. Identificación Oficial",
-            "2. Orden de Pago / Formato"
+            "Identificación Oficial",
+            "Orden de Pago / Formato"
         ];
-        catalogo.forEach((label, idx) => {
+        catalogo.forEach((label) => {
             contenedorFotos.innerHTML += `
                 <div class="foto-input-wrapper">
-                    <label>${label}</label>
-                    <input type="file" id="foto-${idx+1}" accept="image/*" capture="environment">
+                    <label>📌 ${label}</label>
+                    <input type="file" accept="image/*" capture="camera">
                 </div>
             `;
         });
     }
 }
 
-// GUARDAR EXPEDIENTE LOCALMENTE
 btnGuardarExpediente.addEventListener('click', () => {
     const curpVal = curpInput.value.trim().toUpperCase();
     const capturistaVal = selectCapturista.options[selectCapturista.selectedIndex].text;
@@ -374,7 +370,7 @@ btnGuardarExpediente.addEventListener('click', () => {
     inputs.forEach(i => { if (!i.files[0]) incompleto = true; });
 
     if (incompleto) {
-        alert("ERROR: No se puede guardar. Faltan fotografías obligatorias por capturar en el dispositivo.");
+        alert("ERROR: No se puede archivar. Faltan fotografías obligatorias por capturar en la mesa.");
         return;
     }
 
@@ -392,7 +388,6 @@ btnGuardarExpediente.addEventListener('click', () => {
     limpiarCampos();
 });
 
-// DESCARGA DEL RESPALDO EN JSON DE LA SESIÓN DIARIA
 btnDescargarRespaldo.addEventListener('click', () => {
     if (baseDatosSesion.length === 0) { alert("No hay datos capturados en el turno para exportar."); return; }
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(baseDatosSesion, null, 2));
