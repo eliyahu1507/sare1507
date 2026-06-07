@@ -2,79 +2,52 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SARE 1507 — Nominal Becas Bienestar</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>SARE 1507 — Módulo de Captura</title>
     <style>
-        /* [Tus estilos originales aquí] */
-        :root{--guinda:#6B1C3E;--guinda-o:#4A0E29;--dorado:#C8962A;--verde:#1A7A3A;--blanco:#FFF;--gris-bg:#F7F4F5;--rojo:#C62828;}
-        body{font-family:'Open Sans',sans-serif; background:var(--gris-bg);}
-        .card{background:white; padding:20px; border-radius:12px; margin:20px; box-shadow:0 2px 10px rgba(0,0,0,0.1);}
-        .scan-frame{border:2px solid var(--guinda); padding:15px; margin:10px 0; border-radius:8px;}
-        .coincidencia-card{display:none; background:var(--verde); color:white; padding:15px; border-radius:8px; margin-top:10px;}
-        .coincidencia-card.visible{display:block;}
-        .foto-box{display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:15px;}
-        .item-foto{border:2px dashed #ccc; padding:10px; text-align:center; font-size:0.7rem;}
+        .selector-capturista { background: #fff8e1; padding: 15px; border-left: 5px solid #C8962A; margin-bottom: 20px; border-radius: 4px; }
+        select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
 
-<div class="card">
+<div class="main-container">
     <h1>Módulo de Captura SARE 1507</h1>
-    
-    <div class="scan-frame">
-        <label>Escanear QR CURP:</label>
-        <input type="text" id="input-qr" placeholder="Escanear aquí..." oninput="procesarInput(this.value)" style="width:100%; padding:10px;">
+
+    <div class="selector-capturista">
+        <label><strong>Selecciona al Capturista en Turno:</strong></label>
+        <select id="select-capturista">
+            <option value="">-- Selecciona personal --</option>
+            <option value="JOSE ELIAS CERVANTES">JOSE ELIAS CERVANTES</option>
+            <option value="MARIA GUADALUPE ESCARCEGA">MARIA GUADALUPE ESCARCEGA</option>
+            </select>
     </div>
 
-    <div id="coincidencia-exacta-card" class="coincidencia-card">
-        <h3 id="match-nombre"></h3>
-        <p>Escuela: <span id="match-escuela"></span></p>
+    <input type="text" id="input-scan" class="scanner-input" placeholder="Escanear QR CURP aquí..." oninput="procesarDatos(this.value)">
+
+    <div id="resultado-panel" class="coincidencia-card">
+        <h2 id="nombre-ben"></h2>
+        <p>Atendido por: <strong id="lbl-capturista"></strong></p>
+        <p>Escuela: <strong id="escuela-ben"></strong></p>
         
-        <div class="foto-box">
-            <div class="item-foto">Identificación<br><button onclick="alert('Cámara activada')">📷</button></div>
-            <div class="item-foto">Acuse<br><button onclick="alert('Cámara activada')">📷</button></div>
-            <div class="item-foto">Tarjeta<br><button onclick="alert('Cámara activada')">📷</button></div>
-        </div>
+        <div class="foto-grid" id="grid-fotos"></div>
     </div>
 </div>
 
-<script id="d-basica" type="application/json">
-[
-  {
-    "cct": "15DES0257G",
-    "nombre": "ESC. SEC. OFIC. 0257",
-    "nivel": "SECUNDARIA",
-    "programa": "RITA CETINA",
-    "fecha": "2026-06-07",
-    "beneficiarios": [{"n": "JOSE ELIAS CERVANTES JIMENEZ"}]
-  }
-]
-</script>
-
 <script>
-function procesarInput(valor) {
-    const rawData = document.getElementById('d-basica').textContent;
-    const escuelas = JSON.parse(rawData);
-    
-    // Motor de búsqueda mejorado
-    const busqueda = valor.toUpperCase();
-    let encontrado = null;
-    let escuela = null;
-
-    escuelas.forEach(e => {
-        const ben = e.beneficiarios.find(b => b.n.includes(busqueda) || valor.includes(b.n));
-        if(ben) { encontrado = ben; escuela = e; }
-    });
-
-    if(encontrado) {
-        document.getElementById('coincidencia-exacta-card').classList.add('visible');
-        document.getElementById('match-nombre').textContent = encontrado.n;
-        document.getElementById('match-escuela').textContent = escuela.nombre;
+    function procesarDatos(valor) {
+        const capturista = document.getElementById('select-capturista').value;
+        if (!capturista) { 
+            alert("¡Error! Primero debes seleccionar al Capturista."); 
+            return; 
+        }
+        
+        if (valor.length < 15) return;
+        
+        // ... (Tu lógica de búsqueda que ya tenías) ...
+        
+        // Al mostrar el panel, fijamos el nombre del capturista
+        document.getElementById('lbl-capturista').textContent = capturista;
     }
-}
-// [Aquí va el resto de tu lógica original de reloj, audio, etc.]
 </script>
-
 </body>
 </html>
