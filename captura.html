@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SARE 1507 — Sistema Multi-Nivel de Evidencias</title>
+<title>SARE 1507 — Sistema de Evidencias Dinámico</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -35,10 +35,13 @@ main{max-width:800px;margin:0 auto;padding:15px 10px}
 .btn-l{padding:10px 12px;background:transparent;color:var(--guinda);border:2px solid var(--guinda);border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer}
 .panel-resultado{border-radius:10px;padding:15px;margin-top:15px;display:none;flex-direction:column;gap:8px}
 .panel-resultado.si{display:flex;background:var(--verde-c);border:2px solid var(--verde)}
-.badge{align-self:flex-start;padding:4px 8px;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;border-radius:4px;color:#fff;text-transform:uppercase;background:var(--verde)}
+.panel-resultado.no{display:flex;background:var(--rojo-bg);border:2px solid var(--rojo)}
+.badge{align-self:flex-start;padding:4px 8px;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;border-radius:4px;color:#fff;text-transform:uppercase}
+.si .badge{background:var(--verde)}
+.no .badge{background:var(--rojo)}
 .grid-evidencias{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
 .foto-contenedor{background:#fff;border:2px dashed var(--guinda);padding:10px;border-radius:8px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:150px;position:relative}
-.foto-contenedor label.titulo-foto{font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:800;color:var(--guinda-o);display:block;margin-bottom:8px;line-height:1.2;min-height:34px}
+.foto-contenedor label.titulo-foto{font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:800;color:var(--guinda-o);display:block;margin-bottom:8px;line-height:1.2}
 .btn-disparar{background:var(--dorado);color:var(--guinda-o);padding:6px 10px;border-radius:6px;font-size:.72rem;font-weight:700;cursor:pointer;border:1px solid #B58420;display:inline-flex;align-items:center;gap:4px}
 .foto-contenedor input[type="file"]{display:none}
 .vista-previa{width:100%;max-height:90px;object-fit:contain;border-radius:6px;margin-top:5px;display:none;border:1px solid var(--gris)}
@@ -69,14 +72,14 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
       </div>
       <div style="text-align:right; font-family:'Montserrat'; font-weight:700; font-size:1.1rem;" id="reloj">00:00:00</div>
     </div>
-    <h1 class="tit">Módulo de Evidencias Fotográficas Multiprograma</h1>
+    <h1 class="tit">Módulo de Captura Corporativo (Compresor Integrado)</h1>
   </div>
 </header>
 
 <main>
   <div class="card">
     <div class="card-header">
-      <span>Validación y Parámetros del Operativo</span>
+      <span>Validación de Fichas de Atención</span>
       <span id="txt-contador" style="background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:12px; font-size:.7rem;">Registros: 0</span>
     </div>
     <div class="scan-body" style="padding:15px;">
@@ -131,22 +134,12 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
         </select>
       </div>
 
-      <!-- SELECCIÓN NIVEL EDUCATIVO -->
+      <!-- FILTRO DE EDAD SELECCIONABLE -->
       <div class="form-box">
-        <label for="nivel-educativo">Nivel Educativo (Estrategia Operativa):</label>
-        <select id="nivel-educativo" class="select-c">
-          <option value="BASICA">BÁSICA — Beca "Rita Cetina"</option>
-          <option value="MEDIA_SUPERIOR" selected>MEDIA SUPERIOR — BUEMS</option>
-          <option value="SUPERIOR">SUPERIOR — JEF (Jóvenes Escribiendo el Futuro)</option>
-        </select>
-      </div>
-
-      <!-- FILTRO DINÁMICO DE EDAD -->
-      <div class="form-box" id="box-filtro-edad">
-        <label>Condición del Estudiante:</label>
+        <label>Condición de Edad del Beneficiario:</label>
         <div class="radio-group">
-          <label class="radio-label"><input type="radio" name="tipo_edad" value="menor" checked id="rad-menor"> Estudiante Menor de Edad</label>
-          <label class="radio-label"><input type="radio" name="tipo_edad" value="mayor" id="rad-mayor"> Estudiante Mayor de Edad</label>
+          <label class="radio-label"><input type="radio" name="tipo_edad" value="menor" checked id="rad-menor"> Menor de Edad (Requiere Tutor)</label>
+          <label class="radio-label"><input type="radio" name="tipo_edad" value="mayor" id="rad-mayor"> Mayor de Edad (Autónomo)</label>
         </div>
       </div>
 
@@ -155,26 +148,26 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
         <label for="curp-input">CURP del Beneficiario:</label>
         <input type="text" id="curp-input" class="main-input" placeholder="INGRESA CURP (18 CARACTERES)" maxlength="18">
         <div class="search-row">
-          <button type="button" class="btn-v" id="btn-validar">Iniciar Captura de Evidencias</button>
+          <button type="button" class="btn-v" id="btn-validar">Validar Padrón</button>
           <button type="button" class="btn-l" id="btn-limpiar">Limpiar</button>
         </div>
       </div>
 
       <!-- PANEL DINÁMICO DE RESPUESTA -->
       <div class="panel-resultado" id="panel-res">
-        <div class="badge">MESA DE TRABAJO ACTIVA</div>
+        <div class="badge" id="res-badge">Estado</div>
         <div style="font-family:monospace; font-size:1.2rem; font-weight:700;" id="res-curp">------------------</div>
         <div style="font-size:.8rem; line-height:1.4;" id="res-datos"></div>
         
         <!-- COMPONENTE FOTOGRÁFICO ADAPTABLE -->
         <div id="seccion-fotos" style="display:none; border-top:1px dashed #DDD0D5; margin-top:10px; padding-top:10px;">
-          <p style="font-family:'Montserrat'; font-size:.75rem; font-weight:800; color:var(--guinda); text-align:center; margin-bottom:12px;" id="txt-instruccion-nivel">📸 FOTOGRAFÍAS REQUERIDAS</p>
+          <p style="font-family:'Montserrat'; font-size:.75rem; font-weight:800; color:var(--guinda); text-align:center; margin-bottom:12px;">📸 ADQUISICIÓN DE EVIDENCIAS COMPRIMIDAS (MESA DE ATENCIÓN)</p>
           
           <div class="grid-evidencias" id="contenedor-marcos-dinamicos">
-              <!-- Carga dinámica estricta según las láminas -->
+              <!-- Los 5 cuadros se inyectan aquí vía JS según la edad detectada -->
           </div>
           
-          <button type="button" class="btn-guardar" id="btn-archivar">Estructurar y Archivar Expediente</button>
+          <button type="button" class="btn-guardar" id="btn-archivar">Confirmar y Archivar en Respaldo</button>
         </div>
       </div>
 
@@ -192,7 +185,7 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
               <th>Beneficiario / CURP</th>
               <th>Nivel Educativo</th>
               <th>Mesa Atendió</th>
-              <th>Fotos Capturadas</th>
+              <th>Estado Interno</th>
             </tr>
           </thead>
           <tbody id="lista-atendidos">
@@ -210,14 +203,20 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 <footer>Oficina Regional <strong>SARE 1507 Ecatepec</strong></footer>
 
 <script>
+// Padrón de simulación local
+const d_basica = {
+  "15DES0257G": {
+    "escuela": "OFIC TV NO 0257 \"ALFREDO DEL MAZO VELEZ\"",
+    "fecha": "2026-03-09",
+    "alumnos": [{ "curp": "DIMJ980423MDFNNZ00", "nombre": "DÍAZ MARTÍNEZ JUAN", "tipo": "SECUNDARIA" }]
+  }
+};
+
 let listadoHistorico = [];
 let imagenesComprimidas = {}; 
 
-// Reloj del sistema
 setInterval(() => { document.getElementById('reloj').textContent = new Date().toLocaleTimeString('es-MX', { hour12: false }); }, 1000);
 
-const selectNivel = document.getElementById('nivel-educativo');
-const boxFiltroEdad = document.getElementById('box-filtro-edad');
 const btnValidar = document.getElementById('btn-validar');
 const btnLimpiar = document.getElementById('btn-limpiar');
 const curpInput = document.getElementById('curp-input');
@@ -225,88 +224,29 @@ const panelRes = document.getElementById('panel-res');
 const selectCapturista = document.getElementById('capturista');
 const contenedorMarcos = document.getElementById('contenedor-marcos-dinamicos');
 
-// DEFINICIÓN DE ESTRUCTURAS DE FOTOS BASADO ESTRICTAMENTE EN TUS DOCUMENTOS (4 láminas)
-
-// BÁSICA - RITA CETINA (image_319ba0.png) -> SIEMPRE 4 FOTOS
-const estructuraRitaCetina = [
-    { id: "f1", label: "1. Acuse lleno y firmado" },
-    { id: "f2", label: "2. Anverso (Identificación)" },
-    { id: "f3", label: "3. Reverso (Identificación)" },
-    { id: "f4", label: "4. Persona beneficiaria sosteniendo el sobre de la tarjeta e identificación oficial" }
-];
-
-// MEDIA SUPERIOR - BUEMS MENOR DE EDAD (image_319bf7.png) -> 5 FOTOS
-const estructuraBuemsMenor = [
+// Configuración de títulos requeridos según el manual técnico
+const titulosMenor = [
     { id: "f1", label: "1. Acuse lleno y firmado" },
     { id: "f2", label: "2. CURP Becario" },
     { id: "f3", label: "3. Identificación de la madre, padre, tutora o tutor Anverso" },
     { id: "f4", label: "4. Identificación de la madre, padre, tutora o tutor Reverso" },
-    { id: "f5", label: "5. Fotografía del beneficiario sosteniendo el sobre de la tarjeta, y madre, padre, tutora o tutor sosteniendo la identificación oficial" }
+    { id: "f5", label: "5. Fotografía del beneficiario sosteniendo sobre y tutor con identificación" }
 ];
 
-// MEDIA SUPERIOR - BUEMS MAYOR DE EDAD (image_319ec4.png) -> 5 FOTOS
-const estructuraBuemsMayor = [
+const titulosMayor = [
     { id: "f1", label: "1. Acuse lleno y firmado" },
     { id: "f2", label: "2. CURP del becario/a" },
     { id: "f3", label: "3. Identificación del estudiante Anverso" },
     { id: "f4", label: "4. Identificación del estudiante Reverso" },
-    { id: "f5", label: "5. Fotografía del beneficiario/o sosteniendo el sobre de la tarjeta e identificación oficial" }
+    { id: "f5", label: "5. Fotografía del beneficiario/o sosteniendo sobre de la tarjeta e identificación" }
 ];
 
-// SUPERIOR - JEF MENOR DE EDAD (image_319f99.png) -> 5 FOTOS
-const estructuraJefMenor = [
-    { id: "f1", label: "1. Acuse lleno y firmado" },
-    { id: "f2", label: "2. CURP becaria/o" },
-    { id: "f3", label: "3. Identificación de la madre, padre o tutor Anverso" },
-    { id: "f4", label: "4. Identificación de la madre, padre o tutor Reverso" },
-    { id: "f5", label: "5. Fotografía del beneficiario/a sosteniendo el sobre de tarjeta, y madre, padre o tutor sosteniendo la identificación oficial" }
-];
-
-// SUPERIOR - JEF MAYOR DE EDAD (Reutiliza la lógica estándar de estudiante adulto autónomo)
-const estructuraJefMayor = [
-    { id: "f1", label: "1. Acuse lleno y firmado" },
-    { id: "f2", label: "2. CURP del becario/a" },
-    { id: "f3", label: "3. Identificación del estudiante Anverso" },
-    { id: "f4", label: "4. Identificación del estudiante Reverso" },
-    { id: "f5", label: "5. Fotografía del beneficiario/o sosteniendo el sobre de la tarjeta e identificación oficial" }
-];
-
-// Control de visibilidad del filtro de edad según el nivel
-function evaluarFiltroEdad() {
-    if (selectNivel.value === "BASICA") {
-        boxFiltroEdad.style.display = "none"; // En básica siempre se asume flujo menor/tutor según image_319ba0.png
-    } else {
-        boxFiltroEdad.style.display = "block";
-    }
-}
-selectNivel.addEventListener('change', evaluarFiltroEdad);
-evaluarFiltroEdad(); // Ejecución inicial
-
-function obtenerConfiguracionActual() {
-    const nivel = selectNivel.value;
-    const esMenor = document.getElementById('rad-menor').checked;
-
-    if (nivel === "BASICA") {
-        return { titulos: estructuraRitaCetina, total: 4, msg: "EVALUACIÓN BÁSICA: BECA RITA CETINA (4 FOTOGRAFÍAS REQUERIDAS)" };
-    } else if (nivel === "MEDIA_SUPERIOR") {
-        return esMenor 
-            ? { titulos: estructuraBuemsMenor, total: 5, msg: "EVALUACIÓN BUEMS: ESTUDIANTE MENOR DE EDAD (5 FOTOGRAFÍAS REQUERIDAS)" }
-            : { titulos: estructuraBuemsMayor, total: 5, msg: "EVALUACIÓN BUEMS: ESTUDIANTE MAYOR DE EDAD (5 FOTOGRAFÍAS REQUERIDAS)" };
-    } else if (nivel === "SUPERIOR") {
-        return esMenor 
-            ? { titulos: estructuraJefMenor, total: 5, msg: "EVALUACIÓN JEF: ESTUDIANTE MENOR DE EDAD (5 FOTOGRAFÍAS REQUERIDAS)" }
-            : { titulos: estructuraJefMayor, total: 5, msg: "EVALUACIÓN JEF: ESTUDIANTE MAYOR DE EDAD (5 FOTOGRAFÍAS REQUERIDAS)" };
-    }
-}
-
-function generarCamposFotos() {
+function generarCamposFotos(esMenor) {
     contenedorMarcos.innerHTML = "";
     imagenesComprimidas = {};
-    const config = obtenerConfiguracionActual();
+    const conjunto = esMenor ? titulosMenor : titulosMayor;
     
-    document.getElementById('txt-instruccion-nivel').textContent = config.msg;
-
-    config.titulos.forEach(item => {
+    conjunto.forEach(item => {
         const div = document.createElement('div');
         div.className = "foto-contenedor";
         div.id = `box-${item.id}`;
@@ -318,16 +258,20 @@ function generarCamposFotos() {
         `;
         contenedorMarcos.appendChild(div);
         
+        // Asignar el procesador de imágenes en tiempo real
         div.querySelector('input').addEventListener('change', function() {
             ejecutarCompresionMesa(item.id, `box-${item.id}`, `prev-${item.id}`);
         });
     });
 }
 
-// Escuchas para actualizar marcos en tiempo real si el operador cambia los parámetros
-selectNivel.addEventListener('change', generarCamposFotos);
+// Inicializar por defecto con Menor de edad
+generarCamposFotos(true);
+
 document.getElementsByName('tipo_edad').forEach(radio => {
-    radio.addEventListener('change', generarCamposFotos);
+    radio.addEventListener('change', (e) => {
+        generarCamposFotos(e.target.value === 'menor');
+    });
 });
 
 btnValidar.addEventListener('click', () => {
@@ -335,20 +279,40 @@ btnValidar.addEventListener('click', () => {
     const capturistaVal = selectCapturista.value;
 
     if (!capturistaVal) { alert("ERROR OPERATIVO: Selecciona al capturista antes de continuar."); return; }
-    if (curpVal.length !== 18) { alert("El CURP del alumno debe contener exactamente 18 caracteres."); return; }
+    if (curpVal.length !== 18) { alert("El CURP del alumno debe ser de 18 caracteres."); return; }
+
+    let alumno = null; let escuelaInfo = null; let cctCod = "";
+    for (let cct in d_basica) {
+        let b = d_basica[cct].alumnos.find(a => a.curp === curpVal);
+        if (b) { alumno = b; escuelaInfo = d_basica[cct]; cctCod = cct; break; }
+    }
 
     document.getElementById('res-curp').textContent = curpVal;
     panelRes.style.display = "flex";
-    
-    document.getElementById('res-datos').innerHTML = `
-        <strong>Estrategia Seleccionada:</strong> ${selectNivel.value}<br>
-        <strong>Estatus de Mesa:</strong> Listo para inyección de imágenes al bloque JSON corporativo.
-    `;
-    
-    generarCamposFotos();
-    document.getElementById('seccion-fotos').style.display = "block";
+
+    if (alumno) {
+        panelRes.className = "panel-resultado si";
+        document.getElementById('res-badge').textContent = "✓ LOCALIZADO EN PADRÓN JORNADA";
+        document.getElementById('res-datos').innerHTML = `
+            <strong>Beneficiario:</strong> ${alumno.nombre}<br>
+            <strong>Nivel Educativo:</strong> ${alumno.tipo}<br>
+            <strong>Infraestructura CCT:</strong> ${cctCod} — ${escuelaInfo.escuela}
+        `;
+        document.getElementById('seccion-fotos').style.display = "block";
+    } else {
+        // Permitir captura abierta por si es rezago no cargado localmente
+        panelRes.className = "panel-resultado si";
+        document.getElementById('res-badge').textContent = "⚠ REZAGO / CAPTURA MANUAL PERMITIDA";
+        document.getElementById('res-datos').innerHTML = `
+            <strong>Beneficiario:</strong> REGISTRO DE TRÁMITE ABIERTO<br>
+            <strong>CURP:</strong> ${curpVal}<br>
+            <span style="color:#A6761E;">Asegúrate de verificar físicamente la documentación.</span>
+        `;
+        document.getElementById('seccion-fotos').style.display = "block";
+    }
 });
 
+// COMPRESOR AL VUELO: Reduce tamaño y calidad para no saturar memoria móvil
 function ejecutarCompresionMesa(inputId, boxId, imgId) {
     const input = document.getElementById(inputId);
     const box = document.getElementById(boxId);
@@ -365,6 +329,7 @@ function ejecutarCompresionMesa(inputId, boxId, imgId) {
                 let width = img.width;
                 let height = img.height;
                 
+                // Redimensionar si excede el tamaño óptimo de lectura de documentos
                 const MAX_DIM = 1200;
                 if (width > height) {
                     if (width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; }
@@ -377,7 +342,7 @@ function ejecutarCompresionMesa(inputId, boxId, imgId) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Compresión balanceada a 0.65 para firmas legibles reduciendo peso
+                // Compresión balanceada a 0.65 (Mantiene firmas legibles pesando menos de 200kb)
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
                 
                 imagenesComprimidas[inputId] = dataUrl;
@@ -392,51 +357,61 @@ function ejecutarCompresionMesa(inputId, boxId, imgId) {
     }
 }
 
+// ARCHIVADO EN FORMATO DE CARPETAS SOLICITADO
 document.getElementById('btn-archivar').addEventListener('click', () => {
     const curpVal = curpInput.value.trim().toUpperCase();
     const capturistaNombre = selectCapturista.value;
-    const nivelActual = selectNivel.value;
-    const config = obtenerConfiguracionActual();
+    const esMenor = document.getElementById('rad-menor').checked;
+    const conjuntoTitulos = esMenor ? titulosMenor : titulosMayor;
     
+    // Validar carga completa de las 5 imágenes del flujo correspondiente
     let faltantes = false;
-    config.titulos.forEach(item => {
+    conjuntoTitulos.forEach(item => {
         if(!imagenesComprimidas[item.id]) { faltantes = true; }
     });
 
     if(faltantes) {
-        alert(`ERROR DE MESA: Este flujo requiere obligatoriamente las ${config.total} fotografías validadas.`);
+        alert("ERROR: El manual estipula que las 5 fotografías son de carácter obligatorio para cerrar el expediente.");
         return;
     }
 
-    // Normalización de títulos para llaves del JSON
+    let nombreA = "REGISTRO MANUAL O REZAGO"; let nivelA = "MEDIA_SUPERIOR";
+    for (let cct in d_basica) {
+        let b = d_basica[cct].alumnos.find(a => a.curp === curpVal);
+        if (b) { nombreA = b.nombre; nivelA = b.tipo; break; }
+    }
+
+    // Creación de mapa con nombres de archivo normativos del manual
     const fotosEstructuradas = {};
-    config.titulos.forEach(item => {
+    conjuntoTitulos.forEach(item => {
+        // Limpiar el título para usarlo como llave limpia de archivo (ej: "1_Acuse_Lleno_y_Firmado.jpg")
         const nombreArchivo = item.label.replace(/^\d+\.\s+/, "").replace(/[\s,]+/g, "_") + ".jpg";
         const indice = item.label.match(/^\d+/)[0];
         fotosEstructuradas[`${indice}_${nombreArchivo}`] = imagenesComprimidas[item.id];
     });
 
-    // Construcción del nodo con la jerarquía jerárquica corporativa solicitada
+    // JERARQUÍA EXACTA DE CARPETAS SOLICITADA EN JSON
     const nodoExpediente = {
         [capturistaNombre]: {
-            [nivelActual]: {
-                [curpVal]: fotosEstructuradas
+            [nivelA]: {
+                [`${curpVal} - ${nombreA}`]: fotosEstructuradas
             }
         },
         metaData: {
-            tipoEsquema: config.msg,
-            fechaHora: new Date().toISOString()
+            tipoExpediente: esMenor ? "MENOR_DE_EDAD" : "MAYOR_DE_EDAD",
+            horaOperacion: new Date().toLocaleTimeString('es-MX', { hour12: false }),
+            fechaOperacion: new Date().toISOString().slice(0,10)
         }
     };
 
     listadoHistorico.push(nodoExpediente);
-    actualizarTablaHistorial(curpVal, nivelActual, config.total);
+    actualizarTablaHistorial(nombreA, curpVal, nivelA);
     
-    alert("Expediente procesado correctamente. Guardado en memoria temporal de sesión.");
+    alert("Expediente empaquetado y comprimido exitosamente.");
     resetearFormulario();
 });
 
-function actualizarTablaHistorial(curp, nivel, totalFotos) {
+function actualizarTablaHistorial(nombre, curp, nivel) {
     const tbody = document.getElementById('lista-atendidos');
     document.getElementById('txt-contador').textContent = `Registros: ${listadoHistorico.length}`;
     
@@ -446,10 +421,10 @@ function actualizarTablaHistorial(curp, nivel, totalFotos) {
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-        <td><span style="font-family:monospace; font-weight:700;">${curp}</span></td>
+        <td><strong>${nombre}</strong><br><span style="color:#666; font-family:monospace;">${curp}</span></td>
         <td><span class="badge" style="background:#C8962A; color:#000; padding:2px 5px; font-size:0.65rem;">${nivel}</span></td>
         <td>${selectCapturista.value.split(" ")[0]}</td>
-        <td><span style="color:var(--verde); font-weight:700;">✓ ${totalFotos} Fotos Compresas</span></td>
+        <td><span style="color:var(--verde); font-weight:700;">✓ ESTRUCTURADO</span></td>
     `;
     tbody.appendChild(tr);
 }
@@ -458,17 +433,18 @@ function resetearFormulario() {
     curpInput.value = "";
     panelRes.style.display = "none";
     document.getElementById('seccion-fotos').style.display = "none";
-    contenedorMarcos.innerHTML = "";
+    const esMenor = document.getElementById('rad-menor').checked;
+    generarCamposFotos(esMenor);
 }
 
 btnLimpiar.addEventListener('click', resetearFormulario);
 
 document.getElementById('btn-descargar').addEventListener('click', () => {
-    if (listadoHistorico.length === 0) { alert("No existen registros válidos en la cola actual."); return; }
+    if (listadoHistorico.length === 0) { alert("No hay expedientes capturados en este bloque móvil."); return; }
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(listadoHistorico, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `EVIDENCIAS_SARE_1507.json`);
+    downloadAnchor.setAttribute("download", `GENERAR_RESPALDO_DE_EVIDENCIAS.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
