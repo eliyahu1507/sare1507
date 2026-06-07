@@ -2,827 +2,318 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Captura · SARE 1507</title>
-<!-- Librerías de Decodificación y Compresión en ZIP -->
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SARE 1507 — Módulo de Captura</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --v:#1B5E20;--vm:#2E7D32;--vl:#4CAF50;--vx:#E8F5E9;
-  --d:#C8930A;--dx:#FFF8E1;--g:#7A0032;
-  --r:#B71C1C;--rx:#FFEBEE;--az:#1565C0;
-  --bg:#F4F6F4;--w:#fff;--t:#1a1a1a;--ts:#555;
-  --b:#D8E4D8;--sh:rgba(27,94,32,.10);
+  --guinda:#6B1C3E;
+  --guinda-o:#4A0E29;
+  --guinda-c:#8B2550;
+  --dorado:#C8962A;
+  --dorado-c:#E5B94E;
+  --dorado-s:#F5E6C0;
+  --verde:#1A7A3A;
+  --verde-bg:#B9F5C8;
+  --verde-c:#E8FFF0;
+  --naranja:#E65C00;
+  --naranja-bg:#FFF3E0;
+  --azul:#1565C0;
+  --azul-bg:#E3F2FD;
+  --alerta:#FF6F00;
+  --alerta-bg:#FFF8E1;
+  --rojo:#C62828;
+  --blanco:#FFF;
+  --gris-bg:#F7F4F5;
+  --gris:#EDE8EA;
+  --texto:#1A0A10;
+  --texto-s:#5A3A47;
+  --sombra:rgba(74,14,41,.15)
 }
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--t);min-height:100vh}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--texto)}
 
-/* LOCK SCREEN REFORMADO PARA SCROLL MÓVIL SEGURO */
-.lock{position:fixed;inset:0;background:linear-gradient(160deg,#1a3d1a,var(--vm));z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:30px 20px;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.lock-header{text-align:center;margin-bottom:15px;flex-shrink:0}
-.lock h1{font-family:'Montserrat',sans-serif;font-size:1.3rem;font-weight:900;color:#fff;margin:8px 0 4px}
-.lock p{color:rgba(255,255,255,.7);font-size:.82rem}
-.lock-list{width:100%;max-width:340px;display:grid;gap:10px;margin:10px 0;max-height:280px;overflow-y:auto;padding:4px}
-.lock-btn{background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.15);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;width:100%;text-align:left;user-select:none}
-.lock-btn:active{background:rgba(255,255,255,.15)}
-.lock-btn.sel{background:rgba(255,255,255,.25);border-color:var(--d);box-shadow:0 0 10px rgba(200,147,10,0.3)}
-.lock-btn span{font-weight:700;color:#fff;font-size:.9rem;display:block}
-.lock-btn small{color:rgba(255,255,255,.65);font-size:.74rem}
-.lock-go{margin-top:15px;background:var(--d);color:#fff;border:none;border-radius:10px;padding:14px;font-family:'Montserrat',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;width:100%;max-width:340px;opacity:.3;pointer-events:none;transition:all .2s;flex-shrink:0}
-.lock-go.on{opacity:1;pointer-events:all}
+.top-bar{background:var(--guinda-o);padding:7px 20px;display:flex;align-items:center;justify-content:space-between;font-size:.71rem;color:rgba(255,255,255,.82);border-bottom:2px solid var(--dorado)}
+.top-bar .left-meta{display:flex;gap:10px}
+.top-bar .sep{color:var(--dorado-c)}
 
-/* HEADER */
-.hdr{background:linear-gradient(135deg,#1a3d1a,var(--vm));padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
-.hdr-l{display:flex;align-items:center;gap:10px}
-.hdr h2{font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900;color:#fff;line-height:1.2}
-.hdr small{font-size:.68rem;color:rgba(255,255,255,.72)}
-.hdr-cnt{text-align:right}
-.hdr-cnt b{font-family:'Montserrat',sans-serif;font-size:1.5rem;font-weight:900;color:var(--d);display:block;line-height:1}
-.hdr-cnt span{font-size:.58rem;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.5px}
+header{background:linear-gradient(135deg,var(--guinda-o) 0%,var(--guinda) 55%,var(--guinda-c) 100%);color:#fff;position:relative;overflow:hidden}
+.header-content{padding:20px 28px 16px;position:relative;z-index:1}
+.logo-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo-left{display:flex;align-items:center;gap:10px}
+.escudo{width:46px;height:46px;background:var(--dorado);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;box-shadow:0 0 0 4px rgba(200,150,42,.3)}
+.logo-text .gob-label{font-size:.65rem;letter-spacing:2px;text-transform:uppercase;opacity:.8}
+.logo-text .prog-name{font-family:'Montserrat',sans-serif;font-size:.9rem;font-weight:800;color:var(--dorado-c)}
 
-/* NAVIGATION */
-.nav{position:fixed;bottom:0;left:0;right:0;background:var(--w);border-top:1.5px solid var(--b);display:flex;z-index:100;box-shadow:0 -2px 10px rgba(0,0,0,.07)}
-.nav button{flex:1;border:none;background:none;padding:9px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.3px}
-.nav button.on{color:var(--vm)}
-.nav button i{font-size:1.15rem;font-style:normal}
+h1.tit{font-family:'Montserrat',sans-serif;font-size:clamp(.92rem,2.3vw,1.5rem);font-weight:900;line-height:1.25;text-transform:uppercase;margin-top:10px}
+h1.tit .hl{color:var(--dorado-c)}
+.sub-h{margin-top:5px;font-size:.82rem;opacity:.88}
 
-/* CONTAINER */
-.main{padding:12px 13px 80px}
-.scr{display:none}.scr.on{display:block;animation:fi .22s ease}
-@keyframes fi{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.header-clock{text-align:right;line-height:1.3;flex-shrink:0}
+.clock-time{font-family:'Montserrat',sans-serif;font-size:1.35rem;font-weight:800;letter-spacing:1.5px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+.clock-date{font-size:.68rem;color:rgba(255,255,255,.8);font-weight:500;margin-top:2px;white-space:nowrap}
 
-.card{background:var(--w);border-radius:14px;box-shadow:0 2px 12px var(--sh);padding:15px;margin-bottom:11px}
-.ct{font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:800;color:var(--vm);margin-bottom:11px;display:flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.4px}
-.badge{background:var(--vm);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0}
+main{max-width:800px;margin:0 auto;padding:18px 12px 55px}
 
-/* BUTTONS */
-.btn{border:none;border-radius:10px;padding:10px 14px;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
-.bp{background:var(--vm);color:#fff}.bs{background:var(--d);color:#fff}.bo{background:var(--w);border:2px solid var(--b);color:var(--ts)}
-.brow{display:flex;gap:8px;margin-bottom:10px}.brow .btn{flex:1}
+.scanner-card{background:#fff;border-radius:12px;box-shadow:0 2px 14px var(--sombra);overflow:hidden;margin-bottom:16px}
+.scan-header{color:#fff;padding:13px 18px;display:flex;align-items:center;gap:10px;border-bottom:3px solid var(--dorado);background:linear-gradient(135deg,var(--guinda-o),var(--guinda))}
+.scan-header h2{font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:800;text-transform:uppercase}
+.scan-body{padding:16px 18px}
 
-/* INPUTS */
-.irow{display:flex;gap:8px}
-.inp{flex:1;border:2px solid var(--b);border-radius:10px;padding:10px 12px;font-size:.9rem;outline:none;transition:border-color .15s;font-family:'Source Sans 3',sans-serif}
-.inp:focus{border-color:var(--vm)}
+/* Selector de Capturista */
+.capturista-section {margin-bottom:15px; background:#FDF9FA; padding:12px; border-radius:8px; border:1px solid #E8DDE2}
+.capturista-section label {font-family:'Montserrat',sans-serif; font-size:.75rem; font-weight:700; color:var(--guinda); text-transform:uppercase; display:block; margin-bottom:6px}
+.select-capturista {width:100%; padding:10px; border:2px solid #DDD0D5; border-radius:8px; font-size:.88rem; outline:none; background:#fff; font-family:'Open Sans',sans-serif; color:var(--texto); transition:border-color .2s}
+.select-capturista:focus {border-color:var(--guinda)}
 
-/* VIDEO & MONITORING */
-.vwrap{display:none;margin-top:10px;border-radius:12px;overflow:hidden;background:#000;position:relative}
-.vwrap.on{display:block}
-.vwrap video{width:100%;display:block;max-height:230px;object-fit:cover}
-.scanline{position:absolute;left:10%;right:10%;height:2px;background:rgba(76,175,80,.8);top:40%;animation:sl 2s ease-in-out infinite;box-shadow:0 0 8px rgba(76,175,80,.6)}
-@keyframes sl{0%,100%{top:20%}50%{top:75%}}
-.sstatus{font-size:.76rem;color:var(--ts);margin-top:5px;min-height:18px;text-align:center}
+#video-container{position:relative;width:100%;max-width:360px;margin:0 auto 12px;border-radius:10px;overflow:hidden;background:#000;display:none}
+#video-container.active{display:block}
+video{width:100%;display:block}
+.scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-frame{width:72%;height:38%;border:3px solid var(--dorado-c);border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);animation:pf 1.5s infinite}
+@keyframes pf{0%,100%{border-color:var(--dorado-c)}50%{border-color:#fff}}
+.scan-line{position:absolute;width:68%;height:2px;background:var(--naranja);animation:sl 2s linear infinite}
+@keyframes sl{0%{top:32%}50%{top:66%}100%{top:32%}}
 
-/* TARGET CONTAINER INFO */
-.cbox{background:var(--dx);border:1.5px solid var(--d);border-radius:10px;padding:11px 13px;margin-top:9px;display:none}
-.cbox.on{display:block;animation:fi .2s ease}
-.ccode{font-family:monospace;font-weight:700;font-size:.9rem;color:var(--g);margin-bottom:5px;word-break:break-all}
-.cchips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{padding:3px 8px;border-radius:10px;font-size:.7rem;font-weight:700;background:rgba(0,0,0,.09);word-break:break-all}
+.scan-status{text-align:center;font-size:.78rem;color:var(--guinda-o);font-weight:600;min-height:20px;margin-bottom:8px}
 
-.nbox{border-radius:10px;padding:11px 13px;margin-top:9px;display:none}
-.nbox.ok{display:block;background:var(--vx);border:1.5px solid var(--vl)}
-.nbox.ko{display:block;background:var(--rx);border:1.5px solid #EF9A9A}
-.nnm{font-family:'Montserrat',sans-serif;font-weight:800;font-size:.96rem;color:var(--v);margin-bottom:3px}
-.nnm.w{color:var(--r)}
-.nmeta{font-size:.76rem;color:var(--ts);line-height:1.6}
-.nb{display:inline-block;padding:2px 7px;border-radius:7px;font-size:.66rem;font-weight:700;margin-right:3px}
-.nb-p{background:#FCE4EC;color:var(--g)}.nb-s{background:#E3F2FD;color:var(--az)}
-.mok{color:var(--vm);font-weight:700;font-size:.8rem;margin-top:4px}
-.mko{color:var(--r);font-weight:700;font-size:.8rem;margin-top:4px}
+.search-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.main-input{flex:1;min-width:170px;padding:10px 13px;border:2px solid #DDD0D5;border-radius:8px;font-size:.86rem;font-family:'Open Sans',sans-serif;outline:none;transition:border-color .2s;text-transform:uppercase}
+.main-input:focus{border-color:var(--guinda)}
 
-.mitem{border:1.5px solid var(--b);border-radius:9px;padding:9px 11px;margin-bottom:6px;cursor:pointer;background:var(--w);transition:background .12s}
-.mitem:active{background:var(--vx)}
-.mitem.ex{border-color:var(--vl);background:var(--vx)}
-.mi-n{font-weight:700;font-size:.84rem}
-.mi-m{font-size:.7rem;color:var(--ts)}
+.btn-cam{padding:10px 13px;background:var(--dorado);color:var(--guinda-o);border:none;border-radius:8px;font-weight:800;font-size:.8rem;cursor:pointer;transition:all .2s}
+.btn-cam.activo{background:var(--rojo);color:#fff}
+.btn-buscar{padding:10px 16px;background:var(--guinda);color:#fff;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;text-transform:uppercase}
+.btn-buscar:hover{background:var(--guinda-o)}
+.btn-limpiar{padding:10px 11px;background:transparent;color:var(--guinda);border:2px solid var(--guinda);border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer;transition:all .2s}
+.btn-limpiar:hover{background:var(--guinda);color:#fff}
 
-/* EDAD STATUS */
-.erow{display:flex;gap:8px;margin-top:8px}
-.ebtn{flex:1;border:2px solid var(--b);border-radius:10px;padding:10px 5px;text-align:center;cursor:pointer;background:var(--w);font-weight:700;font-size:.82rem;transition:all .15s}
-.ebtn.on{border-color:var(--vm);background:var(--vx);color:var(--vm)}
+/* Alerta de Éxito / Registro */
+.alerta-curp{background:var(--verde-c);border:2px solid var(--verde);border-radius:10px;padding:14px 15px;margin-top:15px;display:none;flex-direction:column;gap:5px}
+.alerta-curp.active{display:flex}
+.alerta-curp .txt strong{color:var(--verde); font-size:.9rem; font-family:'Montserrat',sans-serif}
+.curp-extraido{background:#fff;border:1px solid rgba(26,122,58,.3);border-radius:8px;padding:7px 11px;margin-top:5px;font-family:monospace;font-size:.9rem;font-weight:700;color:var(--verde);letter-spacing:1px;text-align:center}
 
-/* FOTOS GRID AND MATRIX */
-.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.fslot{border:2px dashed var(--b);border-radius:10px;min-height:115px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;position:relative;overflow:hidden;background:#FAFAFA;transition:border-color .15s}
-.fslot.ok{border-style:solid;border-color:var(--vl);background:var(--vx)}
-.fslot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:8px}
-.fover{position:absolute;inset:0;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center;border-radius:8px;opacity:0;transition:opacity .15s;color:#fff;font-size:.72rem;font-weight:700}
-.fslot:active .fover{opacity:1}
-.fcheck{position:absolute;top:5px;right:5px;background:var(--vm);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.68rem;z-index:5}
-.fnum{font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;color:var(--ts);text-transform:uppercase}
-.flbl{font-size:.71rem;font-weight:600;color:var(--ts);text-align:center;padding:0 5px;line-height:1.3}
-.fico{font-size:1.35rem}
-.fprog{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.78rem;font-weight:600;color:var(--ts)}
-.fbar{flex:1;height:6px;background:#E0E0E0;border-radius:3px;overflow:hidden}
-.fbarf{height:100%;background:var(--vm);border-radius:3px;transition:width .3s}
-
-/* CONFIRMATION */
-.cfbox{background:var(--vx);border:1.5px solid var(--vl);border-radius:12px;padding:13px;margin-top:10px;display:none}
-.cfbox.on{display:block;animation:fi .2s ease}
-.cfr{display:flex;justify-content:space-between;margin-bottom:5px;font-size:.8rem}
-.cfl{color:var(--ts)}.cfv{font-weight:700;text-align:right;max-width:60%}
-.cfbtns{display:flex;gap:8px;margin-top:10px}.cfbtns .btn{flex:1;padding:11px}
-
-/* REGS LIST */
-.ritem{border:1.5px solid var(--b);border-radius:10px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px}
-.rn{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.1rem;color:var(--vm);width:26px;text-align:center;flex-shrink:0}
-.ri-n{font-weight:700;font-size:.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ri-m{font-size:.7rem;color:var(--ts)}
-
-/* CIERRE CONTROL PANEL AND TABLES */
-.zpanel{background:linear-gradient(135deg,var(--v),var(--vm));border-radius:14px;padding:18px;text-align:center;color:#fff}
-.zpanel p{font-size:.76rem;opacity:.85;margin:5px 0 14px}
-.zbtn{background:var(--w);color:var(--v);border:none;border-radius:10px;padding:12px;font-family:'Montserrat',sans-serif;font-size:.85rem;font-weight:800;cursor:pointer;width:100%}
-
-.stat-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.82rem}
-.stat-table th{background:var(--vx);color:var(--v);font-family:'Montserrat',sans-serif;font-weight:700;padding:8px;text-align:left;border-bottom:2px solid var(--vl)}
-.stat-table td{padding:8px;border-bottom:1px solid var(--b);color:var(--t)}
-.stat-table tr:last-child{font-weight:700;background:#fafafa}
-
-/* GENERAL ALERTS */
-.al{border-radius:10px;padding:9px 12px;font-size:.8rem;line-height:1.5;margin-top:8px;display:flex;gap:7px}
-.al.am{background:var(--dx);border:1px solid #FFD54F;color:#5D4037}
-.al.av{background:var(--vx);border:1px solid var(--vl);color:var(--v)}
-.al.ar{background:var(--rx);border:1px solid #EF9A9A;color:var(--r)}
-
-/* INTERACTIVE TOASTS */
-.toast{position:fixed;top:15px;left:13px;right:13px;z-index:600;border-radius:10px;padding:11px 14px;font-weight:700;font-size:.83rem;display:flex;gap:8px;animation:fi .2s ease;pointer-events:none;box-shadow:0 3px 10px rgba(0,0,0,.2)}
-.toast.ok{background:var(--v);color:#fff}.toast.er{background:var(--r);color:#fff}
+footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;padding:15px;font-size:.72rem;border-top:3px solid var(--dorado);position:fixed;bottom:0;width:100%}
+footer strong{color:var(--dorado-c)}
 </style>
+<!-- Cargamos la librería de la cámara que ya usas para el escaneo -->
+<script src="https://unpkg.com/@zxing/library@latest"></script>
 </head>
 <body>
 
-<!-- LOCK LOGIN SCREEN REESTRUCTURADA -->
-<div class="lock" id="lock">
-  <div class="lock-header">
-    <div style="font-size:2.8rem">📋</div>
-    <h1>Captura de Entregas</h1>
-    <p>SARE 1507 · Becas Bienestar</p>
+<div class="top-bar">
+  <div class="left-meta">
+    <span>ESTADO DE MÉXICO</span>
+    <span class="sep">|</span>
+    <span>REGION ECATEPEC</span>
   </div>
-
-  <div class="lock-list" id="lockList"></div>
-  
-  <button class="lock-go" id="lockGo" onclick="iniciar()">Iniciar sesión →</button>
-  
-  <div style="margin-top:20px; font-size:.75rem; color:rgba(255,255,255,.5); text-align:center;" id="dbStatus">Comprobando base nominal integrada...</div>
+  <div><strong>SARE 1507</strong></div>
 </div>
 
-<!-- HEADER LOGISTICS -->
-<div class="hdr">
-  <div class="hdr-l">
-    <div style="font-size:1.4rem">📋</div>
-    <div>
-      <h2>Captura de Entregas</h2>
-      <small id="hCap">—</small>
-    </div>
-  </div>
-  <div class="hdr-cnt">
-    <b id="hCnt">0</b>
-    <span>Entregadas</span>
-  </div>
-</div>
-
-<!-- BOTTOM NAVIGATION -->
-<div class="nav">
-  <button class="on" id="n0" onclick="ir('s1',0)"><i>📷</i>Capturar</button>
-  <button id="n1" onclick="ir('s2',1)"><i>📋</i>Registros</button>
-  <button id="n2" onclick="ir('s3',2)"><i>📦</i>Cierre</button>
-</div>
-
-<!-- MAIN APPLICATIONS WINDOW -->
-<div class="main">
-
-  <!-- CAPTURA SCREEN -->
-  <div class="scr on" id="s1">
-    <div class="card">
-      <div class="ct"><span class="badge">1</span>Buscar beneficiario</div>
-      <div class="brow">
-        <button class="btn bs" onclick="togCam()">📷 Escanear CURP / QR</button>
-        <button class="btn bo" onclick="togMan()">✏️ Búsqueda Manual</button>
-      </div>
-
-      <!-- Live Video Target -->
-      <div class="vwrap" id="vwrap">
-        <video id="vid" playsinline muted autoplay></video>
-        <div class="scanline"></div>
-      </div>
-      <div class="sstatus" id="ss"></div>
-
-      <!-- Manual Matching Box -->
-      <div id="mArea" style="display:none;margin-top:8px">
-        <div class="irow">
-          <input class="inp" id="mInp" placeholder="Escribe Apellidos, Nombre o CURP..." oninput="buscar()">
-          <button class="btn bo" style="flex:none;padding:10px 12px" onclick="limpiarTodo()">✕</button>
+<header>
+  <div class="header-content">
+    <div class="logo-row">
+      <div class="logo-left">
+        <div class="escudo">🦅</div>
+        <div class="logo-text">
+          <div class="gob-label">Gobierno de México</div>
+          <div class="prog-name">Becas para el Bienestar Benito Juárez</div>
         </div>
-        <div id="mRes" style="margin-top:8px"></div>
       </div>
-
-      <!-- Render Scanner Read Values -->
-      <div class="cbox" id="cbox">
-        <div class="ccode" id="ccode"></div>
-        <div class="cchips" id="cchips"></div>
-      </div>
-
-      <!-- Data Base Nominal Check Result -->
-      <div class="nbox" id="nbox">
-        <div class="nnm" id="nnm"></div>
-        <div class="nmeta" id="nmeta"></div>
-        <div id="nmatch"></div>
+      <div class="header-clock">
+        <div class="clock-time" id="live-clock">00:00:00</div>
+        <div class="clock-date" id="live-date">Cargando fecha...</div>
       </div>
     </div>
+    <h1 class="tit">Módulo de Captura <span class="hl">— Control Operativo</span></h1>
+    <div class="sub-h">Registro y validación de beneficiarios por CURP</div>
+  </div>
+</header>
 
-    <!-- PHOTOS INTEGRATION SCREEN -->
-    <div class="card" id="cFotos" style="display:none">
-      <div class="ct"><span class="badge">2</span>Evidencias Fotográficas</div>
+<main>
+  <div class="scanner-card">
+    <div class="scan-header">
+      <h2>Escanear o Ingresar CURP</h2>
+    </div>
+    <div class="scan-body">
+      
+      <!-- LISTA DE CAPTURISTAS OFICIAL DE LA OFICINA -->
+      <div class="capturista-section">
+        <label for="capturista">Capturista Responsable:</label>
+        <select id="capturista" class="select-capturista">
+          <option value="">-- Selecciona quién captura --</option>
+          <option value="EMMA">Emma Escobar</option>
+          <option value="JOSELYN">Joselyn Morales</option>
+          <option value="MICHELLE">Michelle Macias</option>
+          <option value="ELIAS">Elias Cervantes</option>
+        </select>
+      </div>
 
-      <!-- Condition Toggle for Higher Education Modalities -->
-      <div id="eArea" style="display:none;margin-bottom:12px">
-        <div style="font-size:.8rem;color:var(--ts);margin-bottom:4px">¿El/la becario/a es…?</div>
-        <div class="erow">
-          <div class="ebtn" id="eMen" onclick="setEdad(true)">👦 Menor de edad</div>
-          <div class="ebtn" id="eMay" onclick="setEdad(false)">🧑 Mayor de edad</div>
+      <!-- Contenedor del flujo de la cámara de escaneo -->
+      <div id="video-container">
+        <video id="video"></video>
+        <div class="scan-overlay">
+          <div class="scan-frame"></div>
+          <div class="scan-line"></div>
         </div>
       </div>
 
-      <!-- Photo Matrix -->
-      <div class="fgrid" id="fGrid"></div>
-      <div class="fprog">
-        <span id="fProgTxt">0/4</span>
-        <div class="fbar"><div class="fbarf" id="fBarF" style="width:0%"></div></div>
+      <div class="scan-status" id="scan-status">Cámara inactiva</div>
+
+      <div class="search-row">
+        <button type="button" class="btn-cam" id="btn-cam">📷 Activar Cámara</button>
+        <input type="text" id="curp-input" class="main-input" placeholder="INGRESA CURP (18 CARACTERES)" maxlength="18">
+        <button type="button" class="btn-buscar" id="btn-registrar">Registrar</button>
+        <button type="button" class="btn-limpiar" id="btn-limpiar">Limpiar</button>
       </div>
 
-      <button class="btn bp" style="width:100%;margin-top:14px" id="bConf" onclick="mostrarConf()" disabled>✅ Confirmar captura</button>
-    </div>
-
-    <!-- CONFIRMATION SUMMARY STEP -->
-    <div class="cfbox" id="cfbox">
-      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:.85rem;color:var(--vm);margin-bottom:9px">✅ Resumen de Entrega</div>
-      <div id="cfRows"></div>
-      <div class="cfbtns">
-        <button class="btn bo" onclick="cancelConf()">Cancelar</button>
-        <button class="btn bp" style="background:var(--v)" onclick="guardar()">💾 Guardar Registro</button>
+      <!-- Alerta visual de éxito al procesar -->
+      <div class="alerta-curp" id="alerta-registro">
+        <div class="txt"><strong id="alert-titulo">¡Registro Exitoso!</strong></div>
+        <div class="curp-extraido" id="curp-detectado">------------------</div>
+        <div style="font-size: 0.75rem; color: #333; margin-top: 5px; text-align: center;" id="meta-registro"></div>
       </div>
+
     </div>
   </div>
+</main>
 
-  <!-- REGISTROS LIST SCREEN -->
-  <div class="scr" id="s2">
-    <div class="card">
-      <div class="ct">📋 Registros Capturados Localmente</div>
-      <div id="rList"><div style="text-align:center;padding:22px;color:#aaa;font-size:.82rem">Sin registros aún</div></div>
-    </div>
-  </div>
-
-  <!-- CIERRE Y RESPALDO SCREEN -->
-  <div class="scr" id="s3">
-    <!-- MÓDULO DE ESTADÍSTICA GLOBAL PARA CONCILIACIÓN FÍSICA -->
-    <div class="card">
-      <div class="ct">📊 Estadística Global de Monitoreo</div>
-      <p style="font-size:.76rem;color:var(--ts);margin-bottom:8px">Usa esta tabla para validar la cantidad de tarjetas procesadas contra tus expedientes en físico.</p>
-      <div id="wrapperTablaGlobal"></div>
-    </div>
-
-    <div class="card" style="display:none">
-      <div id="rResumen"></div>
-    </div>
-
-    <div class="zpanel">
-      <div style="font-size:2rem">📦</div>
-      <h3 style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900">Generar Respaldo Estructurado</h3>
-      <p>Fotos comprimidas organizadas por carpetas según especificación técnica</p>
-      <button class="zbtn" onclick="genZip()">⬇️ Descargar ZIP de Evidencias</button>
-    </div>
-    <div class="al am" style="margin-top:10px"><span>⚠️</span><span>Guarda el archivo ZIP antes de borrar datos o recargar el navegador.</span></div>
-  </div>
-</div>
-
-<!-- HIDDEN INPUT DEVICE CAMERA TRIGGER -->
-<input type="file" id="fInp" accept="image/*" capture="environment" style="display:none" onchange="fotoOk(this)">
+<footer>
+  Coordinación Nacional de Becas para el Bienestar — Oficina <strong>SARE 1507 Ecatepec</strong>
+</footer>
 
 <script>
-// ==========================================
-// ESTADO GLOBAL Y OPERADORES
-// ==========================================
-var CAPS = [
-  {cupo:159415, nombre:'JOSE ELIAS CERVANTES JIMENEZ'},
-  {cupo:150702, nombre:'EMMA ESCOBAR'},
-  {cupo:150703, nombre:'JOSELYN MORALES'}
-];
-var DB = {basica:[], buems:[], jef:[]};
-var SES = {cap:null, dbOk:false};
-var REGS = [];
-var ACT = null;       
-var FDEF = [];        
-var FIDX = -1;        
-var CR = null;        
-var CAM = false;      
-var DT;               
-
-// ==========================================
-// INITIALIZATION
-// ==========================================
-(function initLock(){
-  var list = document.getElementById('lockList');
-  CAPS.forEach(function(c){
-    var b = document.createElement('button');
-    b.className = 'lock-btn';
-    b.innerHTML = '<div style="font-size:1.2rem">👤</div><div><span>'+c.nombre+'</span><small>ID Acceso: '+c.cupo+'</small></div>';
-    b.onclick = function(){
-      document.querySelectorAll('.lock-btn').forEach(function(x){x.classList.remove('sel');});
-      b.classList.add('sel');
-      SES.cap = c;
-      chkLock();
-    };
-    list.appendChild(b);
-  });
-  
-  setTimeout(verificarBloquesIntegrados, 300);
-})();
-
-function verificarBloquesIntegrados(){
-  var ok = 0;
-  ['basica','buems','jef'].forEach(function(p){
-    var tag = document.getElementById('d-' + p);
-    if(tag){
-      try {
-        DB[p] = JSON.parse(tag.textContent.trim());
-        ok++;
-      } catch(ex) { console.error("Error al parsear el bloque interno: " + p, ex); }
-    }
-  });
-
-  var statusDiv = document.getElementById('dbStatus');
-  if(ok > 0){
-    SES.dbOk = true;
-    var tot = ['basica','buems','jef'].reduce(function(a,p){
-      return a + (DB[p] ? DB[p].reduce(function(b,s){return b + (s.beneficiarios ? s.beneficiarios.length : 0);},0) : 0);
-    },0);
-    statusDiv.innerHTML = '<span style="color:#FFF8E1">✔️ Base de datos cargada automáticamente ('+tot.toLocaleString()+' registros).</span>';
-    chkLock();
-  } else {
-    statusDiv.innerHTML = '<span style="color:#FFEBEE">⚠️ No se encontraron bloques integrados. Pégalos al final de este archivo.</span>';
-  }
-}
-
-function chkLock(){
-  var go = document.getElementById('lockGo');
-  (SES.cap && SES.dbOk) ? go.classList.add('on') : go.classList.remove('on');
-}
-
-function iniciar(){
-  if(!SES.cap || !SES.dbOk) return;
-  document.getElementById('lock').style.display='none';
-  document.getElementById('hCap').textContent = SES.cap.nombre;
-}
-
-function ir(id, idx){
-  document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('on');});
-  document.getElementById(id).classList.add('on');
-  document.querySelectorAll('.nav button').forEach(function(b,i){b.classList.toggle('on',i===idx);});
-  if(id==='s2') renderRegs();
-  if(id==='s3') renderResumen();
-}
-
-function norm(t){ return t?t.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''):''; }
-function matchAll(s,q){ var n=norm(s); return norm(q).split(/\s+/).filter(Boolean).every(function(t){return n.includes(t);}); }
-function toast(msg,t){
-  var d=document.createElement('div'); d.className='toast '+(t||'ok');
-  d.innerHTML=(t==='er'?'❌ ':'✅ ')+msg; document.body.appendChild(d);
-  setTimeout(function(){d.remove();},2500);
-}
-
-// ==========================================
-// CORE SEARCH LOGIC ENGINE
-// ==========================================
-function buscarEnDB(apPat, apMat, nomS, curp){
-  var enc=null;
-  if(curp){
-    ['basica','buems','jef'].forEach(function(prog){
-      if(!DB[prog]) return;
-      DB[prog].forEach(function(s){
-        s.beneficiarios.forEach(function(b){
-          if(b.curp && norm(b.curp)===norm(curp)) enc={b:b,s:s,prog:prog};
-        });
-      });
-    });
-  }
-  if(!enc && apPat && nomS){
-    var fullQ = (nomS + " " + apPat + " " + (apMat||"")).trim();
-    ['basica','buems','jef'].forEach(function(prog){
-      if(!DB[prog]) return;
-      DB[prog].forEach(function(s){
-        s.beneficiarios.forEach(function(b){
-          if(!enc && matchAll(b.n, fullQ)) enc={b:b,s:s,prog:prog};
-        });
-      });
-    });
-  }
-  return enc;
-}
-
-// ==========================================
-// BARCODE / QR SCANNER CAMERA CONTROL (SANEADO)
-// ==========================================
-function togCam(){ CAM ? detCam() : inicCam(); }
-function inicCam(){
-  var ss=document.getElementById('ss');
-  document.getElementById('mArea').style.display='none';
-  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280}}})
-  .then(function(stream){
-    var v=document.getElementById('vid'); v.srcObject=stream; v.play();
-    document.getElementById('vwrap').classList.add('on'); CAM=true;
-    ss.innerHTML = '🔍 Enfoca el código QR o barras del documento...';
-    if(!CR){
-      var h=new Map(); h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.PDF_417]);
-      CR=new ZXing.BrowserMultiFormatReader(h);
-    }
-    CR.decodeFromStream(stream,v,function(res){
-      if(!res) return;
-      var txt=res.getText().trim();
-      
-      // EXTRACCIÓN ROBUSTA: Busca cualquier CURP válida de 18 caracteres en la cadena (incluso dentro de URLs)
-      var mc = txt.toUpperCase().match(/[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]/);
-      
-      if(mc){
-        var curp = mc[0];
-        // Si tiene formato tradicional de pipes, extrae metadatos adicionales opcionales
-        var pp = txt.split('|');
-        var apPat = pp[2] ? pp[2].toUpperCase().trim() : '';
-        var apMat = pp[3] ? pp[3].toUpperCase().trim() : '';
-        var nomS  = pp[4] ? pp[4].toUpperCase().trim() : '';
-        
-        detCam();
-        procesarCurp(curp, apPat, apMat, nomS);
-      } else {
-        // Si no detecta una estructura CURP válida, avisa sin romper ejecución
-        ss.innerHTML = '<span style="color:var(--r)">⚠️ Código no reconocido como CURP válida. Reintenta.</span>';
-      }
-    });
-  }).catch(function(e){ ss.innerHTML='<span style="color:var(--r)">⚠️ Sin acceso a cámara.</span>'; CAM=false; });
-}
-
-function detCam(){
-  if(CR) CR.reset(); var v=document.getElementById('vid');
-  if(v.srcObject){v.srcObject.getTracks().forEach(function(t){t.stop();}); v.srcObject=null;}
-  document.getElementById('vwrap').classList.remove('on'); CAM=false;
-}
-
-function procesarCurp(curp,apPat,apMat,nomS){
-  // Cálculo seguro de edad basado exclusivamente en la CURP extraída limpia
-  var yrStr = curp.substr(4,2);
-  var yr = parseInt(yrStr); 
-  var edad = 0;
-  
-  if(!isNaN(yr)){
-    yr += (yr > 26 ? 1900 : 2000); // Ajuste dinámico de umbral generacional
-    edad = new Date().getFullYear() - yr;
-  }
-  
-  var menor = edad < 18;
-  var nombreShow = apPat ? (nomS+' '+apPat+' '+apMat).trim() : 'BENEFICIARIO ('+curp+')';
-
-  document.getElementById('ccode').textContent = curp;
-  document.getElementById('cchips').innerHTML =
-    '<span class="chip">👤 '+nombreShow+'</span><span class="chip">🎂 '+(isNaN(edad)?'—':edad+' años')+'</span>';
-  document.getElementById('cbox').classList.add('on');
-
-  var enc=buscarEnDB(apPat,apMat,nomS,curp);
-  if(enc){
-    mostrarEncontrado(enc, curp, menor);
-  } else {
-    var nb=document.getElementById('nbox'); nb.className='nbox ko';
-    document.getElementById('nnm').className='nnm w';
-    document.getElementById('nnm').textContent='⚠️ Fuera de padrón nominal';
-    document.getElementById('nmeta').textContent=nombreShow;
-    document.getElementById('nmatch').innerHTML='<div class="mko">No localizado de manera automática. Revisa usando la barra manual o fuerza su registro.</div>';
+// LÓGICA DEL RELOJ EN TIEMPO REAL
+function updateClock() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('es-MX', { hour12: false });
+    const dateStr = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
-    document.getElementById('mArea').style.display='block';
-    document.getElementById('mInp').value = curp; // Rellena con la CURP para facilitar localización manual
-    buscar();
+    document.getElementById('live-clock').textContent = timeStr;
+    document.getElementById('live-date').textContent = dateStr.toUpperCase();
+}
+setInterval(updateClock, 1000);
+updateClock();
 
-    prepActual({curp:curp, nombre:nombreShow, escuela:'POR ASIGNAR', cct:'SIN_CCT', nivel:'MANUAL', prog:'basica', municipio:'ECATEPEC', fecha:'—', menorDeEdad:menor});
-  }
+// VARIABLES DEL ESCÁNER Y OPERACIÓN
+let codeReader = null;
+let isScanning = false;
+const btnCam = document.getElementById('btn-cam');
+const videoContainer = document.getElementById('video-container');
+const scanStatus = document.getElementById('scan-status');
+const curpInput = document.getElementById('curp-input');
+const btnRegistrar = document.getElementById('btn-registrar');
+const btnLimpiar = document.getElementById('btn-limpiar');
+const alertaRegistro = document.getElementById('alerta-registro');
+const curpDetectado = document.getElementById('curp-detectado');
+const metaRegistro = document.getElementById('meta-registro');
+const selectCapturista = document.getElementById('capturista');
+
+// Inicializar lector ZXing
+try {
+    codeReader = new ZXing.BrowserMultiFormatReader();
+} catch (e) {
+    console.error("Error cargando ZXing: ", e);
+    scanStatus.textContent = "Error al cargar librería de cámara.";
 }
 
-function mostrarEncontrado(enc,curp,menor){
-  var nb=document.getElementById('nbox'); nb.className='nbox ok';
-  document.getElementById('nnm').className='nnm';
-  document.getElementById('nnm').textContent=enc.b.n;
-  document.getElementById('nmeta').innerHTML='<span class="nb nb-p">'+enc.s.nivel+'</span> '+enc.s.nombre+' · '+enc.s.cct;
-  document.getElementById('nmatch').innerHTML='<div class="mok">✅ Beneficiario Validado</div>';
-  
-  prepActual({curp:curp||enc.b.curp||'SIN_CURP', nombre:enc.b.n, escuela:enc.s.nombre, cct:enc.s.cct, nivel:enc.s.nivel||'BÁSICA', prog:enc.prog, municipio:enc.s.municipio||'ECATEPEC', fecha:enc.s.fecha, menorDeEdad:menor});
-}
-
-function togMan(){
-  var a=document.getElementById('mArea');
-  a.style.display=a.style.display==='none'?'block':'none';
-  if(a.style.display==='block') document.getElementById('mInp').focus();
-}
-
-function buscar(){
-  clearTimeout(DT); var q=document.getElementById('mInp').value.trim();
-  var res=document.getElementById('mRes'); if(!q){res.innerHTML='';return;}
-  DT=setTimeout(function(){
-    var rows=[];
-    ['basica','buems','jef'].forEach(function(prog){
-      if(!DB[prog]) return;
-      DB[prog].forEach(function(s){
-        s.beneficiarios.forEach(function(b){
-          if(matchAll(b.n,q) || (b.curp && norm(b.curp).includes(norm(q)))) rows.push({b:b,s:s,prog:prog});
-        });
-      });
-    });
-    if(!rows.length){
-      res.innerHTML='<div class="mitem" onclick="forzarManual()"><div class="mi-n">➕ Forzar Alta Manual</div><div class="mi-m">Registrar con datos del documento escaneado</div></div>';
-      return;
-    }
-    var h='';
-    rows.slice(0,5).forEach(function(r){
-      h+='<div class="mitem" onclick="selMan(\''+r.prog+'\','+DB[r.prog].indexOf(r.s)+',\''+r.b.curp+'\')">'
-        +'<div class="mi-n">'+r.b.n+'</div>'
-        +'<div class="mi-m"><span class="nb nb-p">'+r.s.nivel+'</span> '+r.s.nombre+' · '+r.s.cct+'</div>'
-        +'</div>';
-    });
-    res.innerHTML=h;
-  },250);
-}
-
-function selMan(prog, sIdx, bCurp){
-  var s=DB[prog][sIdx]; var b=s.beneficiarios.find(function(x){return x.curp===bCurp;}) || s.beneficiarios[0];
-  document.getElementById('mArea').style.display='none';
-  // Estimar edad segura para selección manual
-  var yr = parseInt(b.curp.substr(4,2));
-  if(!isNaN(yr)) yr += (yr > 26 ? 1900 : 2000);
-  var menor = isNaN(yr) ? true : (new Date().getFullYear() - yr) < 18;
-  mostrarEncontrado({b:b,s:s,prog:prog}, b.curp, menor);
-}
-
-function forzarManual(){
-  var inputVal = document.getElementById('mInp').value.toUpperCase().trim();
-  var finalCurp = inputVal.match(/[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]/) ? inputVal : 'FORZADO_' + Date.now();
-  document.getElementById('mArea').style.display='none';
-  
-  var nb=document.getElementById('nbox'); nb.className='nbox ko';
-  document.getElementById('nnm').textContent='Alta Forzada Manual';
-  document.getElementById('nmeta').textContent='Registro fuera de catálogo nominal oficial';
-  
-  prepActual({curp:finalCurp, nombre:'CASO ESPECIAL - INGRESO MANUAL', escuela:'REGISTRO EXTRAORDINARIO', cct:'1507_MANUAL', nivel:'MANUAL', prog:'basica', municipio:'ECATEPEC', fecha:'—', menorDeEdad:false});
-  toast('Modo extraordinario configurado.');
-}
-
-function limpiarTodo(){
-  document.getElementById('mInp').value=''; document.getElementById('mRes').innerHTML=''; resetCap();
-}
-
-// ==========================================
-// PHOTOGRAPHIC MATRICES DEFINITION
-// ==========================================
-function getFotoLineamiento(nivel, menorDeEdad){
-  var n=norm(nivel);
-  if(n.includes('BASICA') || n.includes('PRIMARIA') || n.includes('SECUNDARIA')){
-    return [
-      {t:'1. ACUSE LLENO Y FIRMADO', d:'Formato de entrega con firma.'},
-      {t:'2. ANVERSO ID TUTOR', d:'Identificación Oficial del tutor legal.'},
-      {t:'3. REVERSO ID TUTOR', d:'Reverso de la identificación.'},
-      {t:'4. BENEFICIARIO CON SOBRE', d:'Fotografía del tutor/alumno mostrando la tarjeta.'}
-    ];
-  }
-  if(menorDeEdad){
-    return [
-      {t:'1. ACUSE LLENO Y FIRMADO', d:'Formato firmado por estudiante y tutor.'},
-      {t:'2. CURP DEL BECARIO', d:'Clave Única de Registro impresa.'},
-      {t:'3. ANVERSO ID TUTOR', d:'Identificación oficial vigente del tutor.'},
-      {t:'4. EXPEDIENTE INTEGRADO', d:'Estudiante menor junto al tutor mostrando sobre.'}
-    ];
-  } else {
-    return [
-      {t:'1. ACUSE LLENO Y FIRMADO', d:'Formato firmado por el becario mayor de edad.'},
-      {t:'2. CURP DEL BECARIO', d:'Copia de la CURP certificada.'},
-      {t:'3. ANVERSO ID ESTUDIANTE', d:'Identificación Oficial (INE) del alumno.'},
-      {t:'4. BENEFICIARIO CON SOBRE', d:'Estudiante mostrando medio de pago.'}
-    ];
-  }
-}
-
-function prepActual(d){
-  ACT=Object.assign({fotos:[null,null,null,null]},d);
-  document.getElementById('cFotos').style.display='block';
-  var esSuperior=!norm(ACT.nivel).includes('BASICA') && !norm(ACT.nivel).includes('PRIMARIA') && !norm(ACT.nivel).includes('SECUNDARIA');
-  document.getElementById('eArea').style.display=esSuperior?'block':'none';
-  if(ACT.menorDeEdad!==null) setEdad(ACT.menorDeEdad); else setEdad(true);
-}
-
-function setEdad(isMenor){
-  ACT.menorDeEdad=isMenor;
-  document.getElementById('eMen').className='ebtn '+(isMenor?'on':'');
-  document.getElementById('eMay').className='ebtn '+( !isMenor?'on':'');
-  FDEF=getFotoLineamiento(ACT.nivel, ACT.menorDeEdad);
-  renderGrid();
-}
-
-function renderGrid(){
-  var g=document.getElementById('fGrid'); g.innerHTML='';
-  FDEF.forEach(function(f,i){
-    var slot=document.createElement('div');
-    slot.className='fslot '+(ACT.fotos[i]?'ok':'');
-    if(ACT.fotos[i]){
-      slot.innerHTML='<div class="fcheck">✓</div><img src="'+ACT.fotos[i]+'"><div class="fover">Cambiar</div>';
+// Evento de botón de Cámara (Encendido / Apagado)
+btnCam.addEventListener('click', () => {
+    if (!codeReader) return;
+    
+    if (isScanning) {
+        stopScanning();
     } else {
-      slot.innerHTML='<div class="fico">📷</div><div class="fnum">FOTO '+(i+1)+'</div><div class="flbl">'+f.t+'</div>';
+        startScanning();
     }
-    slot.onclick=function(){ triggerCamera(i); };
-    g.appendChild(slot);
-  });
-  actualizarProgreso();
+});
+
+function startScanning() {
+    isScanning = true;
+    btnCam.textContent = "🛑 Detener Cámara";
+    btnCam.classList.add('activo');
+    videoContainer.classList.add('active');
+    scanStatus.textContent = "Buscando código de barras (CURP)...";
+
+    codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+        if (result) {
+            // Se detectó una lectura exitosa
+            let rawText = result.text.trim();
+            scanStatus.textContent = "¡Código detectado!";
+            
+            // Extraer o limpiar si viene en formato nativo de la tarjeta de CURP anterior
+            if (rawText.length > 18) {
+                // Comúnmente si tiene la cadena larga, buscamos los 18 caracteres alfanuméricos del CURP
+                const curpMatch = rawText.match(/[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d/i);
+                if (curpMatch) rawText = curpMatch[0];
+            }
+            
+            curpInput.value = rawText.toUpperCase();
+            stopScanning();
+            
+            // Ejecutar auto-registro al escanear exitosamente
+            procesarRegistro();
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+            console.error(err);
+        }
+    });
 }
 
-function triggerCamera(idx){ FIDX=idx; document.getElementById('fInp').click(); }
-
-function fotoOk(inp){
-  var file=inp.files[0]; if(!file) return;
-  var reader=new FileReader();
-  reader.onload=function(e){
-    var img=new Image();
-    img.onload=function(){
-      var canvas=document.createElement('canvas'); var ctx=canvas.getContext('2d');
-      var MAX_WIDTH = 1020; var width=img.width; var height=img.height;
-      if(width>MAX_WIDTH){ height *= MAX_WIDTH/width; width=MAX_WIDTH; }
-      canvas.width=width; canvas.height=height;
-      ctx.drawImage(img,0,0,width,height);
-      ACT.fotos[FIDX]=canvas.toDataURL('image/jpeg', 0.7);
-      renderGrid();
-    };
-    img.src=e.target.result;
-  };
-  reader.readAsDataURL(file); inp.value='';
-}
-
-function actualizarProgreso(){
-  var ready=ACT.fotos.filter(Boolean).length;
-  document.getElementById('fProgTxt').textContent=ready+'/4 Fotos';
-  document.getElementById('fBarF').style.width=(ready/4*100)+'%';
-  document.getElementById('bConf').disabled=(ready!==4);
-}
-
-function mostrarConf(){
-  var cbox=document.getElementById('cfbox'); cbox.classList.add('on');
-  var rows=document.getElementById('cfRows');
-  rows.innerHTML=
-     '<div class="cfr"><span class="cfl">Beneficiario:</span><span class="cfv">'+ACT.nombre+'</span></div>'
-    +'<div class="cfr"><span class="cfl">CURP:</span><span class="cfv">'+ACT.curp+'</span></div>'
-    +'<div class="cfr"><span class="cfl">CCT:</span><span class="cfv">'+ACT.cct+'</span></div>'
-    +'<div class="cfr"><span class="cfl">Nivel:</span><span class="cfv">'+ACT.nivel+'</span></div>';
-}
-
-function cancelConf(){ document.getElementById('cfbox').classList.remove('on'); }
-
-function guardar(){
-  var reg=Object.assign({},ACT, { operador: SES.cap.nombre, timestamp: new Date().toISOString() });
-  REGS.push(reg);
-  document.getElementById('hCnt').textContent=REGS.length;
-  toast('Registro salvado localmente.');
-  resetCap();
-}
-
-// ==========================================
-// RENDER DATA METHODS
-// ==========================================
-function resetCap(){
-  ACT=null; FIDX=-1; FDEF=[];
-  document.getElementById('cbox').classList.remove('on');
-  document.getElementById('nbox').className='nbox';
-  document.getElementById('nbox').style.display='none';
-  document.getElementById('cFotos').style.display='none';
-  document.getElementById('cfbox').classList.remove('on');
-  document.getElementById('mInp').value='';
-}
-
-function renderRegs(){
-  var container=document.getElementById('rList');
-  if(!REGS.length){ container.innerHTML='<div style="text-align:center;padding:22px;color:#aaa;font-size:.82rem">Sin registros</div>'; return; }
-  var h='';
-  REGS.forEach(function(r,i){
-    h+='<div class="ritem"><div class="rn">'+(i+1)+'</div><div class="ri"><div class="ri-n">'+r.nombre+'</div><div class="ri-m">'+r.curp+' · <b>'+r.nivel+'</b></div></div></div>';
-  });
-  container.innerHTML=h;
-}
-
-function renderResumen(){
-  var wrapper = document.getElementById('wrapperTablaGlobal');
-  var conteos = {};
-  
-  CAPS.forEach(function(c){
-    conteos[c.nombre] = { basica: 0, msuperior: 0, total: 0 };
-  });
-
-  REGS.forEach(function(r){
-    var op = r.operador;
-    if(!conteos[op]) { conteos[op] = { basica: 0, msuperior: 0, total: 0 }; }
-    
-    var esBasica = norm(r.nivel).includes('BASICA') || norm(r.nivel).includes('PRI') || norm(r.nivel).includes('SEC') || norm(r.nivel).includes('MANUAL');
-    if(esBasica){
-      conteos[op].basica++;
-    } else {
-      conteos[op].msuperior++;
+function stopScanning() {
+    isScanning = false;
+    btnCam.textContent = "📷 Activar Cámara";
+    btnCam.classList.remove('activo');
+    videoContainer.classList.remove('active');
+    scanStatus.textContent = "Cámara inactiva";
+    if (codeReader) {
+        codeReader.reset();
     }
-    conteos[op].total++;
-  });
-
-  var htmlTable = '<table class="stat-table">'
-    +'<thead>'
-      +'<tr>'
-        +'<th>Capturista</th>'
-        +'<th style="text-align:center;">Básica</th>'
-        +'<th style="text-align:center;">M. Sup/Sup</th>'
-        +'<th style="text-align:center; background:rgba(0,0,0,0.03)">Total Tarjetas</th>'
-      +'</tr>'
-    +'</thead>'
-    +'<tbody>';
-
-  var tB = 0, tM = 0, tT = 0;
-  CAPS.forEach(function(c){
-    var o = conteos[c.nombre];
-    tB += o.basica; tM += o.msuperior; tT += o.total;
-    htmlTable += '<tr>'
-      +'<td><b>'+c.nombre.split(' ')[0]+'</b> <span style="font-size:0.65rem; color:#666;">'+(c.nombre.split(' ')[1]||'')+'</span></td>'
-      +'<td style="text-align:center; color:var(--v)">'+o.basica+'</td>'
-      +'<td style="text-align:center; color:var(--az)">'+o.msuperior+'</td>'
-      +'<td style="text-align:center; font-weight:700; background:rgba(0,0,0,0.01)">'+o.total+'</td>'
-    +'</tr>';
-  });
-
-  htmlTable += '<tr>'
-      +'<td>CONTEO TOTAL</td>'
-      +'<td style="text-align:center; color:var(--v)">'+tB+'</td>'
-      +'<td style="text-align:center; color:var(--az)">'+tM+'</td>'
-      +'<td style="text-align:center; background:var(--dx); color:var(--g)">'+tT+'</td>'
-    +'</tr>'
-    +'</tbody>'
-  +'</table>';
-
-  wrapper.innerHTML = htmlTable;
 }
 
-// ==========================================
-// AUTOMATED COMPRESSED BACKUP DIRECTORIES
-// ==========================================
-function genZip(){
-  if(!REGS.length){ alert('No existen registros para respaldar.'); return; }
-  var zip = new JSZip();
-  toast('Compilando árbol de carpetas...', 'ok');
-  
-  REGS.forEach(function(r){
-    var carpetaOperador = norm(r.operador).replace(/\s+/g, '_');
-    var carpetaNivel = norm(r.nivel).replace(/\s+/g, '_');
-    var carpetaCct = norm(r.cct).replace(/\s+/g, '_');
-    
-    var cleanNombre = norm(r.nombre).replace(/\s+/g, '_');
-    var carpetaIdentificador = cleanNombre + '_' + norm(r.curp).replace(/\s+/g, '_');
-    
-    var path = carpetaOperador + '/' + carpetaNivel + '/' + carpetaCct + '/' + carpetaIdentificador + '/';
-    
-    var titulosFotos = getFotoLineamiento(r.nivel, r.menorDeEdad);
-    for(var i=0; i<4; i++){
-      if(r.fotos[i]){
-        var base64Data = r.fotos[i].split(',')[1];
-        var fileTitle = norm(titulosFotos[i].t).replace(/\s+/g, '_') + '.jpg';
-        zip.file(path + fileTitle, base64Data, {base64: true});
-      }
+// Botón manual de registro
+btnRegistrar.addEventListener('click', () => {
+    procesarRegistro();
+});
+
+// Función para simular/procesar el guardado de la captura
+function procesarRegistro() {
+    const curpVal = curpInput.value.trim().toUpperCase();
+    const capturistaVal = selectCapturista.value;
+
+    // Validación de Selección de Personal
+    if (!capturistaVal) {
+        alert("Por favor, selecciona primero al capturista responsable.");
+        selectCapturista.focus();
+        return;
     }
-  });
-  
-  zip.file("METADATOS_LOGISTICA.json", JSON.stringify(REGS, null, 2));
-  
-  zip.generateAsync({type:"blob"}).then(function(content) {
-    var link = document.createElement("a");
-    link.href = URL.createObjectURL(content);
-    link.download = "RESPALDO_ENTREGAS_" + norm(SES.cap.nombre).replace(/\s+/g, '_') + ".zip";
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    toast('Archivo ZIP descargado.');
-  });
+
+    // Validación elemental de longitud de CURP
+    if (curpVal.length !== 18) {
+        alert("El CURP ingresado no es válido. Debe tener exactamente 18 caracteres.");
+        curpInput.focus();
+        return;
+    }
+
+    // Mostrar confirmación visual en pantalla
+    alertaRegistro.classList.add('active');
+    curpDetectado.textContent = curpVal;
+    
+    const textoCapturista = selectCapturista.options[selectCapturista.selectedIndex].text;
+    metaRegistro.innerHTML = `Registrado por: <strong>${textoCapturista}</strong><br>Hora: ${new Date().toLocaleTimeString('es-MX')}`;
+    
+    // Aquí puedes añadir tu integración con AppSheet, API, localStorage o bases de datos externas.
+    console.log(`Guardado exitoso: ${curpVal} por ${textoCapturista}`);
 }
+
+// Botón limpiar campos
+btnLimpiar.addEventListener('click', () => {
+    curpInput.value = "";
+    alertaRegistro.classList.remove('active');
+    curpInput.focus();
+});
 </script>
 
-<!-- ==========================================
-     BLOQUES DE DATOS NOMINALES (INYECTA AQUÍ)
-     ========================================== -->
-<script type="application/json" id="d-basica">
-[
-  {
-    "nombre": "ESCUELA SECUNDARIA TECNICA 44",
-    "cct": "15DST0044Z",
-    "nivel": "BÁSICA",
-    "beneficiarios": [
-      {"n": "CERVANTES JIMENEZ ALMA", "curp": "CEJA950814MDFRRR01"}
-    ]
-  }
-]
-</script>
-<script type="application/json" id="d-buems">[]</script>
-<script type="application/json" id="d-jef">[]</script>
 </body>
 </html>
