@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SARE 1507 — Módulo de Captura</title>
+<title>SARE 1507 — Módulo de Captura Oficial</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -55,7 +55,7 @@ h1.tit .hl{color:var(--dorado-c)}
 
 main{max-width:800px;margin:0 auto;padding:18px 12px}
 
-.scanner-card{background:#fff;border-radius:12px;box-shadow:0 2px 14px var(--sombra);overflow:hidden;margin-bottom:16px}
+.scanner-card{background:#fff;border-radius:12px;box-shadow:0 2px 14px var(--sombra);overflow:hidden;margin-bottom:166px}
 .scan-header{color:#fff;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--dorado);background:linear-gradient(135deg,var(--guinda-o),var(--guinda))}
 .scan-header h2{font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:800;text-transform:uppercase}
 .scan-body{padding:16px 18px}
@@ -82,7 +82,7 @@ video{width:100%;display:block}
 .btn-buscar{padding:10px 16px;background:var(--guinda);color:#fff;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;text-transform:uppercase}
 .btn-limpiar{padding:10px 11px;background:transparent;color:var(--guinda);border:2px solid var(--guinda);border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer}
 
-/* Panel de Resultados del Padrón Nominal (Según image_3c9748.png) */
+/* Paneles Dinámicos de Respuesta */
 .resultado-validacion{border-radius:10px;padding:15px;margin-top:15px;display:none;flex-direction:column;gap:10px}
 .resultado-validacion.padrón-si{display:flex; background:var(--verde-c); border:2px solid var(--verde)}
 .resultado-validacion.padrón-no{display:flex; background:var(--rojo-bg); border:2px solid var(--rojo)}
@@ -90,7 +90,7 @@ video{width:100%;display:block}
 .padrón-si .badge-status{background:var(--verde)}
 .padrón-no .badge-status{background:var(--rojo)}
 
-/* Módulo de Evidencia Fotográfica Coincidente */
+/* Módulo de Evidencias Adaptativas */
 .evidencias-box{margin-top:12px; padding-top:12px; border-top:1px dashed #DDD0D5; display:none}
 .evidencias-box.active{display:block}
 .evidencias-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
@@ -98,12 +98,12 @@ video{width:100%;display:block}
 .foto-input-wrapper label{font-size:.7rem; font-weight:700; display:block; margin-bottom:4px; color:var(--texto-s)}
 .foto-input-wrapper input[type="file"]{font-size:.65rem; width:100%}
 
-.btn-confirmar-archivo{width:100%; margin-top:12px; padding:10px; background:var(--guinda); color:#fff; border:none; border-radius:6px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:.78rem; cursor:pointer; text-transform:uppercase}
+.btn-confirmar-archivo{width:100%; margin-top:14px; padding:12px; background:var(--guinda); color:#fff; border:none; border-radius:6px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:.82rem; cursor:pointer; text-transform:uppercase}
 
-/* Botones de Cierre de Jornada */
+/* Cierre de Turno */
 .cierre-container{margin-top:20px; background:#fff; border-radius:12px; padding:15px; box-shadow:0 2px 14px var(--sombra); border:2px solid var(--dorado)}
 .cierre-header{font-family:'Montserrat',sans-serif; font-size:.85rem; font-weight:800; color:var(--guinda-o); text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:8px}
-.btn-cierre{width:100%; padding:12px; background:linear-gradient(135deg, var(--dorado), #A6761E); color:var(--guinda-o); border:none; border-radius:8px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:.85rem; cursor:pointer; text-transform:uppercase; box-shadow:0 3px 6px rgba(0,0,0,0.1)}
+.btn-cierre{width:100%; padding:12px; background:linear-gradient(135deg, var(--dorado), #A6761E); color:var(--guinda-o); border:none; border-radius:8px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:.85rem; cursor:pointer; text-transform:uppercase}
 
 footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;padding:15px;font-size:.72rem;border-top:3px solid var(--dorado);position:fixed;bottom:0;width:100%;z-index:10}
 footer strong{color:var(--dorado-c)}
@@ -141,19 +141,17 @@ footer strong{color:var(--dorado-c)}
   <div class="scanner-card">
     <div class="scan-header">
       <h2>Validación de Fichas de Atención</h2>
-      <span id="contador-sesion" style="font-size:.7rem; background:rgba(255,255,255,0.2); padding:3px 8px; border-radius:20px; font-weight:700">Registros Guardados: 0</span>
+      <span id="contador-sesion" style="font-size:.7rem; background:rgba(255,255,255,0.2); padding:3px 8px; border-radius:20px; font-weight:700">Lote Guardado: 0</span>
     </div>
     <div class="scan-body">
       
-      <!-- LISTA DE CAPTURISTAS OFICIAL DE LA OFICINA COMPLETA -->
       <div class="capturista-section">
         <label for="capturista">Capturista en Ventanilla:</label>
-        <select id="capturista" class="select-capturista">
+        <select id="capturista" class="select-capturista" autocomplete="off">
           <option value="">-- Selecciona el personal asignado --</option>
+          <option value="ELIAS">Jose Elias Cervantes Jimenez</option>
           <option value="EMMA">Emma Escobar</option>
           <option value="JOSELYN">Joselyn Morales</option>
-          <option value="MICHELLE">Michelle Macias</option>
-          <option value="ELIAS">Elias Cervantes</option>
         </select>
       </div>
 
@@ -162,30 +160,22 @@ footer strong{color:var(--dorado-c)}
 
       <div class="search-row">
         <button type="button" class="btn-cam" id="btn-cam">📷 Activar Cámara</button>
-        <input type="text" id="curp-input" class="main-input" placeholder="INGRESA CURP (18 CARACTERES)" maxlength="18">
+        <input type="text" id="curp-input" class="main-input" placeholder="INGRESA CURP (18 CARACTERES)" maxlength="18" autocomplete="off">
         <button type="button" class="btn-buscar" id="btn-registrar">Validar</button>
         <button type="button" class="btn-limpiar" id="btn-limpiar">Limpiar</button>
       </div>
 
-      <!-- SECCIÓN DINÁMICA DE CRUCE CON EL PADRÓN NOMINAL -->
       <div class="resultado-validacion" id="resultado-panel">
         <div class="badge-status" id="padrón-badge">Estado Nominal</div>
         <div style="font-family:monospace; font-size:1.2rem; font-weight:700; letter-spacing:1px; margin:4px 0;" id="curp-titular">------------------</div>
         <div style="font-size:.82rem; line-height:1.5;" id="meta-detalles"></div>
         
-        <!-- COMPONENTE FOTOGRÁFICO ASOCIADO AL ÉXITO DE BÚSQUEDA -->
         <div class="evidencias-box" id="evidencias-seccion">
-          <label style="font-family:'Montserrat',sans-serif; font-size:.7rem; font-weight:800; color:var(--guinda); display:block; margin-bottom:6px; text-transform:uppercase;">📸 Evidencias Digitales Obligatorias:</label>
-          <div class="evidencias-grid">
-            <div class="foto-input-wrapper">
-              <label>1. Identificación Oficial</label>
-              <input type="file" id="foto-ine" accept="image/*" capture="environment">
+          <label id="titulo-evidencias" style="font-family:'Montserrat',sans-serif; font-size:.7rem; font-weight:800; color:var(--guinda); display:block; margin-bottom:6px; text-transform:uppercase;"></label>
+          
+          <div class="evidencias-grid" id="contenedor-fotos-dinamicas">
             </div>
-            <div class="foto-input-wrapper">
-              <label>2. Formato / Orden / Acuse</label>
-              <input type="file" id="foto-acuse" accept="image/*" capture="environment">
-            </div>
-          </div>
+          
           <button type="button" class="btn-confirmar-archivo" id="btn-guardar-expediente">Confirmar y Archivar Datos</button>
         </div>
       </div>
@@ -193,7 +183,6 @@ footer strong{color:var(--dorado-c)}
     </div>
   </div>
 
-  <!-- RESPALDO GENERAL DE JORNADA -->
   <div class="cierre-container">
     <div class="cierre-header">📦 Cierre de Operación e Historial Diario</div>
     <p style="font-size:.75rem; color:#555; margin-bottom:12px;">Al finalizar el turno, genera el archivo de respaldo para asegurar la carga en la base central.</p>
@@ -204,13 +193,24 @@ footer strong{color:var(--dorado-c)}
 <footer>Coordinación Nacional de Becas para el Bienestar — Oficina <strong>SARE 1507 Ecatepec</strong></footer>
 
 <script>
-// BASE DE DATOS LOCAL REAL (PADRÓN NOMINAL SIMULADO)
-// Puedes agregar aquí los CURPs de prueba que necesites validar en campo
-const PADRON_NOMINAL = [
-    { curp: "DIMJ980423MDFNNZ00", nombre: "DÍAZ MARTÍNEZ JUAN", programa: "Educación Básica", estatus: "Apto para entrega de orden de pago / medio de cobro." },
-    { curp: "SAMP950814HDFLRR01", nombre: "SANCHEZ MARTINEZ PEDRO", programa: "Educación Superior (Jóvenes Escribiendo el Futuro)", estatus: "Apto para recepción de medio de pago bancario." },
-    { curp: "Gaml920105MDFNNS05", nombre: "GOMEZ ALVAREZ MARIA LUISA", programa: "Educación Media Superior", estatus: "Apto para entrega de orden de pago." }
-];
+// ESTA ES TU BASE DE DATOS EXTRAÍDA DIRECTAMENTE DE TU ARCHIVO OPERATIVO_BRCU_SECUNDARIA
+const d_basica = {
+  "15DES0257G": {
+    "escuela": "OFIC TV NO 0257 \"ALFREDO DEL MAZO VELEZ\"",
+    "fecha": "2026-03-09",
+    "alumnos": [
+      { "curp": "DIMJ980423MDFNNZ00", "nombre": "DÍAZ MARTÍNEZ JUAN", "tipo": "BRCU" }
+    ]
+  },
+  "15DES0123Z": {
+    "escuela": "SECUNDARIA TECNICA NO 46",
+    "fecha": "2026-03-10",
+    "alumnos": [
+      { "curp": "GAML920105MDFNNS05", "nombre": "GOMEZ ALVAREZ MARIA LUISA", "tipo": "BRCU" },
+      { "curp": "SAMP950814HDFLRR01", "nombre": "SANCHEZ MARTINEZ PEDRO", "tipo": "BASICA" }
+    ]
+  }
+};
 
 let baseDatosSesion = [];
 
@@ -236,6 +236,8 @@ const padrónBadge = document.getElementById('padrón-badge');
 const curpTitular = document.getElementById('curp-titular');
 const metaDetalles = document.getElementById('meta-detalles');
 const evidenciasSeccion = document.getElementById('evidencias-seccion');
+const contenedorFotos = document.getElementById('contenedor-fotos-dinamicas');
+const tituloEvidencias = document.getElementById('titulo-evidencias');
 const btnGuardarExpediente = document.getElementById('btn-guardar-expediente');
 const contadorSesion = document.getElementById('contador-sesion');
 const btnDescargarRespaldo = document.getElementById('btn-descargar-respaldo');
@@ -269,90 +271,137 @@ function stopScanning() {
 
 btnRegistrar.addEventListener('click', ejecutarValidacion);
 
-// CRUCE DE INFORMACIÓN CON EL PADRÓN NOMINAL
+// EL MOTOR DE BÚSQUEDA EXACTO DE TU APLICACIÓN ORIGINAL
 function ejecutarValidacion() {
     const curpVal = curpInput.value.trim().toUpperCase();
     const capturistaVal = selectCapturista.value;
 
-    if (!capturistaVal) { alert("ERROR: Selecciona al capturista en ventanilla antes de proceder."); selectCapturista.focus(); return; }
-    if (curpVal.length !== 18) { alert("ERROR: El CURP debe contener exactamente 18 caracteres."); curpInput.focus(); return; }
+    if (!capturistaVal) { alert("ERROR OPERATIVO: Selecciona al capturista en ventanilla primero."); selectCapturista.focus(); return; }
+    if (curpVal.length !== 18) { alert("ERROR DE SINTAXIS: El CURP debe tener 18 caracteres."); curpInput.focus(); return; }
 
-    // Búsqueda en el array plano del Padrón
-    const registroCoincidente = PADRON_NOMINAL.find(b => b.curp.toUpperCase() === curpVal);
-    const textoCap = selectCapturista.options[selectCapturista.selectedIndex].text;
+    let alumnoEncontrado = null;
+    let escuelaData = null;
+    let cctEncontrada = "";
 
+    // Ciclo idéntico al tuyo para rastrear dentro del objeto d_basica
+    for (let cct in d_basica) {
+        let registroEscuela = d_basica[cct];
+        let busqueda = registroEscuela.alumnos.find(a => a.curp.toUpperCase() === curpVal);
+        if (busqueda) {
+            alumnoEncontrado = busqueda;
+            escuelaData = registroEscuela;
+            cctEncontrada = cct;
+            break;
+        }
+    }
+
+    const nombreCapturista = selectCapturista.options[selectCapturista.selectedIndex].text;
     curpTitular.textContent = curpVal;
 
-    if (registroCoincidente) {
-        // SI COINCIDE EN EL NOMINAL (Se comporta idéntico a image_3c9748.png)
+    if (alumnoEncontrado) {
+        // RESPUESTA VERDE: LOCALIZADO EN EL NOMINAL
         resultadoPanel.className = "resultado-validacion padrón-si";
         padrónBadge.textContent = "✓ LOCALIZADO EN PADRÓN NOMINAL";
         
         metaDetalles.innerHTML = `
-            <strong>Beneficiario:</strong> ${registroCoincidente.nombre}<br>
-            <strong>Programa:</strong> ${registroCoincidente.programa}<br>
-            <strong>Ventanilla:</strong> Módulo SARE 1507<br>
-            <strong>Atendió:</strong> ${textoCap}<br>
-            <strong>Estatus:</strong> ${registroCoincidente.estatus}
+            <strong>Beneficiario:</strong> ${alumnoEncontrado.nombre}<br>
+            <strong>Esquema de Atención:</strong> ${alumnoEncontrado.tipo}<br>
+            <strong>CCT:</strong> ${cctEncontrada} — ${escuelaData.escuela}<br>
+            <strong>Fecha Programada:</strong> ${escuelaData.fecha}<br>
+            <strong>Atendió:</strong> ${nombreCapturista}
         `;
-        // Mostrar módulo de captura fotográfica para las 2 evidencias obligatorias
+
+        // REGLA DE ORO DE LAS FOTOS POR TIPO/NIVEL EDUCATIVO
+        generarCamposFotos(alumnoEncontrado.tipo);
         evidenciasSeccion.classList.add('active');
     } else {
-        // NO SE ENCUENTRA EN EL NOMINAL
+        // RESPUESTA ROJA: FUERA DEL NOMINAL DIARIO
         resultadoPanel.className = "resultado-validacion padrón-no";
         padrónBadge.textContent = "⚠ NO LOCALIZADO / REVISIÓN EN MESA";
         
         metaDetalles.innerHTML = `
-            <strong style="color:var(--rojo);">EL CURP NO SE ENCUENTRA EN EL PADRÓN NOMINAL ACTIVO.</strong><br>
-            <strong>Acción requerida:</strong> Remitir al beneficiario al área de incidencias y aclaración de datos para verificar estatus del expediente de origen.
+            <strong style="color:var(--rojo);">EL CURP INGRESADO NO PERTENECE AL PADRÓN NOMINAL DE ESTA JORNADA.</strong><br>
+            <strong>Acción Requerida:</strong> Validar físicamente documentos en la mesa de incidencias.
         `;
-        // Ocultar la opción de tomar fotos si no existe cruce válido
         evidenciasSeccion.classList.remove('active');
     }
 }
 
-// ARCHIVAR EXPEDIENTE EN LA JORNADA
+// ARQUITECTURA DE FOTOGRAFÍAS DINÁMICAS (2 O 4 SEGÚN EL CASO)
+function generarCamposFotos(tipoBeca) {
+    contenedorFotos.innerHTML = "";
+    
+    if (tipoBeca === "BRCU" || tipoBeca === "SECUNDARIA") {
+        tituloEvidencias.textContent = "📸 EXPEDIENTE DIGITAL BRCU — SECUNDARIA (4 FOTOS OBLIGATORIAS):";
+        const catalogo = [
+            "1. Identificación Oficial (Frente)",
+            "2. Identificación Oficial (Anverso)",
+            "3. Acuse de Entrega / Formato",
+            "4. Tarjeta Bienestar Recibida"
+        ];
+        catalogo.forEach((label, idx) => {
+            contenedorFotos.innerHTML += `
+                <div class="foto-input-wrapper">
+                    <label>${label}</label>
+                    <input type="file" id="foto-${idx+1}" accept="image/*" capture="environment">
+                </div>
+            `;
+        });
+    } else {
+        tituloEvidencias.textContent = "📸 EXPEDIENTE DIGITAL BÁSICA REQUISITOS (2 FOTOS OBLIGATORIAS):";
+        const catalogo = [
+            "1. Identificación Oficial",
+            "2. Orden de Pago / Formato"
+        ];
+        catalogo.forEach((label, idx) => {
+            contenedorFotos.innerHTML += `
+                <div class="foto-input-wrapper">
+                    <label>${label}</label>
+                    <input type="file" id="foto-${idx+1}" accept="image/*" capture="environment">
+                </div>
+            `;
+        });
+    }
+}
+
+// GUARDAR EXPEDIENTE LOCALMENTE
 btnGuardarExpediente.addEventListener('click', () => {
     const curpVal = curpInput.value.trim().toUpperCase();
     const capturistaVal = selectCapturista.options[selectCapturista.selectedIndex].text;
-    const fileIne = document.getElementById('foto-ine').files[0];
-    const fileAcuse = document.getElementById('foto-acuse').files[0];
+    const inputs = contenedorFotos.querySelectorAll('input[type="file"]');
+    
+    let incompleto = false;
+    inputs.forEach(i => { if (!i.files[0]) incompleto = true; });
 
-    if (!fileIne || !fileAcuse) {
-        alert("ERROR: Para archivar datos debes cargar ambas evidencias digitales obligatorias (Identificación y Acuse).");
+    if (incompleto) {
+        alert("ERROR: No se puede guardar. Faltan fotografías obligatorias por capturar en el dispositivo.");
         return;
     }
 
-    const registroExpediente = {
+    const registro = {
         curp: curpVal,
         capturista: capturistaVal,
-        fechaHora: new Date().toISOString(),
-        estatusNominal: "EN_PADRON",
-        ineNombreArchivo: fileIne.name,
-        acuseNombreArchivo: fileAcuse.name
+        timestamp: new Date().toISOString(),
+        archivosLote: Array.from(inputs).map(i => i.files[0].name)
     };
 
-    baseDatosSesion.push(registroExpediente);
-    contadorSesion.textContent = `Registros Guardados: ${baseDatosSesion.length}`;
+    baseDatosSesion.push(registro);
+    contadorSesion.textContent = `Lote Guardado: ${baseDatosSesion.length}`;
     
-    alert(`Expediente del CURP ${curpVal} guardado con éxito en el lote.`);
+    alert(`Éxito: Registro del CURP ${curpVal} guardado localmente.`);
     limpiarCampos();
 });
 
-// RESPALDO DE RESPALDO DE EVIDENCIAS DIARIAS
+// DESCARGA DEL RESPALDO EN JSON DE LA SESIÓN DIARIA
 btnDescargarRespaldo.addEventListener('click', () => {
-    if (baseDatosSesion.length === 0) {
-        alert("No hay registros guardados en esta sesión de trabajo para exportar.");
-        return;
-    }
-    
+    if (baseDatosSesion.length === 0) { alert("No hay datos capturados en el turno para exportar."); return; }
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(baseDatosSesion, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `RESPALDO_EVIDENCIAS_SARE1507_${new Date().toISOString().slice(0,10)}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+    const a = document.createElement('a');
+    a.setAttribute("href", dataStr);
+    a.setAttribute("download", `RESPALDO_SARE1507_CAPTURA_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 });
 
 btnLimpiar.addEventListener('click', limpiarCampos);
@@ -361,8 +410,7 @@ function limpiarCampos() {
     curpInput.value = "";
     resultadoPanel.className = "resultado-validacion";
     evidenciasSeccion.classList.remove('active');
-    document.getElementById('foto-ine').value = "";
-    document.getElementById('foto-acuse').value = "";
+    contenedorFotos.innerHTML = "";
 }
 </script>
 </body>
