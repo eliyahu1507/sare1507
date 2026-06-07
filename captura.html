@@ -21,8 +21,8 @@
   --azul:#1565C0;
   --azul-bg:#E3F2FD;
   --alerta:#FF6F00;
-  --alerta-bg:#FFF8E1;
   --rojo:#C62828;
+  --rojo-bg:#FFEBEE;
   --blanco:#FFF;
   --gris-bg:#F7F4F5;
   --gris:#EDE8EA;
@@ -31,7 +31,7 @@
   --sombra:rgba(74,14,41,.15)
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--texto)}
+body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--texto);padding-bottom:80px}
 
 .top-bar{background:var(--guinda-o);padding:7px 20px;display:flex;align-items:center;justify-content:space-between;font-size:.71rem;color:rgba(255,255,255,.82);border-bottom:2px solid var(--dorado)}
 .top-bar .left-meta{display:flex;gap:10px}
@@ -53,18 +53,16 @@ h1.tit .hl{color:var(--dorado-c)}
 .clock-time{font-family:'Montserrat',sans-serif;font-size:1.35rem;font-weight:800;letter-spacing:1.5px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
 .clock-date{font-size:.68rem;color:rgba(255,255,255,.8);font-weight:500;margin-top:2px;white-space:nowrap}
 
-main{max-width:800px;margin:0 auto;padding:18px 12px 55px}
+main{max-width:800px;margin:0 auto;padding:18px 12px}
 
 .scanner-card{background:#fff;border-radius:12px;box-shadow:0 2px 14px var(--sombra);overflow:hidden;margin-bottom:16px}
-.scan-header{color:#fff;padding:13px 18px;display:flex;align-items:center;gap:10px;border-bottom:3px solid var(--dorado);background:linear-gradient(135deg,var(--guinda-o),var(--guinda))}
+.scan-header{color:#fff;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--dorado);background:linear-gradient(135deg,var(--guinda-o),var(--guinda))}
 .scan-header h2{font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:800;text-transform:uppercase}
 .scan-body{padding:16px 18px}
 
-/* Selector de Capturista */
 .capturista-section {margin-bottom:15px; background:#FDF9FA; padding:12px; border-radius:8px; border:1px solid #E8DDE2}
 .capturista-section label {font-family:'Montserrat',sans-serif; font-size:.75rem; font-weight:700; color:var(--guinda); text-transform:uppercase; display:block; margin-bottom:6px}
-.select-capturista {width:100%; padding:10px; border:2px solid #DDD0D5; border-radius:8px; font-size:.88rem; outline:none; background:#fff; font-family:'Open Sans',sans-serif; color:var(--texto); transition:border-color .2s}
-.select-capturista:focus {border-color:var(--guinda)}
+.select-capturista {width:100%; padding:10px; border:2px solid #DDD0D5; border-radius:8px; font-size:.88rem; outline:none; background:#fff; font-family:'Open Sans',sans-serif; color:var(--texto)}
 
 #video-container{position:relative;width:100%;max-width:360px;margin:0 auto 12px;border-radius:10px;overflow:hidden;background:#000;display:none}
 #video-container.active{display:block}
@@ -72,42 +70,48 @@ video{width:100%;display:block}
 .scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .scan-frame{width:72%;height:38%;border:3px solid var(--dorado-c);border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);animation:pf 1.5s infinite}
 @keyframes pf{0%,100%{border-color:var(--dorado-c)}50%{border-color:#fff}}
-.scan-line{position:absolute;width:68%;height:2px;background:var(--naranja);animation:sl 2s linear infinite}
-@keyframes sl{0%{top:32%}50%{top:66%}100%{top:32%}}
 
-.scan-status{text-align:center;font-size:.78rem;color:var(--guinda-o);font-weight:600;min-height:20px;margin-bottom:8px}
+.scan-status{text-align:center;font-size:.78rem;color:var(--guinda-o);font-weight:600;margin-bottom:8px}
 
-.search-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
-.main-input{flex:1;min-width:170px;padding:10px 13px;border:2px solid #DDD0D5;border-radius:8px;font-size:.86rem;font-family:'Open Sans',sans-serif;outline:none;transition:border-color .2s;text-transform:uppercase}
+.search-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:15px}
+.main-input{flex:1;min-width:170px;padding:10px 13px;border:2px solid #DDD0D5;border-radius:8px;font-size:.86rem;outline:none;text-transform:uppercase}
 .main-input:focus{border-color:var(--guinda)}
 
-.btn-cam{padding:10px 13px;background:var(--dorado);color:var(--guinda-o);border:none;border-radius:8px;font-weight:800;font-size:.8rem;cursor:pointer;transition:all .2s}
+.btn-cam{padding:10px 13px;background:var(--dorado);color:var(--guinda-o);border:none;border-radius:8px;font-weight:800;font-size:.8rem;cursor:pointer}
 .btn-cam.activo{background:var(--rojo);color:#fff}
 .btn-buscar{padding:10px 16px;background:var(--guinda);color:#fff;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;text-transform:uppercase}
-.btn-buscar:hover{background:var(--guinda-o)}
-.btn-limpiar{padding:10px 11px;background:transparent;color:var(--guinda);border:2px solid var(--guinda);border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer;transition:all .2s}
-.btn-limpiar:hover{background:var(--guinda);color:#fff}
+.btn-limpiar{padding:10px 11px;background:transparent;color:var(--guinda);border:2px solid var(--guinda);border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer}
 
-/* Alerta de Éxito / Registro */
-.alerta-curp{background:var(--verde-c);border:2px solid var(--verde);border-radius:10px;padding:14px 15px;margin-top:15px;display:none;flex-direction:column;gap:5px}
-.alerta-curp.active{display:flex}
-.alerta-curp .txt strong{color:var(--verde); font-size:.9rem; font-family:'Montserrat',sans-serif}
-.curp-extraido{background:#fff;border:1px solid rgba(26,122,58,.3);border-radius:8px;padding:7px 11px;margin-top:5px;font-family:monospace;font-size:.9rem;font-weight:700;color:var(--verde);letter-spacing:1px;text-align:center}
+/* Sección de Validación de Padrón y Respuestas */
+.resultado-validacion{border-radius:10px;padding:15px;margin-top:15px;display:none;flex-direction:column;gap:10px}
+.resultado-validacion.padrón-si{display:flex; background:var(--verde-c); border:2px solid var(--verde)}
+.resultado-validacion.padrón-no{display:flex; background:var(--rojo-bg); border:2px solid var(--rojo)}
+.badge-status{align-self:flex-start; padding:4px 8px; font-family:'Montserrat',sans-serif; font-size:.7rem; font-weight:800; border-radius:4px; text-transform:uppercase; color:#fff}
+.padrón-si .badge-status{background:var(--verde)}
+.padrón-no .badge-status{background:var(--rojo)}
 
-footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;padding:15px;font-size:.72rem;border-top:3px solid var(--dorado);position:fixed;bottom:0;width:100%}
+/* Módulo de Evidencia Fotográfica */
+.evidencias-box{margin-top:12px; padding-top:12px; border-top:1px dashed #DDD0D5; display:none}
+.evidencias-box.active{display:block}
+.evidencias-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
+.foto-input-wrapper{background:#fff; border:1px dashed var(--texto-s); padding:10px; border-radius:6px; text-align:center; position:relative}
+.foto-input-wrapper label{font-size:.7rem; font-weight:700; display:block; margin-bottom:4px; color:var(--texto-s)}
+.foto-input-wrapper input[type="file"]{font-size:.65rem; width:100%}
+
+/* Botones de Cierre de Jornada */
+.cierre-container{margin-top:20px; background:#fff; border-radius:12px; padding:15px; box-shadow:0 2px 14px var(--sombra); border:2px solid var(--dorado)}
+.cierre-header{font-family:'Montserrat',sans-serif; font-size:.85rem; font-weight:800; color:var(--guinda-o); text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:8px}
+.btn-cierre{width:100%; padding:12px; background:linear-gradient(135deg, var(--dorado), #A6761E); color:var(--guinda-o); border:none; border-radius:8px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:.85rem; cursor:pointer; text-transform:uppercase; box-shadow:0 3px 6px rgba(0,0,0,0.1)}
+
+footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;padding:15px;font-size:.72rem;border-top:3px solid var(--dorado);position:fixed;bottom:0;width:100%;z-index:10}
 footer strong{color:var(--dorado-c)}
 </style>
-<!-- Cargamos la librería de la cámara que ya usas para el escaneo -->
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 </head>
 <body>
 
 <div class="top-bar">
-  <div class="left-meta">
-    <span>ESTADO DE MÉXICO</span>
-    <span class="sep">|</span>
-    <span>REGION ECATEPEC</span>
-  </div>
+  <div class="left-meta"><span>ESTADO DE MÉXICO</span><span class="sep">|</span><span>REGION ECATEPEC</span></div>
   <div><strong>SARE 1507</strong></div>
 </div>
 
@@ -123,80 +127,90 @@ footer strong{color:var(--dorado-c)}
       </div>
       <div class="header-clock">
         <div class="clock-time" id="live-clock">00:00:00</div>
-        <div class="clock-date" id="live-date">Cargando fecha...</div>
+        <div class="clock-date" id="live-date">Cargando...</div>
       </div>
     </div>
     <h1 class="tit">Módulo de Captura <span class="hl">— Control Operativo</span></h1>
-    <div class="sub-h">Registro y validación de beneficiarios por CURP</div>
+    <div class="sub-h">Mesa de validación de beneficiarios y expedientes</div>
   </div>
 </header>
 
 <main>
   <div class="scanner-card">
     <div class="scan-header">
-      <h2>Escanear o Ingresar CURP</h2>
+      <h2>Validación de Fichas de Atención</h2>
+      <span id="contador-sesion" style="font-size:.7rem; background:rgba(255,255,255,0.2); padding:3px 8px; border-radius:20px; font-weight:700">Registros: 0</span>
     </div>
     <div class="scan-body">
       
-      <!-- LISTA DE CAPTURISTAS OFICIAL DE LA OFICINA -->
+      <!-- LISTA DE CAPTURISTAS CORREGIDA (Sin Michelle Macias) -->
       <div class="capturista-section">
-        <label for="capturista">Capturista Responsable:</label>
+        <label for="capturista">Capturista en Ventanilla:</label>
         <select id="capturista" class="select-capturista">
-          <option value="">-- Selecciona quién captura --</option>
+          <option value="">-- Selecciona el personal asignado --</option>
           <option value="EMMA">Emma Escobar</option>
           <option value="JOSELYN">Joselyn Morales</option>
-          <option value="MICHELLE">Michelle Macias</option>
           <option value="ELIAS">Elias Cervantes</option>
         </select>
       </div>
 
-      <!-- Contenedor del flujo de la cámara de escaneo -->
-      <div id="video-container">
-        <video id="video"></video>
-        <div class="scan-overlay">
-          <div class="scan-frame"></div>
-          <div class="scan-line"></div>
-        </div>
-      </div>
-
+      <div id="video-container"><video id="video"></video><div class="scan-overlay"><div class="scan-frame"></div></div></div>
       <div class="scan-status" id="scan-status">Cámara inactiva</div>
 
       <div class="search-row">
         <button type="button" class="btn-cam" id="btn-cam">📷 Activar Cámara</button>
         <input type="text" id="curp-input" class="main-input" placeholder="INGRESA CURP (18 CARACTERES)" maxlength="18">
-        <button type="button" class="btn-buscar" id="btn-registrar">Registrar</button>
+        <button type="button" class="btn-buscar" id="btn-registrar">Validar</button>
         <button type="button" class="btn-limpiar" id="btn-limpiar">Limpiar</button>
       </div>
 
-      <!-- Alerta visual de éxito al procesar -->
-      <div class="alerta-curp" id="alerta-registro">
-        <div class="txt"><strong id="alert-titulo">¡Registro Exitoso!</strong></div>
-        <div class="curp-extraido" id="curp-detectado">------------------</div>
-        <div style="font-size: 0.75rem; color: #333; margin-top: 5px; text-align: center;" id="meta-registro"></div>
+      <!-- SECCIÓN DINÁMICA: ESTATUS NOMINAL -->
+      <div class="resultado-validacion" id="resultado-panel">
+        <div class="badge-status" id="padrón-badge">Estado Nominal</div>
+        <div style="font-family:monospace; font-size:1.1rem; font-weight:700; letter-spacing:1px; margin:4px 0;" id="curp-titular">------------------</div>
+        <div style="font-size:.78rem; line-height:1.4;" id="meta-detalles"></div>
+        
+        <!-- COMPONENTE FOTOGRÁFICO REINTEGRADO -->
+        <div class="evidencias-box" id="evidencias-seccion">
+          <label style="font-family:'Montserrat',sans-serif; font-size:.68rem; font-weight:800; color:var(--guinda); display:block; margin-bottom:5px; text-transform:uppercase;">📸 Evidencias Digitales Obligatorias:</label>
+          <div class="evidencias-grid">
+            <div class="foto-input-wrapper">
+              <label>1. Identificación Oficial</label>
+              <input type="file" id="foto-ine" accept="image/*" capture="environment">
+            </div>
+            <div class="foto-input-wrapper">
+              <label>2. Formato / Orden / Acuse</label>
+              <input type="file" id="foto-acuse" accept="image/*" capture="environment">
+            </div>
+          </div>
+          <button type="button" id="btn-guardar-expediente" style="width:100%; margin-top:10px; padding:7px; background:var(--guinda); color:#fff; border:none; border-radius:5px; font-size:.72rem; font-weight:700; cursor:pointer; text-transform:uppercase;">Confirmar y Archivar Datos</button>
+        </div>
       </div>
 
     </div>
   </div>
+
+  <!-- CIERRE DE JORNADA Y GENERACIÓN DE RESPALDOS -->
+  <div class="cierre-container">
+    <div class="cierre-header">📦 Cierre de Operación e Historial Diario</div>
+    <p style="font-size:.75rem; color:#555; margin-bottom:12px;">Al finalizar el turno, genera el archivo de respaldo para asegurar la carga en la base central.</p>
+    <button type="button" class="btn-cierre" id="btn-descargar-respaldo">💾 Generar Respaldo de Evidencias (.json)</button>
+  </div>
 </main>
 
-<footer>
-  Coordinación Nacional de Becas para el Bienestar — Oficina <strong>SARE 1507 Ecatepec</strong>
-</footer>
+<footer>Coordinación Nacional de Becas para el Bienestar — Oficina <strong>SARE 1507 Ecatepec</strong></footer>
 
 <script>
-// LÓGICA DEL RELOJ EN TIEMPO REAL
+// Base de datos de simulación local en memoria para mantener los registros de la sesión de trabajo
+let baseDatosSesion = [];
+
 function updateClock() {
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('es-MX', { hour12: false });
-    const dateStr = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    
-    document.getElementById('live-clock').textContent = timeStr;
-    document.getElementById('live-date').textContent = dateStr.toUpperCase();
+    document.getElementById('live-clock').textContent = now.toLocaleTimeString('es-MX', { hour12: false });
+    document.getElementById('live-date').textContent = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase();
 }
-setInterval(updateClock, 1000);
-updateClock();
+setInterval(updateClock, 1000); updateClock();
 
-// VARIABLES DEL ESCÁNER Y OPERACIÓN
 let codeReader = null;
 let isScanning = false;
 const btnCam = document.getElementById('btn-cam');
@@ -205,115 +219,119 @@ const scanStatus = document.getElementById('scan-status');
 const curpInput = document.getElementById('curp-input');
 const btnRegistrar = document.getElementById('btn-registrar');
 const btnLimpiar = document.getElementById('btn-limpiar');
-const alertaRegistro = document.getElementById('alerta-registro');
-const curpDetectado = document.getElementById('curp-detectado');
-const metaRegistro = document.getElementById('meta-registro');
 const selectCapturista = document.getElementById('capturista');
 
-// Inicializar lector ZXing
-try {
-    codeReader = new ZXing.BrowserMultiFormatReader();
-} catch (e) {
-    console.error("Error cargando ZXing: ", e);
-    scanStatus.textContent = "Error al cargar librería de cámara.";
-}
+// Elementos de la respuesta e integración de negocio
+const resultadoPanel = document.getElementById('resultado-panel');
+const padrónBadge = document.getElementById('padrón-badge');
+const curpTitular = document.getElementById('curp-titular');
+const metaDetalles = document.getElementById('meta-detalles');
+const evidenciasSeccion = document.getElementById('evidencias-seccion');
+const btnGuardarExpediente = document.getElementById('btn-guardar-expediente');
+const contadorSesion = document.getElementById('contador-sesion');
+const btnDescargarRespaldo = document.getElementById('btn-descargar-respaldo');
 
-// Evento de botón de Cámara (Encendido / Apagado)
-btnCam.addEventListener('click', () => {
-    if (!codeReader) return;
-    
-    if (isScanning) {
-        stopScanning();
-    } else {
-        startScanning();
-    }
-});
+try { codeReader = new ZXing.BrowserMultiFormatReader(); } catch (e) { scanStatus.textContent = "Error al inicializar cámara."; }
+
+btnCam.addEventListener('click', () => { isScanning ? stopScanning() : startScanning(); });
 
 function startScanning() {
-    isScanning = true;
-    btnCam.textContent = "🛑 Detener Cámara";
-    btnCam.classList.add('activo');
-    videoContainer.classList.add('active');
-    scanStatus.textContent = "Buscando código de barras (CURP)...";
-
+    isScanning = true; btnCam.textContent = "🛑 Detener"; btnCam.classList.add('activo');
+    videoContainer.classList.add('active'); scanStatus.textContent = "Buscando código de barra institucional...";
     codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
         if (result) {
-            // Se detectó una lectura exitosa
             let rawText = result.text.trim();
-            scanStatus.textContent = "¡Código detectado!";
-            
-            // Extraer o limpiar si viene en formato nativo de la tarjeta de CURP anterior
             if (rawText.length > 18) {
-                // Comúnmente si tiene la cadena larga, buscamos los 18 caracteres alfanuméricos del CURP
                 const curpMatch = rawText.match(/[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d/i);
                 if (curpMatch) rawText = curpMatch[0];
             }
-            
             curpInput.value = rawText.toUpperCase();
             stopScanning();
-            
-            // Ejecutar auto-registro al escanear exitosamente
-            procesarRegistro();
-        }
-        if (err && !(err instanceof ZXing.NotFoundException)) {
-            console.error(err);
+            ejecutarValidacion();
         }
     });
 }
 
 function stopScanning() {
-    isScanning = false;
-    btnCam.textContent = "📷 Activar Cámara";
-    btnCam.classList.remove('activo');
-    videoContainer.classList.remove('active');
-    scanStatus.textContent = "Cámara inactiva";
-    if (codeReader) {
-        codeReader.reset();
-    }
+    isScanning = false; btnCam.textContent = "📷 Activar Cámara"; btnCam.classList.remove('activo');
+    videoContainer.classList.remove('active'); scanStatus.textContent = "Cámara inactiva";
+    if (codeReader) codeReader.reset();
 }
 
-// Botón manual de registro
-btnRegistrar.addEventListener('click', () => {
-    procesarRegistro();
-});
+btnRegistrar.addEventListener('click', ejecutarValidacion);
 
-// Función para simular/procesar el guardado de la captura
-function procesarRegistro() {
+function ejecutarValidacion() {
     const curpVal = curpInput.value.trim().toUpperCase();
     const capturistaVal = selectCapturista.value;
 
-    // Validación de Selección de Personal
-    if (!capturistaVal) {
-        alert("Por favor, selecciona primero al capturista responsable.");
-        selectCapturista.focus();
-        return;
-    }
+    if (!capturistaVal) { alert("ERROR: Selecciona al capturista en ventanilla antes de proceder."); selectCapturista.focus(); return; }
+    if (curpVal.length !== 18) { alert("ERROR: El CURP debe contener exactamente 18 caracteres."); curpInput.focus(); return; }
 
-    // Validación elemental de longitud de CURP
-    if (curpVal.length !== 18) {
-        alert("El CURP ingresado no es válido. Debe tener exactamente 18 caracteres.");
-        curpInput.focus();
-        return;
-    }
+    // Simulación del motor lógico de Padrón Nominal (Fines ilustrativos para mesa de control)
+    // Regla de negocio ficticia: Si termina en número par o cero, está en padrón, si termina en letra o non, requiere revisión
+    const ultimoDigito = curpVal.slice(-1);
+    const estaEnPadron = !isNaN(ultimoDigito) && parseInt(ultimoDigito) % 2 === 0;
 
-    // Mostrar confirmación visual en pantalla
-    alertaRegistro.classList.add('active');
-    curpDetectado.textContent = curpVal;
+    curpTitular.textContent = curpVal;
+    resultadoPanel.className = "resultado-validacion " + (estaEnPadron ? "padrón-si" : "padrón-no");
+    padrónBadge.textContent = estaEnPadron ? "✓ Localizado en Padrón Nominal" : "⚠ No localizado / Revisión en Mesa";
     
-    const textoCapturista = selectCapturista.options[selectCapturista.selectedIndex].text;
-    metaRegistro.innerHTML = `Registrado por: <strong>${textoCapturista}</strong><br>Hora: ${new Date().toLocaleTimeString('es-MX')}`;
+    const textoCap = selectCapturista.options[selectCapturista.selectedIndex].text;
+    metaDetalles.innerHTML = `<strong>Ventanilla:</strong> Módulo SARE 1507<br><strong>Atendió:</strong> ${textoCap}<br><strong>Estatus:</strong> ${estaEnPadron ? 'Apto para entrega de orden de pago / medio de cobro.' : 'Presentar documentación completa para validación de expediente origen.'}`;
     
-    // Aquí puedes añadir tu integración con AppSheet, API, localStorage o bases de datos externas.
-    console.log(`Guardado exitoso: ${curpVal} por ${textoCapturista}`);
+    // Abrir módulo de toma de fotografías solo si pasa la validación inicial
+    evidenciasSeccion.classList.add('active');
 }
 
-// Botón limpiar campos
-btnLimpiar.addEventListener('click', () => {
-    curpInput.value = "";
-    alertaRegistro.classList.remove('active');
-    curpInput.focus();
-});
-</script>
+// Persistencia en memoria interna de la sesión actual
+btnGuardarExpediente.addEventListener('click', () => {
+    const curpVal = curpInput.value.trim().toUpperCase();
+    const capturistaVal = selectCapturista.options[selectCapturista.selectedIndex].text;
+    const fileIne = document.getElementById('foto-ine').files[0];
+    const fileAcuse = document.getElementById('foto-acuse').files[0];
 
+    // Registro de metadatos del expediente procesado
+    const registroExpediente = {
+        curp: curpVal,
+        capturista: capturistaVal,
+        fechaHora: new Date().toISOString(),
+        estatusNominal: resultadoPanel.classList.contains('padrón-si') ? "EN_PADRON" : "REVISION",
+        ineCargado: fileIne ? fileIne.name : "NO_ADJUNTO",
+        acuseCargado: fileAcuse ? fileAcuse.name : "NO_ADJUNTO"
+    };
+
+    baseDatosSesion.push(registroExpediente);
+    contadorSesion.textContent = `Registros: ${baseDatosSesion.length}`;
+    
+    alert(`Expediente del CURP ${curpVal} guardado con éxito en el lote actual.`);
+    limpiarCampos();
+});
+
+// Respaldo General (Cierre de operaciones) descarga un archivo plano JSON con el histórico recolectado
+btnDescargarRespaldo.addEventListener('click', () => {
+    if (baseDatosSesion.length === 0) {
+        alert("No hay registros en el lote actual para exportar.");
+        return;
+    }
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(baseDatosSesion, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `RESPALDO_EVIDENCIAS_SARE1507_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+});
+
+btnLimpiar.addEventListener('click', limpiarCampos);
+
+function limpiarCampos() {
+    curpInput.value = "";
+    resultadoPanel.className = "resultado-validacion";
+    evidenciasSeccion.classList.remove('active');
+    document.getElementById('foto-ine').value = "";
+    document.getElementById('foto-acuse').value = "";
+}
+</script>
 </body>
 </html>
