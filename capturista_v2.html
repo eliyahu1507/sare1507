@@ -190,17 +190,17 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
           ⏳ Cargando padrón de beneficiarios…
         </div>
         <!-- Fallback: selector de archivo si el fetch 404 -->
-        <div id="bloque-cargar-archivo" style="display:none;background:#FFF3E0;border:1.5px solid var(--naranja);border-radius:8px;padding:10px;">
-          <div style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;color:var(--naranja);margin-bottom:6px;">
-            ⚠ El padrón no se cargó automáticamente.<br>Selecciona el archivo HTML del App BRCU desde tu dispositivo:
+        <div id="bloque-cargar-archivo" style="display:none;background:#FFF3E0;border:2px solid var(--naranja);border-radius:10px;padding:13px;">
+          <div style="font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:800;color:var(--naranja);margin-bottom:8px;text-align:center;">
+            📋 SELECCIONA EL ARCHIVO DEL PADRÓN
           </div>
-          <label style="display:flex;align-items:center;gap:8px;background:var(--naranja);color:#fff;padding:8px 12px;border-radius:7px;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;justify-content:center;">
-            📂 SELECCIONAR ARCHIVO BRCU (.html)
+          <div style="font-family:'Open Sans',sans-serif;font-size:.75rem;color:#555;margin-bottom:10px;line-height:1.5;">
+            Localiza y selecciona el archivo <strong>operativo_BRCU_SECUNDARIA_sare1507.html</strong> desde tu dispositivo. El padrón se extrae automáticamente de ese archivo.
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;background:var(--naranja);color:#fff;padding:11px 14px;border-radius:8px;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:800;justify-content:center;letter-spacing:.3px;">
+            📂 ABRIR ARCHIVO BRCU (.html)
             <input type="file" id="inp-brcu-file" accept=".html,text/html" style="display:none">
           </label>
-          <div style="font-family:'Open Sans',sans-serif;font-size:.65rem;color:#777;margin-top:5px;text-align:center;">
-            Busca el archivo <em>operativo_BRCU_SECUNDARIA_sare1507.html</em> (o el nombre con el que lo tengas guardado)
-          </div>
         </div>
       </div>
 
@@ -521,15 +521,23 @@ function setNominalStatus(texto, color) {
 }
 
 async function cargarNominal() {
-  setNominalStatus('\u23F3 Cargando padrón…', '#888');
+  const esLocal = window.location.protocol === 'file:';
 
-  // Intento 1: fetch del app BRCU (fuente de verdad)
+  // Si está abierto como archivo local: saltar fetch y mostrar selector
+  if (esLocal) {
+    console.log('[SARE1507] Modo archivo local — se requiere selección manual del padrón');
+    mostrarSelectorArchivo('\u26A0 Archivo local detectado — selecciona el padrón BRCU abajo');
+    return;
+  }
+
+  // En GitHub Pages: intentar fetch automático
+  setNominalStatus('\u23F3 Cargando padrón desde el servidor…', '#888');
   try {
     const resp = await fetch(NOMINAL_URL, { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const html = await resp.text();
     const match = html.match(/<script[^>]+id="nominal-data"[^>]*>([\s\S]*?)<\/script>/);
-    if (!match) throw new Error('Bloque nominal-data no encontrado');
+    if (!match) throw new Error('Bloque nominal-data no encontrado en ' + NOMINAL_URL);
     poblarMapa(JSON.parse(match[1]));
     const total = Object.keys(mapaAlumnos).length;
     console.log('[SARE1507] Nominal desde BRCU:', total, 'registros');
@@ -537,24 +545,14 @@ async function cargarNominal() {
     return;
   } catch(e) {
     console.warn('[SARE1507] Fetch BRCU falló:', e.message);
+    mostrarSelectorArchivo('\u274C Fetch falló (' + e.message + ') — selecciona el archivo abajo');
   }
+}
 
-  // Intento 2: bloque JSON local (fallback demo)
-  try {
-    const bloque = document.getElementById('nominal-data');
-    if (bloque && bloque.textContent.trim().length > 10) {
-      poblarMapa(JSON.parse(bloque.textContent));
-      const total = Object.keys(mapaAlumnos).length;
-      console.log('[SARE1507] Nominal local demo:', total, 'registros');
-      setNominalStatus('\u26A0 Padrón local (demo): ' + total + ' registros', 'var(--naranja)');
-      return;
-    }
-  } catch(e) { console.warn('[SARE1507] Fallback local falló:', e.message); }
-
-  // Mostrar fallback selector de archivo
+function mostrarSelectorArchivo(msgStatus) {
   const bloqueArchivo = document.getElementById('bloque-cargar-archivo');
   if (bloqueArchivo) bloqueArchivo.style.display = 'block';
-  setNominalStatus('\u274C No se pudo cargar el padrón — selecciona el archivo abajo', 'var(--rojo)');
+  setNominalStatus(msgStatus, 'var(--naranja)');
 }
 
 cargarNominal();
