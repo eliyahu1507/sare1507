@@ -184,6 +184,26 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
     </div>
     <div class="card-body">
 
+      <!-- ESTADO DEL PADRÓN -->
+      <div id="bloque-nominal" style="margin-bottom:11px;">
+        <div id="nominal-status" style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;padding:7px 12px;border-radius:6px;background:#F7F4F5;text-align:center;margin-bottom:6px;">
+          ⏳ Cargando padrón de beneficiarios…
+        </div>
+        <!-- Fallback: selector de archivo si el fetch 404 -->
+        <div id="bloque-cargar-archivo" style="display:none;background:#FFF3E0;border:1.5px solid var(--naranja);border-radius:8px;padding:10px;">
+          <div style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;color:var(--naranja);margin-bottom:6px;">
+            ⚠ El padrón no se cargó automáticamente.<br>Selecciona el archivo HTML del App BRCU desde tu dispositivo:
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;background:var(--naranja);color:#fff;padding:8px 12px;border-radius:7px;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;justify-content:center;">
+            📂 SELECCIONAR ARCHIVO BRCU (.html)
+            <input type="file" id="inp-brcu-file" accept=".html,text/html" style="display:none">
+          </label>
+          <div style="font-family:'Open Sans',sans-serif;font-size:.65rem;color:#777;margin-top:5px;text-align:center;">
+            Busca el archivo <em>operativo_BRCU_SECUNDARIA_sare1507.html</em> (o el nombre con el que lo tengas guardado)
+          </div>
+        </div>
+      </div>
+
       <!-- PASO INDICADOR -->
       <div class="paso-indicador" id="pasos">
         <div class="paso activo" id="p1"><span class="num">1</span> Capturista</div>
@@ -421,56 +441,150 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 
 /* ══════════════════════════════════════════════════
    0. CONFIGURACIÓN DE FOTOS POR NIVEL + EDAD
+   Fuente: diapositivas oficiales Becas Bienestar
 ══════════════════════════════════════════════════ */
 
-const FOTOS_CON_TUTOR = [
+// ── BÁSICA (Rita Cetina): Preescolar, Primaria, Secundaria ──
+// Siempre menores → 4 fotos, sin foto de CURP, ID del tutor
+const FOTOS_BASICA = [
   { id:"f1", label:"1. Acuse lleno y firmado" },
-  { id:"f2", label:"2. CURP del Becario/a" },
-  { id:"f3", label:"3. Identificación del tutor — Anverso" },
-  { id:"f4", label:"4. Identificación del tutor — Reverso" },
-  { id:"f5", label:"5. Becario/a con sobre, tutor con identificación" }
+  { id:"f2", label:"2. Identificación del tutor — Anverso" },
+  { id:"f3", label:"3. Identificación del tutor — Reverso" },
+  { id:"f4", label:"4. Beneficiario/a con sobre de tarjeta e identificación del tutor" }
 ];
 
-const FOTOS_SIN_TUTOR = [
+// ── BUEMS / JEF — Menor de edad: 5 fotos, CURP becario, ID tutor ──
+const FOTOS_BUEMS_JEF_MENOR = [
+  { id:"f1", label:"1. Acuse lleno y firmado" },
+  { id:"f2", label:"2. CURP del Becario/a" },
+  { id:"f3", label:"3. Identificación de la madre, padre, tutora o tutor — Anverso" },
+  { id:"f4", label:"4. Identificación de la madre, padre, tutora o tutor — Reverso" },
+  { id:"f5", label:"5. Beneficiario con sobre + madre/padre/tutor con identificación oficial" }
+];
+
+// ── BUEMS / JEF — Mayor de edad: 5 fotos, CURP becario, ID del estudiante ──
+const FOTOS_BUEMS_JEF_MAYOR = [
   { id:"f1", label:"1. Acuse lleno y firmado" },
   { id:"f2", label:"2. CURP del Becario/a" },
   { id:"f3", label:"3. Identificación del estudiante — Anverso" },
   { id:"f4", label:"4. Identificación del estudiante — Reverso" },
-  { id:"f5", label:"5. Becario/a sosteniendo sobre e identificación" }
+  { id:"f5", label:"5. Beneficiario/a sosteniendo sobre de tarjeta e identificación oficial" }
 ];
 
-// Tipos de nivel que siempre requieren tutor independientemente de la edad calculada
-const NIVELES_SIEMPRE_TUTOR = new Set(["PREESCOLAR","PRIMARIA"]);
+// Niveles de Educación Básica (Rita Cetina) → siempre 4 fotos, tutor, sin CURP
+const NIVELES_BASICA = new Set(["PREESCOLAR","PRIMARIA","SECUNDARIA"]);
+
+// Etiqueta del programa por nivel
+function programaDesdeNivel(nivel) {
+  if (NIVELES_BASICA.has(nivel)) return 'Rita Cetina · Educación Básica';
+  if (nivel === 'MEDIA_SUPERIOR') return 'BUEMS · Media Superior';
+  if (nivel === 'SUPERIOR') return 'JEF · Educación Superior';
+  return nivel;
+}
+
+// ¿Se requiere el toggle de edad para este nivel?
+function nivelRequiereEdad(nivel) {
+  return !NIVELES_BASICA.has(nivel); // Básica siempre menor → ocultar toggle
+}
 
 function obtenerListaFotos(nivel, esMenor) {
-  if (NIVELES_SIEMPRE_TUTOR.has(nivel)) return FOTOS_CON_TUTOR;
-  return esMenor ? FOTOS_CON_TUTOR : FOTOS_SIN_TUTOR;
+  if (NIVELES_BASICA.has(nivel)) return FOTOS_BASICA;
+  return esMenor ? FOTOS_BUEMS_JEF_MENOR : FOTOS_BUEMS_JEF_MAYOR;
 }
 
 /* ══════════════════════════════════════════════════
    1. CARGA DEL NOMINAL
+   Primaria : fetch del HTML del app BRCU y extraccion
+   del bloque <script id="nominal-data">.
+   Fallback : bloque JSON embebido localmente (demo).
+   AJUSTA NOMINAL_URL al nombre exacto del archivo BRCU.
 ══════════════════════════════════════════════════ */
 
-let nominalData = {};
-let mapaAlumnos = {}; // CURP → datos enriquecidos
+const NOMINAL_URL = 'https://eliyahu1507.github.io/sare1507/operativo_BRCU_SECUNDARIA_sare1507.html';
 
-try {
-  nominalData = JSON.parse(document.getElementById('nominal-data').textContent);
-  for (const cct in nominalData) {
-    const esc = nominalData[cct];
-    for (const al of esc.alumnos) {
+let mapaAlumnos = {};
+
+function poblarMapa(data) {
+  for (const cct in data) {
+    const esc = data[cct];
+    for (const al of (esc.alumnos || [])) {
       mapaAlumnos[al.curp.toUpperCase()] = {
-        ...al,
-        cct,
-        escuela: esc.escuela,
-        fecha: esc.fecha
+        ...al, cct, escuela: esc.escuela, fecha: esc.fecha
       };
     }
   }
-  console.log(`[SARE1507] Nominal cargado: ${Object.keys(mapaAlumnos).length} beneficiarios en ${Object.keys(nominalData).length} CCT(s).`);
-} catch(e) {
-  console.error('[SARE1507] Error al parsear nominal:', e);
 }
+
+function setNominalStatus(texto, color) {
+  const el = document.getElementById('nominal-status');
+  if (el) { el.textContent = texto; el.style.color = color; }
+}
+
+async function cargarNominal() {
+  setNominalStatus('\u23F3 Cargando padrón…', '#888');
+
+  // Intento 1: fetch del app BRCU (fuente de verdad)
+  try {
+    const resp = await fetch(NOMINAL_URL, { cache: 'no-store' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const html = await resp.text();
+    const match = html.match(/<script[^>]+id="nominal-data"[^>]*>([\s\S]*?)<\/script>/);
+    if (!match) throw new Error('Bloque nominal-data no encontrado');
+    poblarMapa(JSON.parse(match[1]));
+    const total = Object.keys(mapaAlumnos).length;
+    console.log('[SARE1507] Nominal desde BRCU:', total, 'registros');
+    setNominalStatus('\u2713 Padrón listo: ' + total.toLocaleString('es-MX') + ' beneficiarios', 'var(--verde)');
+    return;
+  } catch(e) {
+    console.warn('[SARE1507] Fetch BRCU falló:', e.message);
+  }
+
+  // Intento 2: bloque JSON local (fallback demo)
+  try {
+    const bloque = document.getElementById('nominal-data');
+    if (bloque && bloque.textContent.trim().length > 10) {
+      poblarMapa(JSON.parse(bloque.textContent));
+      const total = Object.keys(mapaAlumnos).length;
+      console.log('[SARE1507] Nominal local demo:', total, 'registros');
+      setNominalStatus('\u26A0 Padrón local (demo): ' + total + ' registros', 'var(--naranja)');
+      return;
+    }
+  } catch(e) { console.warn('[SARE1507] Fallback local falló:', e.message); }
+
+  // Mostrar fallback selector de archivo
+  const bloqueArchivo = document.getElementById('bloque-cargar-archivo');
+  if (bloqueArchivo) bloqueArchivo.style.display = 'block';
+  setNominalStatus('\u274C No se pudo cargar el padrón — selecciona el archivo abajo', 'var(--rojo)');
+}
+
+cargarNominal();
+
+// ── Selector de archivo fallback ──────────────────────
+document.getElementById('inp-brcu-file').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  setNominalStatus('\u23F3 Leyendo archivo…', '#888');
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const html = ev.target.result;
+      const match = html.match(/<script[^>]+id="nominal-data"[^>]*>([\s\S]*?)<\/script>/);
+      if (!match) {
+        setNominalStatus('\u274C El archivo seleccionado no contiene un bloque nominal-data', 'var(--rojo)');
+        return;
+      }
+      mapaAlumnos = {}; // Limpiar mapa anterior
+      poblarMapa(JSON.parse(match[1]));
+      const total = Object.keys(mapaAlumnos).length;
+      console.log('[SARE1507] Nominal desde archivo local:', total, 'registros');
+      document.getElementById('bloque-cargar-archivo').style.display = 'none';
+      setNominalStatus('\u2713 Padrón cargado desde archivo: ' + total.toLocaleString('es-MX') + ' beneficiarios', 'var(--verde)');
+    } catch(err) {
+      setNominalStatus('\u274C Error al leer el archivo: ' + err.message, 'var(--rojo)');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+});
 
 /* ══════════════════════════════════════════════════
    2. UTILIDADES
@@ -504,8 +618,13 @@ function sexoDesde(curp) {
 }
 
 function nivelBonito(tipo) {
-  const m = { PREESCOLAR:'Preescolar', PRIMARIA:'Primaria', SECUNDARIA:'Secundaria',
-              MEDIA_SUPERIOR:'Media Superior', SUPERIOR:'Superior' };
+  const m = {
+    PREESCOLAR:'Preescolar (Básica)',
+    PRIMARIA:'Primaria (Básica)',
+    SECUNDARIA:'Secundaria (Básica)',
+    MEDIA_SUPERIOR:'Media Superior (BUEMS)',
+    SUPERIOR:'Superior (JEF)'
+  };
   return m[tipo] || tipo;
 }
 
@@ -659,6 +778,11 @@ function procesarCURP(curp) {
     `;
   }
 
+  // Mostrar/ocultar toggle de edad según nivel detectado
+  const nivelDetectado = alumno ? alumno.tipo : 'SECUNDARIA';
+  const bloqueEdad = document.getElementById('bloque-override-edad');
+  if (bloqueEdad) bloqueEdad.style.display = nivelRequiereEdad(nivelDetectado) ? 'block' : 'none';
+
   panel.style.display = 'flex';
   setPaso(3);
   document.getElementById('seccion-fotos').style.display = 'none';
@@ -716,12 +840,21 @@ function generarCamposFotos(nivel, esMenor) {
   imagenesComprimidas = {};
 
   const listaFotos = obtenerListaFotos(nivel, esMenor);
-  const tipoTexto = NIVELES_SIEMPRE_TUTOR.has(nivel)
-    ? 'CON TUTOR'
-    : (esMenor ? 'MENOR · CON TUTOR' : 'MAYOR · AUTÓNOMO');
+
+  // Etiqueta de programa y condición
+  let tipoTexto;
+  if (NIVELES_BASICA.has(nivel)) {
+    tipoTexto = 'Tutor · 4 evidencias';
+  } else {
+    tipoTexto = esMenor ? 'Menor · Tutor · 5 evidencias' : 'Mayor · Autónomo · 5 evidencias';
+  }
 
   document.getElementById('fotos-header').textContent =
-    `📸 EVIDENCIAS REQUERIDAS — ${nivelBonito(nivel)} · ${tipoTexto}`;
+    `📸 ${programaDesdeNivel(nivel)} · ${tipoTexto}`;
+
+  // Mostrar/ocultar toggle de edad según nivel
+  const bloqueEdad = document.getElementById('bloque-override-edad');
+  if (bloqueEdad) bloqueEdad.style.display = nivelRequiereEdad(nivel) ? 'block' : 'none';
 
   listaFotos.forEach(item => {
     const div = document.createElement('div');
@@ -942,7 +1075,8 @@ document.getElementById('btn-limpiar').addEventListener('click', ()=>{
 ══════════════════════════════════════════════════ */
 
 setPaso(1);
-generarCamposFotos('SECUNDARIA', true); // precargar estructura
+// Ocultar toggle de edad hasta que se conozca el nivel
+document.getElementById('bloque-override-edad').style.display = 'none';
 document.getElementById('seccion-fotos').style.display = 'none';
 document.getElementById('panel-res').style.display = 'none';
 
