@@ -3,120 +3,371 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SARE 1507 — Búsqueda Nominal</title>
+<title>SARE 1507 — Búsqueda Nominal Procesos Anteriores</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-  :root { --guinda: #6B1C3E; --dorado: #C8962A; --blanco: #FFF; --gris-bg: #F7F4F5; }
-  body { font-family: 'Open Sans', sans-serif; background: var(--gris-bg); margin: 0; padding-bottom: 50px; }
+  :root {
+    --guinda: #6B1C3E; --guinda-o: #4A0E29; --dorado: #C8962A; --verde: #1A7A3A; 
+    --azul: #1565C0; --alerta: #FF6F00; --rojo: #C62828; --blanco: #FFF; 
+    --gris-bg: #F7F4F5; --gris: #EDE8EA; --texto: #1A0A10; --sombra: rgba(74,14,41,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Open Sans', sans-serif; background: var(--gris-bg); color: var(--texto); padding-bottom: 60px; }
   
-  header { background: var(--guinda); color: var(--blanco); padding: 15px 20px; border-bottom: 4px solid var(--dorado); display: flex; justify-content: space-between; align-items: center; }
-  .header-center { text-align: center; flex-grow: 1; }
-  .header-center h1 { font-size: 0.9rem; margin: 0; font-weight: 800; }
-  .header-center p { font-size: 0.7rem; margin: 0; opacity: 0.9; }
+  header {
+    background: var(--guinda); color: var(--blanco); padding: 15px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 4px 10px var(--sombra); position: sticky; top: 0; z-index: 100;
+  }
+  .header-logos img { height: 45px; }
+  .header-titles { text-align: right; }
+  .header-titles h1 { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+  .header-titles h2 { font-size: 0.8rem; font-weight: 400; opacity: 0.9; }
+
+  .info-bar { background: var(--blanco); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--dorado); font-size: 0.9rem; font-weight: 600; }
+  .reloj { font-family: 'Montserrat', sans-serif; color: var(--guinda); font-size: 1.1rem; }
+
+  .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
+
+  /* Loader de bases de datos */
+  #loader-db {
+    background: var(--guinda-o); color: white; padding: 15px; text-align: center; border-radius: 8px;
+    margin-bottom: 20px; font-family: 'Montserrat', sans-serif; font-weight: bold;
+  }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+  .stat-card { background: var(--blanco); padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-bottom: 4px solid var(--guinda); }
+  .stat-card h3 { font-size: 0.8rem; color: #666; text-transform: uppercase; margin-bottom: 5px; }
+  .stat-card .numero { font-family: 'Montserrat', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--guinda); }
+  .stat-card.total { border-color: var(--dorado); } .stat-card.total .numero { color: var(--dorado); }
+  .stat-card.basica { border-color: var(--verde); } .stat-card.basica .numero { color: var(--verde); }
+  .stat-card.bueems { border-color: var(--azul); } .stat-card.bueems .numero { color: var(--azul); }
+  .stat-card.jef { border-color: var(--alerta); } .stat-card.jef .numero { color: var(--alerta); }
+
+  .scanner-section { background: var(--blanco); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; }
+  .scanner-title { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; margin-bottom: 15px; color: var(--guinda); }
+  #reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 3px solid var(--gris); }
+  .btn { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: 'Montserrat', sans-serif; transition: 0.2s; margin: 5px; font-size: 1rem; }
+  .btn-start { background: var(--guinda); color: white; }
+  .btn-stop { background: var(--gris); color: var(--texto); }
+
+  #modal-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+  .modal-content { background: var(--blanco); width: 90%; max-width: 600px; border-radius: 16px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto; }
+  .modal-content.success { border-top: 8px solid var(--verde); }
+  .modal-content.error { border-top: 8px solid var(--rojo); }
+  .resultado-header { font-family: 'Montserrat', sans-serif; font-size: 1.5rem; margin-bottom: 15px; text-align: center; }
+  .success .resultado-header { color: var(--verde); }
+  .error .resultado-header { color: var(--rojo); }
   
-  .info-bar { background: var(--blanco); padding: 10px 20px; display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; border-bottom: 1px solid #ddd; }
+  .registro-encontrado { background: var(--gris-bg); border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left; }
+  .registro-encontrado p { margin-bottom: 8px; font-size: 0.95rem; }
+  .registro-encontrado strong { color: var(--guinda); font-family: 'Montserrat', sans-serif; }
+  .badge-nivel { display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 0.8rem; margin-bottom: 10px; color: #fff; }
   
-  .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
-  .box { background: var(--blanco); padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-  
-  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-  .stat-card { background: var(--blanco); padding: 10px; border-radius: 8px; text-align: center; border-bottom: 3px solid var(--guinda); }
-  .stat-card .num { font-size: 1.2rem; font-weight: 800; color: var(--guinda); }
-  
-  input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; margin-top: 10px; box-sizing: border-box; }
-  .btn { padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 10px; width: 100%; font-family: 'Montserrat'; }
-  .btn-buscar { background: var(--dorado); color: white; }
-  #reader { width: 100%; max-width: 350px; margin: 10px auto; }
+  .btn-close { width: 100%; padding: 15px; background: var(--gris); color: var(--texto); border: none; border-radius: 8px; font-weight: 700; font-size: 1.1rem; cursor: pointer; margin-top: 10px; }
+  .btn-close:hover { background: #ddd; }
 </style>
 </head>
 <body>
 
 <header>
-  <div><strong>SARE 1507</strong></div>
-  <div class="header-center">
-    <h1>JOSE ELIAS CERVANTES JIMENEZ</h1>
-    <p>SERVIDOR EDUCATIVO - ENLACE INFORMATICO</p>
-    <p>PROGRAMA DE BECAS PARA EL BIENESTAR</p>
+  <div class="header-logos">
+    <h1 style="font-size: 1.5rem; letter-spacing: 2px;">BECAS BIENESTAR</h1>
   </div>
-  <div><img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/Gobierno_de_Mexico_logo.svg" height="30"></div>
+  <div class="header-titles">
+    <h1>SARE 1507</h1>
+    <h2>Procesos Anteriores</h2>
+  </div>
 </header>
 
 <div class="info-bar">
   <div id="clock-date">Cargando fecha...</div>
-  <div id="clock-time">00:00:00</div>
+  <div id="clock-time" class="reloj">00:00:00</div>
 </div>
 
 <div class="container">
-  <div id="status" style="padding:10px; background:var(--dorado); color:white; border-radius:8px; margin-bottom:15px; text-align:center;">Cargando archivos de datos...</div>
+  
+  <div id="loader-db">📥 Descargando e indexando Padrones. Por favor espera...</div>
 
   <div class="stats-grid">
-    <div class="stat-card"><div>Total</div><div class="num" id="stat-total">0</div></div>
-    <div class="stat-card"><div>Básica</div><div class="num" id="stat-basica">0</div></div>
-    <div class="stat-card"><div>BUEEMS</div><div class="num" id="stat-bueems">0</div></div>
-    <div class="stat-card"><div>JEF</div><div class="num" id="stat-jef">0</div></div>
+    <div class="stat-card total">
+      <h3>Total Registros</h3>
+      <div class="numero" id="stat-total">0</div>
+    </div>
+    <div class="stat-card basica">
+      <h3>Básica</h3>
+      <div class="numero" id="stat-basica">0</div>
+    </div>
+    <div class="stat-card bueems">
+      <h3>Media Superior</h3>
+      <div class="numero" id="stat-bueems">0</div>
+    </div>
+    <div class="stat-card jef">
+      <h3>JEF Superior</h3>
+      <div class="numero" id="stat-jef">0</div>
+    </div>
   </div>
 
-  <div class="box">
-    <strong>Búsqueda Manual:</strong>
-    <input type="text" id="input-nombre" placeholder="Escribe el nombre...">
-    <button class="btn btn-buscar" onclick="buscarPorNombre()">BUSCAR EN PADRÓN</button>
-  </div>
-
-  <div class="box">
+  <div class="scanner-section">
+    <h2 class="scanner-title">Escáner de CURP (Procesos Anteriores)</h2>
     <div id="reader"></div>
-    <button class="btn" style="background:var(--guinda); color:white" onclick="iniciarScanner()">ACTIVAR ESCÁNER QR</button>
+    <div style="margin-top: 20px;">
+      <button class="btn btn-start" id="btn-start" onclick="iniciarScanner()" disabled style="opacity: 0.5;">Cámara Desactivada (Cargando)</button>
+      <button class="btn btn-stop" id="btn-stop" onclick="detenerScanner()" style="display:none;">Detener Cámara</button>
+    </div>
+    <p style="margin-top: 15px; font-size: 0.85rem; color: #666;">
+      Escanea el código QR del formato. El sistema localizará automáticamente a qué nivel y proceso pertenece la tarjeta física.
+    </p>
+  </div>
+</div>
+
+<div id="modal-bg">
+  <div class="modal-content" id="modal-box">
+    <h2 class="resultado-header" id="modal-title">Resultado</h2>
+    <div id="modal-body" style="text-align: center;"></div>
+    <button class="btn-close" onclick="cerrarModal()">ACEPTAR Y CONTINUAR (Espacio)</button>
   </div>
 </div>
 
 <script>
+// ============================================================================
+// 1. LECTURA AUTOMÁTICA DE ARCHIVOS CSV (FETCH)
+// ============================================================================
 let nominalDatos = [];
 
-function tick() {
-  const now = new Date();
-  document.getElementById('clock-time').textContent = now.toLocaleTimeString();
-  document.getElementById('clock-date').textContent = now.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'short'});
-}
-setInterval(tick, 1000); tick();
+// Función para procesar un CSV extraído de GitHub
+function procesarDataCSV(data, nivelConfig) {
+  const lineas = Papa.parse(data, { header: true, skipEmptyLines: true }).data;
+  
+  lineas.forEach(row => {
+    // Normalizar nombres de columnas ignorando mayúsculas y espacios extra
+    const keys = Object.keys(row);
+    const getVal = (posiblesNombres) => {
+      const key = keys.find(k => posiblesNombres.some(pn => k.toUpperCase().includes(pn)));
+      return key ? row[key].trim().toUpperCase() : '';
+    };
 
-async function cargar() {
-  const files = ['basica.csv', 'bueems.csv', 'jef.csv', 'bueems_feb.csv'];
-  for (const f of files) {
-    try {
-      const res = await fetch(f);
-      if(!res.ok) continue;
-      const csv = await res.text();
-      const data = Papa.parse(csv, { header: true }).data;
-      data.forEach(r => {
-        const get = (n) => Object.values(r).find((v,i) => Object.keys(r)[i].toUpperCase().includes(n)) || '';
-        nominalDatos.push({ curp: get('CURP'), nombre: (get('NOMBRE') + ' ' + get('APELLIDO')).trim().toUpperCase(), nivel: f, proceso: get('PROCESO') });
-      });
-    } catch(e) {}
-  }
-  document.getElementById('status').style.display = 'none';
-  document.getElementById('stat-total').textContent = nominalDatos.length;
-  document.getElementById('stat-basica').textContent = nominalDatos.filter(d => d.nivel.includes('basica')).length;
-  document.getElementById('stat-bueems').textContent = nominalDatos.filter(d => d.nivel.includes('bueems')).length;
-  document.getElementById('stat-jef').textContent = nominalDatos.filter(d => d.nivel.includes('jef')).length;
-}
-cargar();
+    const curp = getVal(['CURP']);
+    if (!curp) return; // Si no hay curp, saltar fila
 
-function buscarPorNombre() {
-  const query = document.getElementById('input-nombre').value.toUpperCase();
-  const res = nominalDatos.filter(d => d.nombre.includes(query));
-  alert(res.length ? res.map(r => r.nombre + ' - ' + r.curp).join('\n') : "No encontrado");
-}
+    const nombreBase = getVal(['NOMBRE DEL TUTOR', 'NOMBRE DEL BECARIO', 'NOMBRE']);
+    const ap1 = getVal(['PRIMER APELLIDO', 'APELLIDO PATERNO']);
+    const ap2 = getVal(['SEGUNDO APELLIDO', 'APELLIDO MATERNO']);
+    const nombreCompleto = `${nombreBase} ${ap1} ${ap2}`.replace(/\s+/g, ' ').trim();
 
-function iniciarScanner() {
-  const s = new Html5Qrcode("reader");
-  s.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, (t) => {
-    s.stop();
-    const res = nominalDatos.find(d => t.toUpperCase().includes(d.curp.toUpperCase()));
-    alert(res ? `ENCONTRADO: ${res.nombre}` : "No hallado");
+    nominalDatos.push({
+      curp: curp,
+      nivel: nivelConfig.nombre,
+      rol: nivelConfig.rol,
+      nombre: nombreCompleto,
+      cct: getVal(['CCT']),
+      mun: getVal(['MUN', 'MUNICIPIO']),
+      idTutor: getVal(['ID DEL TUTOR', 'ID TUTOR']),
+      folio: getVal(['FOLIO']),
+      proceso: getVal(['PROCESO'])
+    });
   });
 }
+
+// Carga asíncrona de los 4 archivos
+async function cargarPadrones() {
+  const archivos = [
+    { url: 'basica.csv', config: { nombre: 'BÁSICA', rol: 'TUTOR' } },
+    { url: 'bueems.csv', config: { nombre: 'BUEEMS', rol: 'BECARIO' } },
+    { url: 'jef.csv', config: { nombre: 'JEF', rol: 'BECARIO' } },
+    { url: 'bueems_feb.csv', config: { nombre: 'BUEEMS FEB 26', rol: 'BECARIO' } }
+  ];
+
+  for (const archivo of archivos) {
+    try {
+      const response = await fetch(archivo.url);
+      if (response.ok) {
+        const textData = await response.text();
+        procesarDataCSV(textData, archivo.config);
+      } else {
+        console.warn(`No se encontró el archivo: ${archivo.url}`);
+      }
+    } catch (err) {
+      console.error(`Error de red al cargar ${archivo.url}:`, err);
+    }
+  }
+
+  // Actualizar UI cuando termina
+  document.getElementById('loader-db').style.display = 'none';
+  const btnStart = document.getElementById('btn-start');
+  btnStart.disabled = false;
+  btnStart.style.opacity = '1';
+  btnStart.textContent = 'Iniciar Cámara';
+  calcularEstadisticas();
+  
+  if(nominalDatos.length === 0) {
+    alert("No se cargaron registros. Asegúrate de haber subido los archivos CSV a GitHub con los nombres correctos: basica.csv, bueems.csv, jef.csv, bueems_feb.csv");
+  }
+}
+
+// Iniciar carga al cargar la página
+window.onload = cargarPadrones;
+
+
+// ============================================================================
+// 2. FUNCIONES DE INTERFAZ Y ESTADÍSTICAS
+// ============================================================================
+(function initReloj(){
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  function tick(){
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clock-time').textContent = h+':'+m+':'+s;
+    document.getElementById('clock-date').textContent = dias[now.getDay()]+' '+now.getDate()+' '+meses[now.getMonth()]+'. '+now.getFullYear();
+  }
+  tick(); setInterval(tick, 1000);
+})();
+
+function calcularEstadisticas() {
+  document.getElementById('stat-total').textContent = nominalDatos.length;
+  document.getElementById('stat-basica').textContent = nominalDatos.filter(d => d.nivel === 'BÁSICA').length;
+  document.getElementById('stat-bueems').textContent = nominalDatos.filter(d => d.nivel.includes('BUEEMS')).length;
+  document.getElementById('stat-jef').textContent = nominalDatos.filter(d => d.nivel === 'JEF').length;
+}
+
+function hablar(texto) {
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const msg = new SpeechSynthesisUtterance(texto);
+  msg.lang = 'es-MX';
+  msg.rate = 1.0;
+  window.speechSynthesis.speak(msg);
+}
+
+
+// ============================================================================
+// 3. ESCÁNER Y LÓGICA DE BÚSQUEDA
+// ============================================================================
+let html5QrcodeScanner = null;
+let escaneoActivo = false;
+let procesando = false;
+
+function iniciarScanner() {
+  if (escaneoActivo) return;
+  document.getElementById('btn-start').style.display = 'none';
+  document.getElementById('btn-stop').style.display = 'inline-block';
+  
+  html5QrcodeScanner = new Html5Qrcode("reader");
+  html5QrcodeScanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: {width: 250, height: 250} },
+    onScanSuccess,
+    (err) => {} // Ignorar fallos de lectura de frame
+  ).catch(err => {
+    alert("Error al iniciar cámara: " + err);
+    detenerScanner();
+  });
+  escaneoActivo = true;
+}
+
+function detenerScanner() {
+  if (html5QrcodeScanner) {
+    html5QrcodeScanner.stop().then(() => {
+      html5QrcodeScanner.clear();
+      escaneoActivo = false;
+      document.getElementById('btn-start').style.display = 'inline-block';
+      document.getElementById('btn-stop').style.display = 'none';
+    });
+  }
+}
+
+const curpRegex = /([A-Z][A-EI-O-U-X][A-Z]{2}\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[HM][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z\d]\d)/i;
+
+function onScanSuccess(decodedText) {
+  if(procesando) return;
+  procesando = true;
+
+  const match = decodedText.match(curpRegex);
+  if (!match) {
+    mostrarError("QR no válido", "No se detectó una CURP en el código escaneado.");
+    return;
+  }
+
+  const curpEscaneada = match[0].toUpperCase();
+  const resultados = nominalDatos.filter(registro => registro.curp === curpEscaneada);
+
+  if (resultados.length > 0) {
+    mostrarExito(curpEscaneada, resultados);
+  } else {
+    mostrarError(curpEscaneada, "La CURP escaneada no se encuentra en el nominal de Procesos Anteriores.");
+  }
+}
+
+
+// ============================================================================
+// 4. MODALES Y RESULTADOS
+// ============================================================================
+function obtenerColorNivel(nivel) {
+  if(nivel === 'BÁSICA') return 'var(--verde)';
+  if(nivel.includes('BUEEMS')) return 'var(--azul)';
+  if(nivel === 'JEF') return 'var(--alerta)';
+  return 'var(--guinda)';
+}
+
+function mostrarExito(curp, registros) {
+  const modalBox = document.getElementById('modal-box');
+  modalBox.className = "modal-content success";
+  document.getElementById('modal-title').textContent = "¡REGISTRO LOCALIZADO!";
+  
+  let html = `<p style="margin-bottom:15px; font-size:1.1rem;">CURP: <strong>${curp}</strong></p>`;
+  
+  registros.forEach(reg => {
+    const color = obtenerColorNivel(reg.nivel);
+    html += `
+      <div class="registro-encontrado" style="border-left: 5px solid ${color};">
+        <div class="badge-nivel" style="background:${color};">${reg.nivel}</div>
+        <p><strong>NOMBRE:</strong> ${reg.nombre} (${reg.rol})</p>
+        <p><strong>PROCESO:</strong> ${reg.proceso}</p>
+        ${reg.cct ? `<p><strong>CCT:</strong> ${reg.cct}</p>` : ''}
+        ${reg.mun ? `<p><strong>MUNICIPIO:</strong> ${reg.mun}</p>` : ''}
+        ${reg.folio ? `<p><strong>FOLIO:</strong> ${reg.folio}</p>` : ''}
+        ${reg.idTutor ? `<p><strong>ID TUTOR:</strong> ${reg.idTutor}</p>` : ''}
+      </div>
+    `;
+  });
+
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-bg').style.display = 'flex';
+  
+  const primerReg = registros[0];
+  hablar(`Localizado en ${primerReg.nivel}. Proceso: ${primerReg.proceso}.`);
+}
+
+function mostrarError(curp, mensaje) {
+  const modalBox = document.getElementById('modal-box');
+  modalBox.className = "modal-content error";
+  document.getElementById('modal-title').textContent = "NO ENCONTRADO";
+  
+  document.getElementById('modal-body').innerHTML = `
+    <p style="font-size:1.2rem; margin-bottom:10px;"><strong>${curp}</strong></p>
+    <p>${mensaje}</p>
+  `;
+  document.getElementById('modal-bg').style.display = 'flex';
+  hablar("Atención. CURP no localizada en procesos anteriores.");
+}
+
+function cerrarModal() {
+  document.getElementById('modal-bg').style.display = 'none';
+  setTimeout(() => { procesando = false; }, 1000);
+}
+
+document.addEventListener('keydown', function(event) {
+  if (event.code === 'Space' && document.getElementById('modal-bg').style.display === 'flex') {
+    event.preventDefault();
+    cerrarModal();
+  }
+});
 </script>
 </body>
 </html>
