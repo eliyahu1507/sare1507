@@ -74,9 +74,7 @@
 <body>
 
 <header>
-  <div class="header-logos">
-    <h1>BECAS BIENESTAR</h1>
-  </div>
+  <div class="header-logos"><h1>BECAS BIENESTAR</h1></div>
   <div class="header-middle">
     <h3>JOSE ELIAS CERVANTES JIMENEZ</h3>
     <p>ENLACE INFORMATICO</p>
@@ -102,12 +100,13 @@
     <div class="stat-card jef"><h3>JEF</h3><div class="numero" id="stat-jef">0</div></div>
   </div>
 
-  <!-- Sección de Búsqueda Manual -->
   <div class="section-box">
     <h2 class="title-section">Búsqueda Manual (CURP o Nombre)</h2>
-    <input type="text" id="manual-search-input" class="input-text" placeholder="Escribe nombre completo o CURP...">
-    <br>
-    <button class="btn btn-start" onclick="buscarManual()">Buscar en Padrón</button>
+    <input type="text" id="manual-search-input" class="input-text" placeholder="Escribe nombre o CURP..." onkeypress="if(event.key==='Enter') buscarManual()">
+    <div style="display: flex; gap: 10px; justify-content: center;">
+        <button class="btn btn-start" onclick="buscarManual()">Buscar</button>
+        <button class="btn btn-stop" onclick="limpiarBusqueda()">Limpiar</button>
+    </div>
   </div>
 
   <div class="section-box">
@@ -129,8 +128,8 @@
 </div>
 
 <script>
-// [CARGA DE DATOS SIN CAMBIOS]
 let nominalDatos = [];
+
 function procesarDataCSV(data, nivelConfig) {
   const lineas = Papa.parse(data, { header: true, skipEmptyLines: true }).data;
   lineas.forEach(row => {
@@ -145,7 +144,7 @@ function procesarDataCSV(data, nivelConfig) {
     const ap1 = getVal(['PRIMER APELLIDO', 'APELLIDO PATERNO']);
     const ap2 = getVal(['SEGUNDO APELLIDO', 'APELLIDO MATERNO']);
     const nombreCompleto = `${nombreBase} ${ap1} ${ap2}`.replace(/\s+/g, ' ').trim();
-    nominalDatos.push({ curp, nivel: nivelConfig.nombre, rol: nivelConfig.rol, nombre: nombreCompleto, cct: getVal(['CCT']), mun: getVal(['MUN', 'MUNICIPIO']), idTutor: getVal(['ID DEL TUTOR', 'ID TUTOR']), folio: getVal(['FOLIO']), proceso: getVal(['PROCESO']) });
+    nominalDatos.push({ curp, nivel: nivelConfig.nombre, rol: nivelConfig.rol, nombre: nombreCompleto, proceso: getVal(['PROCESO']) });
   });
 }
 
@@ -163,41 +162,27 @@ async function cargarPadrones() {
   document.getElementById('loader-db').style.display = 'none';
   const btnStart = document.getElementById('btn-start');
   btnStart.disabled = false; btnStart.style.opacity = '1'; btnStart.textContent = 'Iniciar Cámara';
-  calcularEstadisticas();
-}
-window.onload = cargarPadrones;
-
-// [FUNCIONES DE UI E INTERFAZ]
-(function initReloj(){
-  function tick(){
-    const now = new Date();
-    document.getElementById('clock-time').textContent = now.toLocaleTimeString();
-    document.getElementById('clock-date').textContent = now.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'short'});
-  }
-  tick(); setInterval(tick, 1000);
-})();
-
-function calcularEstadisticas() {
   document.getElementById('stat-total').textContent = nominalDatos.length;
   document.getElementById('stat-basica').textContent = nominalDatos.filter(d => d.nivel === 'BÁSICA').length;
   document.getElementById('stat-bueems').textContent = nominalDatos.filter(d => d.nivel.includes('BUEEMS')).length;
   document.getElementById('stat-jef').textContent = nominalDatos.filter(d => d.nivel === 'JEF').length;
 }
+window.onload = cargarPadrones;
 
-// [NUEVA FUNCIÓN DE BÚSQUEDA MANUAL]
+function limpiarBusqueda() {
+    const input = document.getElementById('manual-search-input');
+    input.value = '';
+    input.focus();
+}
+
 function buscarManual() {
   const input = document.getElementById('manual-search-input').value.trim().toUpperCase();
   if(!input) return;
   const resultados = nominalDatos.filter(r => r.curp === input || r.nombre.includes(input));
-  if(resultados.length > 0) {
-    mostrarExito("Búsqueda Manual", resultados);
-  } else {
-    mostrarError(input, "No se encontraron registros coincidentes.");
-  }
+  if(resultados.length > 0) mostrarExito("Búsqueda Manual", resultados);
+  else mostrarError(input, "No se encontraron registros coincidentes.");
 }
 
-// [ESCÁNER Y MODALES]
-let html5QrcodeScanner = null;
 function iniciarScanner() {
   document.getElementById('btn-start').style.display = 'none';
   document.getElementById('btn-stop').style.display = 'inline-block';
@@ -207,7 +192,7 @@ function iniciarScanner() {
     if(curpMatch) {
       const res = nominalDatos.filter(r => r.curp === curpMatch[0]);
       if(res.length > 0) mostrarExito(curpMatch[0], res);
-      else mostrarError(curpMatch[0], "CURP no encontrada en padrones.");
+      else mostrarError(curpMatch[0], "CURP no encontrada.");
     }
   });
 }
@@ -222,24 +207,16 @@ function detenerScanner() {
 }
 
 function mostrarExito(titulo, registros) {
-  const modalBox = document.getElementById('modal-box');
-  modalBox.className = "modal-content success";
   document.getElementById('modal-title').textContent = "¡REGISTRO LOCALIZADO!";
   let html = `<p>Busqueda: <strong>${titulo}</strong></p><br>`;
   registros.forEach(reg => {
-    html += `<div class="registro-encontrado">
-      <div class="badge-nivel">${reg.nivel}</div>
-      <p><strong>NOMBRE:</strong> ${reg.nombre}</p>
-      <p><strong>PROCESO:</strong> ${reg.proceso}</p>
-    </div>`;
+    html += `<div class="registro-encontrado"><div class="badge-nivel">${reg.nivel}</div><p><strong>NOMBRE:</strong> ${reg.nombre}</p><p><strong>PROCESO:</strong> ${reg.proceso}</p></div>`;
   });
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('modal-bg').style.display = 'flex';
 }
 
 function mostrarError(titulo, mensaje) {
-  const modalBox = document.getElementById('modal-box');
-  modalBox.className = "modal-content error";
   document.getElementById('modal-title').textContent = "NO ENCONTRADO";
   document.getElementById('modal-body').innerHTML = `<p>${mensaje}</p>`;
   document.getElementById('modal-bg').style.display = 'flex';
