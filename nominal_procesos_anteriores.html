@@ -17,76 +17,17 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Open Sans', sans-serif; background: var(--gris-bg); color: var(--texto); padding-bottom: 60px; }
   
-  header { background: var(--guinda); color: var(--blanco); padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px var(--sombra); position: sticky; top: 0; z-index: 100; }
+  header {
+    background: var(--guinda); color: var(--blanco); padding: 15px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 4px 10px var(--sombra); position: sticky; top: 0; z-index: 100;
+  }
+  .header-logos h1 { font-size: 1.2rem; letter-spacing: 1px; }
   .header-middle { text-align: center; }
   .header-middle h3 { font-size: 0.85rem; font-weight: 700; }
   .header-middle p { font-size: 0.65rem; opacity: 0.8; }
-  .info-bar { background: var(--blanco); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--dorado); font-size: 0.9rem; font-weight: 600; }
-  .reloj { font-family: 'Montserrat', sans-serif; color: var(--guinda); font-size: 1.1rem; }
-  .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
-  #loader-db { background: var(--guinda-o); color: white; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; font-family: 'Montserrat', sans-serif; font-weight: bold; }
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
-  .stat-card { background: var(--blanco); padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-bottom: 4px solid var(--guinda); }
-  .stat-card .numero { font-family: 'Montserrat', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--guinda); }
-  .section-box { background: var(--blanco); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
-  .btn { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: 'Montserrat', sans-serif; transition: 0.2s; margin: 5px; }
-  .btn-start { background: var(--guinda); color: white; }
-  .btn-stop { background: var(--gris); color: var(--texto); }
-  .input-text { padding: 12px; width: 100%; max-width: 400px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; margin-bottom: 10px; }
-</style>
-</head>
-<body>
+  .header-titles { text-align: right; }
+  .header-titles h1 { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+  .header-titles h2 { font-size: 0.8rem; font-weight: 400; opacity: 0.9; }
 
-<header>
-  <div class="header-logos"><h1>BECAS BIENESTAR</h1></div>
-  <div class="header-middle">
-    <h3>JOSE ELIAS CERVANTES JIMENEZ</h3>
-    <p>ENLACE INFORMATICO</p>
-  </div>
-</header>
-
-<div class="info-bar">
-  <div id="clock-date">Cargando fecha...</div>
-  <div id="clock-time" class="reloj">00:00:00</div>
-</div>
-
-<div class="container">
-  <div id="loader-db">📥 Cargando datos...</div>
-  <div class="stats-grid">
-    <div class="stat-card"><h3>Total</h3><div class="numero" id="stat-total">0</div></div>
-  </div>
-  
-  <div class="section-box">
-    <h2>Búsqueda Manual</h2>
-    <input type="text" id="manual-search-input" class="input-text" placeholder="Escribe nombre o CURP...">
-    <div>
-        <button class="btn btn-start" onclick="buscarManual()">Buscar</button>
-        <button class="btn btn-stop" onclick="limpiarBusqueda()">Limpiar</button>
-    </div>
-  </div>
-</div>
-
-<script>
-// [RELOJ CORREGIDO]
-(function initReloj(){
-  function tick(){
-    const now = new Date();
-    document.getElementById('clock-time').textContent = now.toLocaleTimeString();
-    document.getElementById('clock-date').textContent = now.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'short'});
-  }
-  tick(); setInterval(tick, 1000);
-})();
-
-// [TU LÓGICA ORIGINAL DE CARGA Y BÚSQUEDA VA AQUÍ]
-// Asegúrate de que las funciones procesarDataCSV y cargarPadrones estén debajo de esto
-function limpiarBusqueda() {
-    document.getElementById('manual-search-input').value = '';
-    document.getElementById('manual-search-input').focus();
-}
-
-function buscarManual() {
-    // Tu lógica de búsqueda original...
-}
-</script>
-</body>
-</html>
+  .info-bar { background: var(--blanco); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--dorado); font-size: 0.9
