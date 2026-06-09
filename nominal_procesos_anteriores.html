@@ -9,109 +9,119 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-  :root { --guinda: #6B1C3E; --dorado: #C8962A; --blanco: #FFF; --gris-bg: #F7F4F5; --verde: #1A7A3A; --azul: #1565C0; --alerta: #FF6F00; }
+  :root { --guinda: #6B1C3E; --guinda-o: #4A0E29; --dorado: #C8962A; --blanco: #FFF; --gris-bg: #F7F4F5; --verde: #1A7A3A; --azul: #1565C0; --alerta: #FF6F00; }
   body { font-family: 'Open Sans', sans-serif; background: var(--gris-bg); margin: 0; padding-bottom: 50px; }
   
-  header { background: var(--guinda); color: var(--blanco); padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--dorado); }
-  .user-info { text-align: right; }
-  .user-info h1 { font-family: 'Montserrat', sans-serif; font-size: 1rem; margin: 0; }
-  .user-info p { font-size: 0.8rem; opacity: 0.9; margin: 0; }
-
-  .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
-  .search-box { background: var(--blanco); padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+  /* Header Institucional */
+  header { background: var(--guinda); color: var(--blanco); padding: 10px 20px; border-bottom: 4px solid var(--dorado); display: flex; justify-content: space-between; align-items: center; }
+  .header-center { text-align: center; flex-grow: 1; padding: 0 10px; }
+  .header-center h1 { font-size: 0.85rem; margin: 0; font-weight: 800; text-transform: uppercase; }
+  .header-center p { font-size: 0.7rem; margin: 0; opacity: 0.9; }
   
-  input[type="text"] { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; margin-top: 10px; }
-  .btn { padding: 12px 20px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: 'Montserrat', sans-serif; margin-top: 10px; }
-  .btn-buscar { background: var(--dorado); color: white; width: 100%; }
+  /* Info Bar */
+  .info-bar { background: var(--blanco); padding: 8px 20px; display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; border-bottom: 1px solid #ddd; }
   
-  #reader { width: 100%; max-width: 400px; margin: 10px auto; border-radius: 8px; overflow: hidden; }
-  #loader-db { background: var(--guinda); color: white; padding: 10px; text-align: center; border-radius: 8px; margin-bottom: 10px; }
+  .container { max-width: 800px; margin: 15px auto; padding: 0 15px; }
+  .box { background: var(--blanco); padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
+  
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
+  .stat-card { background: var(--blanco); padding: 8px; border-radius: 8px; text-align: center; border-bottom: 3px solid var(--guinda); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .stat-card .num { font-size: 1.1rem; font-weight: 800; color: var(--guinda); }
+  
+  /* Inputs y Botones */
+  input[type="text"] { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; margin-top: 5px; box-sizing: border-box; }
+  .btn { padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 10px; width: 100%; font-family: 'Montserrat'; }
+  .btn-buscar { background: var(--dorado); color: white; }
+  
+  #reader { width: 100%; max-width: 300px; margin: 10px auto; }
 </style>
 </head>
 <body>
 
 <header>
-  <div><strong>SARE 1507</strong><br>Procesos Anteriores</div>
-  <div class="user-info">
+  <div><strong>SARE 1507</strong></div>
+  <div class="header-center">
     <h1>JOSE ELIAS CERVANTES JIMENEZ</h1>
     <p>SERVIDOR EDUCATIVO - ENLACE INFORMATICO</p>
+    <p style="font-size:0.65rem; margin-top:2px;">PROGRAMA DE BECAS PARA EL BIENESTAR</p>
   </div>
+  <div><img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/Gobierno_de_Mexico_logo.svg" height="25"></div>
 </header>
 
-<div class="container">
-  <div id="loader-db">📥 Cargando padrones...</div>
+<div class="info-bar">
+  <div id="clock-date">Cargando...</div>
+  <div id="clock-time">00:00:00</div>
+</div>
 
-  <div class="search-box">
-    <label><strong>Búsqueda por Nombre:</strong></label>
-    <input type="text" id="input-nombre" placeholder="Escribe el nombre completo...">
+<div class="container">
+  <div class="stats-grid">
+    <div class="stat-card"><div>Total</div><div class="num" id="stat-total">0</div></div>
+    <div class="stat-card"><div>Básica</div><div class="num" id="stat-basica">0</div></div>
+    <div class="stat-card"><div>BUEEMS</div><div class="num" id="stat-bueems">0</div></div>
+    <div class="stat-card"><div>JEF</div><div class="num" id="stat-jef">0</div></div>
+  </div>
+
+  <div class="box">
+    <label><strong>Búsqueda Manual (Nombre):</strong></label>
+    <input type="text" id="input-nombre" placeholder="Ej. Juan Perez...">
     <button class="btn btn-buscar" onclick="buscarPorNombre()">BUSCAR EN PADRÓN</button>
   </div>
 
-  <div class="search-box">
+  <div class="box">
     <div id="reader"></div>
-    <button class="btn" style="width:100%" onclick="iniciarScanner()">ACTIVAR ESCÁNER QR</button>
-  </div>
-</div>
-
-<div id="modal-bg" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
-  <div style="background:white; padding:20px; border-radius:12px; width:90%; max-width:500px; max-height:80vh; overflow-y:auto;">
-    <h2 id="modal-title">Resultado</h2>
-    <div id="modal-body"></div>
-    <button class="btn" style="background:#666; color:white; width:100%" onclick="document.getElementById('modal-bg').style.display='none'">CERRAR</button>
+    <button class="btn" style="background:var(--guinda); color:white" onclick="iniciarScanner()">ACTIVAR ESCÁNER QR</button>
   </div>
 </div>
 
 <script>
 let nominalDatos = [];
 
+// Reloj y fecha
+function tick() {
+  const now = new Date();
+  document.getElementById('clock-time').textContent = now.toLocaleTimeString();
+  document.getElementById('clock-date').textContent = now.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'short'});
+}
+setInterval(tick, 1000); tick();
+
+// Carga de CSVs
 async function cargarPadrones() {
-  const archivos = ['basica.csv', 'bueems.csv', 'jef.csv', 'bueems_feb.csv'];
+  const archivos = ['NOMINAL PROCESOS ANTERIORES.xlsx - BÁSICA.csv', 'NOMINAL PROCESOS ANTERIORES.xlsx - BUEEMS.csv', 'NOMINAL PROCESOS ANTERIORES.xlsx - JEF.csv', 'NOMINAL PROCESOS ANTERIORES.xlsx - BUEEMS FEBRERO 2026.csv'];
+  
   for (const url of archivos) {
-    const res = await fetch(url);
-    if (res.ok) {
-      const data = Papa.parse(await res.text(), { header: true }).data;
-      data.forEach(row => {
-        const keys = Object.keys(row);
-        const get = (n) => (row[keys.find(k => k.toUpperCase().includes(n))] || '').trim();
-        nominalDatos.push({
-          curp: get('CURP'),
-          nombre: `${get('NOMBRE')} ${get('PRIMER APELLIDO')} ${get('SEGUNDO APELLIDO')}`.trim(),
-          nivel: url.split('.')[0].toUpperCase(),
-          proceso: get('PROCESO')
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = Papa.parse(await res.text(), { header: true }).data;
+        data.forEach(row => {
+          const keys = Object.keys(row);
+          const get = (n) => (row[keys.find(k => k.toUpperCase().includes(n))] || '').trim();
+          nominalDatos.push({ curp: get('CURP'), nombre: `${get('NOMBRE')} ${get('PRIMER APELLIDO')} ${get('SEGUNDO APELLIDO')}`.trim(), nivel: url.split('- ')[1].split('.csv')[0], proceso: get('PROCESO') });
         });
-      });
-    }
+      }
+    } catch(e) {}
   }
-  document.getElementById('loader-db').style.display = 'none';
+  document.getElementById('stat-total').textContent = nominalDatos.length;
+  document.getElementById('stat-basica').textContent = nominalDatos.filter(d => d.nivel.includes('BÁSICA')).length;
+  document.getElementById('stat-bueems').textContent = nominalDatos.filter(d => d.nivel.includes('BUEEMS')).length;
+  document.getElementById('stat-jef').textContent = nominalDatos.filter(d => d.nivel.includes('JEF')).length;
 }
 cargarPadrones();
 
 function buscarPorNombre() {
   const query = document.getElementById('input-nombre').value.toUpperCase();
   const resultados = nominalDatos.filter(d => d.nombre.toUpperCase().includes(query));
-  mostrarResultados(resultados, "Resultados de búsqueda");
-}
-
-function mostrarResultados(resultados, titulo) {
-  const body = document.getElementById('modal-body');
-  body.innerHTML = resultados.length > 0 ? resultados.map(r => `
-    <div style="border-bottom:1px solid #ccc; padding:10px 0;">
-      <p><strong>${r.nombre}</strong></p>
-      <p>Nivel: ${r.nivel} | Proceso: ${r.proceso}</p>
-      <p>CURP: ${r.curp}</p>
-    </div>`).join('') : '<p>No se encontraron coincidencias.</p>';
-  document.getElementById('modal-title').textContent = titulo;
-  document.getElementById('modal-bg').style.display = 'flex';
+  alert(resultados.length > 0 ? resultados.map(r => `• ${r.nombre} | ${r.nivel} | ${r.proceso}`).join('\n') : "Sin coincidencias encontradas.");
 }
 
 function iniciarScanner() {
   const scanner = new Html5Qrcode("reader");
-  scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, 
-    (decodedText) => {
-      scanner.stop();
-      const res = nominalDatos.filter(d => decodedText.includes(d.curp));
-      mostrarResultados(res, "Resultado del Escáner");
-    });
+  scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, (t) => {
+    scanner.stop();
+    const res = nominalDatos.find(d => t.toUpperCase().includes(d.curp.toUpperCase()));
+    alert(res ? `LOCALIZADO:\n${res.nombre}\nNivel: ${res.nivel}\nProceso: ${res.proceso}` : "CURP no encontrada.");
+  });
 }
 </script>
 </body>
