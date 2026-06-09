@@ -20,19 +20,14 @@
             padding: 40px 30px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            border-top: 6px solid #6A1B29; /* Franja guinda superior */
+            border-top: 6px solid #6A1B29;
         }
         .logo-institucional {
             max-width: 280px;
             height: auto;
             margin-bottom: 20px;
         }
-        h1 { 
-            color: #6A1B29; 
-            margin-bottom: 5px; 
-            font-size: 24px; 
-            font-weight: 700;
-        }
+        h1 { color: #6A1B29; margin-bottom: 5px; font-size: 24px; font-weight: 700; }
         .subtitulo {
             color: #BC955C;
             font-size: 16px;
@@ -42,36 +37,44 @@
             margin-top: 0;
             margin-bottom: 25px;
         }
-        .instruccion { 
-            color: #555; 
-            font-size: 15px;
-            margin-bottom: 35px; 
-            line-height: 1.5;
-        }
+        .instruccion { color: #555; font-size: 15px; margin-bottom: 35px; line-height: 1.5; }
+        
+        /* Estilos de botones */
         .btn { 
             display: block; 
             padding: 16px; 
             margin: 18px 0; 
-            background-color: #6A1B29; /* Guinda para el botón principal */
+            background-color: #6A1B29; 
             color: white; 
             text-decoration: none; 
             border-radius: 6px; 
             font-weight: bold; 
             font-size: 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             transition: all 0.2s ease;
         }
-        .btn:hover { 
-            background-color: #4A111B; 
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        .btn:hover { background-color: #4A111B; }
+        
+        .btn-alt { background-color: #BC955C; }
+        .btn-alt:hover { background-color: #9E7D4C; }
+
+        /* Nueva sección de consulta nominal */
+        .box-nominal {
+            margin-top: 25px;
+            padding: 15px;
+            border: 1px solid #BC955C;
+            border-radius: 6px;
+            background-color: #fffaf0;
         }
-        .btn-alt { 
-            background-color: #BC955C; /* Dorado para el módulo de capturista */
+        .link-nominal {
+            color: #6A1B29;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
-        .btn-alt:hover { 
-            background-color: #9E7D4C; 
-        }
+
         .footer {
             margin-top: 40px;
             font-size: 12px;
@@ -84,7 +87,6 @@
 <body>
 
     <div class="container">
-        <!-- Logo Oficial del Gobierno de México (Carga directa desde su servidor web) -->
         <img class="logo-institucional" src="https://images.mexico.mx/assets/images/logo-gobmx.png" alt="Gobierno de México">
         
         <h1>Panel de Herramientas</h1>
@@ -92,9 +94,14 @@
         
         <p class="instruccion">Bienvenido al sistema de control operativo de becas. Por favor, selecciona la plataforma con la que vas a trabajar:</p>
         
-        <!-- Botones enlazados a tus archivos de image_b8292c.png -->
-        <a class="btn" href="operativo_BRCU_SECUNDARIA_sare1507.html">Operativo BRCU,Secundaria, BUEMS, JEF</a>
+        <a class="btn" href="operativo_BRCU_SECUNDARIA_sare1507.html">Operativo BRCU, Secundaria, BUEMS, JEF</a>
         <a class="btn btn-alt" href="capturista_v2.html">Módulo Capturista</a>
+        
+        <div class="box-nominal">
+            <a href="nominal_procesos_anteriores.html" class="link-nominal">
+                📋 Consultar Nominal de Procesos Anteriores
+            </a>
+        </div>
         
         <div class="footer">
             Oficina de Becas - Coordinación Territorial Ecatepec<br>
