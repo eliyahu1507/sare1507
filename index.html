@@ -22,12 +22,18 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             border-top: 6px solid #6A1B29;
         }
+        /* Logo corregido con dimensiones ajustadas */
         .logo-institucional {
-            max-width: 280px;
-            height: auto;
+            width: 250px; 
+            height: auto; 
             margin-bottom: 20px;
         }
-        h1 { color: #6A1B29; margin-bottom: 5px; font-size: 24px; font-weight: 700; }
+        h1 { 
+            color: #6A1B29; 
+            margin-bottom: 5px; 
+            font-size: 24px; 
+            font-weight: 700;
+        }
         .subtitulo {
             color: #BC955C;
             font-size: 16px;
@@ -37,27 +43,36 @@
             margin-top: 0;
             margin-bottom: 25px;
         }
-        .instruccion { color: #555; font-size: 15px; margin-bottom: 35px; line-height: 1.5; }
-        
-        /* Estilos de botones */
+        .instruccion { 
+            color: #555; 
+            font-size: 15px;
+            margin-bottom: 35px; 
+            line-height: 1.5;
+        }
         .btn { 
             display: block; 
             padding: 16px; 
             margin: 18px 0; 
-            background-color: #6A1B29; 
+            background-color: #6A1B29;
             color: white; 
             text-decoration: none; 
             border-radius: 6px; 
             font-weight: bold; 
             font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             transition: all 0.2s ease;
         }
-        .btn:hover { background-color: #4A111B; }
-        
-        .btn-alt { background-color: #BC955C; }
-        .btn-alt:hover { background-color: #9E7D4C; }
-
-        /* Nueva sección de consulta nominal */
+        .btn:hover { 
+            background-color: #4A111B; 
+            transform: translateY(-1px);
+        }
+        .btn-alt { 
+            background-color: #BC955C;
+        }
+        .btn-alt:hover { 
+            background-color: #9E7D4C; 
+        }
+        /* Estilo para la nueva sección de nominal */
         .box-nominal {
             margin-top: 25px;
             padding: 15px;
@@ -74,7 +89,6 @@
             justify-content: center;
             gap: 10px;
         }
-
         .footer {
             margin-top: 40px;
             font-size: 12px;
@@ -87,14 +101,14 @@
 <body>
 
     <div class="container">
-        <img class="logo-institucional" src="https://images.mexico.mx/assets/images/logo-gobmx.png" alt="Gobierno de México">
+        <img class="logo-institucional" src="https://framework-gb.cdn.gob.mx/landing/img/logoheader.svg" alt="Gobierno de México">
         
         <h1>Panel de Herramientas</h1>
         <div class="subtitulo">SARE 1507 ECATEPEC</div>
         
         <p class="instruccion">Bienvenido al sistema de control operativo de becas. Por favor, selecciona la plataforma con la que vas a trabajar:</p>
         
-        <a class="btn" href="operativo_BRCU_SECUNDARIA_sare1507.html">Operativo BRCU, Secundaria, BUEMS, JEF</a>
+        <a class="btn" href="operativo_BRCU_SECUNDARIA_sare1507.html">Operativo BRCU,Secundaria, BUEMS, JEF</a>
         <a class="btn btn-alt" href="capturista_v2.html">Módulo Capturista</a>
         
         <div class="box-nominal">
