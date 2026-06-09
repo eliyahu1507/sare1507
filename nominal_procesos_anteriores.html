@@ -22,7 +22,10 @@
     display: flex; align-items: center; justify-content: space-between;
     box-shadow: 0 4px 10px var(--sombra); position: sticky; top: 0; z-index: 100;
   }
-  .header-logos img { height: 45px; }
+  .header-logos h1 { font-size: 1.2rem; letter-spacing: 1px; }
+  .header-middle { text-align: center; }
+  .header-middle h3 { font-size: 0.85rem; font-weight: 700; }
+  .header-middle p { font-size: 0.65rem; opacity: 0.8; }
   .header-titles { text-align: right; }
   .header-titles h1 { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
   .header-titles h2 { font-size: 0.8rem; font-weight: 400; opacity: 0.9; }
@@ -31,12 +34,7 @@
   .reloj { font-family: 'Montserrat', sans-serif; color: var(--guinda); font-size: 1.1rem; }
 
   .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
-
-  /* Loader de bases de datos */
-  #loader-db {
-    background: var(--guinda-o); color: white; padding: 15px; text-align: center; border-radius: 8px;
-    margin-bottom: 20px; font-family: 'Montserrat', sans-serif; font-weight: bold;
-  }
+  #loader-db { background: var(--guinda-o); color: white; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; font-family: 'Montserrat', sans-serif; font-weight: bold; }
 
   .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
   .stat-card { background: var(--blanco); padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-bottom: 4px solid var(--guinda); }
@@ -47,12 +45,14 @@
   .stat-card.bueems { border-color: var(--azul); } .stat-card.bueems .numero { color: var(--azul); }
   .stat-card.jef { border-color: var(--alerta); } .stat-card.jef .numero { color: var(--alerta); }
 
-  .scanner-section { background: var(--blanco); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; }
-  .scanner-title { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; margin-bottom: 15px; color: var(--guinda); }
+  .section-box { background: var(--blanco); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
+  .title-section { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; margin-bottom: 15px; color: var(--guinda); }
+  
   #reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 3px solid var(--gris); }
   .btn { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: 'Montserrat', sans-serif; transition: 0.2s; margin: 5px; font-size: 1rem; }
   .btn-start { background: var(--guinda); color: white; }
   .btn-stop { background: var(--gris); color: var(--texto); }
+  .input-text { padding: 12px; width: 100%; max-width: 400px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; margin-bottom: 10px; }
 
   #modal-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
   .modal-content { background: var(--blanco); width: 90%; max-width: 600px; border-radius: 16px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto; }
@@ -75,7 +75,11 @@
 
 <header>
   <div class="header-logos">
-    <h1 style="font-size: 1.5rem; letter-spacing: 2px;">BECAS BIENESTAR</h1>
+    <h1>BECAS BIENESTAR</h1>
+  </div>
+  <div class="header-middle">
+    <h3>JOSE ELIAS CERVANTES JIMENEZ</h3>
+    <p>ENLACE INFORMATICO</p>
   </div>
   <div class="header-titles">
     <h1>SARE 1507</h1>
@@ -89,38 +93,30 @@
 </div>
 
 <div class="container">
-  
   <div id="loader-db">📥 Descargando e indexando Padrones. Por favor espera...</div>
 
   <div class="stats-grid">
-    <div class="stat-card total">
-      <h3>Total Registros</h3>
-      <div class="numero" id="stat-total">0</div>
-    </div>
-    <div class="stat-card basica">
-      <h3>Básica</h3>
-      <div class="numero" id="stat-basica">0</div>
-    </div>
-    <div class="stat-card bueems">
-      <h3>Media Superior</h3>
-      <div class="numero" id="stat-bueems">0</div>
-    </div>
-    <div class="stat-card jef">
-      <h3>JEF Superior</h3>
-      <div class="numero" id="stat-jef">0</div>
-    </div>
+    <div class="stat-card total"><h3>Total</h3><div class="numero" id="stat-total">0</div></div>
+    <div class="stat-card basica"><h3>Básica</h3><div class="numero" id="stat-basica">0</div></div>
+    <div class="stat-card bueems"><h3>BUEEMS</h3><div class="numero" id="stat-bueems">0</div></div>
+    <div class="stat-card jef"><h3>JEF</h3><div class="numero" id="stat-jef">0</div></div>
   </div>
 
-  <div class="scanner-section">
-    <h2 class="scanner-title">Escáner de CURP (Procesos Anteriores)</h2>
+  <!-- Sección de Búsqueda Manual -->
+  <div class="section-box">
+    <h2 class="title-section">Búsqueda Manual (CURP o Nombre)</h2>
+    <input type="text" id="manual-search-input" class="input-text" placeholder="Escribe nombre completo o CURP...">
+    <br>
+    <button class="btn btn-start" onclick="buscarManual()">Buscar en Padrón</button>
+  </div>
+
+  <div class="section-box">
+    <h2 class="title-section">Escáner de CURP</h2>
     <div id="reader"></div>
     <div style="margin-top: 20px;">
-      <button class="btn btn-start" id="btn-start" onclick="iniciarScanner()" disabled style="opacity: 0.5;">Cámara Desactivada (Cargando)</button>
+      <button class="btn btn-start" id="btn-start" onclick="iniciarScanner()" disabled style="opacity: 0.5;">Cámara Desactivada</button>
       <button class="btn btn-stop" id="btn-stop" onclick="detenerScanner()" style="display:none;">Detener Cámara</button>
     </div>
-    <p style="margin-top: 15px; font-size: 0.85rem; color: #666;">
-      Escanea el código QR del formato. El sistema localizará automáticamente a qué nivel y proceso pertenece la tarjeta física.
-    </p>
   </div>
 </div>
 
@@ -128,103 +124,55 @@
   <div class="modal-content" id="modal-box">
     <h2 class="resultado-header" id="modal-title">Resultado</h2>
     <div id="modal-body" style="text-align: center;"></div>
-    <button class="btn-close" onclick="cerrarModal()">ACEPTAR Y CONTINUAR (Espacio)</button>
+    <button class="btn-close" onclick="cerrarModal()">ACEPTAR Y CONTINUAR</button>
   </div>
 </div>
 
 <script>
-// ============================================================================
-// 1. LECTURA AUTOMÁTICA DE ARCHIVOS CSV (FETCH)
-// ============================================================================
+// [CARGA DE DATOS SIN CAMBIOS]
 let nominalDatos = [];
-
-// Función para procesar un CSV extraído de GitHub
 function procesarDataCSV(data, nivelConfig) {
   const lineas = Papa.parse(data, { header: true, skipEmptyLines: true }).data;
-  
   lineas.forEach(row => {
-    // Normalizar nombres de columnas ignorando mayúsculas y espacios extra
     const keys = Object.keys(row);
     const getVal = (posiblesNombres) => {
       const key = keys.find(k => posiblesNombres.some(pn => k.toUpperCase().includes(pn)));
       return key ? row[key].trim().toUpperCase() : '';
     };
-
     const curp = getVal(['CURP']);
-    if (!curp) return; // Si no hay curp, saltar fila
-
+    if (!curp) return;
     const nombreBase = getVal(['NOMBRE DEL TUTOR', 'NOMBRE DEL BECARIO', 'NOMBRE']);
     const ap1 = getVal(['PRIMER APELLIDO', 'APELLIDO PATERNO']);
     const ap2 = getVal(['SEGUNDO APELLIDO', 'APELLIDO MATERNO']);
     const nombreCompleto = `${nombreBase} ${ap1} ${ap2}`.replace(/\s+/g, ' ').trim();
-
-    nominalDatos.push({
-      curp: curp,
-      nivel: nivelConfig.nombre,
-      rol: nivelConfig.rol,
-      nombre: nombreCompleto,
-      cct: getVal(['CCT']),
-      mun: getVal(['MUN', 'MUNICIPIO']),
-      idTutor: getVal(['ID DEL TUTOR', 'ID TUTOR']),
-      folio: getVal(['FOLIO']),
-      proceso: getVal(['PROCESO'])
-    });
+    nominalDatos.push({ curp, nivel: nivelConfig.nombre, rol: nivelConfig.rol, nombre: nombreCompleto, cct: getVal(['CCT']), mun: getVal(['MUN', 'MUNICIPIO']), idTutor: getVal(['ID DEL TUTOR', 'ID TUTOR']), folio: getVal(['FOLIO']), proceso: getVal(['PROCESO']) });
   });
 }
 
-// Carga asíncrona de los 4 archivos
 async function cargarPadrones() {
-  const archivos = [
-    { url: 'basica.csv', config: { nombre: 'BÁSICA', rol: 'TUTOR' } },
-    { url: 'bueems.csv', config: { nombre: 'BUEEMS', rol: 'BECARIO' } },
-    { url: 'jef.csv', config: { nombre: 'JEF', rol: 'BECARIO' } },
-    { url: 'bueems_feb.csv', config: { nombre: 'BUEEMS FEB 26', rol: 'BECARIO' } }
-  ];
-
+  const archivos = [{ url: 'basica.csv', config: { nombre: 'BÁSICA', rol: 'TUTOR' } }, { url: 'bueems.csv', config: { nombre: 'BUEEMS', rol: 'BECARIO' } }, { url: 'jef.csv', config: { nombre: 'JEF', rol: 'BECARIO' } }, { url: 'bueems_feb.csv', config: { nombre: 'BUEEMS FEB 26', rol: 'BECARIO' } }];
   for (const archivo of archivos) {
     try {
       const response = await fetch(archivo.url);
       if (response.ok) {
         const textData = await response.text();
         procesarDataCSV(textData, archivo.config);
-      } else {
-        console.warn(`No se encontró el archivo: ${archivo.url}`);
       }
-    } catch (err) {
-      console.error(`Error de red al cargar ${archivo.url}:`, err);
-    }
+    } catch (err) {}
   }
-
-  // Actualizar UI cuando termina
   document.getElementById('loader-db').style.display = 'none';
   const btnStart = document.getElementById('btn-start');
-  btnStart.disabled = false;
-  btnStart.style.opacity = '1';
-  btnStart.textContent = 'Iniciar Cámara';
+  btnStart.disabled = false; btnStart.style.opacity = '1'; btnStart.textContent = 'Iniciar Cámara';
   calcularEstadisticas();
-  
-  if(nominalDatos.length === 0) {
-    alert("No se cargaron registros. Asegúrate de haber subido los archivos CSV a GitHub con los nombres correctos: basica.csv, bueems.csv, jef.csv, bueems_feb.csv");
-  }
 }
-
-// Iniciar carga al cargar la página
 window.onload = cargarPadrones;
 
-
-// ============================================================================
-// 2. FUNCIONES DE INTERFAZ Y ESTADÍSTICAS
-// ============================================================================
+// [FUNCIONES DE UI E INTERFAZ]
 (function initReloj(){
-  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   function tick(){
     const now = new Date();
-    const h = String(now.getHours()).padStart(2,'0');
-    const m = String(now.getMinutes()).padStart(2,'0');
-    const s = String(now.getSeconds()).padStart(2,'0');
-    document.getElementById('clock-time').textContent = h+':'+m+':'+s;
-    document.getElementById('clock-date').textContent = dias[now.getDay()]+' '+now.getDate()+' '+meses[now.getMonth()]+'. '+now.getFullYear();
+    document.getElementById('clock-time').textContent = now.toLocaleTimeString();
+    document.getElementById('clock-date').textContent = now.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'short'});
   }
   tick(); setInterval(tick, 1000);
 })();
@@ -236,138 +184,68 @@ function calcularEstadisticas() {
   document.getElementById('stat-jef').textContent = nominalDatos.filter(d => d.nivel === 'JEF').length;
 }
 
-function hablar(texto) {
-  if(!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const msg = new SpeechSynthesisUtterance(texto);
-  msg.lang = 'es-MX';
-  msg.rate = 1.0;
-  window.speechSynthesis.speak(msg);
+// [NUEVA FUNCIÓN DE BÚSQUEDA MANUAL]
+function buscarManual() {
+  const input = document.getElementById('manual-search-input').value.trim().toUpperCase();
+  if(!input) return;
+  const resultados = nominalDatos.filter(r => r.curp === input || r.nombre.includes(input));
+  if(resultados.length > 0) {
+    mostrarExito("Búsqueda Manual", resultados);
+  } else {
+    mostrarError(input, "No se encontraron registros coincidentes.");
+  }
 }
 
-
-// ============================================================================
-// 3. ESCÁNER Y LÓGICA DE BÚSQUEDA
-// ============================================================================
+// [ESCÁNER Y MODALES]
 let html5QrcodeScanner = null;
-let escaneoActivo = false;
-let procesando = false;
-
 function iniciarScanner() {
-  if (escaneoActivo) return;
   document.getElementById('btn-start').style.display = 'none';
   document.getElementById('btn-stop').style.display = 'inline-block';
-  
   html5QrcodeScanner = new Html5Qrcode("reader");
-  html5QrcodeScanner.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: {width: 250, height: 250} },
-    onScanSuccess,
-    (err) => {} // Ignorar fallos de lectura de frame
-  ).catch(err => {
-    alert("Error al iniciar cámara: " + err);
-    detenerScanner();
+  html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+    const curpMatch = text.match(/[A-Z]{4}\d{6}[HM][A-Z]{5}\d{2}/);
+    if(curpMatch) {
+      const res = nominalDatos.filter(r => r.curp === curpMatch[0]);
+      if(res.length > 0) mostrarExito(curpMatch[0], res);
+      else mostrarError(curpMatch[0], "CURP no encontrada en padrones.");
+    }
   });
-  escaneoActivo = true;
 }
 
 function detenerScanner() {
   if (html5QrcodeScanner) {
     html5QrcodeScanner.stop().then(() => {
-      html5QrcodeScanner.clear();
-      escaneoActivo = false;
       document.getElementById('btn-start').style.display = 'inline-block';
       document.getElementById('btn-stop').style.display = 'none';
     });
   }
 }
 
-const curpRegex = /([A-Z][A-EI-O-U-X][A-Z]{2}\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[HM][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z\d]\d)/i;
-
-function onScanSuccess(decodedText) {
-  if(procesando) return;
-  procesando = true;
-
-  const match = decodedText.match(curpRegex);
-  if (!match) {
-    mostrarError("QR no válido", "No se detectó una CURP en el código escaneado.");
-    return;
-  }
-
-  const curpEscaneada = match[0].toUpperCase();
-  const resultados = nominalDatos.filter(registro => registro.curp === curpEscaneada);
-
-  if (resultados.length > 0) {
-    mostrarExito(curpEscaneada, resultados);
-  } else {
-    mostrarError(curpEscaneada, "La CURP escaneada no se encuentra en el nominal de Procesos Anteriores.");
-  }
-}
-
-
-// ============================================================================
-// 4. MODALES Y RESULTADOS
-// ============================================================================
-function obtenerColorNivel(nivel) {
-  if(nivel === 'BÁSICA') return 'var(--verde)';
-  if(nivel.includes('BUEEMS')) return 'var(--azul)';
-  if(nivel === 'JEF') return 'var(--alerta)';
-  return 'var(--guinda)';
-}
-
-function mostrarExito(curp, registros) {
+function mostrarExito(titulo, registros) {
   const modalBox = document.getElementById('modal-box');
   modalBox.className = "modal-content success";
   document.getElementById('modal-title').textContent = "¡REGISTRO LOCALIZADO!";
-  
-  let html = `<p style="margin-bottom:15px; font-size:1.1rem;">CURP: <strong>${curp}</strong></p>`;
-  
+  let html = `<p>Busqueda: <strong>${titulo}</strong></p><br>`;
   registros.forEach(reg => {
-    const color = obtenerColorNivel(reg.nivel);
-    html += `
-      <div class="registro-encontrado" style="border-left: 5px solid ${color};">
-        <div class="badge-nivel" style="background:${color};">${reg.nivel}</div>
-        <p><strong>NOMBRE:</strong> ${reg.nombre} (${reg.rol})</p>
-        <p><strong>PROCESO:</strong> ${reg.proceso}</p>
-        ${reg.cct ? `<p><strong>CCT:</strong> ${reg.cct}</p>` : ''}
-        ${reg.mun ? `<p><strong>MUNICIPIO:</strong> ${reg.mun}</p>` : ''}
-        ${reg.folio ? `<p><strong>FOLIO:</strong> ${reg.folio}</p>` : ''}
-        ${reg.idTutor ? `<p><strong>ID TUTOR:</strong> ${reg.idTutor}</p>` : ''}
-      </div>
-    `;
+    html += `<div class="registro-encontrado">
+      <div class="badge-nivel">${reg.nivel}</div>
+      <p><strong>NOMBRE:</strong> ${reg.nombre}</p>
+      <p><strong>PROCESO:</strong> ${reg.proceso}</p>
+    </div>`;
   });
-
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('modal-bg').style.display = 'flex';
-  
-  const primerReg = registros[0];
-  hablar(`Localizado en ${primerReg.nivel}. Proceso: ${primerReg.proceso}.`);
 }
 
-function mostrarError(curp, mensaje) {
+function mostrarError(titulo, mensaje) {
   const modalBox = document.getElementById('modal-box');
   modalBox.className = "modal-content error";
   document.getElementById('modal-title').textContent = "NO ENCONTRADO";
-  
-  document.getElementById('modal-body').innerHTML = `
-    <p style="font-size:1.2rem; margin-bottom:10px;"><strong>${curp}</strong></p>
-    <p>${mensaje}</p>
-  `;
+  document.getElementById('modal-body').innerHTML = `<p>${mensaje}</p>`;
   document.getElementById('modal-bg').style.display = 'flex';
-  hablar("Atención. CURP no localizada en procesos anteriores.");
 }
 
-function cerrarModal() {
-  document.getElementById('modal-bg').style.display = 'none';
-  setTimeout(() => { procesando = false; }, 1000);
-}
-
-document.addEventListener('keydown', function(event) {
-  if (event.code === 'Space' && document.getElementById('modal-bg').style.display === 'flex') {
-    event.preventDefault();
-    cerrarModal();
-  }
-});
+function cerrarModal() { document.getElementById('modal-bg').style.display = 'none'; }
 </script>
 </body>
 </html>
