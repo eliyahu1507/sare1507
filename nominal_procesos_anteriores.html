@@ -128,7 +128,7 @@
 </div>
 
 <script>
-// === REPARACIÓN DEL RELOJ ===
+// === RELOJ Y FECHA ===
 function actualizarReloj() {
     const now = new Date();
     document.getElementById('clock-time').textContent = now.toLocaleTimeString();
@@ -137,7 +137,7 @@ function actualizarReloj() {
 setInterval(actualizarReloj, 1000);
 actualizarReloj();
 
-// === TU CÓDIGO ORIGINAL ===
+// === PROCESAMIENTO DE DATOS ===
 let nominalDatos = [];
 
 function procesarDataCSV(data, nivelConfig) {
@@ -148,18 +148,38 @@ function procesarDataCSV(data, nivelConfig) {
       const key = keys.find(k => posiblesNombres.some(pn => k.toUpperCase().includes(pn)));
       return key ? row[key].trim().toUpperCase() : '';
     };
+    
     const curp = getVal(['CURP']);
     if (!curp) return;
+    
+    // Extrayendo el CCT y el MUNICIPIO
+    const cct = getVal(['CCT']);
+    const mun = getVal(['MUN', 'MUNICIPIO']);
+
     const nombreBase = getVal(['NOMBRE DEL TUTOR', 'NOMBRE DEL BECARIO', 'NOMBRE']);
     const ap1 = getVal(['PRIMER APELLIDO', 'APELLIDO PATERNO']);
     const ap2 = getVal(['SEGUNDO APELLIDO', 'APELLIDO MATERNO']);
     const nombreCompleto = `${nombreBase} ${ap1} ${ap2}`.replace(/\s+/g, ' ').trim();
-    nominalDatos.push({ curp, nivel: nivelConfig.nombre, rol: nivelConfig.rol, nombre: nombreCompleto, proceso: getVal(['PROCESO']) });
+    
+    nominalDatos.push({ 
+        curp: curp, 
+        nivel: nivelConfig.nombre, 
+        rol: nivelConfig.rol, 
+        nombre: nombreCompleto, 
+        proceso: getVal(['PROCESO']),
+        cct: cct || 'N/A', // Si no lo encuentra, pone N/A
+        mun: mun || 'N/A'  // Si no lo encuentra, pone N/A
+    });
   });
 }
 
 async function cargarPadrones() {
-  const archivos = [{ url: 'basica.csv', config: { nombre: 'BÁSICA', rol: 'TUTOR' } }, { url: 'bueems.csv', config: { nombre: 'BUEEMS', rol: 'BECARIO' } }, { url: 'jef.csv', config: { nombre: 'JEF', rol: 'BECARIO' } }, { url: 'bueems_feb.csv', config: { nombre: 'BUEEMS FEB 26', rol: 'BECARIO' } }];
+  const archivos = [
+      { url: 'basica.csv', config: { nombre: 'BÁSICA', rol: 'TUTOR' } }, 
+      { url: 'bueems.csv', config: { nombre: 'BUEEMS', rol: 'BECARIO' } }, 
+      { url: 'jef.csv', config: { nombre: 'JEF', rol: 'BECARIO' } }, 
+      { url: 'bueems_feb.csv', config: { nombre: 'BUEEMS FEB 26', rol: 'BECARIO' } }
+  ];
   for (const archivo of archivos) {
     try {
       const response = await fetch(archivo.url);
@@ -220,9 +240,17 @@ function mostrarExito(titulo, registros) {
   modalBox.className = 'modal-content success';
   document.getElementById('modal-title').textContent = "¡REGISTRO LOCALIZADO!";
   let html = `<p>Busqueda: <strong>${titulo}</strong></p><br>`;
+  
   registros.forEach(reg => {
-    html += `<div class="registro-encontrado"><div class="badge-nivel" style="background-color: var(--verde);">${reg.nivel}</div><p><strong>NOMBRE:</strong> ${reg.nombre}</p><p><strong>PROCESO:</strong> ${reg.proceso}</p></div>`;
+    html += `<div class="registro-encontrado">
+        <div class="badge-nivel" style="background-color: var(--verde);">${reg.nivel}</div>
+        <p><strong>NOMBRE:</strong> ${reg.nombre}</p>
+        <p><strong>PROCESO:</strong> ${reg.proceso}</p>
+        <p><strong>CCT:</strong> ${reg.cct}</p>
+        <p><strong>MUNICIPIO:</strong> ${reg.mun}</p>
+    </div>`;
   });
+  
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('modal-bg').style.display = 'flex';
 }
