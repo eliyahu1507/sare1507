@@ -123,7 +123,7 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
       <div class="logo-text"><div class="gob-label">Gobierno de México</div><div class="prog-name">Becas para el Bienestar Benito Juárez</div></div>
       <div id="reloj">00:00:00</div>
     </div>
-    <h1 class="tit">Módulo de Captura · Evidencias Fotográficas v2</h1>
+    <h1 class="tit">Módulo de Captura · Evidencias Fotográficas v3</h1>
   </div>
 </header>
 <main>
@@ -297,6 +297,60 @@ document.getElementById('btn-archivar').addEventListener('click',()=>{
   tbody.appendChild(tr);
   toastShow('Expediente guardado');
 });
+
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+'use strict';
+
+// 1. LÓGICA DE COMPARTIR (Lo que necesitabas)
+async function compartirPorWhatsApp(exp) {
+  const texto = `📌 *EXPEDIENTE: ${exp.nombre}*\n🏫 *CCT:* ${exp.cct}\n👤 *CURP:* ${exp.curp}\n🧑 *Capturista:* ${exp.capturista}`;
+  const files = [];
+  for(const [name, b64] of Object.entries(exp.fotos)) {
+    const res = await fetch(b64);
+    const blob = await res.blob();
+    files.push(new File([blob], name, {type: 'image/jpeg'}));
+  }
+  if(navigator.canShare && navigator.canShare({files})) {
+    await navigator.share({text: texto, files});
+  } else {
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`);
+  }
+}
+
+// 2. LÓGICA DE VALIDACIÓN Y BÚSQUEDA (Lo que fallaba)
+function buscarEnPadron(curp) {
+  const c = curp.toUpperCase().trim();
+  let encontrado = null;
+  [...DB.basica, ...DB.buems, ...DB.jef].forEach(prog => {
+    const b = prog.beneficiarios.find(ben => ben.curp.toUpperCase() === c);
+    if(b) encontrado = {...b, prog: prog.id, nivelField: prog.nivel};
+  });
+  
+  const panel = document.getElementById('panel-res');
+  if(encontrado) {
+    beneficiarioActual = encontrado;
+    document.getElementById('res-curp').textContent = c;
+    document.getElementById('res-grid').innerHTML = `
+      <div class="dato-item"><div class="dato-lbl">Nombre</div><div class="dato-val">${encontrado.nombre}</div></div>
+      <div class="dato-item"><div class="dato-lbl">CCT</div><div class="dato-val">${encontrado.cct}</div></div>`;
+    panel.className = 'panel-resultado si';
+    document.getElementById('res-badge').textContent = 'ENCONTRADO';
+  } else {
+    panel.className = 'panel-resultado no';
+    document.getElementById('res-badge').textContent = 'NO ENCONTRADO';
+    document.getElementById('res-curp').textContent = c;
+  }
+}
+
+document.getElementById('btn-validar').addEventListener('click', () => {
+  buscarEnPadron(document.getElementById('curp-input').value);
+});
+
+// --- EL RESTO DE TU LÓGICA (Padrón, Escáner, Fotos) ---
+// (Asegúrate de mantener aquí abajo todas tus funciones existentes de poblarDB, cargarNominal, etc.)
+// ...
 </script>
 </body>
 </html>
