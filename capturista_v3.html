@@ -1135,24 +1135,107 @@ document.getElementById('btn-limpiar').addEventListener('click', () => {
 });
 
 /* ══════════════════════════════════════════════════
-   19. COMPARTIR WHATSAPP
+   19. COMPARTIR — navigator.share nativo + fallback WhatsApp
+   Estrategia:
+     1. navigator.share con archivos (Android/iOS nativos)
+     2. navigator.share solo texto (si el SO no acepta archivos)
+     3. window.open wa.me (escritorio o navegador sin soporte)
 ══════════════════════════════════════════════════ */
-document.getElementById('btn-whatsapp').addEventListener('click', () => {
-  const cap = document.getElementById('capturista').value;
-  const curp = document.getElementById('curp-input').value.trim();
-  const nombre = beneficiarioActual ? beneficiarioActual.nombre : 'Sin nombre';
+
+// Convierte un dataURL Base64 a objeto File adjuntable
+function dataUrlAFile(dataUrl, nombreArchivo) {
+  const partes   = dataUrl.split(',');
+  const mime     = partes[0].match(/:(.*?);/)[1];
+  const binStr   = atob(partes[1]);
+  const arr      = new Uint8Array(binStr.length);
+  for (let i = 0; i < binStr.length; i++) arr[i] = binStr.charCodeAt(i);
+  return new File([arr], nombreArchivo, { type: mime });
+}
+
+document.getElementById('btn-whatsapp').addEventListener('click', async () => {
+  const cap     = document.getElementById('capturista').value;
+  const curp    = document.getElementById('curp-input').value.trim();
+  const nombre  = beneficiarioActual ? beneficiarioActual.nombre  : 'Sin nombre';
   const escuela = beneficiarioActual ? beneficiarioActual.escuela : 'Sin escuela';
+  const cct     = beneficiarioActual ? beneficiarioActual.cct     : '\u2014';
+  const progLabel = beneficiarioActual
+    ? nivelBonito(beneficiarioActual.prog, beneficiarioActual.nivelField)
+    : '\u2014';
 
   if (!curp) { toastShow('\u26A0 Primero escanea o ingresa una CURP'); return; }
 
-  const msg = `*SARE 1507 - Reporte de Atención*\n\n` +
-              `👤 Beneficiario: ${nombre}\n` +
-              `🆔 CURP: ${curp}\n` +
-              `🏫 Escuela: ${escuela}\n` +
-              `📋 Capturista: ${cap || 'No asignado'}\n` +
-              `✅ Estatus: Expediente con evidencias capturadas.`;
+  const totalFotos = Object.keys(imagenesComprimidas).length;
+  const hora  = new Date().toLocaleTimeString('es-MX', { hour12: false });
+  const fecha = new Date().toLocaleDateString('es-MX');
 
-  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  // Texto del reporte (mantiene formato original + campos extra)
+  const texto =
+    '*SARE 1507 \u2014 Reporte de Atenci\xF3n*\n\n' +
+    '\uD83D\uDC64 Beneficiario: ' + nombre    + '\n' +
+    '\uD83C\uDD94 CURP: '         + curp      + '\n' +
+    '\uD83C\uDFEB Escuela: '      + escuela   + '\n' +
+    '\uD83C\uDFF7 CCT: '          + cct       + '\n' +
+    '\uD83D\uDCDA Programa: '     + progLabel + '\n' +
+    '\uD83D\uDCCB Capturista: '   + (cap || 'No asignado') + '\n' +
+    '\uD83D\uDCF8 Evidencias: '   + totalFotos + ' foto(s) capturada(s)\n' +
+    '\uD83D\uDD50 Hora: '         + hora + ' \xB7 ' + fecha + '\n' +
+    '\u2705 Estatus: Expediente con evidencias capturadas.';
+
+  // ── Construir array de File desde imagenesComprimidas ──────────────
+  const archivos = [];
+  const nivel = mapNivelParaFotos(
+    beneficiarioActual ? beneficiarioActual.prog       : 'buems',
+    beneficiarioActual ? beneficiarioActual.nivelField : 'SECUNDARIA'
+  );
+  const listaActual = obtenerListaFotos(nivel, esMenorActual);
+
+  listaActual.forEach(item => {
+    if (!imagenesComprimidas[item.id]) return;
+    const nombreArch = item.label
+      .replace(/^\d+\.\s+/, '')
+      .replace(/[\s,\/]+/g, '_')
+      .replace(/[\xE1\xE0\xE4]/g, 'a')
+      .replace(/[\xE9\xE8\xEB]/g, 'e')
+      .replace(/[\xED\xEC\xEF]/g, 'i')
+      .replace(/[\xF3\xF2\xF6]/g, 'o')
+      .replace(/[\xFA\xF9\xFC]/g, 'u')
+      .replace(/\xF1/g, 'n') + '.jpg';
+    const idx = item.label.match(/^\d+/)[0];
+    archivos.push(dataUrlAFile(imagenesComprimidas[item.id], idx + '_' + nombreArch));
+  });
+
+  // ── Intento 1: navigator.share con archivos (Android/iOS) ──────────
+  if (navigator.share && navigator.canShare && archivos.length > 0
+      && navigator.canShare({ files: archivos })) {
+    try {
+      await navigator.share({
+        title: 'SARE 1507 \u2014 Evidencias',
+        text:  texto,
+        files: archivos
+      });
+      toastShow('\u2713 Compartido con evidencias', 2500);
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return; // Usuario canceló
+      console.warn('[SARE1507] share con archivos fall\xF3:', err.message);
+      // Continúa al siguiente intento
+    }
+  }
+
+  // ── Intento 2: navigator.share solo texto (sin archivos) ───────────
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'SARE 1507', text: texto });
+      toastShow('\u2713 Texto compartido (sin fotos)', 2800);
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.warn('[SARE1507] share de texto fall\xF3:', err.message);
+    }
+  }
+
+  // ── Fallback: wa.me (escritorio o navegador sin Web Share API) ──────
+  window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
 });
 
 /* ══════════════════════════════════════════════════
