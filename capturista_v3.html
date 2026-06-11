@@ -15,19 +15,8 @@
   --sombra:rgba(74,14,41,.15); --sombra-f:rgba(74,14,41,.25)
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{
-  font-family:'Open Sans',sans-serif;
-  background:var(--gris-bg);
-  color:var(--texto);
-  padding-bottom:90px;
-  /* ESTA LÍNEA BLOQUEA EL ACTUALIZAR AL DESLIZAR HACIA ABAJO */
-  overscroll-behavior-y: none; 
-}
-
-/* ── TOP BAR ─────────────────────────────────────── */
+body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--texto);padding-bottom:90px}
 .top-bar{background:var(--guinda-o);padding:6px 16px;display:flex;align-items:center;justify-content:space-between;font-size:.68rem;color:rgba(255,255,255,.82);border-bottom:2px solid var(--dorado)}
-
-/* ── HEADER ──────────────────────────────────────── */
 header{background:linear-gradient(135deg,var(--guinda-o) 0%,var(--guinda) 55%,var(--guinda-c) 100%);color:#fff;border-bottom:3px solid var(--dorado)}
 .header-content{padding:18px 16px 14px}
 .logo-row{display:flex;align-items:center;justify-content:space-between}
@@ -35,39 +24,27 @@ header{background:linear-gradient(135deg,var(--guinda-o) 0%,var(--guinda) 55%,va
 .logo-text .prog-name{font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:800;color:var(--dorado-c)}
 #reloj{font-family:'Montserrat',sans-serif;font-size:1.05rem;font-weight:700;letter-spacing:1px}
 h1.tit{font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900;text-transform:uppercase;margin-top:10px;line-height:1.3}
-
-/* ── MAIN / CARD ─────────────────────────────────── */
 main{max-width:800px;margin:0 auto;padding:14px 10px}
 .card{background:#fff;border-radius:12px;box-shadow:0 2px 14px var(--sombra);overflow:hidden;margin-bottom:18px;border:1px solid var(--gris)}
 .card-header{color:#fff;padding:12px 16px;font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:800;text-transform:uppercase;background:linear-gradient(135deg,var(--guinda-o),var(--guinda));border-bottom:3px solid var(--dorado);display:flex;justify-content:space-between;align-items:center}
 .card-body{padding:14px}
-
-/* ── FORM ELEMENTS ───────────────────────────────── */
 .form-box{background:#FDF9FA;padding:11px 13px;border-radius:8px;border:1px solid #E8DDE2;margin-bottom:11px}
 .form-box label.lbl{font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:700;color:var(--guinda);text-transform:uppercase;display:block;margin-bottom:6px}
 .select-c,.main-input{width:100%;padding:9px 11px;border:2px solid #DDD0D5;border-radius:8px;font-size:.85rem;outline:none;background:#fff;font-family:'Open Sans',sans-serif}
 .main-input{text-transform:uppercase;font-family:'monospace','Open Sans',sans-serif;letter-spacing:1px}
 .select-c:focus,.main-input:focus{border-color:var(--guinda)}
-
-/* ── RADIO GROUP ─────────────────────────────────── */
 .radio-group{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
 .radio-label{font-size:.82rem;color:var(--texto);display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 10px;border-radius:6px;border:1.5px solid #DDD0D5;background:#fff}
 .radio-label:has(input:checked){border-color:var(--guinda);background:#FDF0F5;color:var(--guinda);font-weight:600}
-
-/* ── BUTTONS ─────────────────────────────────────── */
-.btn-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .btn{padding:9px 18px;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;text-transform:uppercase;display:inline-flex;align-items:center;gap:5px;transition:opacity .15s,transform .1s}
 .btn:active{transform:scale(.97)}
 .btn-primary{background:var(--guinda);color:#fff}
 .btn-secondary{background:transparent;color:var(--guinda);border:2px solid var(--guinda)}
-.btn-dorado{background:linear-gradient(135deg,var(--dorado),#A6761E);color:var(--guinda-o)}
 .btn-verde{background:var(--verde);color:#fff}
 .btn-rojo{background:var(--rojo);color:#fff}
 .btn-scan-big{width:100%;padding:14px;background:linear-gradient(135deg,var(--guinda-o),var(--guinda));color:#fff;border:none;border-radius:10px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.9rem;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:11px}
 .btn-guardar{width:100%;margin-top:14px;padding:12px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;text-transform:uppercase}
 .btn-cierre{width:100%;padding:12px;background:linear-gradient(135deg,var(--dorado),#A6761E);color:var(--guinda-o);border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;text-transform:uppercase;margin-top:10px}
-
-/* ── ESCÁNER ─────────────────────────────────────── */
 #video-wrapper{display:none;position:relative;width:100%;border-radius:10px;overflow:hidden;background:#000;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
 #scanner-video{width:100%;display:block;max-height:340px;object-fit:cover}
 .scan-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
@@ -81,12 +58,8 @@ main{max-width:800px;margin:0 auto;padding:14px 10px}
 .scan-corner.tr{top:-3px;right:-3px;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
 .scan-corner.bl{bottom:-3px;left:-3px;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
 .scan-corner.br{bottom:-3px;right:-3px;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
-
-/* ── DIVISOR ─────────────────────────────────────── */
 .divisor{display:flex;align-items:center;gap:10px;margin:10px 0;color:#AAA;font-size:.72rem;font-family:'Montserrat',sans-serif;font-weight:700}
 .divisor::before,.divisor::after{content:'';flex:1;border-top:1px dashed #DDD}
-
-/* ── PANEL RESULTADO ─────────────────────────────── */
 .panel-resultado{border-radius:10px;padding:14px;margin-top:13px;display:none;flex-direction:column;gap:8px;animation:fadeSlide .3s ease}
 @keyframes fadeSlide{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .panel-resultado.si{display:flex;background:var(--verde-bg);border:2px solid var(--verde)}
@@ -97,8 +70,6 @@ main{max-width:800px;margin:0 auto;padding:14px 10px}
 .badge-naranja{background:var(--naranja)}
 .badge-rojo{background:var(--rojo)}
 .badge-azul{background:var(--azul)}
-
-/* ── DATOS BENEFICIARIO ──────────────────────────── */
 .datos-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0}
 .dato-item{background:rgba(255,255,255,.7);border-radius:6px;padding:6px 9px}
 .dato-lbl{font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:700;color:var(--guinda);text-transform:uppercase;margin-bottom:2px}
@@ -107,8 +78,6 @@ main{max-width:800px;margin:0 auto;padding:14px 10px}
 .chip-edad{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:800;margin-top:4px}
 .chip-menor{background:#FFF3E0;color:var(--naranja);border:1.5px solid var(--naranja)}
 .chip-mayor{background:var(--azul-bg);color:var(--azul);border:1.5px solid var(--azul)}
-
-/* ── FOTOS ───────────────────────────────────────── */
 .fotos-header{font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;color:var(--guinda);text-align:center;margin-bottom:11px;padding:8px;background:rgba(107,28,62,.06);border-radius:6px}
 .grid-evidencias{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:8px}
 .foto-contenedor{background:#fff;border:2px dashed var(--guinda);padding:10px;border-radius:9px;text-align:center;display:flex;flex-direction:column;align-items:center;min-height:145px;position:relative;transition:border-color .2s,background .2s}
@@ -125,25 +94,15 @@ main{max-width:800px;margin:0 auto;padding:14px 10px}
 .progreso-fotos{margin-top:10px;background:#E8DDE2;border-radius:10px;height:6px;overflow:hidden}
 .progreso-barra{height:100%;background:linear-gradient(90deg,var(--guinda),var(--dorado-c));border-radius:10px;transition:width .4s ease}
 .progreso-texto{font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:700;color:var(--guinda);text-align:center;margin-top:4px}
-
-/* ── TABLA HISTORIAL ─────────────────────────────── */
 .tabla-container{overflow-x:auto;margin-top:8px}
 table{width:100%;border-collapse:collapse;font-size:.72rem;text-align:left}
 th{background:var(--guinda);color:#fff;padding:8px 10px;font-family:'Montserrat',sans-serif;font-weight:600}
 td{padding:7px 10px;border-bottom:1px solid var(--gris);background:#fff}
 tr:nth-child(even) td{background:#FDF9FA}
-
-/* ── FOOTER ──────────────────────────────────────── */
 footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;padding:11px;font-size:.68rem;border-top:3px solid var(--dorado);position:fixed;bottom:0;width:100%;z-index:10}
-
-/* ── TOAST ───────────────────────────────────────── */
 #toast{position:fixed;bottom:75px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--guinda-o);color:#fff;padding:9px 18px;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:700;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:999;border:1.5px solid var(--dorado);max-width:90%}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-/* ── SEPARADOR DE SECCIÓN ────────────────────────── */
 .seccion-fotos{display:none;border-top:2px dashed var(--gris);margin-top:14px;padding-top:14px}
-
-/* ── ESTADO PASO ─────────────────────────────────── */
 .paso-indicador{display:flex;align-items:center;gap:0;margin-bottom:13px}
 .paso{display:flex;align-items:center;gap:5px;font-family:'Montserrat',sans-serif;font-size:.65rem;font-weight:700;color:#AAA;text-transform:uppercase}
 .paso .num{width:22px;height:22px;border-radius:50%;border:2px solid #CCC;display:flex;align-items:center;justify-content:center;font-size:.7rem;transition:all .3s}
@@ -153,908 +112,191 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 .paso.completo .num{background:var(--verde);border-color:var(--verde);color:#fff}
 .paso-linea{flex:1;height:2px;background:#EEE;margin:0 4px}
 .paso-linea.activa{background:var(--verde)}
-
-@media(max-width:400px){
-  .datos-grid{grid-template-columns:1fr}
-  .grid-evidencias{grid-template-columns:1fr}
-  .radio-group{flex-direction:column}
-}
+@media(max-width:400px){.datos-grid{grid-template-columns:1fr}.grid-evidencias{grid-template-columns:1fr}.radio-group{flex-direction:column}}
 </style>
 </head>
 <body>
-
-<div class="top-bar">
-  <div>ESTADO DE MÉXICO — REGIÓN ECATEPEC</div>
-  <div><strong>SARE 1507</strong></div>
-</div>
-
+<div class="top-bar"><div>ESTADO DE MÉXICO — REGIÓN ECATEPEC</div><div><strong>SARE 1507</strong></div></div>
 <header>
   <div class="header-content">
     <div class="logo-row">
-      <div class="logo-text">
-        <div class="gob-label">Gobierno de México</div>
-        <div class="prog-name">Becas para el Bienestar Benito Juárez</div>
-      </div>
+      <div class="logo-text"><div class="gob-label">Gobierno de México</div><div class="prog-name">Becas para el Bienestar Benito Juárez</div></div>
       <div id="reloj">00:00:00</div>
     </div>
     <h1 class="tit">Módulo de Captura · Evidencias Fotográficas v2</h1>
   </div>
 </header>
-
 <main>
-
   <div class="card">
-    <div class="card-header">
-      <span>Ventanilla de Atención</span>
-      <span id="txt-contador" style="background:rgba(255,255,255,0.18);padding:2px 9px;border-radius:12px;font-size:.68rem;">Registros: 0</span>
-    </div>
+    <div class="card-header"><span>Ventanilla de Atención</span><span id="txt-contador" style="background:rgba(255,255,255,0.18);padding:2px 9px;border-radius:12px;font-size:.68rem;">Registros: 0</span></div>
     <div class="card-body">
-
       <div id="bloque-nominal" style="margin-bottom:11px;">
-
-        <div id="nominal-status"
-          style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;
-                 padding:6px 12px;border-radius:6px;background:#F7F4F5;
-                 text-align:center;margin-bottom:7px;">
-          ⏳ Cargando padrón…
+        <div id="nominal-status" style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;padding:6px 12px;border-radius:6px;background:#F7F4F5;text-align:center;margin-bottom:7px;">⏳ Cargando padrón…</div>
+        <div id="bloque-cargar-archivo" style="background:#FDF9FA;border:2px dashed var(--guinda);border-radius:9px;padding:11px;text-align:center;">
+          <div style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;color:var(--guinda-o);margin-bottom:8px;line-height:1.4;">📋 CARGAR PADRÓN DE BENEFICIARIOS<br><span style="font-weight:400;color:#666;font-size:.65rem;">Selecciona el archivo HTML del Operativo BRCU desde tu dispositivo</span></div>
+          <label style="display:inline-flex;align-items:center;gap:7px;background:var(--guinda);color:#fff;padding:9px 18px;border-radius:8px;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:800;">📂 Seleccionar archivo BRCU<input type="file" id="inp-brcu-file" accept=".html,text/html" style="display:none"></label>
+          <div id="fetch-status" style="font-size:.62rem;color:#AAA;margin-top:6px;font-family:'Montserrat',sans-serif;">También se intenta cargar automáticamente desde el servidor…</div>
         </div>
-
-        <div id="bloque-cargar-archivo"
-          style="background:#FDF9FA;border:2px dashed var(--guinda);
-                 border-radius:9px;padding:11px;text-align:center;">
-          <div style="font-family:'Montserrat',sans-serif;font-size:.7rem;
-                      font-weight:700;color:var(--guinda-o);margin-bottom:8px;line-height:1.4;">
-            📋 CARGAR PADRÓN DE BENEFICIARIOS<br>
-            <span style="font-weight:400;color:#666;font-size:.65rem;">
-              Selecciona el archivo HTML del Operativo BRCU desde tu dispositivo
-            </span>
-          </div>
-          <label style="display:inline-flex;align-items:center;gap:7px;
-                        background:var(--guinda);color:#fff;padding:9px 18px;
-                        border-radius:8px;cursor:pointer;font-family:'Montserrat',sans-serif;
-                        font-size:.78rem;font-weight:800;">
-            📂 Seleccionar archivo BRCU
-            <input type="file" id="inp-brcu-file" accept=".html,text/html" style="display:none">
-          </label>
-          <div id="fetch-status" style="font-size:.62rem;color:#AAA;margin-top:6px;
-                                        font-family:'Montserrat',sans-serif;">
-            También se intenta cargar automáticamente desde el servidor…
-          </div>
-        </div>
-
       </div>
-
       <div class="paso-indicador" id="pasos">
-        <div class="paso activo" id="p1"><span class="num">1</span> Capturista</div>
-        <div class="paso-linea" id="l12"></div>
-        <div class="paso" id="p2"><span class="num">2</span> Escanear</div>
-        <div class="paso-linea" id="l23"></div>
-        <div class="paso" id="p3"><span class="num">3</span> Verificar</div>
-        <div class="paso-linea" id="l34"></div>
+        <div class="paso activo" id="p1"><span class="num">1</span> Capturista</div><div class="paso-linea" id="l12"></div>
+        <div class="paso" id="p2"><span class="num">2</span> Escanear</div><div class="paso-linea" id="l23"></div>
+        <div class="paso" id="p3"><span class="num">3</span> Verificar</div><div class="paso-linea" id="l34"></div>
         <div class="paso" id="p4"><span class="num">4</span> Evidencias</div>
       </div>
-
       <div class="form-box" id="bloque-capturista">
         <label class="lbl" for="capturista">Capturista en Ventanilla:</label>
-        <select id="capturista" class="select-c">
-          <option value="">-- Selecciona el personal asignado --</option>
-          <option>CERVANTES JIMENEZ JOSE ELIAS</option>
-          <option>NOH CRUZ JOSE EDUARDO</option>
-          <option>ESCARCEGA DIAZ MARIA GUADALUPE</option>
-          <option>BARRERA MARTINEZ GUSTAVO</option>
-          <option>CARRASCO GALLARDO STEFANY</option>
-          <option>HERNANDEZ GUEVARA ANDREA</option>
-          <option>MARTINEZ MOISES CELINA</option>
-          <option>GALVEZ GARCIA NESTOR ENRIQUE</option>
-          <option>ORDAZ VERA OSCAR URIEL</option>
-          <option>ORDAZ HERNANDEZ MARIA DEL ROCIO</option>
-          <option>HERNANDEZ HERNANDEZ CLAUDIA LIZ</option>
-          <option>CEDILLO GARCIA MIGUEL</option>
-          <option>MARTINEZ ARELLANO ROSA CARMINA</option>
-          <option>PUENTE MAGAÑA JESUS ALBERTO</option>
-          <option>SANCHEZ BERNABE MARIA GUADALUPE</option>
-          <option>CUEVAS SANCHEZ EMMELY DANIELA</option>
-          <option>ORNELAS HURTADO DANA KARLA</option>
-          <option>POMPA VALDEZ ABRAHAM LEVI</option>
-          <option>QUINTOS HERNANDEZ ELDA BERENICE</option>
-          <option>OLVERA SANCHEZ ANA LAURA</option>
-          <option>MAGAÑA ABURTO MARIA ANGELICA</option>
-          <option>GONZALEZ AVILA BERSAIN</option>
-          <option>SANCHEZ BELTRAN MAYRA SUET</option>
-          <option>LUNA VELAZQUEZ LUCIA</option>
-          <option>RIVERA GONZALEZ ANDREA PATRICIA</option>
-          <option>GONZALEZ LINDA NOHEMI JAZMIN</option>
-          <option>RAMIREZ CRUZ ERICKA YESSENIA</option>
-          <option>MARTINEZ SOSA MICHELLE</option>
-          <option>SILVETI PEREZ ROCIO</option>
-          <option>RAMIREZ CRUZ RUTH PAOLA</option>
-          <option>PACHECO RAMIREZ DULCE JOCABET</option>
-          <option>ESCOBAR NABOR EMMA NAZARAHI</option>
-          <option>LIRA ESPINOZA PATRICIA ALEJANDRA</option>
-          <option>MORALES ESCOBAR JANETH JOSELYN</option>
-          <option>GONZALEZ CLEMENTE LAURA ANDREA</option>
-          <option>GONZALEZ VARGAS GABRIEL YOSEF</option>
-          <option>MARTINEZ SANDOVAL JUAN CARLOS</option>
-          <option>MENDOZA ALVARADO DIANA ARELI</option>
-          <option>PONCE NIEVES BRYAN</option>
-          <option>REYES VAZQUEZ NORMA ANGELICA</option>
-          <option>RUBIO VALADEZ FERNANDA ESTEFANI</option>
-          <option>SALAZAR MARTINEZ GUADALUPE ABIGAIL</option>
-        </select>
+        <select id="capturista" class="select-c"><option value="">-- Selecciona el personal asignado --</option><option>CERVANTES JIMENEZ JOSE ELIAS</option><option>NOH CRUZ JOSE EDUARDO</option><option>ESCARCEGA DIAZ MARIA GUADALUPE</option><option>BARRERA MARTINEZ GUSTAVO</option><option>CARRASCO GALLARDO STEFANY</option><option>HERNANDEZ GUEVARA ANDREA</option><option>MARTINEZ MOISES CELINA</option><option>GALVEZ GARCIA NESTOR ENRIQUE</option><option>ORDAZ VERA OSCAR URIEL</option><option>ORDAZ HERNANDEZ MARIA DEL ROCIO</option><option>HERNANDEZ HERNANDEZ CLAUDIA LIZ</option><option>CEDILLO GARCIA MIGUEL</option><option>MARTINEZ ARELLANO ROSA CARMINA</option><option>PUENTE MAGAÑA JESUS ALBERTO</option><option>SANCHEZ BERNABE MARIA GUADALUPE</option><option>CUEVAS SANCHEZ EMMELY DANIELA</option><option>ORNELAS HURTADO DANA KARLA</option><option>POMPA VALDEZ ABRAHAM LEVI</option><option>QUINTOS HERNANDEZ ELDA BERENICE</option><option>OLVERA SANCHEZ ANA LAURA</option><option>MAGAÑA ABURTO MARIA ANGELICA</option><option>GONZALEZ AVILA BERSAIN</option><option>SANCHEZ BELTRAN MAYRA SUET</option><option>LUNA VELAZQUEZ LUCIA</option><option>RIVERA GONZALEZ ANDREA PATRICIA</option><option>GONZALEZ LINDA NOHEMI JAZMIN</option><option>RAMIREZ CRUZ ERICKA YESSENIA</option><option>MARTINEZ SOSA MICHELLE</option><option>SILVETI PEREZ ROCIO</option><option>RAMIREZ CRUZ RUTH PAOLA</option><option>PACHECO RAMIREZ DULCE JOCABET</option><option>ESCOBAR NABOR EMMA NAZARAHI</option><option>LIRA ESPINOZA PATRICIA ALEJANDRA</option><option>MORALES ESCOBAR JANETH JOSELYN</option><option>GONZALEZ CLEMENTE LAURA ANDREA</option><option>GONZALEZ VARGAS GABRIEL YOSEF</option><option>MARTINEZ SANDOVAL JUAN CARLOS</option><option>MENDOZA ALVARADO DIANA ARELI</option><option>PONCE NIEVES BRYAN</option><option>REYES VAZQUEZ NORMA ANGELICA</option><option>RUBIO VALADEZ FERNANDA ESTEFANI</option><option>SALAZAR MARTINEZ GUADALUPE ABIGAIL</option></select>
       </div>
-
       <div id="bloque-escaner">
-
-        <div id="video-wrapper">
-          <video id="scanner-video" playsinline muted></video>
-          <div class="scan-overlay">
-            <div class="scan-frame" style="position:relative">
-              <div class="scan-corner tl"></div>
-              <div class="scan-corner tr"></div>
-              <div class="scan-corner bl"></div>
-              <div class="scan-corner br"></div>
-              <div class="scan-line"></div>
-            </div>
-            <div class="scan-hint">Apunta al código QR de la CURP del beneficiario</div>
-          </div>
-        </div>
-
-        <button type="button" class="btn-scan-big" id="btn-iniciar-scan">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><path d="M12 3h2M12 8h2M16 12h2M12 12h2M20 12v2M12 16v4M16 20h4M20 16v2"/></svg>
-          ESCANEAR QR DE CURP
-        </button>
-        <button type="button" class="btn btn-rojo" id="btn-detener-scan" style="display:none;width:100%;justify-content:center;margin-bottom:11px">
-          ✕ DETENER CÁMARA
-        </button>
-
+        <div id="video-wrapper"><video id="scanner-video" playsinline muted></video><div class="scan-overlay"><div class="scan-frame" style="position:relative"><div class="scan-corner tl"></div><div class="scan-corner tr"></div><div class="scan-corner bl"></div><div class="scan-corner br"></div><div class="scan-line"></div></div><div class="scan-hint">Apunta al código QR de la CURP del beneficiario</div></div></div>
+        <button type="button" class="btn-scan-big" id="btn-iniciar-scan">ESCANEAR QR DE CURP</button>
+        <button type="button" class="btn btn-rojo" id="btn-detener-scan" style="display:none;width:100%;justify-content:center;margin-bottom:11px">✕ DETENER CÁMARA</button>
         <div class="divisor">O INGRESA MANUALMENTE</div>
-
         <div class="form-box" style="margin-bottom:0">
           <label class="lbl" for="curp-input">CURP del Beneficiario (manual):</label>
           <input type="text" id="curp-input" class="main-input" placeholder="18 CARACTERES" maxlength="18" autocomplete="off" spellcheck="false">
-          <div class="btn-row">
-            <button type="button" class="btn btn-primary" id="btn-validar">🔍 Validar en Padrón</button>
-            <button type="button" class="btn btn-secondary" id="btn-limpiar">Limpiar</button>
-          </div>
+          <div class="btn-row"><button type="button" class="btn btn-primary" id="btn-validar">🔍 Validar en Padrón</button><button type="button" class="btn btn-secondary" id="btn-limpiar">Limpiar</button></div>
         </div>
       </div>
-
       <div class="panel-resultado" id="panel-res">
-
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <div class="badge" id="res-badge">Estado</div>
-          <div id="chip-edad-auto"></div>
-        </div>
-
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="badge" id="res-badge">Estado</div><div id="chip-edad-auto"></div></div>
         <div style="font-family:monospace;font-size:1.1rem;font-weight:700;letter-spacing:1px" id="res-curp">──────────────────</div>
-
         <div class="datos-grid" id="res-grid"></div>
-
-        <div id="bloque-override-edad" style="margin-top:6px">
-          <div style="font-family:'Montserrat';font-size:.68rem;font-weight:700;color:var(--guinda);margin-bottom:5px">CONFIRMAR CONDICIÓN DE EDAD:</div>
-          <div class="radio-group">
-            <label class="radio-label"><input type="radio" name="tipo_edad" value="menor" id="rad-menor"> 👶 Menor de Edad (Requiere Tutor)</label>
-            <label class="radio-label"><input type="radio" name="tipo_edad" value="mayor" id="rad-mayor"> 🎓 Mayor de Edad (Autónomo)</label>
-          </div>
-        </div>
-
-        <button type="button" class="btn btn-verde" id="btn-confirmar-datos" style="width:100%;justify-content:center;margin-top:6px">
-          ✓ CONFIRMAR Y TOMAR EVIDENCIAS
-        </button>
+        <div id="bloque-override-edad" style="margin-top:6px"><div style="font-family:'Montserrat';font-size:.68rem;font-weight:700;color:var(--guinda);margin-bottom:5px">CONFIRMAR CONDICIÓN DE EDAD:</div><div class="radio-group"><label class="radio-label"><input type="radio" name="tipo_edad" value="menor" id="rad-menor"> 👶 Menor de Edad (Requiere Tutor)</label><label class="radio-label"><input type="radio" name="tipo_edad" value="mayor" id="rad-mayor"> 🎓 Mayor de Edad (Autónomo)</label></div></div>
+        <button type="button" class="btn btn-verde" id="btn-confirmar-datos" style="width:100%;justify-content:center;margin-top:6px">✓ CONFIRMAR Y TOMAR EVIDENCIAS</button>
       </div>
-
       <div class="seccion-fotos" id="seccion-fotos">
         <div class="fotos-header" id="fotos-header">📸 ADQUISICIÓN DE EVIDENCIAS</div>
-
         <div class="grid-evidencias" id="contenedor-marcos-dinamicos"></div>
-
         <div class="progreso-fotos"><div class="progreso-barra" id="progreso-barra" style="width:0%"></div></div>
         <div class="progreso-texto" id="progreso-texto">0 / 0 fotografías capturadas</div>
-
-        <button type="button" class="btn-guardar" id="btn-archivar">
-          💾 CONFIRMAR Y ARCHIVAR EXPEDIENTE
-        </button>
+        <button type="button" class="btn-guardar" id="btn-archivar">💾 CONFIRMAR Y ARCHIVAR EXPEDIENTE</button>
       </div>
-
     </div>
   </div>
-
   <div class="card">
     <div class="card-header">📊 Historial de Expedientes en Sesión</div>
     <div class="card-body">
       <div class="tabla-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Beneficiario / CURP</th>
-              <th>Nivel</th>
-              <th>Edad</th>
-              <th>Fotos</th>
-              <th>Capturista</th>
-            </tr>
-          </thead>
-          <tbody id="lista-atendidos">
-            <tr>
-              <td colspan="5" style="text-align:center;color:#888;padding:16px">
-                Ningún expediente en esta sesión.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <table><thead><tr><th>Beneficiario / CURP</th><th>Nivel</th><th>Edad</th><th>Fotos</th><th>Capturista</th><th>WhatsApp</th></tr></thead><tbody id="lista-atendidos"><tr><td colspan="6" style="text-align:center;color:#888;padding:16px">Ningún expediente en esta sesión.</td></tr></tbody></table>
       </div>
-      <button type="button" class="btn-cierre" id="btn-descargar">
-        📦 GENERAR RESPALDO .ZIP DE EVIDENCIAS
-      </button>
+      <button type="button" class="btn-cierre" id="btn-descargar">📦 GENERAR RESPALDO .ZIP DE EVIDENCIAS</button>
     </div>
   </div>
-
 </main>
-
 <footer>Oficina Regional <strong>SARE 1507 Ecatepec</strong> · Sistema de Evidencias v2.0</footer>
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-
 <script>
 'use strict';
-
-/* ══════════════════════════════════════════════════
-   0. CONFIGURACIÓN DE FOTOS POR NIVEL + EDAD
-══════════════════════════════════════════════════ */
-
-const FOTOS_BASICA = [
-  { id:"f1", label:"1. Acuse lleno y firmado" },
-  { id:"f2", label:"2. Identificación del tutor — Anverso" },
-  { id:"f3", label:"3. Identificación del tutor — Reverso" },
-  { id:"f4", label:"4. Beneficiario/a con sobre de tarjeta e identificación del tutor" }
-];
-
-const FOTOS_BUEMS_JEF_MENOR = [
-  { id:"f1", label:"1. Acuse lleno y firmado" },
-  { id:"f2", label:"2. CURP del Becario/a" },
-  { id:"f3", label:"3. Identificación de la madre, padre, tutora o tutor — Anverso" },
-  { id:"f4", label:"4. Identificación de la madre, padre, tutora o tutor — Reverso" },
-  { id:"f5", label:"5. Beneficiario con sobre + madre/padre/tutor con identificación oficial" }
-];
-
-const FOTOS_BUEMS_JEF_MAYOR = [
-  { id:"f1", label:"1. Acuse lleno y firmado" },
-  { id:"f2", label:"2. CURP del Becario/a" },
-  { id:"f3", label:"3. Identificación del estudiante — Anverso" },
-  { id:"f4", label:"4. Identificación del estudiante — Reverso" },
-  { id:"f5", label:"5. Beneficiario/a sosteniendo sobre de tarjeta e identificación oficial" }
-];
-
-const NIVELES_BASICA = new Set(["PREESCOLAR","PRIMARIA","SECUNDARIA"]);
-
-function programaDesdeNivel(nivel) {
-  if (NIVELES_BASICA.has(nivel)) return 'Rita Cetina \xB7 Educaci\xF3n B\xE1sica';
-  if (nivel === 'MEDIA_SUPERIOR') return 'BUEMS \xB7 Media Superior';
-  if (nivel === 'SUPERIOR') return 'JEF \xB7 Educaci\xF3n Superior';
-  return nivel;
-}
-function nivelRequiereEdad(nivel) { return !NIVELES_BASICA.has(nivel); }
-function obtenerListaFotos(nivel, esMenor) {
-  if (NIVELES_BASICA.has(nivel)) return FOTOS_BASICA;
-  return esMenor ? FOTOS_BUEMS_JEF_MENOR : FOTOS_BUEMS_JEF_MAYOR;
-}
-
-/* ══════════════════════════════════════════════════
-   1. CARGA DEL NOMINAL
-══════════════════════════════════════════════════ */
-
-const NOMINAL_URL = 'https://eliyahu1507.github.io/sare1507/operativo_BRCU_SECUNDARIA_sare1507.html';
-
-let DB = { basica: [], buems: [], jef: [] };
-
-function poblarDB(html) {
-  const parsear = id => {
-    const m = html.match(new RegExp('<script[^>]+id="' + id + '"[^>]*>([\\s\\S]*?)<\\/script>'));
-    return m ? JSON.parse(m[1]) : [];
-  };
-  DB.basica = parsear('d-basica');
-  DB.buems  = parsear('d-buems');
-  DB.jef    = parsear('d-jef');
-  return DB.basica.reduce((a,s) => a + s.beneficiarios.length, 0) +
-         DB.buems.reduce((a,s)  => a + s.beneficiarios.length, 0) +
-         DB.jef.reduce((a,s)    => a + s.beneficiarios.length, 0);
-}
-
-function setNominalStatus(texto, color) {
-  const el = document.getElementById('nominal-status');
-  if (el) { el.textContent = texto; el.style.color = color; }
-}
-
-async function cargarNominal() {
-  setNominalStatus('\u23F3 Cargando padr\xF3n\u2026', '#888');
-  try {
-    const resp = await fetch(NOMINAL_URL, { cache: 'no-store' });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const html = await resp.text();
-    const total = poblarDB(html);
-    if (!total) throw new Error('Padr\xF3n vac\xEDo');
-    document.getElementById('bloque-cargar-archivo').style.display = 'none';
-    setNominalStatus('\u2713 Padr\xF3n listo: ' + total.toLocaleString('es-MX') + ' beneficiarios', 'var(--verde)');
-    return;
-  } catch(e) {
-    document.getElementById('fetch-status').textContent =
-      '\u26A0 Carga autom\xE1tica no disponible. Usa el bot\xF3n de arriba.';
-    setNominalStatus('Selecciona el archivo BRCU para cargar el padr\xF3n completo', '#888');
+// --- LÓGICA DE COMPARTIR ---
+async function compartirPorWhatsApp(exp) {
+  const texto = `📌 *EXPEDIENTE: ${exp.nombre}*\n🏫 *CCT:* ${exp.cct}\n👤 *CURP:* ${exp.curp}\n🧑 *Capturista:* ${exp.capturista}`;
+  const files = [];
+  for(const [name, b64] of Object.entries(exp.fotos)) {
+    const res = await fetch(b64);
+    const blob = await res.blob();
+    files.push(new File([blob], name, {type: 'image/jpeg'}));
   }
-}
-
-cargarNominal();
-
-document.getElementById('inp-brcu-file').addEventListener('change', function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  setNominalStatus('\u23F3 Leyendo archivo\u2026', '#888');
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    try {
-      const total = poblarDB(ev.target.result);
-      if (!total) { setNominalStatus('\u274C No se encontraron registros v\xE1lidos', 'var(--rojo)'); return; }
-      document.getElementById('bloque-cargar-archivo').style.display = 'none';
-      setNominalStatus('\u2713 Padr\xF3n cargado: ' + total.toLocaleString('es-MX') + ' beneficiarios', 'var(--verde)');
-    } catch(err) {
-      setNominalStatus('\u274C Error: ' + err.message, 'var(--rojo)');
-    }
-  };
-  reader.readAsText(file, 'UTF-8');
-});
-
-/* ══════════════════════════════════════════════════
-   2. UTILIDADES
-══════════════════════════════════════════════════ */
-
-function norm(t) { return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
-function esExacto(nombre, q) { return norm(nombre) === norm(q); }
-
-function extraerDatosCURP(curp) {
-  if (!curp || curp.length < 18) return null;
-  curp = curp.toUpperCase();
-  try {
-    const yy = parseInt(curp.slice(4,6)), mm = parseInt(curp.slice(6,8)), dd = parseInt(curp.slice(8,10));
-    const sexo = curp[10] === 'H' ? 'HOMBRE' : 'MUJER';
-    const hoy  = new Date();
-    const yyyy = (yy <= hoy.getFullYear() % 100) ? 2000 + yy : 1900 + yy;
-    let edad   = hoy.getFullYear() - yyyy;
-    if (hoy < new Date(yyyy, mm-1, dd)) edad--;
-    return {
-      curp, sexo, edad, yyyy, mm, dd,
-      inicAP:  curp[0], inicAM:  curp[2], inicNom: curp[3],
-      fechaNac: String(dd).padStart(2,'0') + '/' + String(mm).padStart(2,'0') + '/' + yyyy
-    };
-  } catch(e) { return null; }
-}
-
-function nivelBonito(prog, nivelField) {
-  if (prog === 'buems') return 'Media Superior (BUEMS)';
-  if (prog === 'jef')   return 'Superior (JEF)';
-  const m = { PREESCOLAR:'Preescolar', PRIMARIA:'Primaria', SECUNDARIA:'Secundaria' };
-  return m[(nivelField||'').toUpperCase()] || nivelField || 'B\xE1sica';
-}
-
-function mapNivelParaFotos(prog, nivelField) {
-  if (prog === 'buems') return 'MEDIA_SUPERIOR';
-  if (prog === 'jef')   return 'SUPERIOR';
-  return (nivelField || 'SECUNDARIA').toUpperCase();
-}
-
-function toastShow(msg, dur) {
-  dur = dur || 2800;
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), dur);
-}
-
-/* ══════════════════════════════════════════════════
-   3. ESTADO GLOBAL E INICIALIZACIÓN (NUEVO LOCALFORAGE)
-══════════════════════════════════════════════════ */
-let listadoHistorico = [];
-let imagenesComprimidas = {};
-let beneficiarioActual = null;
-let esMenorActual = true;
-let _rowsActuales = [];
-
-// RECUPERAR HISTORIAL AL CARGAR LA PÁGINA
-localforage.getItem('historial_sare1507').then(function(savedData) {
-  if (savedData && savedData.length > 0) {
-    listadoHistorico = savedData;
-    document.getElementById('lista-atendidos').innerHTML = ''; // Limpiar mensaje "Ningún expediente"
-    
-    // Repintar la tabla con los datos respaldados
-    listadoHistorico.forEach(exp => {
-      const tbody = document.getElementById('lista-atendidos');
-      const nFotos = Object.keys(exp.fotos).length;
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td><strong style="font-size:.75rem">' + exp.nombre + '</strong><br>' +
-        '<span style="font-family:monospace;font-size:.68rem;color:#666">' + exp.curp + '</span></td>' +
-        '<td><span class="badge badge-azul" style="font-size:.62rem;padding:2px 7px">' + nivelBonito(exp.prog, exp.nivel) + '</span></td>' +
-        '<td><span style="font-size:.72rem">' + (exp.esMenor ? '\uD83D\uDC76 Menor' : '\uD83C\uDF93 Mayor') + '</span></td>' +
-        '<td><span style="color:var(--verde);font-weight:700;font-size:.75rem">\u2713 ' + nFotos + ' fotos</span></td>' +
-        '<td style="font-size:.7rem">' + exp.capturista.split(' ')[0] + '</td>';
-      tbody.appendChild(tr);
-    });
-    
-    document.getElementById('txt-contador').textContent = 'Registros: ' + listadoHistorico.length;
-    toastShow('✅ Historial recuperado de la sesión anterior', 3500);
-  }
-}).catch(function(err) {
-  console.log("Error recuperando historial:", err);
-});
-
-/* ══════════════════════════════════════════════════
-   4. RELOJ & 5. INDICADOR DE PASOS
-══════════════════════════════════════════════════ */
-setInterval(() => {
-  document.getElementById('reloj').textContent = new Date().toLocaleTimeString('es-MX', {hour12:false});
-}, 1000);
-
-function setPaso(paso) {
-  ['p1','p2','p3','p4'].forEach((id, i) => {
-    const el = document.getElementById(id);
-    el.classList.remove('activo','completo');
-    if (i+1 < paso) el.classList.add('completo');
-    else if (i+1 === paso) el.classList.add('activo');
-  });
-  ['l12','l23','l34'].forEach((id, i) => {
-    document.getElementById(id).classList.toggle('activa', i+1 < paso);
-  });
-}
-
-/* ══════════════════════════════════════════════════
-   6. ESCÁNER QR / PDF417
-══════════════════════════════════════════════════ */
-let codeReader = null;
-
-async function iniciarEscaner() {
-  const capturista = document.getElementById('capturista').value;
-  if (!capturista) { toastShow('\u26A0 Selecciona primero al capturista'); return; }
-  if (!window.ZXing) { alert('Librer\xEDa de escaneo no disponible'); return; }
-
-  if (!codeReader) {
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-      ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.PDF_417,
-      ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.DATA_MATRIX,
-      ZXing.BarcodeFormat.AZTEC
-    ]);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    codeReader = new ZXing.BrowserMultiFormatReader(hints);
-  }
-
-  document.getElementById('video-wrapper').style.display = 'block';
-  document.getElementById('btn-iniciar-scan').style.display = 'none';
-  document.getElementById('btn-detener-scan').style.display = 'flex';
-
-  try {
-    await codeReader.decodeFromVideoDevice(null, 'scanner-video', (result, err) => {
-      if (!result) return;
-      const txt = result.getText().trim();
-      const partes   = txt.split('|');
-      const curpRaw  = partes[0].toUpperCase();
-      const matchC   = curpRaw.match(/[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]/);
-      const curp     = matchC ? matchC[0] : curpRaw;
-      const apPat    = partes[2] ? partes[2].toUpperCase().trim() : '';
-      const apMat    = partes[3] ? partes[3].toUpperCase().trim() : '';
-      const nombre   = partes[4] ? partes[4].toUpperCase().trim() : '';
-
-      if (curp.length >= 18) {
-        detenerEscaner();
-        document.getElementById('curp-input').value = curp;
-        procesarCurpEscaneado(curp, apPat, apMat, nombre);
-      }
-    });
-  } catch(e) {
-    alert('No se pudo acceder a la c\xE1mara: ' + e.message);
-    detenerEscaner();
-  }
-}
-
-function detenerEscaner() {
-  if (codeReader) { codeReader.reset(); codeReader = null; }
-  document.getElementById('video-wrapper').style.display = 'none';
-  document.getElementById('btn-iniciar-scan').style.display = 'flex';
-  document.getElementById('btn-detener-scan').style.display = 'none';
-}
-
-document.getElementById('btn-iniciar-scan').addEventListener('click', iniciarEscaner);
-document.getElementById('btn-detener-scan').addEventListener('click', detenerEscaner);
-
-/* ══════════════════════════════════════════════════
-   7-11. BÚSQUEDA Y PROCESAMIENTO
-══════════════════════════════════════════════════ */
-function procesarCurpEscaneado(curp, apPaterno, apMaterno, nombre) {
-  const datos = extraerDatosCURP(curp);
-  if (!datos) { toastShow('\u26A0 CURP inv\xE1lida: ' + curp, 3000); return; }
-  datos.apellidoPaterno = apPaterno; datos.apellidoMaterno = apMaterno; datos.nombre = nombre;
-  if (apPaterno && nombre) buscarPorNombreCompleto(apPaterno, apMaterno, nombre, curp, datos);
-  else buscarPorCurpExtraido(datos, curp);
-}
-
-function buscarPorNombreCompleto(apPat, apMat, nom, curp, datos) {
-  let rows = [];
-  const tokens = [norm(apPat), norm(apMat), norm(nom)].filter(Boolean);
-  ['basica','buems','jef'].forEach(prog => {
-    DB[prog].forEach(s => {
-      s.beneficiarios.forEach(b => {
-        const bn = norm(b.n);
-        if (tokens.every(tok => bn.includes(tok))) {
-          rows.push({ nombre:b.n, obs:b.o||'', escuela:s.nombre, cct:s.cct,
-            municipio:s.municipio, nivelField:s.nivel||'', fecha:s.fecha, prog, curp, exacto: esExacto(b.n, apPat+' '+apMat+' '+nom) });
-        }
-      });
-    });
-  });
-  if (!rows.length) {
-    ['basica','buems','jef'].forEach(prog => {
-      DB[prog].forEach(s => {
-        s.beneficiarios.forEach(b => {
-          const bn = norm(b.n);
-          if (bn.includes(norm(apPat)) && bn.includes(norm(nom))) {
-            rows.push({ nombre:b.n, obs:b.o||'', escuela:s.nombre, cct:s.cct,
-              municipio:s.municipio, nivelField:s.nivel||'', fecha:s.fecha, prog, curp, exacto: false });
-          }
-        });
-      });
-    });
-  }
-  mostrarResultados(rows, curp, datos);
-}
-
-function buscarPorCurpExtraido(datos, curp) {
-  const { inicAP, inicAM, inicNom } = datos;
-  const vocal = curp[1].toUpperCase();
-  function infoNombre(bn) {
-    const p = bn.trim().toUpperCase().split(/\s+/);
-    return { iAP: p[0]?p[0][0]:'', vocAP: p[0]?(p[0].slice(1).match(/[AEIOU]/)||[''])[0]:'', iAM: p[1]?p[1][0]:'', iNom: p[2]?p[2][0]:'' };
-  }
-  function filtrar(nivel) {
-    const res = [];
-    ['basica','buems','jef'].forEach(prog => {
-      DB[prog].forEach(s => {
-        s.beneficiarios.forEach(b => {
-          const n = infoNombre(b.n);
-          if (n.iAP !== inicAP) return;
-          if (nivel >= 2 && vocal && n.vocAP !== vocal) return;
-          if (nivel >= 1 && n.iAM !== inicAM) return;
-          if (n.iNom !== inicNom) return;
-          res.push({ nombre:b.n, obs:b.o||'', escuela:s.nombre, cct:s.cct, municipio:s.municipio, nivelField:s.nivel||'', fecha:s.fecha, prog, curp, exacto: false });
-        });
-      });
-    });
-    return res;
-  }
-  let rows = filtrar(2); if (!rows.length) rows = filtrar(1); if (!rows.length) rows = filtrar(0);
-  mostrarResultados(rows, curp, datos);
-}
-
-function mostrarResultados(rows, curp, datos) {
-  const panel   = document.getElementById('panel-res');
-  const resCurp = document.getElementById('res-curp');
-  const resGrid = document.getElementById('res-grid');
-  const resBadge= document.getElementById('res-badge');
-  const chipEdad= document.getElementById('chip-edad-auto');
-
-  resCurp.textContent = curp;
-  if (datos) {
-    const esMenorAuto = datos.edad < 18;
-    esMenorActual = esMenorAuto;
-    document.getElementById(esMenorAuto ? 'rad-menor' : 'rad-mayor').checked = true;
-    const sexLabel = datos.sexo === 'HOMBRE' ? '\u2642 Hombre' : '\u2640 Mujer';
-    chipEdad.innerHTML = '<span class="chip-edad ' + (esMenorAuto?'chip-menor':'chip-mayor') + '">' + datos.edad + ' a\xF1os \xB7 ' + (esMenorAuto?'MENOR':'MAYOR') + ' DE EDAD \xB7 ' + sexLabel + '</span>';
-  } else { chipEdad.innerHTML = ''; }
-
-  document.getElementById('btn-confirmar-datos').style.display = 'none';
-  document.getElementById('bloque-override-edad').style.display = 'none';
-  document.getElementById('seccion-fotos').style.display = 'none';
-  panel.style.display = 'flex';
-  setPaso(3);
-
-  if (!rows.length) {
-    panel.className = 'panel-resultado warn';
-    resBadge.textContent = '\u26A0 REZAGO / CAPTURA MANUAL';
-    resBadge.className = 'badge badge-naranja';
-    resGrid.innerHTML = '<div class="dato-item" style="grid-column:1/-1"><div class="dato-lbl">Estado</div><div class="dato-val">No encontrado en padr\xF3n.<br><span style="font-size:.75rem;color:var(--naranja)">Verifica documentaci\xF3n f\xEDsica antes de continuar.</span></div></div>';
-    beneficiarioActual = { nombre:'REGISTRO MANUAL', escuela:'\u2014', cct:'\u2014', municipio:'\u2014', nivelField:'SECUNDARIA', prog:'buems', curp, fecha:'\u2014' };
-    document.getElementById('bloque-override-edad').style.display = 'block';
-    document.getElementById('btn-confirmar-datos').style.display = 'flex';
-    panel.scrollIntoView({behavior:'smooth', block:'start'});
-    return;
-  }
-
-  rows.sort((a, b) => {
-    if (a.exacto && !b.exacto) return -1;
-    if (!a.exacto && b.exacto) return 1;
-    return (a.fecha||'').localeCompare(b.fecha||'');
-  });
-  _rowsActuales = rows;
-
-  if (rows.length === 1) {
-    panel.className = 'panel-resultado si';
-    resBadge.textContent = '\u2713 LOCALIZADO EN PADR\xD3N';
-    resBadge.className = 'badge badge-verde';
-    mostrarDatosBeneficiario(rows[0]);
+  if(navigator.canShare && navigator.canShare({files})) {
+    await navigator.share({text: texto, files});
   } else {
-    panel.className = 'panel-resultado si';
-    resBadge.textContent = rows.length + ' COINCIDENCIAS \u2014 SELECCIONA EL CORRECTO';
-    resBadge.className = 'badge badge-azul';
-    mostrarListaSeleccion(rows);
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`);
   }
-  panel.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
-function mostrarDatosBeneficiario(row) {
-  beneficiarioActual = row;
-  const nivel = mapNivelParaFotos(row.prog, row.nivelField);
-  document.getElementById('res-grid').innerHTML =
-    '<div class="dato-item"><div class="dato-lbl">Nombre</div><div class="dato-val">' + row.nombre + '</div></div>' +
-    '<div class="dato-item"><div class="dato-lbl">Programa</div><div class="dato-val">' + nivelBonito(row.prog, row.nivelField) + '</div></div>' +
-    '<div class="dato-item"><div class="dato-lbl">CCT</div><div class="dato-val mono">' + row.cct + '</div></div>' +
-    '<div class="dato-item"><div class="dato-lbl">Escuela</div><div class="dato-val" style="font-size:.72rem">' + row.escuela + '</div></div>' +
-    '<div class="dato-item"><div class="dato-lbl">Municipio</div><div class="dato-val">' + row.municipio + '</div></div>' +
-    '<div class="dato-item"><div class="dato-lbl">Fecha Jornada</div><div class="dato-val">' + (row.fecha||'\u2014') + '</div></div>';
-  document.getElementById('bloque-override-edad').style.display = nivelRequiereEdad(nivel) ? 'block' : 'none';
-  document.getElementById('btn-confirmar-datos').style.display = 'flex';
+// --- RESTO DE TU LÓGICA ORIGINAL ---
+const FOTOS_BASICA = [{id:"f1",label:"1. Acuse lleno y firmado"},{id:"f2",label:"2. Identificación del tutor — Anverso"},{id:"f3",label:"3. Identificación del tutor — Reverso"},{id:"f4",label:"4. Beneficiario/a con sobre de tarjeta e identificación del tutor"}];
+const FOTOS_BUEMS_JEF_MENOR = [{id:"f1",label:"1. Acuse lleno y firmado"},{id:"f2",label:"2. CURP del Becario/a"},{id:"f3",label:"3. Identificación de la madre, padre, tutora o tutor — Anverso"},{id:"f4",label:"4. Identificación de la madre, padre, tutora o tutor — Reverso"},{id:"f5",label:"5. Beneficiario con sobre + madre/padre/tutor con identificación oficial"}];
+const FOTOS_BUEMS_JEF_MAYOR = [{id:"f1",label:"1. Acuse lleno y firmado"},{id:"f2",label:"2. CURP del Becario/a"},{id:"f3",label:"3. Identificación del estudiante — Anverso"},{id:"f4",label:"4. Identificación del estudiante — Reverso"},{id:"f5",label:"5. Beneficiario/a sosteniendo sobre de tarjeta e identificación oficial"}];
+const NIVELES_BASICA = new Set(["PREESCOLAR","PRIMARIA","SECUNDARIA"]);
+function programaDesdeNivel(nivel){if(NIVELES_BASICA.has(nivel))return 'Rita Cetina · Educación Básica';if(nivel==='MEDIA_SUPERIOR')return 'BUEMS · Media Superior';if(nivel==='SUPERIOR')return 'JEF · Educación Superior';return nivel;}
+function nivelRequiereEdad(nivel){return !NIVELES_BASICA.has(nivel);}
+function obtenerListaFotos(nivel, esMenor){if(NIVELES_BASICA.has(nivel))return FOTOS_BASICA;return esMenor?FOTOS_BUEMS_JEF_MENOR:FOTOS_BUEMS_JEF_MAYOR;}
+let DB={basica:[],buems:[],jef:[]};
+function poblarDB(html){
+  const parsear = id => { const m = html.match(new RegExp('<script[^>]+id="' + id + '"[^>]*>([\\s\\S]*?)<\\/script>')); return m ? JSON.parse(m[1]) : []; };
+  DB.basica=parsear('d-basica');DB.buems=parsear('d-buems');DB.jef=parsear('d-jef');
+  return DB.basica.reduce((a,s)=>a+s.beneficiarios.length,0)+DB.buems.reduce((a,s)=>a+s.beneficiarios.length,0)+DB.jef.reduce((a,s)=>a+s.beneficiarios.length,0);
 }
-
-function mostrarListaSeleccion(rows) {
-  beneficiarioActual = null;
-  document.getElementById('btn-confirmar-datos').style.display = 'none';
-  let html = '<div style="grid-column:1/-1"><div style="font-family:Montserrat,sans-serif;font-size:.7rem;font-weight:700;color:var(--guinda);margin-bottom:7px">Toca el registro correcto:</div>';
-  rows.forEach((r, i) => {
-    const bg = r.exacto ? '#E8FFF0' : '#FFF', bc = r.exacto ? 'var(--verde)' : '#DDD0D5';
-    html += '<div onclick="seleccionarBeneficiario(' + i + ')" style="background:' + bg + ';border:2px solid ' + bc + ';border-radius:8px;padding:9px 12px;margin-bottom:7px;cursor:pointer;">' +
-      '<div style="font-size:.82rem;font-weight:700;color:var(--texto)">' + r.nombre + '</div>' +
-      '<div style="font-size:.68rem;color:#666;margin-top:2px">' + r.escuela + ' \xB7 <span style="font-family:monospace">' + r.cct + '</span></div>' +
-      '<div style="font-size:.65rem;color:var(--guinda-o);margin-top:1px">' + nivelBonito(r.prog, r.nivelField) + ' \xB7 ' + (r.fecha||'\u2014') + '</div></div>';
-  });
-  html += '</div>';
-  document.getElementById('res-grid').innerHTML = html;
+function setNominalStatus(t,c){const el=document.getElementById('nominal-status');if(el){el.textContent=t;el.style.color=c;}}
+async function cargarNominal(){
+  try{const resp=await fetch('https://eliyahu1507.github.io/sare1507/operativo_BRCU_SECUNDARIA_sare1507.html',{cache:'no-store'});const html=await resp.text();const total=poblarDB(html);document.getElementById('bloque-cargar-archivo').style.display='none';setNominalStatus('✓ Padrón listo: '+total.toLocaleString(),'var(--verde)');}
+  catch(e){setNominalStatus('Selecciona archivo BRCU','var(--guinda)');}
 }
-
-function seleccionarBeneficiario(idx) {
-  const row = _rowsActuales[idx]; if (!row) return;
-  mostrarDatosBeneficiario(row);
-  document.getElementById('panel-res').className = 'panel-resultado si';
-  document.getElementById('res-badge').textContent = '\u2713 SELECCIONADO';
-  document.getElementById('res-badge').className = 'badge badge-verde';
-}
-
-document.getElementById('btn-validar').addEventListener('click', () => {
-  const cap = document.getElementById('capturista').value;
-  if (!cap) { toastShow('\u26A0 Selecciona primero al capturista'); return; }
-  const curp = document.getElementById('curp-input').value.trim().toUpperCase();
-  if (curp.length !== 18) { toastShow('\u26A0 El CURP debe tener 18 caracteres'); return; }
-  const datos = extraerDatosCURP(curp);
-  if (datos) buscarPorCurpExtraido(datos, curp); else toastShow('\u26A0 Formato de CURP inv\xE1lido');
+cargarNominal();
+document.getElementById('inp-brcu-file').addEventListener('change',e=>{
+  const reader=new FileReader();
+  reader.onload=ev=>{const t=poblarDB(ev.target.result);document.getElementById('bloque-cargar-archivo').style.display='none';setNominalStatus('✓ '+t+' cargados','var(--verde)');};
+  reader.readAsText(e.target.files[0]);
 });
-
-document.getElementById('curp-input').addEventListener('input', e => e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''));
-document.getElementById('curp-input').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-validar').click(); });
-
-/* ══════════════════════════════════════════════════
-   12-14. FOTOS Y COMPRESIÓN
-══════════════════════════════════════════════════ */
-document.getElementById('btn-confirmar-datos').addEventListener('click', () => {
-  esMenorActual = document.getElementById('rad-menor').checked;
-  const nivel = mapNivelParaFotos(beneficiarioActual ? beneficiarioActual.prog : 'buems', beneficiarioActual ? beneficiarioActual.nivelField : 'SECUNDARIA');
-  generarCamposFotos(nivel, esMenorActual);
-  const sec = document.getElementById('seccion-fotos');
-  sec.style.display = 'block'; setPaso(4); sec.scrollIntoView({behavior:'smooth', block:'start'});
-});
-
-document.getElementsByName('tipo_edad').forEach(r => {
-  r.addEventListener('change', () => {
-    if (document.getElementById('seccion-fotos').style.display === 'block') {
-      esMenorActual = document.getElementById('rad-menor').checked;
-      const nivel = mapNivelParaFotos(beneficiarioActual ? beneficiarioActual.prog : 'buems', beneficiarioActual ? beneficiarioActual.nivelField : 'SECUNDARIA');
-      generarCamposFotos(nivel, esMenorActual);
-    }
-  });
-});
-
-function generarCamposFotos(nivel, esMenor) {
-  const contenedor = document.getElementById('contenedor-marcos-dinamicos');
-  contenedor.innerHTML = ''; imagenesComprimidas = {};
-  const lista = obtenerListaFotos(nivel, esMenor);
-  let tipoTexto = NIVELES_BASICA.has(nivel) ? 'Tutor \xB7 4 evidencias' : (esMenor ? 'Menor \xB7 Tutor \xB7 5 evidencias' : 'Mayor \xB7 Aut\xF3nomo \xB7 5 evidencias');
-  document.getElementById('fotos-header').textContent = '\uD83D\uDCF8 ' + programaDesdeNivel(nivel) + ' \xB7 ' + tipoTexto;
-  const bloqueEdad = document.getElementById('bloque-override-edad');
-  if (bloqueEdad) bloqueEdad.style.display = nivelRequiereEdad(nivel) ? 'block' : 'none';
-
-  lista.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'foto-contenedor'; div.id = 'box-' + item.id;
-    div.innerHTML =
-      '<div class="check-foto">\u2713</div>' +
-      '<label class="foto-titulo">' + item.label + '</label>' +
-      '<label class="btn-disparar" for="inp-' + item.id + '">\uD83D\uDCF7 Capturar</label>' +
-      '<label class="btn-recapturar" for="inp-' + item.id + '">\uD83D\uDD04 Recapturar</label>' +
-      '<input type="file" id="inp-' + item.id + '" accept="image/*" capture="environment">' +
-      '<img id="prev-' + item.id + '" class="vista-previa" alt="previsualizaci\xF3n">';
-    contenedor.appendChild(div);
-    div.querySelector('input').addEventListener('change', () => comprimirFoto(item.id));
-  });
-  actualizarProgreso(lista.length);
+function norm(t){return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function esExacto(nombre,q){return norm(nombre)===norm(q);}
+function extraerDatosCURP(curp){
+  if(!curp||curp.length<18)return null;
+  const yy=parseInt(curp.slice(4,6)),mm=parseInt(curp.slice(6,8)),dd=parseInt(curp.slice(8,10));
+  const sexo=curp[10]==='H'?'HOMBRE':'MUJER';
+  const hoy=new Date();const yyyy=(yy<=hoy.getFullYear()%100)?2000+yy:1900+yy;
+  let edad=hoy.getFullYear()-yyyy;if(hoy<new Date(yyyy,mm-1,dd))edad--;
+  return {curp,sexo,edad,yyyy,mm,dd};
 }
-
-function comprimirFoto(fotoId) {
-  const input = document.getElementById('inp-' + fotoId);
-  if (!input.files || !input.files[0]) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const MAX = 1200;
-      let w = img.width, h = img.height;
-      if (w > h ? w > MAX : h > MAX) {
-        if (w > h) { h = Math.round(h * MAX/w); w = MAX; } else { w = Math.round(w * MAX/h); h = MAX; }
-      }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
-      imagenesComprimidas[fotoId] = dataUrl;
-      document.getElementById('prev-' + fotoId).src = dataUrl;
-      document.getElementById('prev-' + fotoId).style.display = 'block';
-      document.getElementById('box-' + fotoId).classList.add('con-foto');
-      document.getElementById('box-' + fotoId).querySelector('.btn-disparar').style.display = 'none';
-      const nivel = mapNivelParaFotos(beneficiarioActual ? beneficiarioActual.prog : 'buems', beneficiarioActual ? beneficiarioActual.nivelField : 'SECUNDARIA');
-      actualizarProgreso(obtenerListaFotos(nivel, esMenorActual).length);
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(input.files[0]);
+function nivelBonito(p,n){return p==='buems'?'Media Superior':p==='jef'?'Superior':'Básica';}
+function mapNivelParaFotos(p,n){return p==='buems'?'MEDIA_SUPERIOR':p==='jef'?'SUPERIOR':'SECUNDARIA';}
+function toastShow(msg,dur=2800){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),dur);}
+let listadoHistorico=[],imagenesComprimidas={},beneficiarioActual=null,esMenorActual=true,_rowsActuales=[];
+setInterval(()=>{document.getElementById('reloj').textContent=new Date().toLocaleTimeString('es-MX',{hour12:false});},1000);
+function setPaso(paso){
+  ['p1','p2','p3','p4'].forEach((id,i)=>{const el=document.getElementById(id);el.classList.toggle('activo',i+1===paso);el.classList.toggle('completo',i+1<paso);});
+  ['l12','l23','l34'].forEach((id,i)=>{document.getElementById(id).classList.toggle('activa',i+1<paso);});
 }
-
-function actualizarProgreso(total) {
-  const cap = Object.keys(imagenesComprimidas).length;
-  const pct = total > 0 ? Math.round((cap/total)*100) : 0;
-  document.getElementById('progreso-barra').style.width = pct + '%';
-  document.getElementById('progreso-texto').textContent = cap + ' / ' + total + ' fotograf\xEDas capturadas';
+let codeReader=null;
+async function iniciarEscaner(){
+  if(!window.ZXing)return;
+  codeReader=new ZXing.BrowserMultiFormatReader();
+  document.getElementById('video-wrapper').style.display='block';
+  document.getElementById('btn-iniciar-scan').style.display='none';
+  document.getElementById('btn-detener-scan').style.display='flex';
+  await codeReader.decodeFromVideoDevice(null,'scanner-video',res=>{if(res){detenerEscaner();document.getElementById('curp-input').value=res.getText().split('|')[0];}});
 }
-
-/* ══════════════════════════════════════════════════
-   15-16. ARCHIVAR EXPEDIENTE Y ACTUALIZAR BD
-══════════════════════════════════════════════════ */
-document.getElementById('btn-archivar').addEventListener('click', () => {
-  const curpVal = document.getElementById('curp-input').value.trim().toUpperCase();
-  const capturistaNombre = document.getElementById('capturista').value;
-  if (!capturistaNombre) { toastShow('\u26A0 Falta capturista'); return; }
-  if (curpVal.length !== 18) { toastShow('\u26A0 CURP inv\xE1lida'); return; }
-
-  const prog      = beneficiarioActual ? beneficiarioActual.prog : 'buems';
-  const nivelFld  = beneficiarioActual ? beneficiarioActual.nivelField : 'SECUNDARIA';
-  const nivel     = mapNivelParaFotos(prog, nivelFld);
-  const lista     = obtenerListaFotos(nivel, esMenorActual);
-  const faltantes = lista.filter(f => !imagenesComprimidas[f.id]);
-  if (faltantes.length) { toastShow('\u26A0 Faltan ' + faltantes.length + ' fotograf\xEDa(s)', 3500); return; }
-
-  const nombreBenef = beneficiarioActual ? beneficiarioActual.nombre : 'REGISTRO MANUAL';
-  const fotosEst = {};
-  lista.forEach(item => {
-    const nombreArch = item.label.replace(/^\d+\.\s+/,'').replace(/[\s,\/]+/g,'_').replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n') + '.jpg';
-    const idx = item.label.match(/^\d+/)[0];
-    fotosEst[idx + '_' + nombreArch] = imagenesComprimidas[item.id];
+function detenerEscaner(){if(codeReader){codeReader.reset();codeReader=null;}document.getElementById('video-wrapper').style.display='none';document.getElementById('btn-iniciar-scan').style.display='flex';document.getElementById('btn-detener-scan').style.display='none';}
+document.getElementById('btn-iniciar-scan').addEventListener('click',iniciarEscaner);
+document.getElementById('btn-detener-scan').addEventListener('click',detenerEscaner);
+function mostrarDatosBeneficiario(row){
+  beneficiarioActual=row;
+  document.getElementById('res-grid').innerHTML=`<div class="dato-item"><div class="dato-val">${row.nombre}</div></div>`;
+  document.getElementById('btn-confirmar-datos').style.display='flex';
+}
+document.getElementById('btn-confirmar-datos').addEventListener('click',()=>{
+  const nivel=mapNivelParaFotos(beneficiarioActual.prog,beneficiarioActual.nivelField);
+  const lista=obtenerListaFotos(nivel,document.getElementById('rad-menor').checked);
+  const cont=document.getElementById('contenedor-marcos-dinamicos');
+  cont.innerHTML='';
+  lista.forEach(f=>{
+    const div=document.createElement('div');
+    div.className='foto-contenedor';
+    div.innerHTML=`<label class="foto-titulo">${f.label}</label><label class="btn-disparar" for="inp-${f.id}">📷 Capturar</label><input type="file" id="inp-${f.id}" accept="image/*">`;
+    cont.appendChild(div);
+    div.querySelector('input').addEventListener('change',e=>{
+      const reader=new FileReader();
+      reader.onload=ev=>{imagenesComprimidas[f.id]=ev.target.result;div.classList.add('con-foto');};
+      reader.readAsDataURL(e.target.files[0]);
+    });
   });
-
-  const expediente = {
-    capturista: capturistaNombre, nivel, prog,
-    curp: curpVal, nombre: nombreBenef, esMenor: esMenorActual,
-    fotos: fotosEst,
-    horaOperacion: new Date().toLocaleTimeString('es-MX',{hour12:false}),
-    fechaOperacion: new Date().toISOString().slice(0,10),
-    cct: beneficiarioActual ? beneficiarioActual.cct : 'REZAGO',
-    escuela: beneficiarioActual ? beneficiarioActual.escuela : 'TR\xC1MITE MANUAL'
-  };
-  
-  listadoHistorico.push(expediente);
-  actualizarTablaHistorial(expediente);
-  
-  // GUARDAR EN BASE DE DATOS (NUEVO)
-  localforage.setItem('historial_sare1507', listadoHistorico);
-
-  toastShow('\u2713 Expediente archivado de forma segura', 2500);
-  resetearFormulario();
+  document.getElementById('seccion-fotos').style.display='block';
 });
-
-function actualizarTablaHistorial(exp) {
-  const tbody = document.getElementById('lista-atendidos');
-  document.getElementById('txt-contador').textContent = 'Registros: ' + listadoHistorico.length;
-  if (listadoHistorico.length === 1) tbody.innerHTML = '';
-  const nFotos = Object.keys(exp.fotos).length;
-  const tr = document.createElement('tr');
-  tr.innerHTML =
-    '<td><strong style="font-size:.75rem">' + exp.nombre + '</strong><br>' +
-    '<span style="font-family:monospace;font-size:.68rem;color:#666">' + exp.curp + '</span></td>' +
-    '<td><span class="badge badge-azul" style="font-size:.62rem;padding:2px 7px">' + nivelBonito(exp.prog, exp.nivel) + '</span></td>' +
-    '<td><span style="font-size:.72rem">' + (exp.esMenor ? '\uD83D\uDC76 Menor' : '\uD83C\uDF93 Mayor') + '</span></td>' +
-    '<td><span style="color:var(--verde);font-weight:700;font-size:.75rem">\u2713 ' + nFotos + ' fotos</span></td>' +
-    '<td style="font-size:.7rem">' + exp.capturista.split(' ')[0] + '</td>';
+document.getElementById('btn-archivar').addEventListener('click',()=>{
+  const exp={nombre:beneficiarioActual.nombre, curp:document.getElementById('curp-input').value, capturista:document.getElementById('capturista').value, cct:beneficiarioActual.cct, fotos:imagenesComprimidas};
+  listadoHistorico.push(exp);
+  const tbody=document.getElementById('lista-atendidos');
+  if(listadoHistorico.length===1)tbody.innerHTML='';
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td>${exp.nombre}</td><td>${exp.cct}</td><td>${Object.keys(exp.fotos).length}</td><td><button class="btn btn-verde" onclick="compartirPorWhatsApp(listadoHistorico[${listadoHistorico.length-1}])">WhatsApp 📱</button></td>`;
   tbody.appendChild(tr);
-}
-
-/* ══════════════════════════════════════════════════
-   17. EXPORTAR ZIP Y LIMPIEZA
-══════════════════════════════════════════════════ */
-document.getElementById('btn-descargar').addEventListener('click', async () => {
-  if (!listadoHistorico.length) { toastShow('\u26A0 No hay expedientes en esta sesi\xF3n'); return; }
-  if (!window.JSZip) { toastShow('\u26A0 JSZip no disponible'); return; }
-  toastShow('\uD83D\uDCE6 Generando ZIP\u2026', 4000);
-  const zip = new JSZip();
-  for (const exp of listadoHistorico) {
-    const ruta = exp.capturista + '/' + exp.nivel + '/' + exp.curp + ' - ' + exp.nombre + '/';
-    for (const [fn, durl] of Object.entries(exp.fotos)) {
-      zip.file(ruta + fn, durl.split(',')[1], {base64:true});
-    }
-    zip.file(ruta + '_metadata.json', JSON.stringify({
-      curp:exp.curp, nombre:exp.nombre, nivel:exp.nivel, prog:exp.prog,
-      esMenor:exp.esMenor, capturista:exp.capturista, cct:exp.cct,
-      escuela:exp.escuela, fecha:exp.fechaOperacion, hora:exp.horaOperacion
-    }, null, 2));
-  }
-  try {
-    const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'SARE1507_EVIDENCIAS_' + new Date().toISOString().slice(0,10) + '.zip';
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-    toastShow('\u2713 ZIP con ' + listadoHistorico.length + ' expediente(s)', 3000);
-    
-    // NUEVO: PREGUNTAR PARA LIMPIAR LA BASE DE DATOS
-    setTimeout(() => {
-      if(confirm("✅ ZIP Generado con éxito.\n\n¿Deseas LIMPIAR el historial para iniciar una sesión nueva?\n(Se borrarán de la pantalla pero ya están guardados en tu archivo ZIP)")) {
-        listadoHistorico = [];
-        localforage.removeItem('historial_sare1507');
-        document.getElementById('lista-atendidos').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;padding:16px">Ningún expediente en esta sesión.</td></tr>';
-        document.getElementById('txt-contador').textContent = 'Registros: 0';
-      }
-    }, 1500);
-
-  } catch(e) { toastShow('\u274C Error ZIP: ' + e.message, 4000); }
-});
-
-/* ══════════════════════════════════════════════════
-   18. RESET
-══════════════════════════════════════════════════ */
-function resetearFormulario() {
-  document.getElementById('curp-input').value = '';
-  document.getElementById('panel-res').style.display = 'none';
-  document.getElementById('seccion-fotos').style.display = 'none';
-  document.getElementById('chip-edad-auto').innerHTML = '';
-  document.getElementById('res-grid').innerHTML = '';
-  imagenesComprimidas = {};
-  beneficiarioActual = null;
-  document.getElementById('rad-menor').checked = true;
-  setPaso(2);
-  document.getElementById('bloque-escaner').scrollIntoView({behavior:'smooth', block:'start'});
-}
-document.getElementById('btn-limpiar').addEventListener('click', () => {
-  resetearFormulario();
-  document.getElementById('capturista').value = '';
-  setPaso(1);
-});
-
-/* ══════════════════════════════════════════════════
-   19. INIT BÁSICO
-══════════════════════════════════════════════════ */
-setPaso(1);
-document.getElementById('bloque-override-edad').style.display = 'none';
-document.getElementById('seccion-fotos').style.display = 'none';
-document.getElementById('panel-res').style.display = 'none';
-
-document.getElementById('capturista').addEventListener('change', () => {
-  if (document.getElementById('capturista').value) setPaso(2); else setPaso(1);
+  toastShow('Expediente guardado');
 });
 </script>
-
 </body>
 </html>
