@@ -60,6 +60,7 @@ main{max-width:800px;margin:0 auto;padding:14px 10px}
 .btn-guardar{width:100%;margin-top:14px;padding:12px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;text-transform:uppercase}
 .btn-whatsapp{width:100%;margin-top:10px;padding:12px;background:#25D366;color:#fff;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn-cierre{width:100%;padding:12px;background:linear-gradient(135deg,var(--dorado),#A6761E);color:var(--guinda-o);border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;text-transform:uppercase;margin-top:10px}
+.btn-cierre-dia{width:100%;margin-top:8px;padding:12px;background:linear-gradient(135deg,#1A3C6B,#1565C0);color:#fff;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:7px}
 
 /* ── ESCÁNER ─────────────────────────────────────── */
 #video-wrapper{display:none;position:relative;width:100%;border-radius:10px;overflow:hidden;background:#000;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
@@ -430,6 +431,9 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
       <button type="button" class="btn-cierre" id="btn-descargar">
         📦 GENERAR RESPALDO .ZIP DE EVIDENCIAS
       </button>
+      <button type="button" class="btn-cierre-dia" id="btn-cierre-dia">
+        📋 CIERRE DE DÍA — ENTREGA DE MEDIOS
+      </button>
     </div>
   </div>
 
@@ -606,6 +610,8 @@ function resaltarCoincidencia(texto, query) {
     // Rellenar hidden inputs (compatibilidad total con el resto del JS)
     hidNombre.value = item.n;
     hidCupo.value   = item.c;
+    // Guardar en localStorage para persistir durante la jornada
+    try { localStorage.setItem('sare1507_cap', JSON.stringify({n: item.n, c: item.c})); } catch(e) {}
     // Mostrar tarjeta
     selName.textContent  = item.n;
     selCupo.textContent  = item.c;
@@ -674,6 +680,7 @@ function resaltarCoincidencia(texto, query) {
   changeBtn.addEventListener('click', () => {
     hidNombre.value = '';
     hidCupo.value   = '';
+    try { localStorage.removeItem('sare1507_cap'); } catch(e) {}
     cardEl.classList.remove('visible');
     document.getElementById('cap-wrap').style.display = '';
     searchEl.value = '';
@@ -1334,6 +1341,8 @@ document.getElementById('btn-descargar').addEventListener('click', async () => {
    18. RESET
 ══════════════════════════════════════════════════ */
 function resetearFormulario() {
+  // Limpia solo los datos del beneficiario actual
+  // El capturista seleccionado se MANTIENE durante toda la jornada
   document.getElementById('curp-input').value = '';
   document.getElementById('panel-res').style.display = 'none';
   document.getElementById('seccion-fotos').style.display = 'none';
@@ -1342,22 +1351,16 @@ function resetearFormulario() {
   imagenesComprimidas = {};
   beneficiarioActual = null;
   document.getElementById('rad-menor').checked = true;
-  document.getElementById('cupo').value = '';
-  // Reset del buscador visual
-  const capCard = document.getElementById('cap-selected-card');
-  const capWrap = document.getElementById('cap-wrap');
-  const capSearch = document.getElementById('cap-search');
-  if (capCard)   capCard.classList.remove('visible');
-  if (capWrap)   capWrap.style.display = '';
-  if (capSearch) { capSearch.value = ''; capSearch.classList.remove('has-value'); }
+  // NO se resetea #cupo ni #capturista — persisten por localStorage
   setPaso(2);
   document.getElementById('bloque-escaner').scrollIntoView({behavior:'smooth', block:'start'});
 }
 document.getElementById('btn-limpiar').addEventListener('click', () => {
   resetearFormulario();
+  // Limpieza completa incluyendo capturista (cambio de turno / capturista)
   document.getElementById('capturista').value = '';
   document.getElementById('cupo').value = '';
-  // Reset completo del buscador
+  try { localStorage.removeItem('sare1507_cap'); } catch(e) {}
   const _capCard = document.getElementById('cap-selected-card');
   const _capWrap = document.getElementById('cap-wrap');
   const _capSearch = document.getElementById('cap-search');
@@ -1528,6 +1531,83 @@ document.getElementById('panel-res').style.display = 'none';
 
 document.getElementById('capturista').addEventListener('change', () => {
   if (document.getElementById('capturista').value) setPaso(2); else setPaso(1);
+});
+
+// ── Restaurar capturista desde localStorage ──────────────────────────────────
+(function restaurarCapturista() {
+  try {
+    const raw = localStorage.getItem('sare1507_cap');
+    if (!raw) return;
+    const cap = JSON.parse(raw);
+    if (!cap.n || !cap.c) return;
+    // Rellenar hidden inputs
+    document.getElementById('capturista').value = cap.n;
+    document.getElementById('cupo').value       = cap.c;
+    // Actualizar UI del buscador
+    const selName = document.getElementById('cap-sel-name');
+    const selCupo = document.getElementById('cap-sel-cupo-val');
+    const cardEl  = document.getElementById('cap-selected-card');
+    const capWrap = document.getElementById('cap-wrap');
+    if (selName)  selName.textContent  = cap.n;
+    if (selCupo)  selCupo.textContent  = cap.c;
+    if (cardEl)   cardEl.classList.add('visible');
+    if (capWrap)  capWrap.style.display = 'none';
+    setPaso(2);
+    console.log('[SARE1507] Capturista restaurado desde localStorage:', cap.n);
+  } catch(e) {
+    console.warn('[SARE1507] Error al restaurar capturista:', e.message);
+  }
+})();
+
+/* ══════════════════════════════════════════════════
+   21. CIERRE DE DÍA — ENTREGA DE MEDIOS
+══════════════════════════════════════════════════ */
+
+// Construye el texto del reporte de cierre de jornada
+function construirReporteCierreDia() {
+  const cap  = document.getElementById('capturista').value || 'No asignado';
+  const cupo = document.getElementById('cupo').value       || '—';
+  const total = listadoHistorico.length;
+  const hoy   = new Date();
+  const dd    = String(hoy.getDate()).padStart(2,'0');
+  const mm    = String(hoy.getMonth() + 1).padStart(2,'0');
+  const aaaa  = hoy.getFullYear();
+  return 'Reporte entrega de medios:
+'
+    + '• Fecha: '           + dd + '/' + mm + '/' + aaaa + '
+'
+    + '• Nombre: '          + cap                        + '
+'
+    + '• Cupo: '            + cupo                       + '
+'
+    + '• TOTAL: '           + total                      + '
+'
+    + '• Captura en APK: '  + '
+'
+    + '• Captura en web: '  + total                      + '
+'
+    + '• Capturista: '      + cap;
+}
+
+document.getElementById('btn-cierre-dia').addEventListener('click', async () => {
+  const cap = document.getElementById('capturista').value;
+  if (!cap) {
+    toastShow('⚠ Selecciona el capturista antes de generar el reporte');
+    return;
+  }
+  const texto = construirReporteCierreDia();
+
+  // Intento 1: navigator.share nativo
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Cierre de Día SARE 1507', text: texto });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
+  }
+  // Fallback: wa.me
+  window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
 });
 </script>
 
