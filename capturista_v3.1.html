@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SARE 1507 — Capturista v3</title>
+<title>SARE 1507 — Capturista v2</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -60,6 +60,7 @@ main{max-width:800px;margin:0 auto;padding:14px 10px}
 .btn-guardar{width:100%;margin-top:14px;padding:12px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;text-transform:uppercase}
 .btn-whatsapp{width:100%;margin-top:10px;padding:12px;background:#25D366;color:#fff;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn-cierre{width:100%;padding:12px;background:linear-gradient(135deg,var(--dorado),#A6761E);color:var(--guinda-o);border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;text-transform:uppercase;margin-top:10px}
+.btn-cierre-dia{width:100%;margin-top:8px;padding:12px;background:linear-gradient(135deg,#1A3C6B,#1565C0);color:#fff;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:7px}
 
 /* ── ESCÁNER ─────────────────────────────────────── */
 #video-wrapper{display:none;position:relative;width:100%;border-radius:10px;overflow:hidden;background:#000;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
@@ -151,6 +152,30 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 .modal-btn-wa{width:100%;padding:12px;background:#25D366;color:#fff;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;text-transform:uppercase}
 .modal-btn-copy{width:100%;margin-top:8px;padding:10px;background:transparent;color:var(--guinda);border:2px solid var(--guinda);border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;text-transform:uppercase}
 
+/* ── BUSCADOR CAPTURISTA ─────────────────────────── */
+.cap-wrap{position:relative}
+.cap-input-row{display:flex;align-items:center;position:relative}
+.cap-input-row .cap-icon{position:absolute;left:11px;color:var(--guinda);font-size:.9rem;pointer-events:none}
+.cap-search{width:100%;padding:10px 11px 10px 34px;border:2px solid #DDD0D5;border-radius:8px;font-size:.85rem;outline:none;background:#fff;font-family:'Open Sans',sans-serif}
+.cap-search:focus{border-color:var(--guinda)}
+.cap-search.has-value{border-color:var(--verde);background:#F4FFF7}
+.cap-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:2px solid var(--guinda);border-radius:10px;box-shadow:0 6px 24px var(--sombra-f);z-index:200;max-height:260px;overflow-y:auto;scrollbar-width:thin}
+.cap-dropdown.open{display:block}
+.cap-option{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;cursor:pointer;border-bottom:1px solid var(--gris);transition:background .1s;gap:10px}
+.cap-option:last-child{border-bottom:none}
+.cap-option:active,.cap-option:hover{background:#FDF0F5}
+.cap-option-name{font-size:.8rem;font-weight:600;color:var(--texto);line-height:1.3}
+.cap-option-name mark{background:var(--dorado-c);color:var(--guinda-o);border-radius:3px;padding:0 2px}
+.cap-option-cupo{font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:800;color:var(--guinda);background:var(--gris);padding:3px 8px;border-radius:12px;flex-shrink:0}
+.cap-no-results{padding:12px 14px;font-size:.78rem;color:#AAA;text-align:center;font-style:italic}
+.cap-selected-card{display:none;background:var(--verde-bg);border:2px solid var(--verde);border-radius:10px;padding:11px 14px;margin-top:6px}
+.cap-selected-card.visible{display:flex;align-items:center;gap:10px}
+.cap-sel-info{flex:1}
+.cap-sel-name{font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:800;color:var(--texto)}
+.cap-sel-cupo{font-size:.72rem;color:var(--verde);margin-top:3px}
+.cap-sel-cupo span{font-family:'Montserrat',sans-serif;font-weight:700;background:#fff;padding:2px 8px;border-radius:12px;border:1px solid var(--verde);margin-left:4px}
+.cap-change-btn{padding:6px 12px;background:#fff;color:var(--guinda);border:1.5px solid var(--guinda);border-radius:7px;font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;text-transform:uppercase;flex-shrink:0}
+
 /* ── SEPARADOR DE SECCIÓN ────────────────────────── */
 .seccion-fotos{display:none;border-top:2px dashed var(--gris);margin-top:14px;padding-top:14px}
 
@@ -176,7 +201,7 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 
 <div class="top-bar">
   <div>ESTADO DE MÉXICO — REGIÓN ECATEPEC</div>
-  <div><strong>JOSE ELIAS CERVANTES JIMENEZ/ENLACE INFORMATICO - SARE 1507</strong></div>
+  <div><strong>SARE 1507</strong></div>
 </div>
 
 <header>
@@ -188,7 +213,7 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
       </div>
       <div id="reloj">00:00:00</div>
     </div>
-    <h1 class="tit">Módulo de Captura Entrega de tarjetas · Evidencias Fotográficas v3</h1>
+    <h1 class="tit">Módulo de Captura · Evidencias Fotográficas v2</h1>
   </div>
 </header>
 
@@ -197,7 +222,7 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
   <!-- ══════════════════ CARD PRINCIPAL ══════════════════ -->
   <div class="card">
     <div class="card-header">
-      <span>Mesa de Atención</span>
+      <span>Ventanilla de Atención</span>
       <span id="txt-contador" style="background:rgba(255,255,255,0.18);padding:2px 9px;border-radius:12px;font-size:.68rem;">Registros: 0</span>
     </div>
     <div class="card-body">
@@ -241,7 +266,7 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 
       <!-- PASO INDICADOR -->
       <div class="paso-indicador" id="pasos">
-        <div class="paso activo" id="p1"><span class="num">1</span> Operador Capturista</div>
+        <div class="paso activo" id="p1"><span class="num">1</span> Capturista</div>
         <div class="paso-linea" id="l12"></div>
         <div class="paso" id="p2"><span class="num">2</span> Escanear</div>
         <div class="paso-linea" id="l23"></div>
@@ -250,63 +275,43 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
         <div class="paso" id="p4"><span class="num">4</span> Evidencias</div>
       </div>
 
-      <!-- ── PASO 1: CAPTURISTA ── -->
+      <!-- ── PASO 1: CAPTURISTA (buscador con autocompletado) ── -->
       <div class="form-box" id="bloque-capturista">
-        <label class="lbl" for="capturista">Operador en Mesa:</label>
-        <select id="capturista" class="select-c">
-          <option value="">-- Selecciona el personal asignado --</option>
-          <option>CERVANTES JIMENEZ JOSE ELIAS</option>
-          <option>NOH CRUZ JOSE EDUARDO</option>
-          <option>ESCARCEGA DIAZ MARIA GUADALUPE</option>
-          <option>BARRERA MARTINEZ GUSTAVO</option>
-          <option>CARRASCO GALLARDO STEFANY</option>
-          <option>HERNANDEZ GUEVARA ANDREA</option>
-          <option>MARTINEZ MOISES CELINA</option>
-          <option>GALVEZ GARCIA NESTOR ENRIQUE</option>
-          <option>ORDAZ VERA OSCAR URIEL</option>
-          <option>ORDAZ HERNANDEZ MARIA DEL ROCIO</option>
-          <option>HERNANDEZ HERNANDEZ CLAUDIA LIZ</option>
-          <option>CEDILLO GARCIA MIGUEL</option>
-          <option>MARTINEZ ARELLANO ROSA CARMINA</option>
-          <option>PUENTE MAGAÑA JESUS ALBERTO</option>
-          <option>SANCHEZ BERNABE MARIA GUADALUPE</option>
-          <option>CUEVAS SANCHEZ EMMELY DANIELA</option>
-          <option>ORNELAS HURTADO DANA KARLA</option>
-          <option>POMPA VALDEZ ABRAHAM LEVI</option>
-          <option>QUINTOS HERNANDEZ ELDA BERENICE</option>
-          <option>OLVERA SANCHEZ ANA LAURA</option>
-          <option>MAGAÑA ABURTO MARIA ANGELICA</option>
-          <option>GONZALEZ AVILA BERSAIN</option>
-          <option>SANCHEZ BELTRAN MAYRA SUET</option>
-          <option>LUNA VELAZQUEZ LUCIA</option>
-          <option>RIVERA GONZALEZ ANDREA PATRICIA</option>
-          <option>GONZALEZ LINDA NOHEMI JAZMIN</option>
-          <option>RAMIREZ CRUZ ERICKA YESSENIA</option>
-          <option>MARTINEZ SOSA MICHELLE</option>
-          <option>SILVETI PEREZ ROCIO</option>
-          <option>RAMIREZ CRUZ RUTH PAOLA</option>
-          <option>PACHECO RAMIREZ DULCE JOCABET</option>
-          <option>ESCOBAR NABOR EMMA NAZARAHI</option>
-          <option>LIRA ESPINOZA PATRICIA ALEJANDRA</option>
-          <option>MORALES ESCOBAR JANETH JOSELYN</option>
-          <option>GONZALEZ CLEMENTE LAURA ANDREA</option>
-          <option>GONZALEZ VARGAS GABRIEL YOSEF</option>
-          <option>MARTINEZ SANDOVAL JUAN CARLOS</option>
-          <option>MENDOZA ALVARADO DIANA ARELI</option>
-          <option>PONCE NIEVES BRYAN</option>
-          <option>REYES VAZQUEZ NORMA ANGELICA</option>
-          <option>RUBIO VALADEZ FERNANDA ESTEFANI</option>
-          <option>SALAZAR MARTINEZ GUADALUPE ABIGAIL</option>
-        </select>
-      </div>
+        <label class="lbl">Capturista en Ventanilla:</label>
 
-      <!-- ── CUPO / CÓDIGO DE EMPLEADO ── -->
-      <div class="form-box" id="bloque-cupo">
-        <label class="lbl" for="cupo">CUPO / Código de Empleado:</label>
-        <input type="text" id="cupo" class="main-input"
-               placeholder="Ingresa tu número de CUPO"
-               maxlength="20"
-               style="text-transform:none;letter-spacing:.5px">
+        <div class="cap-wrap" id="cap-wrap">
+
+          <!-- Buscador -->
+          <div class="cap-input-row">
+            <span class="cap-icon">🔍</span>
+            <input type="text" id="cap-search"
+                   class="cap-search"
+                   placeholder="Escribe apellido o nombre…"
+                   autocomplete="off" spellcheck="false"
+                   inputmode="text">
+          </div>
+
+          <!-- Dropdown de resultados -->
+          <div class="cap-dropdown" id="cap-dropdown"></div>
+
+        </div>
+
+        <!-- Tarjeta del capturista seleccionado -->
+        <div class="cap-selected-card" id="cap-selected-card">
+          <div class="cap-sel-info">
+            <div class="cap-sel-name" id="cap-sel-name"></div>
+            <div class="cap-sel-cupo">
+              CUPO:<span id="cap-sel-cupo-val"></span>
+            </div>
+          </div>
+          <button type="button" class="cap-change-btn" id="cap-change-btn">
+            ✏ Cambiar
+          </button>
+        </div>
+
+        <!-- Campos hidden — mantienen compatibilidad con todo el JS existente -->
+        <input type="hidden" id="capturista" value="">
+        <input type="hidden" id="cupo" value="">
       </div>
 
       <!-- ── PASO 2: ESCÁNER QR ── -->
@@ -426,6 +431,9 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
       <button type="button" class="btn-cierre" id="btn-descargar">
         📦 GENERAR RESPALDO .ZIP DE EVIDENCIAS
       </button>
+      <button type="button" class="btn-cierre-dia" id="btn-cierre-dia">
+        📋 CIERRE DE DÍA — ENTREGA DE MEDIOS
+      </button>
     </div>
   </div>
 
@@ -520,6 +528,172 @@ function obtenerListaFotos(nivel, esMenor) {
   if (NIVELES_BASICA.has(nivel)) return FOTOS_BASICA;
   return esMenor ? FOTOS_BUEMS_JEF_MENOR : FOTOS_BUEMS_JEF_MAYOR;
 }
+
+/* ══════════════════════════════════════════════════
+   0-B. TABLA CAPTURISTAS  (nombre → CUPO)
+   Fuente: capturista.xlsx — 41 registros activos
+   Formato: { n: "NOMBRE COMPLETO", c: "CUPO" }
+══════════════════════════════════════════════════ */
+const CAPTURISTAS = [
+  { n: "CERVANTES JIMENEZ JOSE ELIAS",                  c: "159415" },
+  { n: "NOH CRUZ JOSE EDUARDO",                         c: "1500585" },
+  { n: "BARRERA MARTINEZ GUSTAVO",                      c: "1500723" },
+  { n: "CARRASCO GALLARDO STEFANY",                     c: "1501080" },
+  { n: "HERNANDEZ GUEVARA ANDREA",                      c: "1501112" },
+  { n: "MARTINEZ MOISES CELINA",                        c: "1501166" },
+  { n: "GALVEZ GARCIA NESTOR ENRIQUE",                  c: "1501193" },
+  { n: "ORDAZ VERA OSCAR URIEL",                        c: "1501604" },
+  { n: "ORDAZ HERNANDEZ MARIA DEL ROCIO",               c: "1501620" },
+  { n: "HERNANDEZ HERNANDEZ CLAUDIA LIZET",             c: "1501623" },
+  { n: "CEDILLO GARCIA MIGUEL",                         c: "1501626" },
+  { n: "MARTINEZ ARELLANO ROSA CARMINA",                c: "1501640" },
+  { n: "PUENTE MAGAÑA JESUS ALBERTO",                   c: "1501644" },
+  { n: "SANCHEZ BERNABE MARIA GUADALUPE BRENDA",        c: "1501974" },
+  { n: "CUEVAS SANCHEZ EMMELY DANIELA",                 c: "1501975" },
+  { n: "ORNELAS HURTADO DANA KARLA",                    c: "1501976" },
+  { n: "POMPA VALDEZ ABRAHAM LEVI",                     c: "1501977" },
+  { n: "QUINTOS HERNANDEZ ELDA BERENICE",               c: "1501981" },
+  { n: "OLVERA SANCHEZ ANA LAURA",                      c: "1501982" },
+  { n: "MAGAÑA ABURTO MARIA ANGELICA",                  c: "1501983" },
+  { n: "GONZALEZ AVILA BERSAIN",                        c: "1501985" },
+  { n: "SANCHEZ BELTRAN MAYRA SUET",                    c: "1501986" },
+  { n: "LUNA VELAZQUEZ LUCIA",                          c: "1501987" },
+  { n: "RIVERA GONZALEZ ANDREA PATRICIA",               c: "1501989" },
+  { n: "GONZALEZ LINDA NOHEMI JAZMIN",                  c: "1501991" },
+  { n: "RAMIREZ CRUZ ERICKA YESSENIA",                  c: "1502176" },
+  { n: "MARTINEZ SOSA MICHELLE",                        c: "1502177" },
+  { n: "SILVETI PEREZ ROCIO",                           c: "1502178" },
+  { n: "RAMIREZ CRUZ RUTH PAOLA",                       c: "1502179" },
+  { n: "PACHECO RAMIREZ DULCE JOCABET",                 c: "1502180" },
+  { n: "ESCOBAR NABOR EMMA NAZARAHI",                   c: "1502210" },
+  { n: "LIRA ESPINOZA PATRICIA ALEJANDRA",              c: "1502220" },
+  { n: "MORALES ESCOBAR JANETH JOSELYN",                c: "1502229" },
+  { n: "GONZALEZ CLEMENTE LAURA ANDREA",                c: "1502290" },
+  { n: "GONZALEZ VARGAS GABRIEL YOSEF ARNALDO",         c: "1502291" },
+  { n: "MARTINEZ SANDOVAL JUAN CARLOS",                 c: "1502292" },
+  { n: "MENDOZA ALVARADO DIANA ARELI",                  c: "1502293" },
+  { n: "PONCE NIEVES BRYAN",                            c: "1502294" },
+  { n: "REYES VAZQUEZ NORMA ANGELICA",                  c: "1502295" },
+  { n: "RUBIO VALADEZ FERNANDA ESTEFANIA",              c: "1502296" },
+  { n: "SALAZAR MARTINEZ GUADALUPE ABIGAIL",            c: "1502297" }
+];
+
+// Resalta los tokens coincidentes en el texto del nombre
+function resaltarCoincidencia(texto, query) {
+  if (!query) return texto;
+  const tokens = norm(query).split(/\s+/).filter(Boolean);
+  let result = texto;
+  tokens.forEach(tok => {
+    const re = new RegExp('(' + tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    result = result.replace(re, '<mark>$1</mark>');
+  });
+  return result;
+}
+
+// ── Lógica del buscador ──────────────────────────────────────────────────────
+(function initCapturistaBuscador() {
+  const searchEl   = document.getElementById('cap-search');
+  const dropdown   = document.getElementById('cap-dropdown');
+  const cardEl     = document.getElementById('cap-selected-card');
+  const selName    = document.getElementById('cap-sel-name');
+  const selCupo    = document.getElementById('cap-sel-cupo-val');
+  const changeBtn  = document.getElementById('cap-change-btn');
+  const hidNombre  = document.getElementById('capturista');
+  const hidCupo    = document.getElementById('cupo');
+
+  function cerrarDropdown() {
+    dropdown.classList.remove('open');
+    dropdown.innerHTML = '';
+  }
+
+  function seleccionarCapturista(item) {
+    // Rellenar hidden inputs (compatibilidad total con el resto del JS)
+    hidNombre.value = item.n;
+    hidCupo.value   = item.c;
+    // Guardar en localStorage para persistir durante la jornada
+    try { localStorage.setItem('sare1507_cap', JSON.stringify({n: item.n, c: item.c})); } catch(e) {}
+    // Mostrar tarjeta
+    selName.textContent  = item.n;
+    selCupo.textContent  = item.c;
+    cardEl.classList.add('visible');
+    // Limpiar y ocultar buscador
+    searchEl.value = '';
+    searchEl.classList.remove('has-value');
+    cerrarDropdown();
+    document.getElementById('cap-wrap').style.display = 'none';
+    // Avanzar paso
+    setPasoSafe(2);
+  }
+
+  function mostrarDropdown(query) {
+    const q = norm(query.trim());
+    if (!q) { cerrarDropdown(); return; }
+    const tokens = q.split(/\s+/).filter(Boolean);
+    const matches = CAPTURISTAS.filter(c =>
+      tokens.every(tok => norm(c.n).includes(tok))
+    ).slice(0, 8); // máximo 8 resultados visibles
+
+    if (!matches.length) {
+      dropdown.innerHTML = '<div class="cap-no-results">Sin coincidencias</div>';
+    } else {
+      dropdown.innerHTML = matches.map((c, i) =>
+        '<div class="cap-option" data-idx="' + i + '">' +
+          '<span class="cap-option-name">' + resaltarCoincidencia(c.n, query.trim()) + '</span>' +
+          '<span class="cap-option-cupo">' + c.c + '</span>' +
+        '</div>'
+      ).join('');
+      // Asociar cada opción al item original
+      dropdown.querySelectorAll('.cap-option').forEach((el, i) => {
+        el.addEventListener('mousedown', e => {
+          e.preventDefault(); // evita perder focus antes del click
+          seleccionarCapturista(matches[i]);
+        });
+        el.addEventListener('touchend', e => {
+          e.preventDefault();
+          seleccionarCapturista(matches[i]);
+        });
+      });
+    }
+    dropdown.classList.add('open');
+  }
+
+  searchEl.addEventListener('input', () => {
+    mostrarDropdown(searchEl.value);
+    searchEl.classList.toggle('has-value', searchEl.value.length > 0);
+  });
+
+  searchEl.addEventListener('focus', () => {
+    if (searchEl.value.trim()) mostrarDropdown(searchEl.value);
+  });
+
+  searchEl.addEventListener('blur', () => {
+    // Pequeño delay para permitir el click en las opciones
+    setTimeout(cerrarDropdown, 200);
+  });
+
+  // Cerrar dropdown al tocar fuera
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#cap-wrap')) cerrarDropdown();
+  });
+
+  // Botón "Cambiar" — vuelve al buscador
+  changeBtn.addEventListener('click', () => {
+    hidNombre.value = '';
+    hidCupo.value   = '';
+    try { localStorage.removeItem('sare1507_cap'); } catch(e) {}
+    cardEl.classList.remove('visible');
+    document.getElementById('cap-wrap').style.display = '';
+    searchEl.value = '';
+    searchEl.classList.remove('has-value');
+    searchEl.focus();
+    setPasoSafe(1);
+  });
+
+  // setPasoSafe: llama a setPaso solo si ya está definida
+  function setPasoSafe(n) {
+    if (typeof setPaso === 'function') setPaso(n);
+  }
+})();
 
 /* ══════════════════════════════════════════════════
    1. CARGA DEL NOMINAL
@@ -1167,6 +1341,8 @@ document.getElementById('btn-descargar').addEventListener('click', async () => {
    18. RESET
 ══════════════════════════════════════════════════ */
 function resetearFormulario() {
+  // Limpia solo los datos del beneficiario actual
+  // El capturista seleccionado se MANTIENE durante toda la jornada
   document.getElementById('curp-input').value = '';
   document.getElementById('panel-res').style.display = 'none';
   document.getElementById('seccion-fotos').style.display = 'none';
@@ -1175,14 +1351,22 @@ function resetearFormulario() {
   imagenesComprimidas = {};
   beneficiarioActual = null;
   document.getElementById('rad-menor').checked = true;
-  document.getElementById('cupo').value = '';
+  // NO se resetea #cupo ni #capturista — persisten por localStorage
   setPaso(2);
   document.getElementById('bloque-escaner').scrollIntoView({behavior:'smooth', block:'start'});
 }
 document.getElementById('btn-limpiar').addEventListener('click', () => {
   resetearFormulario();
+  // Limpieza completa incluyendo capturista (cambio de turno / capturista)
   document.getElementById('capturista').value = '';
   document.getElementById('cupo').value = '';
+  try { localStorage.removeItem('sare1507_cap'); } catch(e) {}
+  const _capCard = document.getElementById('cap-selected-card');
+  const _capWrap = document.getElementById('cap-wrap');
+  const _capSearch = document.getElementById('cap-search');
+  if (_capCard)   _capCard.classList.remove('visible');
+  if (_capWrap)   _capWrap.style.display = '';
+  if (_capSearch) { _capSearch.value = ''; _capSearch.classList.remove('has-value'); }
   setPaso(1);
 });
 
@@ -1347,6 +1531,76 @@ document.getElementById('panel-res').style.display = 'none';
 
 document.getElementById('capturista').addEventListener('change', () => {
   if (document.getElementById('capturista').value) setPaso(2); else setPaso(1);
+});
+
+// ── Restaurar capturista desde localStorage ──────────────────────────────────
+(function restaurarCapturista() {
+  try {
+    const raw = localStorage.getItem('sare1507_cap');
+    if (!raw) return;
+    const cap = JSON.parse(raw);
+    if (!cap.n || !cap.c) return;
+    // Rellenar hidden inputs
+    document.getElementById('capturista').value = cap.n;
+    document.getElementById('cupo').value       = cap.c;
+    // Actualizar UI del buscador
+    const selName = document.getElementById('cap-sel-name');
+    const selCupo = document.getElementById('cap-sel-cupo-val');
+    const cardEl  = document.getElementById('cap-selected-card');
+    const capWrap = document.getElementById('cap-wrap');
+    if (selName)  selName.textContent  = cap.n;
+    if (selCupo)  selCupo.textContent  = cap.c;
+    if (cardEl)   cardEl.classList.add('visible');
+    if (capWrap)  capWrap.style.display = 'none';
+    setPaso(2);
+    console.log('[SARE1507] Capturista restaurado desde localStorage:', cap.n);
+  } catch(e) {
+    console.warn('[SARE1507] Error al restaurar capturista:', e.message);
+  }
+})();
+
+/* ══════════════════════════════════════════════════
+   21. CIERRE DE DÍA — ENTREGA DE MEDIOS
+══════════════════════════════════════════════════ */
+
+// Construye el texto del reporte de cierre de jornada
+function construirReporteCierreDia() {
+  const cap  = document.getElementById('capturista').value || 'No asignado';
+  const cupo = document.getElementById('cupo').value       || '—';
+  const total = listadoHistorico.length;
+  const hoy   = new Date();
+  const dd    = String(hoy.getDate()).padStart(2, '0');
+  const mm    = String(hoy.getMonth() + 1).padStart(2, '0');
+  const aaaa  = hoy.getFullYear();
+  return 'Reporte entrega de medios:\n'
+    + '\u2022 Fecha: '          + dd + '/' + mm + '/' + aaaa + '\n'
+    + '\u2022 Nombre: '         + cap                        + '\n'
+    + '\u2022 Cupo: '           + cupo                       + '\n'
+    + '\u2022 TOTAL: '          + total                      + '\n'
+    + '\u2022 Captura en APK: \n'
+    + '\u2022 Captura en web: ' + total                      + '\n'
+    + '\u2022 Capturista: '     + cap;
+}
+
+document.getElementById('btn-cierre-dia').addEventListener('click', async () => {
+  const cap = document.getElementById('capturista').value;
+  if (!cap) {
+    toastShow('⚠ Selecciona el capturista antes de generar el reporte');
+    return;
+  }
+  const texto = construirReporteCierreDia();
+
+  // Intento 1: navigator.share nativo
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Cierre de Día SARE 1507', text: texto });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
+  }
+  // Fallback: wa.me
+  window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
 });
 </script>
 
