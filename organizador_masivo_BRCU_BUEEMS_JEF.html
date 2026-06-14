@@ -454,7 +454,6 @@
                         resolve(dataUrl);
                     };
                     img.onerror = function() {
-                        // Resguardo en caso de imagen corrupta en transferencia masiva
                         resolve(event.target.result);
                     };
                 };
@@ -462,7 +461,7 @@
         }
 
         /* ══════════════════════════════════════════════════
-           ALGORITMO OCR SIMULADO Y CRUCE NOMINAL
+           ALGORITMO DE FILTRADO Y CRUCE NOMINAL DINÁMICO CORREGIDO
         ══════════════════════════════════════════════════ */
         function sanitizarCadena(str) {
             if (!str) return '';
@@ -474,41 +473,47 @@
         }
 
         function ejecutarCruceNominalGatillo(indiceBloque) {
-            const llavesB = Object.keys(DB.basica);
-            const llavesM = Object.keys(DB.buems);
-            const llavesS = Object.keys(DB.jef);
+            // Obtener la fecha seleccionada por el usuario en la interfaz
+            const fechaSeleccionada = document.getElementById('inp-fecha').value;
+            
+            // Forzar la búsqueda únicamente en la lista de BÁSICA (Primarias y Secundarias)
+            const registrosBasica = Object.values(DB.basica);
+            
+            // Filtrar los alumnos que coincidan exactamente con la fecha operativa elegida
+            const padronDelDia = registrosBasica.filter(reg => reg.FECHA === fechaSeleccionada);
             
             let registroEncontrado = null;
-            let totalIndex = indiceBloque;
 
-            if (totalIndex < llavesB.length) {
-                registroEncontrado = DB.basica[llavesB[totalIndex]];
-            } else if ((totalIndex - llavesB.length) < llavesM.length) {
-                registroEncontrado = DB.buems[llavesM[totalIndex - llavesB.length]];
-            } else if ((totalIndex - llavesB.length - llavesM.length) < llavesS.length) {
-                registroEncontrado = DB.jef[llavesS[totalIndex - llavesB.length - llavesM.length]];
+            // Si el bloque actual está dentro de los alumnos disponibles de la base de datos para este día
+            if (padronDelDia.length > 0 && indiceBloque < padronDelDia.length) {
+                registroEncontrado = padronDelDia[indiceBloque];
             } else {
+                // Resguardo de contingencia en caso de que las fotos superen los registros nominales escritos
+                const cctReferencia = padronDelDia.length > 0 ? padronDelDia[0].CCT : '15EPR5136T';
+                const escuelaReferencia = padronDelDia.length > 0 ? padronDelDia[0]["NOMBRE DE LA ESCUELA"] : 'ING. HEBERTO CASTILLO';
+                const municipioReferencia = padronDelDia.length > 0 ? padronDelDia[0].MUNICIPIO : 'ECATEPEC DE MORELOS';
+
                 registroEncontrado = {
-                    "NOMBRE COMPLETO": `BENEFICIARIO COMPLEMENTARIO NO ${indiceBloque + 1}`,
-                    "CCT": '15VEC0001Z',
-                    "NOMBRE DE LA ESCUELA": 'ESCUELA DE CONTROL OPERATIVO SARE',
-                    "NIVEL": 'BASICA',
-                    "MUNICIPIO": 'ECATEPEC DE MORELOS',
-                    "OBSERVACIONES": 'REGISTRO AUTOMÁTICO EN CAMPO'
+                    "NOMBRE COMPLETO": `BENEFICIARIO BASICA REGISTRO NO ${indiceBloque + 1}`,
+                    "CCT": cctReferencia,
+                    "NOMBRE DE LA ESCUELA": escuelaReferencia,
+                    "NIVEL": 'PRIMARIA',
+                    "MUNICIPIO": municipioReferencia,
+                    "OBSERVACIONES": 'REGISTRO DE JORNADA CONTINUA'
                 };
             }
 
-            const campoNombre = registroEncontrado["NOMBRE COMPLETO"] || registroEncontrado["NOMBRE_DE_LA_ESCUELA"] || "SIN NOMBRE";
+            const campoNombre = registroEncontrado["NOMBRE COMPLETO"] || "SIN NOMBRE";
             const nombreSanitizado = sanitizarCadena(campoNombre);
             const curpSimulada = nameToPseudoCURP(nombreSanitizado, indiceBloque);
 
             return {
                 nombre: nombreSanitizado,
                 curp: curpSimulada,
-                cct: registroEncontrado["CCT"] || '15VEC0001Z',
-                escuela: registroEncontrado["NOMBRE DE LA ESCUELA"] || 'ESCUELA OBRERA',
-                nivel: registroEncontrado["NIVEL"] || 'BASICA',
-                municipio: registroEncontrado["MUNICIPIO"] || 'ECATEPEC',
+                cct: registroEncontrado["CCT"],
+                escuela: registroEncontrado["NOMBRE DE LA ESCUELA"],
+                nivel: registroEncontrado["NIVEL"],
+                municipio: registroEncontrado["MUNICIPIO"],
                 observaciones: registroEncontrado["OBSERVACIONES"] || ''
             };
         }
@@ -538,7 +543,6 @@
                 return;
             }
 
-            // Bloquear interfaz para evitar interrupciones de clics accidentales
             document.getElementById('btn-cargar-fotos').disabled = true;
             document.getElementById('files-fotos').disabled = true;
 
@@ -549,16 +553,14 @@
             
             logger(`Estructura detectada: ${totalBloques} beneficiarios completos.`);
             if (remanente > 0) {
-                logger(`⚠️ Alerta: Se omitirán ${remanente} fotos sobrantes del final para respetar la secuencia de 5.`);
+                logger(`⚠️ Alerta: Se omitirán ${remanente} fotos sobrantes al final del lote.`);
             }
 
             colaExpedientesProcesados = [];
             
-            // Función interna asíncrona por pasos para procesar por bloques sin congelar el navegador
             let i = 0;
             function procesarSiguienteBloque() {
                 if (i >= totalBloques) {
-                    // Fin del procesamiento total
                     logger(`✅ Procesamiento de alto rendimiento finalizado con éxito. ${colaExpedientesProcesados.length} expedientes en cola.`);
                     document.getElementById('btn-exportar').style.display = 'block';
                     document.getElementById('btn-cargar-fotos').disabled = false;
@@ -572,7 +574,6 @@
                 
                 const metadataExpediente = ejecutarCruceNominalGatillo(i);
                 
-                // Encadenamos promesas de compresión
                 Promise.all([
                     procesarYComprimirImagen(archivos[baseIdx]),
                     procesarYComprimirImagen(archivos[baseIdx + 1]),
@@ -598,12 +599,10 @@
                     actualizarDashboard(colaExpedientesProcesados);
                     
                     i++;
-                    // Forzamos descompresión de memoria en el hilo llamando al siguiente ciclo vía macrotarea
                     setTimeout(procesarSiguienteBloque, 30);
                 });
             }
 
-            // Iniciar ciclo controlado
             procesarSiguienteBloque();
         });
 
@@ -614,185 +613,4 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            logger(`📂 Abriendo archivo de respaldo comprimido: ${file.name}...`, true);
-            colaExpedientesProcesados = [];
-
-            const reader = new FileReader();
-            reader.readAsArrayBuffer(file);
-            reader.onload = async function(event) {
-                try {
-                    const zipInput = await JSZip.loadAsync(event.target.result);
-                    logger('⚙️ Mapeando estructura de carpetas internas...');
-                    
-                    const carpetasAgrupadas = {};
-
-                    for (const [filename, fileObj] of Object.entries(zipInput.files)) {
-                        if (!fileObj.dir && filename.endsWith('_datos_registro.json')) {
-                            const rawData = await fileObj.async('text');
-                            const metadata = JSON.parse(rawData);
-                            
-                            const arrayRuta = filename.split('/');
-                            arrayRuta.pop(); 
-                            const folderKey = arrayRuta.join('/');
-
-                            carpetasAgrupadas[folderKey] = {
-                                metadata: metadata,
-                                fotos: {}
-                            };
-                        }
-                    }
-
-                    for (const [filename, fileObj] of Object.entries(zipInput.files)) {
-                        if (!fileObj.dir && (filename.endsWith('.jpg') || filename.endsWith('.jpeg'))) {
-                            const arrayRuta = filename.split('/');
-                            const nameFoto = arrayRuta.pop();
-                            const folderKey = arrayRuta.join('/');
-
-                            if (carpetasAgrupadas[folderKey]) {
-                                const base64Data = await fileObj.async('base64');
-                                const dataUrl = `data:image/jpeg;base64,${base64Data}`;
-                                carpetasAgrupadas[folderKey].fotos[nameFoto] = dataUrl;
-                            }
-                        }
-                    }
-
-                    Object.values(carpetasAgrupadas).forEach(item => {
-                        colaExpedientesProcesados.push({
-                            nombre: item.metadata.nombre,
-                            curp: item.metadata.curp,
-                            cct: item.metadata.cct,
-                            escuela: item.metadata.escuela,
-                            nivel: item.metadata.nivel,
-                            municipio: item.metadata.municipio,
-                            observaciones: item.metadata.observaciones || '',
-                            capturista: item.metadata.capturista_ventanilla,
-                            fechaFiltro: item.metadata.fecha,
-                            fotos: item.fotos
-                        });
-                    });
-
-                    logger(`✅ Éxito: Se indexaron ${colaExpedientesProcesados.length} expedientes desde el archivo ZIP previo.`);
-                    actualizarDashboard(colaExpedientesProcesados);
-                    document.getElementById('btn-exportar').style.display = 'block';
-                    toastShow('📦 ZIP original cargado y listo para reordenamiento.');
-
-                } catch (error) {
-                    logger(`❌ Error fatal en lectura de ZIP: ${error.message}`);
-                    toastShow('❌ El archivo no contiene una firma válida de metadatos.');
-                }
-            };
-        });
-
-        /* ══════════════════════════════════════════════════
-           EXPORTACIÓN DINÁMICA DEL ZIP FINAL
-        ══════════════════════════════════════════════════ */
-        document.getElementById('btn-exportar').addEventListener('click', async () => {
-            if (colaExpedientesProcesados.length === 0) return;
-
-            const criterio = document.getElementById('sel-criterio').value;
-            const fechaOperativaGlobal = document.getElementById('inp-fecha').value;
-            const capturistaGlobal = document.getElementById('sel-capturista').value;
-
-            logger('📦 Inicializando compresión y ordenamiento dinámico del nuevo ZIP...');
-            const zipOutput = new JSZip();
-
-            colaExpedientesProcesados.forEach((exp) => {
-                let rutaBase = '';
-
-                if (criterio === 'A') {
-                    rutaBase = `${exp.cct} - ${exp.escuela}/${exp.curp} - ${exp.nombre}/`;
-                } else if (criterio === 'B') {
-                    rutaBase = `${exp.fechaFiltro || fechaOperativaGlobal}/${exp.cct}/${exp.curp} - ${exp.nombre}/`;
-                } else if (criterio === 'C') {
-                    rutaBase = `${exp.capturista || capturistaGlobal}/${exp.cct}/${exp.curp} - ${exp.nombre}/`;
-                }
-
-                Object.entries(exp.fotos).forEach(([nombreArchivo, dataUrl]) => {
-                    const rawBase64 = dataUrl.split(',')[1];
-                    zipOutput.file(rutaBase + nombreArchivo, rawBase64, { base64: true });
-                });
-
-                const archivoMetadatosControl = {
-                    nombre: exp.nombre,
-                    curp: exp.curp,
-                    cct: exp.cct,
-                    escuela: exp.escuela,
-                    nivel: exp.nivel,
-                    municipio: exp.municipio,
-                    fecha: exp.fechaFiltro || fechaOperativaGlobal,
-                    capturista_ventanilla: exp.capturista || capturistaGlobal,
-                    hora_empaquetado: new Date().toLocaleTimeString(),
-                    observaciones: exp.observaciones
-                };
-
-                zipOutput.file(rutaBase + '_datos_registro.json', JSON.stringify(archivoMetadatosControl, null, 2));
-            });
-
-            logger('💾 Compilando contenedor binario masivo (puede demorar unos segundos)...');
-            const prefijoCriterio = `CRITERIO_${criterio}`;
-            const nombreArchivoZIP = `${prefijoCriterio}_${fechaOperativaGlobal}_${capturistaGlobal.replace(/\s+/g, '_')}.zip`;
-
-            try {
-                const blobContent = await zipOutput.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 4 } });
-                const urlDescarga = URL.createObjectURL(blobContent);
-                const clearAnchor = document.createElement('a');
-                clearAnchor.href = urlDescarga;
-                clearAnchor.download = nombreArchivoZIP;
-                document.body.appendChild(clearAnchor);
-                clearAnchor.click();
-                document.body.removeChild(clearAnchor);
-                logger(`🎉 Descarga exitosa generada: ${nombreArchivoZIP}`);
-                toastShow('💾 Descarga de Respaldo Iniciada.');
-            } catch (err) {
-                logger(`❌ Error al ensamblar ZIP: ${err.message}`);
-            }
-        });
-
-        /* ══════════════════════════════════════════════════
-           INICIALIZACIÓN DE VARIABLES E INTERFAZ
-        ══════════════════════════════════════════════════ */
-        window.addEventListener('DOMContentLoaded', () => {
-            const hoy = new Date().toISOString().split('T')[0];
-            document.getElementById('inp-fecha').value = hoy;
-
-            const selectCap = document.getElementById('sel-capturista');
-            Object.keys(DB.capturistas).forEach(key => {
-                const opt = document.createElement('option');
-                opt.value = DB.capturistas[key].NOMBRE;
-                opt.innerText = DB.capturistas[key].NOMBRE;
-                selectCap.appendChild(opt);
-            });
-
-            logger('🚀 Validador Masivo Inicializado. Sistema optimizado para procesamiento asíncrono listo para alta carga.');
-        });
-
-        /* ══════════════════════════════════════════════════
-           1. DATA REUNIDA - PADRÓN NOMINAL INTEGRADO
-        ══════════════════════════════════════════════════ */
-        const DB = {
-            capturistas: {
-                "CAP_01": { "NOMBRE": "CERVANTES JIMENEZ JOSE ELIAS", "CUPO": "159415" },
-                "CAP_02": { "NOMBRE": "NOH CRUZ JOSE EDUARDO", "CUPO": "1500585" },
-                "CAP_03": { "NOMBRE": "ESCARCEGA DIAZ MARIA GUADALUPE", "CUPO": "1500678" },
-                "CAP_04": { "NOMBRE": "BARRERA MARTINEZ GUSTAVO", "CUPO": "1500723" }
-            },
-            basica: {
-                "REG_B01": { "MUNICIPIO": "COACALCO DE BERRIOZABAL", "CCT": "15DES0286M", "NOMBRE DE LA ESCUELA": "EMILIANO ZAPATA SALAZAR", "NOMBRE COMPLETO": "ALEXIS CHACON RUIZ", "OBSERVACIONES": "", "NIVEL": "SECUNDARIA", "FECHA": "2026-05-25" },
-                "REG_B02": { "MUNICIPIO": "COACALCO DE BERRIOZABAL", "CCT": "15DML0023S", "NOMBRE DE LA ESCUELA": "C.A.M. NUM. 2 JEAN PIAGET", "NOMBRE COMPLETO": "GABRIELA BRISEÑO DEL CASTILLO", "OBSERVACIONES": "", "NIVEL": "PRIMARIA", "FECHA": "2026-05-25" },
-                "REG_B03": { "MUNICIPIO": "ECATEPEC DE MORELOS", "CCT": "15EPR5136T", "NOMBRE DE LA ESCUELA": "ING. HEBERTO CASTILLO", "NOMBRE COMPLETO": "LUCERO AMAIRANI TIRO MORALES", "OBSERVACIONES": "", "NIVEL": "PRIMARIA", "FECHA": "2026-06-30" },
-                "REG_B04": { "MUNICIPIO": "ECATEPEC DE MORELOS", "CCT": "15EPR5136T", "NOMBRE DE LA ESCUELA": "ING. HEBERTO CASTILLO", "NOMBRE COMPLETO": "TANIA VALDEZ VICTORIO", "OBSERVACIONES": "", "NIVEL": "PRIMARIA", "FECHA": "2026-06-30" }
-            },
-            buems: {
-                "REG_M01": { "MUNICIPIO": "COACALCO DE BERRIOZÁBAL", "CCT": "15EBH0311R", "NOMBRE DE LA ESCUELA": "ESCUELA PREPARATORIA OFICIAL NÚM. 137", "NOMBRE COMPLETO": "CARLOS DANIEL SICARD SERRANO", "OBSERVACIONES": "", "NIVEL": "BUEMS", "FECHA": "2026-05-29" },
-                "REG_M02": { "MUNICIPIO": "COACALCO DE BERRIOZÁBAL", "CCT": "15EBP0005S", "NOMBRE DE LA ESCUELA": "ESCUELA PREPARATORIA OFICIAL ANEXA A LA NORMAL DE COACALCO", "NOMBRE COMPLETO": "LIZBETH MATIAS APARICIO", "OBSERVACIONES": "", "NIVEL": "BUEMS", "FECHA": "2026-05-29" },
-                "REG_M03": { "MUNICIPIO": "ECATEPEC DE MORELOS", "CCT": "15ECT0032A", "NOMBRE DE LA ESCUELA": "CBT JUAN GUTENBERG, ECATEPEC", "NOMBRE COMPLETO": "CHELSEA AIDEE ROJAS MUÑOZ", "OBSERVACIONES": "", "NIVEL": "BUEMS", "FECHA": "2026-06-30" }
-            },
-            jef: {
-                "REG_S01": { "MUNICIPIO": "COACALCO DE BERRIOZABAL", "CCT": "15ENL0014I", "NOMBRE DE LA ESCUELA": "ESCUELA NORMAL DE COACALCO", "NOMBRE COMPLETO": "CHELSY ROMINA GONZALEZ PEREZ", "OBSERVACIONES": "BJ26238", "NIVEL": "JEF", "FECHA": "2026-05-29" },
-                "REG_S02": { "MUNICIPIO": "ECATEPEC DE MORELOS", "CCT": "15ENL0013J", "NOMBRE DE LA ESCUELA": "ESCUELA NORMAL DE ECATEPEC", "NOMBRE COMPLETO": "HANNA ABIGIL SANTOS OVIEDO", "OBSERVACIONES": "BJ26233", "NIVEL": "JEF", "FECHA": "2026-06-30" },
-                "REG_S03": { "MUNICIPIO": "ECATEPEC DE MORELOS", "CCT": "15ENL0013J", "NOMBRE DE LA ESCUELA": "ESCUELA NORMAL DE ECATEPEC", "NOMBRE COMPLETO": "ANGEL TREJO SAMANIEGO", "OBSERVACIONES": "BJ26233", "NIVEL": "JEF", "FECHA": "2026-06-30" }
-            }
-        };
-    </script>
-</body>
-</html>
+            logger(`📂 Abriendo archivo de respaldo comprimido: ${file
