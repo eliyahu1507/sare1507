@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SARE 1507 — Capturista v2</title>
+<title>JOSE ELIAS CERVANTES JIMENES-ENLACE INFORMATICO EN SARE 1507 — Capturista v3.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -213,7 +213,7 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
       </div>
       <div id="reloj">00:00:00</div>
     </div>
-    <h1 class="tit">Módulo de Captura · Evidencias Fotográficas v2</h1>
+    <h1 class="tit">Módulo de Captura · Evidencias Fotográficas v3.2</h1>
   </div>
 </header>
 
@@ -391,13 +391,13 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
         <div class="progreso-fotos"><div class="progreso-barra" id="progreso-barra" style="width:0%"></div></div>
         <div class="progreso-texto" id="progreso-texto">0 / 0 fotografías capturadas</div>
 
-        <button type="button" class="btn-guardar" id="btn-archivar">
-          💾 CONFIRMAR Y ARCHIVAR EXPEDIENTE
-        </button>
-        
         <button type="button" class="btn-whatsapp" id="btn-whatsapp">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12.031 6.172c-3.313 0-6.001 2.688-6.001 6.001 0 1.055.275 2.083.801 2.986l-0.852 3.111 3.189-0.835c.875.477 1.861.728 2.873.728h0.003c3.313 0 6.001-2.688 6.001-6.001 0-1.6-0.627-3.104-1.767-4.237-1.133-1.14-2.646-1.767-4.243-1.767zM12.031 18.064c-0.899 0-1.782-0.242-2.551-0.697l-0.183-0.108-1.902 0.499 0.508-1.854-0.119-0.188c-0.501-0.789-0.765-1.697-0.765-2.624 0-2.753 2.239-4.992 4.993-4.992 1.332 0 2.584 0.519 3.527 1.462 0.943 0.943 1.462 2.195 1.461 3.527-0.001 2.753-2.24 4.992-4.993 4.992zM15.432 14.679c-0.146-0.073-0.864-0.426-0.998-0.474-0.134-0.048-0.231-0.073-0.328 0.073-0.097 0.146-0.377 0.474-0.462 0.571-0.085 0.097-0.17 0.109-0.316 0.036-0.146-0.073-0.617-0.228-1.176-0.725-0.435-0.387-0.728-0.865-0.814-1.012-0.085-0.146-0.009-0.225 0.064-0.298 0.066-0.066 0.146-0.17 0.219-0.256 0.073-0.085 0.097-0.146 0.146-0.244 0.049-0.097 0.024-0.183-0.012-0.256s-0.328-0.79-0.45-1.097c-0.119-0.295-0.24-0.256-0.328-0.256-0.085-0.001-0.183-0.001-0.28-0.001-0.097 0-0.256 0.036-0.39 0.183-0.134 0.146-0.511 0.499-0.511 1.217s0.523 1.411 0.596 1.509c0.073 0.097 1.031 1.574 2.497 2.206 0.349 0.15 0.622 0.239 0.835 0.306 0.351 0.111 0.671 0.095 0.923 0.058 0.282-0.042 0.864-0.353 0.986-0.694 0.122-0.341 0.122-0.634 0.085-0.694-0.036-0.06-0.134-0.097-0.28-0.17z"/></svg>
           COMPARTIR POR WHATSAPP
+        </button>
+
+        <button type="button" class="btn-guardar" id="btn-archivar">
+          💾 CONFIRMAR Y ARCHIVAR EXPEDIENTE
         </button>
       </div>
 
@@ -463,7 +463,7 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 </div>
 
 
-<footer>Oficina Regional <strong>SARE 1507 Ecatepec</strong> · Sistema de Evidencias v2.0</footer>
+<footer>Oficina Regional <strong>SARE 1507 Ecatepec</strong> · Sistema de Evidencias v3.2</footer>
 <div id="toast"></div>
 
 <!-- ══════════════════ NOMINAL DATA ══════════════════
@@ -488,18 +488,19 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 ══════════════════════════════════════════════════ */
 
 // BÁSICA (Rita Cetina): Preescolar, Primaria, Secundaria
-// Siempre 4 fotos, siempre tutor, sin foto de CURP
+// 5 fotos: CURP como gatillo + tutor
 const FOTOS_BASICA = [
-  { id:"f1", label:"1. Acuse lleno y firmado" },
-  { id:"f2", label:"2. Identificación del tutor — Anverso" },
-  { id:"f3", label:"3. Identificación del tutor — Reverso" },
-  { id:"f4", label:"4. Beneficiario/a con sobre de tarjeta e identificación del tutor" }
+  { id:"f1", label:"1. CURP del Becario/a" },
+  { id:"f2", label:"2. Acuse lleno y firmado" },
+  { id:"f3", label:"3. Identificación del tutor — Anverso" },
+  { id:"f4", label:"4. Identificación del tutor — Reverso" },
+  { id:"f5", label:"5. Beneficiario/a con sobre de tarjeta e identificación del tutor" }
 ];
 
 // BUEMS / JEF — Menor de edad: 5 fotos con CURP y tutor
 const FOTOS_BUEMS_JEF_MENOR = [
-  { id:"f1", label:"1. Acuse lleno y firmado" },
-  { id:"f2", label:"2. CURP del Becario/a" },
+  { id:"f1", label:"1. CURP del Becario/a" },
+  { id:"f2", label:"2. Acuse lleno y firmado" },
   { id:"f3", label:"3. Identificación de la madre, padre, tutora o tutor — Anverso" },
   { id:"f4", label:"4. Identificación de la madre, padre, tutora o tutor — Reverso" },
   { id:"f5", label:"5. Beneficiario con sobre + madre/padre/tutor con identificación oficial" }
@@ -507,8 +508,8 @@ const FOTOS_BUEMS_JEF_MENOR = [
 
 // BUEMS / JEF — Mayor de edad: 5 fotos con CURP y del estudiante
 const FOTOS_BUEMS_JEF_MAYOR = [
-  { id:"f1", label:"1. Acuse lleno y firmado" },
-  { id:"f2", label:"2. CURP del Becario/a" },
+  { id:"f1", label:"1. CURP del Becario/a" },
+  { id:"f2", label:"2. Acuse lleno y firmado" },
   { id:"f3", label:"3. Identificación del estudiante — Anverso" },
   { id:"f4", label:"4. Identificación del estudiante — Reverso" },
   { id:"f5", label:"5. Beneficiario/a sosteniendo sobre de tarjeta e identificación oficial" }
@@ -820,6 +821,9 @@ let imagenesComprimidas = {};
 let beneficiarioActual = null;
 let esMenorActual = true;
 let _rowsActuales = [];
+
+// Contador secuencial para identificar expedientes en WhatsApp (privacidad)
+let contadorExpediente = 1;
 
 /* ══════════════════════════════════════════════════
    4. RELOJ
@@ -1205,37 +1209,27 @@ function generarCamposFotos(nivel, esMenor) {
 }
 
 /* ══════════════════════════════════════════════════
-   14. COMPRESOR (1600px / 0.92 JPEG — ALTA CALIDAD)
+   14. LECTOR DE FOTO (CALIDAD ORIGINAL — SIN COMPRESIÓN)
+   Se lee el archivo directamente con FileReader.readAsDataURL
+   y se almacena en imagenesComprimidas conservando la imagen
+   tal como sale de la cámara del dispositivo.
 ══════════════════════════════════════════════════ */
 function comprimirFoto(fotoId) {
   const input = document.getElementById('inp-' + fotoId);
   if (!input.files || !input.files[0]) return;
   const reader = new FileReader();
   reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const MAX = 1600;
-      let w = img.width, h = img.height;
-      if (w > h ? w > MAX : h > MAX) {
-        if (w > h) { h = Math.round(h * MAX/w); w = MAX; }
-        else       { w = Math.round(w * MAX/h); h = MAX; }
-      }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);  // Alta calidad
-      imagenesComprimidas[fotoId] = dataUrl;
-      document.getElementById('prev-' + fotoId).src = dataUrl;
-      document.getElementById('prev-' + fotoId).style.display = 'block';
-      document.getElementById('box-' + fotoId).classList.add('con-foto');
-      document.getElementById('box-' + fotoId).querySelector('.btn-disparar').style.display = 'none';
-      const nivel = mapNivelParaFotos(
-        beneficiarioActual ? beneficiarioActual.prog : 'buems',
-        beneficiarioActual ? beneficiarioActual.nivelField : 'SECUNDARIA'
-      );
-      actualizarProgreso(obtenerListaFotos(nivel, esMenorActual).length);
-    };
-    img.src = e.target.result;
+    const dataUrl = e.target.result;
+    imagenesComprimidas[fotoId] = dataUrl;
+    document.getElementById('prev-' + fotoId).src = dataUrl;
+    document.getElementById('prev-' + fotoId).style.display = 'block';
+    document.getElementById('box-' + fotoId).classList.add('con-foto');
+    document.getElementById('box-' + fotoId).querySelector('.btn-disparar').style.display = 'none';
+    const nivel = mapNivelParaFotos(
+      beneficiarioActual ? beneficiarioActual.prog : 'buems',
+      beneficiarioActual ? beneficiarioActual.nivelField : 'SECUNDARIA'
+    );
+    actualizarProgreso(obtenerListaFotos(nivel, esMenorActual).length);
   };
   reader.readAsDataURL(input.files[0]);
 }
@@ -1283,6 +1277,7 @@ document.getElementById('btn-archivar').addEventListener('click', () => {
   };
   listadoHistorico.push(expediente);
   actualizarTablaHistorial(expediente);
+  contadorExpediente++;
   toastShow('\u2713 Expediente archivado', 2500);
   resetearFormulario();
 });
@@ -1398,30 +1393,9 @@ function normalizarNombreArchivo(label) {
     .replace(/[úùü]/g,'u').replace(/ñ/g,'n') + '.jpg';
 }
 
-// Construye el texto del reporte (incluye CUPO)
+// Construye el texto del reporte (privacidad: solo identificador secuencial)
 function construirTextoReporte() {
-  const cap    = document.getElementById('capturista').value;
-  const cupo   = document.getElementById('cupo').value.trim();
-  const curp   = document.getElementById('curp-input').value.trim();
-  const nombre = beneficiarioActual ? beneficiarioActual.nombre  : 'Sin nombre';
-  const escuela= beneficiarioActual ? beneficiarioActual.escuela : 'Sin escuela';
-  const cct    = beneficiarioActual ? beneficiarioActual.cct     : '\u2014';
-  const progLabel = beneficiarioActual
-    ? nivelBonito(beneficiarioActual.prog, beneficiarioActual.nivelField) : '\u2014';
-  const totalFotos = Object.keys(imagenesComprimidas).length;
-  const hora  = new Date().toLocaleTimeString('es-MX', { hour12: false });
-  const fecha = new Date().toLocaleDateString('es-MX');
-  return '*SARE 1507 \u2014 Reporte de Atenci\xf3n*\n\n'
-    + '\uD83D\uDC64 Beneficiario: ' + nombre            + '\n'
-    + '\uD83C\uDD94 CURP: '         + curp              + '\n'
-    + '\uD83C\uDFEB Escuela: '      + escuela           + '\n'
-    + '\uD83C\uDFF7 CCT: '          + cct               + '\n'
-    + '\uD83D\uDCDA Programa: '     + progLabel         + '\n'
-    + '\uD83D\uDCCB Capturista: '   + (cap  || 'No asignado') + '\n'
-    + '\uD83C\uDFAB CUPO: '         + (cupo || 'No registrado') + '\n'
-    + '\uD83D\uDCF8 Evidencias: '   + totalFotos + ' foto(s)\n'
-    + '\uD83D\uDD50 Hora: '         + hora + ' \xb7 ' + fecha + '\n'
-    + '\u2705 Estatus: Expediente con evidencias capturadas.';
+  return '*Expediente #' + contadorExpediente + '*';
 }
 
 // Construye array [{label, name, dataUrl, file}] desde imagenesComprimidas
