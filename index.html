@@ -1,127 +1,250 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SARE 1507 Ecatepec - Panel de Operaciones</title>
-    <style>
-        body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
-            text-align: center; 
-            padding: 30px 15px; 
-            background-color: #f9f9f9; 
-            color: #333;
-            margin: 0;
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SARE Panel de Herramientas - Inicio</title>
+<!-- Google Fonts: Montserrat for Headlines, Inter for Body -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#b7ede5",
+                        "on-tertiary-fixed-variant": "#174f49",
+                        "on-surface-variant": "#564242",
+                        "on-secondary-fixed": "#281800",
+                        "primary-container": "#6f1223",
+                        "on-tertiary-container": "#77aca5",
+                        "on-secondary-container": "#785a2a",
+                        "secondary-fixed": "#ffddb0",
+                        "tertiary": "#002825",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#ffb2b6",
+                        "surface": "#f7f9ff",
+                        "on-secondary-fixed-variant": "#5d4214",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f1f4f9",
+                        "surface-dim": "#d7dadf",
+                        "on-background": "#181c20",
+                        "inverse-surface": "#2d3135",
+                        "surface-container-highest": "#e0e3e8",
+                        "primary-fixed": "#ffdada",
+                        "surface-bright": "#f7f9ff",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#40000d",
+                        "tertiary-fixed-dim": "#9bd1c9",
+                        "outline": "#897172",
+                        "tertiary-container": "#00403b",
+                        "on-primary-fixed-variant": "#832231",
+                        "secondary-container": "#fdd499",
+                        "surface-variant": "#e0e3e8",
+                        "background": "#f7f9ff",
+                        "primary": "#4d0011",
+                        "on-surface": "#181c20",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#f87b86",
+                        "error": "#ba1a1a",
+                        "surface-container": "#ebeef3",
+                        "inverse-on-surface": "#eef1f6",
+                        "outline-variant": "#dcc0c0",
+                        "on-tertiary-fixed": "#00201d",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-primary": "#ffb2b6",
+                        "surface-tint": "#a33a46",
+                        "secondary-fixed-dim": "#e8c087",
+                        "on-error-container": "#93000a",
+                        "secondary": "#77592a",
+                        "surface-container-high": "#e5e8ee"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "gutter": "24px",
+                        "base": "8px",
+                        "lg": "40px",
+                        "xl": "64px",
+                        "md": "24px",
+                        "margin": "32px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Montserrat"],
+                        "body-sm": ["Inter"],
+                        "headline-sm": ["Montserrat"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Montserrat"],
+                        "headline-xl": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-md": ["14px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
         }
-        .container {
-            max-width: 550px;
-            margin: 0 auto;
-            background: white;
-            padding: 40px 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            border-top: 6px solid #6A1B29;
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        /* Logo corregido con dimensiones ajustadas */
-        .logo-institucional {
-            width: 250px; 
-            height: auto; 
-            margin-bottom: 20px;
+        .action-card {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
         }
-        h1 { 
-            color: #6A1B29; 
-            margin-bottom: 5px; 
-            font-size: 24px; 
-            font-weight: 700;
+        .action-card:hover {
+            transform: translateY(-4px);
         }
-        .subtitulo {
-            color: #BC955C;
-            font-size: 16px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 0;
-            margin-bottom: 25px;
-        }
-        .instruccion { 
-            color: #555; 
-            font-size: 15px;
-            margin-bottom: 35px; 
-            line-height: 1.5;
-        }
-        .btn { 
-            display: block; 
-            padding: 16px; 
-            margin: 18px 0; 
-            background-color: #6A1B29;
-            color: white; 
-            text-decoration: none; 
-            border-radius: 6px; 
-            font-weight: bold; 
-            font-size: 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: all 0.2s ease;
-        }
-        .btn:hover { 
-            background-color: #4A111B; 
-            transform: translateY(-1px);
-        }
-        .btn-alt { 
-            background-color: #BC955C;
-        }
-        .btn-alt:hover { 
-            background-color: #9E7D4C; 
-        }
-        /* Estilo para la nueva sección de nominal */
-        .box-nominal {
-            margin-top: 25px;
-            padding: 15px;
-            border: 1px solid #BC955C;
-            border-radius: 6px;
-            background-color: #fffaf0;
-        }
-        .link-nominal {
-            color: #6A1B29;
-            text-decoration: none;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .footer {
-            margin-top: 40px;
-            font-size: 12px;
-            color: #999;
-            border-top: 1px solid #eee;
-            padding-top: 15px;
+        .action-card:active {
+            transform: scale(0.98);
         }
     </style>
 </head>
-<body>
-
-    <div class="container">
-        <img class="logo-institucional" src="https://framework-gb.cdn.gob.mx/landing/img/logoheader.svg" alt="Gobierno de México">
-        
-        <h1>José Elías Cervantes Jiménez, Enlace informático en SARE Panel de Herramientas</h1>
-        <div class="subtitulo">SARE 1507 ECATEPEC</div>
-        
-        <p class="instruccion">Bienvenido al sistema de control operativo de becas. Por favor, selecciona la plataforma con la que vas a trabajar:</p>
-        
-        <a class="btn" href="operativo_BRCU_SECUNDARIA_sare1507.html">Operativo BRCU,Secundaria, BUEMS, JEF</a>
-        <a class="btn btn-alt" href="capturista_v3.1.html">Módulo Entrega de Tarjetas- Capturista</a>
-        
-        <div class="box-nominal">
-            <a href="nominal_procesos_anteriores.html" class="link-nominal">
-                📋 Consultar Nominal de Procesos Anteriores
-            </a>
-        </div>
-        
-        <div class="footer">
-            Oficina de Becas - Coordinación Territorial Ecatepec<br>
-            Uso Exclusivo de Personal Autorizado
-        </div>
-    </div>
-
-</body>
-</html>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col font-body-md text-body-md">
+<!-- Top Navigation Bar -->
+<header class="bg-surface-container-lowest border-b border-outline-variant sticky top-0 z-50">
+<nav class="flex justify-between items-center w-full px-margin py-base max-w-screen-xl mx-auto h-16">
+<div class="flex items-center gap-md">
+<span class="font-headline-md text-headline-md font-bold text-primary">SARE Panel de Herramientas</span>
+</div>
+<div class="hidden md:flex items-center gap-gutter h-full">
+<a class="font-label-md text-label-md text-primary border-b-2 border-primary pb-1 h-full flex items-center" href="#">Inicio</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors h-full flex items-center" href="#">Operativo</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors h-full flex items-center" href="#">Consultas</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors h-full flex items-center" href="#">Módulos</a>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">logout</span>
+</button>
+</div>
+</nav>
+</header>
+<main class="flex-grow max-w-screen-xl mx-auto w-full px-margin py-xl">
+<!-- Hero Section -->
+<section class="mb-xl text-center">
+<div class="flex justify-center mb-md">
+<img alt="Escudo Nacional de México" class="h-24 w-auto opacity-80" data-alt="The official Mexican National Seal, the coat of arms featuring an eagle perched on a cactus devouring a snake, rendered in a refined gold and bronze line-art style. The lighting is soft and professional, against a clean white studio background. The aesthetic is institutional, patriotic, and highly dignified, fitting for a high-level government administrative portal." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBruz5a64AuZJa_mRU7pySlakqkmZqKdqKlrtDa-in1FpqfEb_SJDhlmDx9GHyl_r41k2NpzHQxKUjwz0vRvYKgSd6hxKshwxq26gAh0lpE_reZEpOd0nM2DndrGqEThNy1ZNVAtGO4l28TnPvgG8uGQoifxp0abpKHIUovyk9h4E2GQb0VL5ajVuf_1ENNRZg8z2QDkYbsqtZ9jUYYySZC18ZufCwbnZmQyXOe1X_PwgyYySBBbsM9mBJnnoDiJgjXEf-hDN3Fy2pC"/>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-primary mb-xs">José Elías Cervantes Jiménez</h1>
+<p class="font-headline-sm text-headline-sm text-secondary mb-md">Enlace informático — SARE 1507 ECATEPEC</p>
+<div class="max-w-2xl mx-auto">
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+                    Bienvenido al sistema de control operativo de becas. Por favor, selecciona la plataforma con la que vas a trabajar:
+                </p>
+</div>
+</section>
+<!-- Action Cards Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-gutter mt-lg">
+<!-- Card 1: Operativo -->
+<button class="action-card group flex flex-col items-start p-gutter bg-primary-container rounded-xl shadow-sm text-left border border-primary/20">
+<div class="bg-white/10 p-sm rounded-lg mb-md text-white group-hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">dataset</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-white mb-sm">Operativo BRCU</h3>
+<p class="font-body-sm text-body-sm text-white/80 mb-md">Gestión operativa para Secundaria, BUEMS y JEF.</p>
+<div class="mt-auto flex items-center gap-xs text-white font-label-md">
+                    Acceder <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</button>
+<!-- Card 2: Entrega de Tarjetas -->
+<button class="action-card group flex flex-col items-start p-gutter bg-secondary-container rounded-xl shadow-sm text-left border border-on-secondary-container/10">
+<div class="bg-on-secondary-container/10 p-sm rounded-lg mb-md text-on-secondary-container group-hover:bg-on-secondary-container/20 transition-colors">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">credit_card</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-secondary-container mb-sm">Entrega de Tarjetas</h3>
+<p class="font-body-sm text-body-sm text-on-secondary-container/80 mb-md">Módulo especializado para el registro y entrega de plásticos (Capturista).</p>
+<div class="mt-auto flex items-center gap-xs text-on-secondary-container font-label-md">
+                    Iniciar captura <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</button>
+<!-- Card 3: Consultas Anteriores -->
+<button class="action-card group flex flex-col items-start p-gutter bg-surface-container-highest rounded-xl shadow-sm text-left border border-outline-variant">
+<div class="bg-on-surface-variant/10 p-sm rounded-lg mb-md text-on-surface-variant group-hover:bg-on-surface-variant/20 transition-colors">
+<span class="material-symbols-outlined text-4xl">inventory_2</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface-variant mb-sm">Procesos Anteriores</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant/70 mb-md">Consultar nominal y registros de ciclos operativos previos.</p>
+<div class="mt-auto flex items-center gap-xs text-on-surface-variant font-label-md">
+                    Ver histórico <span class="material-symbols-outlined text-sm">history</span>
+</div>
+</button>
+</section>
+<!-- Info Notice -->
+<div class="mt-xl p-md bg-surface-container-low border border-outline-variant rounded-lg flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary">info</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                Sus credenciales de acceso están activas. El sistema cerrará sesión automáticamente tras 20 minutos de inactividad por seguridad institucional.
+            </p>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-low border-t border-outline-variant mt-auto">
+<div class="flex flex-col md:flex-row justify-between items-center w-full px-margin py-md gap-sm max-w-screen-xl mx-auto">
+<div class="flex flex-col items-center md:items-start">
+<span class="font-label-md text-label-md text-on-surface-variant mb-1">© 2024 Oficina de Becas</span>
+<p class="font-body-sm text-body-sm text-secondary">Coordinación Territorial Ecatepec. Uso Exclusivo de Personal Autorizado.</p>
+</div>
+<div class="flex gap-md">
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Privacidad</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Términos</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Soporte Técnico</a>
+</div>
+</div>
+</footer>
+<!-- Interactive Layer: Ripple effect for cards -->
+<script>
+        document.querySelectorAll('.action-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                let x = e.clientX - e.target.getBoundingClientRect().left;
+                let y = e.clientY - e.target.getBoundingClientRect().top;
+                
+                let ripples = document.createElement('span');
+                ripples.style.left = x + 'px';
+                ripples.style.top = y + 'px';
+                ripples.style.position = 'absolute';
+                ripples.style.width = '0';
+                ripples.style.height = '0';
+                ripples.style.background = 'rgba(255,255,255,0.3)';
+                ripples.style.borderRadius = '50%';
+                ripples.style.transform = 'translate(-50%, -50%)';
+                ripples.style.transition = 'width 0.5s, height 0.5s';
+                
+                this.appendChild(ripples);
+                
+                setTimeout(() => {
+                    ripples.style.width = '500px';
+                    ripples.style.height = '500px';
+                }, 10);
+                
+                setTimeout(() => {
+                    ripples.remove();
+                }, 1000);
+            });
+        });
+    </script>
+</body></html>
