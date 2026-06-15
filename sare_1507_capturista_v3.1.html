@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SARE 1507 — Capturista v4.1 Persistente</title>
+<!-- Tu estilo y estructura original se mantienen igual -->
+<script>
+  // --- MOTOR DE PERSISTENCIA V4.1 ---
+  const STORAGE_KEY = 'sare_1507_data_caja';
+
+  function guardarEnLocal(datos) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(datos));
+  }
+
+  function cargarDeLocal() {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  }
+
+  // Sobrescribimos la lógica de tu listado para cargar al inicio
+  window.addEventListener('DOMContentLoaded', () => {
+    const datosRecuperados = cargarDeLocal();
+    if (datosRecuperados.length > 0) {
+      listadoHistorico = datosRecuperados;
+      actualizarUI(); // Asumiendo que esta es tu función de refresco de tabla
+      console.log("Datos recuperados correctamente:", listadoHistorico.length);
+    }
+  });
+
+  // IMPORTANTE: En tu función donde haces listadoHistorico.push(...)
+  // Debes llamar siempre a:
+  // guardarEnLocal(listadoHistorico);
+</script>
+</head>
+<body>
+    <!-- Tu código original aquí -->
+    <script>
+      // Ejemplo de integración en tu función de agregar:
+      function agregarCaptura(registro) {
+          listadoHistorico.push(registro);
+          guardarEnLocal(listadoHistorico); // <-- SE AGREGA ESTO
+          actualizarUI();
+      }
+    </script>
+</body>
+</html>
