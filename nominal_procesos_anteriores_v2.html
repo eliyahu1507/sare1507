@@ -43,7 +43,7 @@
   .stat-card.total { border-color: var(--dorado); } .stat-card.total .numero { color: var(--dorado); }
   .stat-card.basica { border-color: var(--verde); } .stat-card.basica .numero { color: var(--verde); }
   .stat-card.bueems { border-color: var(--azul); } .stat-card.bueems .numero { color: var(--azul); }
-  .stat-card.rezago { border-color: var(--rojo); } .stat-card.rezago .numero { color: var(--rojo); }
+  .stat-card.jef { border-color: var(--alerta); } .stat-card.jef .numero { color: var(--alerta); }
 
   .section-box { background: var(--blanco); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
   .title-section { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; margin-bottom: 15px; color: var(--guinda); }
@@ -91,14 +91,13 @@
 </div>
 
 <div class="container">
-  <div id="loader-db">📥 Descargando e indexando Padrones. Por favor espera...</div>
+  <div id="loader-db">📥 Descargando e indexando Padrones en paralelo. Por favor espera...</div>
 
   <div class="stats-grid">
     <div class="stat-card total"><h3>Total</h3><div class="numero" id="stat-total">0</div></div>
     <div class="stat-card basica"><h3>Básica</h3><div class="numero" id="stat-basica">0</div></div>
     <div class="stat-card bueems"><h3>BUEEMS</h3><div class="numero" id="stat-bueems">0</div></div>
     <div class="stat-card jef"><h3>JEF</h3><div class="numero" id="stat-jef">0</div></div>
-    <div class="stat-card rezago"><h3>Rezago</h3><div class="numero" id="stat-rezago">0</div></div>
   </div>
 
   <div class="section-box">
@@ -142,92 +141,82 @@ actualizarReloj();
 let nominalDatos = [];
 
 function procesarDataCSV(data, nivelConfig) {
-  // Auto-detectar separador: si hay más punto y comas que comas en la primera línea, usar ";"
-  const primeraLinea = data.split('\n')[0] || '';
-  const sep = (primeraLinea.split(';').length > primeraLinea.split(',').length) ? ';' : ',';
-
-  const lineas = Papa.parse(data, { header: true, skipEmptyLines: true, delimiter: sep }).data;
+  const lineas = Papa.parse(data, { header: true, skipEmptyLines: true }).data;
   lineas.forEach(row => {
     const keys = Object.keys(row);
     const getVal = (posiblesNombres) => {
       const key = keys.find(k => posiblesNombres.some(pn => k.toUpperCase().includes(pn)));
-      return key ? (row[key] || '').toString().trim().toUpperCase() : '';
+      return key ? row[key].trim().toUpperCase() : '';
     };
-    const getValRaw = (posiblesNombres) => {
-      const key = keys.find(k => posiblesNombres.some(pn => k.toUpperCase().includes(pn)));
-      return key ? (row[key] || '').toString().trim() : '';
-    };
-
-    // === NOMBRE COMPLETO ===
-    // Formato rezago: columna "NOMBRE COMPLETO"
-    // Formato padrón anterior: nombre + apellidos separados
-    let nombreCompleto = getVal(['NOMBRE COMPLETO']);
-    if (!nombreCompleto) {
-      const nombreBase = getVal(['NOMBRE DEL TUTOR', 'NOMBRE DEL BECARIO', 'NOMBRE']);
-      const ap1 = getVal(['PRIMER APELLIDO', 'APELLIDO PATERNO']);
-      const ap2 = getVal(['SEGUNDO APELLIDO', 'APELLIDO MATERNO']);
-      nombreCompleto = `${nombreBase} ${ap1} ${ap2}`.replace(/\s+/g, ' ').trim();
-    }
-    if (!nombreCompleto) return; // Fila vacía, saltar
-
-    // === CURP (opcional en archivos de rezago) ===
+    
     const curp = getVal(['CURP']);
-
-    // === CAMPOS COMUNES ===
+    if (!curp) return;
+    
+    // Extrayendo el CCT y el MUNICIPIO
     const cct = getVal(['CCT']);
     const mun = getVal(['MUN', 'MUNICIPIO']);
 
-    // === NUEVOS CAMPOS: Fecha de cita y Observaciones ===
-    const fechaCita = getValRaw(['FECHA DE ENTREGA', 'FECHA', 'DIA', 'CITA']);
-    const obs       = getValRaw(['OBSERVACIONES', 'OBS', 'OBSERVACION']);
-    const escuela   = getVal(['NOMBRE DE LA ESCUELA', 'ESCUELA', 'PLANTEL']);
-
-    nominalDatos.push({
-      curp:      curp || '',
-      nivel:     nivelConfig.nombre,
-      rol:       nivelConfig.rol,
-      nombre:    nombreCompleto,
-      proceso:   getVal(['PROCESO']),
-      cct:       cct  || 'N/A',
-      mun:       mun  || 'N/A',
-      fechaCita: fechaCita || '',
-      obs:       obs  || '',
-      escuela:   escuela || ''
+    const nombreBase = getVal(['NOMBRE DEL TUTOR', 'NOMBRE DEL BECARIO', 'NOMBRE']);
+    const ap1 = getVal(['PRIMER APELLIDO', 'APELLIDO PATERNO']);
+    const ap2 = getVal(['SEGUNDO APELLIDO', 'APELLIDO MATERNO']);
+    const nombreCompleto = `${nombreBase} ${ap1} ${ap2}`.replace(/\s+/g, ' ').trim();
+    
+    // Nuevas extracciones flexibles para fechas y observaciones de rezagos
+    const fechaCita = getVal(['FECHA', 'FECHA DE ENTREGA', 'DIA', 'CITA']);
+    const observaciones = getVal(['OBSERVACIONES', 'ESTATUS', 'MOTIVO', 'OBS']);
+    
+    nominalDatos.push({ 
+        curp: curp, 
+        nivel: nivelConfig.nombre, 
+        rol: nivelConfig.rol, 
+        nombre: nombreCompleto, 
+        proceso: getVal(['PROCESO']),
+        cct: cct || 'N/A',
+        mun: mun || 'N/A',
+        fechaCita: fechaCita || 'N/A',
+        observaciones: observaciones || 'N/A'
     });
   });
 }
 
 async function cargarPadrones() {
   const archivos = [
-    { url: 'basica.csv',    config: { nombre: 'BÁSICA',      rol: 'TUTOR'    } },
-    { url: 'bueems.csv',    config: { nombre: 'BUEEMS',      rol: 'BECARIO'  } },
-    { url: 'jef.csv',       config: { nombre: 'JEF',         rol: 'BECARIO'  } },
-    { url: 'bueems_feb.csv',config: { nombre: 'BUEEMS FEB 26', rol: 'BECARIO' } },
-    { url: 'brcu_prim_secu_mayo_junio_2026.csv', config: { nombre: 'REZAGO BRCU PRIMARIA, SECUNDARIA', rol: 'TUTOR'   } },
-    { url: 'bueems_mayo_junio_2026.csv',          config: { nombre: 'REZAGO BUEEMS MAYO-JUNIO 2026',   rol: 'BECARIO' } },
-    { url: 'jef_mayo_junio_2026.csv',             config: { nombre: 'REZAGO JEF MAYO-JUNIO 2026',      rol: 'BECARIO' } }
+      { url: 'basica.csv', config: { nombre: 'BÁSICA', rol: 'TUTOR' } }, 
+      { url: 'bueems.csv', config: { nombre: 'BUEEMS', rol: 'BECARIO' } }, 
+      { url: 'jef.csv', config: { nombre: 'JEF', rol: 'BECARIO' } }, 
+      { url: 'bueems_feb.csv', config: { nombre: 'BUEEMS FEB 26', rol: 'BECARIO' } },
+      // Nuevos archivos de rezago incorporados
+      { url: 'brcu_prim_secu_mayo_junio_2026.csv', config: { nombre: 'REZAGO BRCU PRIMARIA, SECUNDARIA', rol: 'TUTOR' } },
+      { url: 'bueems_mayo_junio_2026.csv', config: { nombre: 'REZAGO BUEEMS MAYO-JUNIO  2026', rol: 'BECARIO' } },
+      { url: 'jef_mayo_junio_2026.csv', config: { nombre: 'REZAGO JEF MAYO-JUNIO 2026', rol: 'BECARIO' } }
   ];
 
-  // Descarga e indexado en PARALELO con Promise.all
-  await Promise.all(archivos.map(async (archivo) => {
-    try {
-      const response = await fetch(archivo.url);
-      if (response.ok) {
-        const textData = await response.text();
-        procesarDataCSV(textData, archivo.config);
+  // Optimización de Carga Masiva utilizando Promise.all para descarga simultánea en paralelo
+  try {
+    await Promise.all(archivos.map(async (archivo) => {
+      try {
+        const response = await fetch(archivo.url);
+        if (response.ok) {
+          const textData = await response.text();
+          procesarDataCSV(textData, archivo.config);
+        }
+      } catch (err) {
+        console.error("Error al cargar el archivo: " + archivo.url, err);
       }
-    } catch (err) { /* archivo no disponible, se omite silenciosamente */ }
-  }));
+    }));
+  } catch (errorGlobal) {
+    console.error("Error general en la carga paralela", errorGlobal);
+  }
 
   document.getElementById('loader-db').style.display = 'none';
   const btnStart = document.getElementById('btn-start');
   btnStart.disabled = false; btnStart.style.opacity = '1'; btnStart.textContent = 'Iniciar Cámara';
-
-  document.getElementById('stat-total').textContent  = nominalDatos.length;
-  document.getElementById('stat-basica').textContent  = nominalDatos.filter(d => d.nivel.includes('BÁSICA') || d.nivel.includes('REZAGO BRCU')).length;
-  document.getElementById('stat-bueems').textContent  = nominalDatos.filter(d => d.nivel.includes('BUEEMS')).length;
-  document.getElementById('stat-jef').textContent     = nominalDatos.filter(d => d.nivel.includes('JEF')).length;
-  document.getElementById('stat-rezago').textContent  = nominalDatos.filter(d => d.nivel.includes('REZAGO')).length;
+  
+  // Actualización de contadores adaptada de forma inclusiva (.includes) para integrar padrones y rezagos
+  document.getElementById('stat-total').textContent = nominalDatos.length;
+  document.getElementById('stat-basica').textContent = nominalDatos.filter(d => d.nivel.includes('BÁSICA') || d.nivel.includes('BRCU')).length;
+  document.getElementById('stat-bueems').textContent = nominalDatos.filter(d => d.nivel.includes('BUEEMS')).length;
+  document.getElementById('stat-jef').textContent = nominalDatos.filter(d => d.nivel.includes('JEF')).length;
 }
 window.onload = cargarPadrones;
 
@@ -239,9 +228,7 @@ function limpiarBusqueda() {
 function buscarManual() {
   const input = document.getElementById('manual-search-input').value.trim().toUpperCase();
   if(!input) return;
-  const resultados = nominalDatos.filter(r =>
-    (r.curp && r.curp === input) || r.nombre.includes(input)
-  );
+  const resultados = nominalDatos.filter(r => r.curp === input || r.nombre.includes(input));
   if(resultados.length > 0) mostrarExito("Búsqueda Manual", resultados);
   else mostrarError(input, "No se encontraron registros coincidentes.");
 }
@@ -274,38 +261,19 @@ function mostrarExito(titulo, registros) {
   modalBox.className = 'modal-content success';
   document.getElementById('modal-title').textContent = "¡REGISTRO LOCALIZADO!";
   let html = `<p>Búsqueda: <strong>${titulo}</strong></p><br>`;
-
+  
   registros.forEach(reg => {
-    // Color del badge según nivel
-    let badgeColor = 'var(--verde)';
-    if (reg.nivel.includes('BUEEMS')) badgeColor = 'var(--azul)';
-    else if (reg.nivel.includes('JEF'))   badgeColor = 'var(--alerta)';
-    const esRezago = reg.nivel.includes('REZAGO');
-
     html += `<div class="registro-encontrado">
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; align-items:center;">
-        <div class="badge-nivel" style="background-color:${badgeColor};">${reg.nivel}</div>
-        ${esRezago ? '<div class="badge-nivel" style="background-color:var(--rojo);">⚠ REZAGO</div>' : ''}
-      </div>
-      <p><strong>NOMBRE:</strong> ${reg.nombre}</p>
-      ${reg.curp  ? `<p><strong>CURP:</strong> ${reg.curp}</p>` : ''}
-      ${reg.escuela && reg.escuela !== '' ? `<p><strong>ESCUELA:</strong> ${reg.escuela}</p>` : ''}
-      <p><strong>CCT:</strong> ${reg.cct}</p>
-      <p><strong>MUNICIPIO:</strong> ${reg.mun}</p>
-      ${reg.proceso && reg.proceso !== '' ? `<p><strong>PROCESO:</strong> ${reg.proceso}</p>` : ''}
-      ${reg.fechaCita && reg.fechaCita !== ''
-        ? `<p style="background:var(--dorado);color:#fff;padding:6px 10px;border-radius:6px;font-weight:700;margin-top:8px;">
-             📅 FECHA DE ATENCIÓN: ${reg.fechaCita}
-           </p>`
-        : ''}
-      ${reg.obs && reg.obs !== ''
-        ? `<p style="background:#FFF3E0;color:#E65100;padding:6px 10px;border-radius:6px;font-weight:600;margin-top:6px;">
-             📌 OBS: ${reg.obs}
-           </p>`
-        : ''}
+        <div class="badge-nivel" style="background-color: var(--verde);">${reg.nivel}</div>
+        <p><strong>NOMBRE:</strong> ${reg.nombre}</p>
+        <p><strong>PROCESO:</strong> ${reg.proceso}</p>
+        <p><strong>CCT:</strong> ${reg.cct}</p>
+        <p><strong>MUNICIPIO:</strong> ${reg.mun}</p>
+        ${reg.fechaCita && reg.fechaCita !== 'N/A' ? `<p><strong>FECHA/CITA ORIGINAL:</strong> <span style="color:var(--azul); font-weight:bold;">${reg.fechaCita}</span></p>` : ''}
+        ${reg.observaciones && reg.observaciones !== 'N/A' ? `<p><strong>OBSERVACIONES:</strong> <span style="color:var(--rojo); font-weight:bold;">${reg.observaciones}</span></p>` : ''}
     </div>`;
   });
-
+  
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('modal-bg').style.display = 'flex';
 }
