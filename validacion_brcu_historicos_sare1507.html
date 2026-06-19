@@ -314,7 +314,9 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 //  INTEGRACIÓN HISTÓRICA — CURP Maps desde GitHub
 // ══════════════════════════════════════════════════════
 
-const GITHUB_BASE = 'https://raw.githubusercontent.com/eliyahu1507/sare1507/main/';
+// Ruta relativa: los CSV están en la misma carpeta del repo que este HTML
+const GITHUB_BASE = '';
+const GITHUB_RAW_FALLBACK = 'https://raw.githubusercontent.com/eliyahu1507/sare1507/main/';
 const HIST_FILES = [
   { id: 'basica',     file: 'basica.csv',      labelId: 'val-basica',     dotId: 'src-basica',     nivelLabel: 'BÁSICA',    curpCol: 'CURP', nombreCols: ['PRIMER APELLIDO','SEGUNDO APELLIDO','NOMBRE DEL TUTOR'], cctCol: 'CCT', procesoCol: 'PROCESO' },
   { id: 'bueems',     file: 'bueems.csv',       labelId: 'val-bueems',     dotId: 'src-bueems',     nivelLabel: 'BUEMS',     curpCol: 'CURP', nombreCols: ['PRIMER APELLIDO','SEGUNDO APELLIDO','NOMBRE DEL BECARIO'], cctCol: 'CCT', procesoCol: 'PROCESO' },
@@ -359,15 +361,24 @@ function setDotStatus(srcId, status) {
   dot.classList.add(status);
 }
 
+function fetchCSV(url) {
+  return fetch(url).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.arrayBuffer();
+  }).then(function(buf){
+    return new TextDecoder('latin-1').decode(buf);
+  });
+}
+
 function cargarHistorico(cfg) {
-  return fetch(GITHUB_BASE + cfg.file)
-    .then(function(r){
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      return r.arrayBuffer();
-    })
-    .then(function(buf){
-      // Los CSV vienen en latin-1 (exportados desde Excel en español)
-      return new TextDecoder('latin-1').decode(buf);
+  // Intenta ruta relativa (mismo repo en GitHub Pages),
+  // si falla usa raw.githubusercontent.com como fallback
+  var urlRelativa = cfg.file;
+  var urlRaw = GITHUB_RAW_FALLBACK + cfg.file;
+  return fetchCSV(urlRelativa)
+    .catch(function(){
+      console.log('Relativa falló para '+cfg.file+', usando raw...');
+      return fetchCSV(urlRaw);
     })
     .then(function(text){
       var parsed = parseCSVSemicolon(text);
