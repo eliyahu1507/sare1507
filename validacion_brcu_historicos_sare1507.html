@@ -363,19 +363,11 @@ function cargarHistorico(cfg) {
   return fetch(GITHUB_BASE + cfg.file)
     .then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
-      return r.text();
+      return r.arrayBuffer();
     })
-    .then(function(text){
-      // Decodificar latin-1 si llega como latin-1
-      // (fetch lo traerá como UTF-8 si GitHub lo sirve correctamente,
-      //  pero los archivos son latin-1, así que necesitamos recodificar)
-      // Técnica: releer con TextDecoder latin-1
-      return fetch(GITHUB_BASE + cfg.file)
-        .then(function(r2){ return r2.arrayBuffer(); })
-        .then(function(buf){
-          var decoded = new TextDecoder('latin-1').decode(buf);
-          return decoded;
-        });
+    .then(function(buf){
+      // Los CSV vienen en latin-1 (exportados desde Excel en español)
+      return new TextDecoder('latin-1').decode(buf);
     })
     .then(function(text){
       var parsed = parseCSVSemicolon(text);
