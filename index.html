@@ -120,6 +120,29 @@
     </style>
 </head>
 <body class="bg-surface text-on-surface min-h-screen flex flex-col font-body-md text-body-md">
+
+<!-- ════════ PANTALLA DE ACCESO (LOGIN BÁSICO) ════════ -->
+<div id="login-overlay" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#4d0011 0%,#6f1223 60%,#832231 100%);display:flex;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:36px 32px;box-shadow:0 20px 60px rgba(0,0,0,.35);">
+    <div style="text-align:center;margin-bottom:24px;">
+      <img src="https://framework-gb.cdn.gob.mx/landing/img/logoheader.svg" alt="Gobierno de México" style="height:48px;margin:0 auto 16px;display:block;opacity:.85;">
+      <h1 style="font-family:Montserrat,sans-serif;font-weight:700;font-size:1.25rem;color:#4d0011;margin-bottom:4px;">SARE 1507 ECATEPEC</h1>
+      <p style="font-family:Inter,sans-serif;font-size:.85rem;color:#77592a;">Acceso restringido · Personal autorizado</p>
+    </div>
+    <form id="login-form" autocomplete="off">
+      <label style="display:block;font-family:Inter,sans-serif;font-size:.8rem;font-weight:600;color:#564242;margin-bottom:6px;">Nombre completo</label>
+      <input id="login-nombre" type="text" placeholder="APELLIDO PATERNO APELLIDO MATERNO NOMBRE(S)" autocomplete="off" style="width:100%;padding:12px 14px;border:1.5px solid #dcc0c0;border-radius:8px;font-size:.95rem;margin-bottom:16px;font-family:Inter,sans-serif;box-sizing:border-box;text-transform:uppercase;">
+      <label style="display:block;font-family:Inter,sans-serif;font-size:.8rem;font-weight:600;color:#564242;margin-bottom:6px;">CUPO / Número de empleado</label>
+      <input id="login-cupo" type="text" inputmode="numeric" placeholder="Ej. 1500585" autocomplete="off" style="width:100%;padding:12px 14px;border:1.5px solid #dcc0c0;border-radius:8px;font-size:.95rem;margin-bottom:8px;font-family:Inter,sans-serif;box-sizing:border-box;">
+      <div id="login-error" style="display:none;background:#ffdad6;color:#93000a;border-radius:8px;padding:10px 14px;font-size:.82rem;font-family:Inter,sans-serif;margin-bottom:14px;">⚠️ Nombre o CUPO incorrectos. Verifica e intenta de nuevo.</div>
+      <button type="submit" style="width:100%;background:#4d0011;color:#fff;border:none;border-radius:8px;padding:13px;font-family:Montserrat,sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;transition:background .2s;">Ingresar</button>
+    </form>
+    <p style="text-align:center;font-size:.7rem;color:#897172;margin-top:18px;font-family:Inter,sans-serif;">Uso exclusivo de personal SARE 1507. Tu acceso queda registrado localmente en este dispositivo.</p>
+  </div>
+</div>
+
+<!-- ════════ CONTENIDO PROTEGIDO ════════ -->
+<div id="app-content" style="display:none;">
 <!-- Top Navigation Bar -->
 <header class="bg-surface-container-lowest border-b border-outline-variant sticky top-0 z-50">
 <nav class="flex justify-between items-center w-full px-margin py-base max-w-screen-xl mx-auto h-16">
@@ -133,10 +156,11 @@
 <a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors h-full flex items-center" href="#">Módulos</a>
 </div>
 <div class="flex items-center gap-sm">
+<span id="usuario-conectado" style="font-family:Inter,sans-serif;font-size:.78rem;color:#564242;margin-right:4px;"></span>
 <button class="p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">
 <span class="material-symbols-outlined">account_circle</span>
 </button>
-<button class="p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">
+<button id="btn-logout" class="p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant" title="Cerrar sesión">
 <span class="material-symbols-outlined">logout</span>
 </button>
 </div>
@@ -217,7 +241,7 @@
 <footer class="bg-surface-container-low border-t border-outline-variant mt-auto">
 <div class="flex flex-col md:flex-row justify-between items-center w-full px-margin py-md gap-sm max-w-screen-xl mx-auto">
 <div class="flex flex-col items-center md:items-start">
-<span class="font-label-md text-label-md text-on-surface-variant mb-1">© 2026 SARE 1507</span>
+<span class="font-label-md text-label-md text-on-surface-variant mb-1">© 2024 Oficina de Becas</span>
 <p class="font-body-sm text-body-sm text-secondary">Coordinación Territorial Ecatepec. Uso Exclusivo de Personal Autorizado.</p>
 </div>
 <div class="flex gap-md">
@@ -227,6 +251,70 @@
 </div>
 </div>
 </footer>
+</div> <!-- /#app-content -->
+
+<!-- ════════ LÓGICA DE AUTENTICACIÓN ════════ -->
+<script>
+(function(){
+  // Lista de personal autorizado (Nombre completo + CUPO/núm. de empleado)
+  const USUARIOS_AUTORIZADOS = [{"NOMBRE": "CERVANTES JIMENEZ JOSE ELIAS", "CUPO": "159415"}, {"NOMBRE": "NOH CRUZ JOSE EDUARDO", "CUPO": "1500585"}, {"NOMBRE": "BARRERA MARTINEZ GUSTAVO", "CUPO": "1500723"}, {"NOMBRE": "CARRASCO GALLARDO STEFANY", "CUPO": "1501080"}, {"NOMBRE": "HERNANDEZ GUEVARA ANDREA", "CUPO": "1501112"}, {"NOMBRE": "MARTINEZ MOISES CELINA", "CUPO": "1501166"}, {"NOMBRE": "GALVEZ GARCIA NESTOR ENRIQUE", "CUPO": "1501193"}, {"NOMBRE": "ORDAZ VERA OSCAR URIEL", "CUPO": "1501604"}, {"NOMBRE": "ORDAZ HERNANDEZ MARIA DEL ROCIO", "CUPO": "1501620"}, {"NOMBRE": "HERNANDEZ HERNANDEZ CLAUDIA LIZET", "CUPO": "1501623"}, {"NOMBRE": "CEDILLO GARCIA MIGUEL", "CUPO": "1501626"}, {"NOMBRE": "MARTINEZ ARELLANO ROSA CARMINA", "CUPO": "1501640"}, {"NOMBRE": "PUENTE MAGAÑA JESUS ALBERTO", "CUPO": "1501644"}, {"NOMBRE": "SANCHEZ BERNABE MARIA GUADALUPE BRENDA", "CUPO": "1501974"}, {"NOMBRE": "CUEVAS SANCHEZ EMMELY DANIELA", "CUPO": "1501975"}, {"NOMBRE": "ORNELAS HURTADO DANA KARLA", "CUPO": "1501976"}, {"NOMBRE": "POMPA VALDEZ ABRAHAM LEVI", "CUPO": "1501977"}, {"NOMBRE": "QUINTOS HERNANDEZ ELDA BERENICE", "CUPO": "1501981"}, {"NOMBRE": "OLVERA SANCHEZ ANA LAURA", "CUPO": "1501982"}, {"NOMBRE": "MAGAÑA ABURTO MARIA ANGELICA", "CUPO": "1501983"}, {"NOMBRE": "GONZALEZ AVILA BERSAIN", "CUPO": "1501985"}, {"NOMBRE": "SANCHEZ BELTRAN MAYRA SUET", "CUPO": "1501986"}, {"NOMBRE": "LUNA VELAZQUEZ LUCIA", "CUPO": "1501987"}, {"NOMBRE": "RIVERA GONZALEZ ANDREA PATRICIA", "CUPO": "1501989"}, {"NOMBRE": "GONZALEZ LINDA NOHEMI JAZMIN", "CUPO": "1501991"}, {"NOMBRE": "RAMIREZ CRUZ ERICKA YESSENIA", "CUPO": "1502176"}, {"NOMBRE": "MARTINEZ SOSA MICHELLE", "CUPO": "1502177"}, {"NOMBRE": "SILVETI PEREZ ROCIO", "CUPO": "1502178"}, {"NOMBRE": "RAMIREZ CRUZ RUTH PAOLA", "CUPO": "1502179"}, {"NOMBRE": "PACHECO RAMIREZ DULCE JOCABET", "CUPO": "1502180"}, {"NOMBRE": "ESCOBAR NABOR EMMA NAZARAHI", "CUPO": "1502210"}, {"NOMBRE": "LIRA ESPINOZA PATRICIA ALEJANDRA", "CUPO": "1502220"}, {"NOMBRE": "MORALES ESCOBAR JANETH JOSELYN", "CUPO": "1502229"}, {"NOMBRE": "GONZALEZ CLEMENTE LAURA ANDREA", "CUPO": "1502290"}, {"NOMBRE": "GONZALEZ VARGAS GABRIEL YOSEF ARNALDO", "CUPO": "1502291"}, {"NOMBRE": "MARTINEZ SANDOVAL JUAN CARLOS", "CUPO": "1502292"}, {"NOMBRE": "MENDOZA ALVARADO DIANA ARELI", "CUPO": "1502293"}, {"NOMBRE": "PONCE NIEVES BRYAN", "CUPO": "1502294"}, {"NOMBRE": "REYES VAZQUEZ NORMA ANGELICA", "CUPO": "1502295"}, {"NOMBRE": "RUBIO VALADEZ FERNANDA ESTEFANIA", "CUPO": "1502296"}, {"NOMBRE": "SALAZAR MARTINEZ GUADALUPE ABIGAIL", "CUPO": "1502297"}];
+
+  function normalizar(txt){
+    return (txt||'').toUpperCase().trim().replace(/\s+/g,' ')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,''); // quita acentos
+  }
+
+  const SESSION_KEY = 'sare1507_sesion';
+
+  function getSesion(){
+    try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch(e){ return null; }
+  }
+
+  function mostrarApp(usuario){
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('app-content').style.display = '';
+    var lbl = document.getElementById('usuario-conectado');
+    if(lbl && usuario) lbl.textContent = usuario.NOMBRE;
+  }
+
+  function mostrarLogin(){
+    document.getElementById('login-overlay').style.display = 'flex';
+    document.getElementById('app-content').style.display = 'none';
+  }
+
+  // Al cargar: si ya hay sesión activa en este navegador, entrar directo
+  var sesionActiva = getSesion();
+  if(sesionActiva){
+    mostrarApp(sesionActiva);
+  }
+
+  document.getElementById('login-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var nombreInput = normalizar(document.getElementById('login-nombre').value);
+    var cupoInput = (document.getElementById('login-cupo').value||'').trim();
+    var errorBox = document.getElementById('login-error');
+
+    var encontrado = USUARIOS_AUTORIZADOS.find(function(u){
+      return normalizar(u.NOMBRE) === nombreInput && String(u.CUPO).trim() === cupoInput;
+    });
+
+    if(encontrado){
+      errorBox.style.display = 'none';
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(encontrado));
+      mostrarApp(encontrado);
+    } else {
+      errorBox.style.display = 'block';
+    }
+  });
+
+  document.getElementById('btn-logout').addEventListener('click', function(){
+    sessionStorage.removeItem(SESSION_KEY);
+    document.getElementById('login-form').reset();
+    mostrarLogin();
+  });
+})();
+</script>
+
 <!-- Interactive Layer: Ripple effect for cards -->
 <script>
         document.querySelectorAll('.action-card').forEach(card => {
