@@ -4,6 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SARE 1507 — Validación BRCU + Históricos</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>:root{--guinda:#6B1C3E;--guinda-o:#4A0E29;--guinda-c:#8B2550;--dorado:#C8962A;--dorado-c:#E5B94E;--dorado-s:#F5E6C0;--verde:#1A7A3A;--verde-bg:#B9F5C8;--verde-c:#E8FFF0;--naranja:#E65C00;--naranja-bg:#FFF3E0;--azul:#1565C0;--azul-bg:#E3F2FD;--alerta:#FF6F00;--alerta-bg:#FFF8E1;--rojo:#C62828;--blanco:#FFF;--gris-bg:#F7F4F5;--gris:#EDE8EA;--texto:#1A0A10;--texto-s:#5A3A47;--sombra:rgba(74,14,41,.15)}
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--texto)}
 .top-bar{background:var(--guinda-o);padding:7px 20px;display:flex;align-items:center;gap:10px;font-size:.71rem;color:rgba(255,255,255,.82);border-bottom:2px solid var(--dorado)}.top-bar .sep{color:var(--dorado-c)}
@@ -314,43 +315,18 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 //  INTEGRACIÓN HISTÓRICA — CURP Maps desde GitHub
 // ══════════════════════════════════════════════════════
 
-// Ruta relativa: los CSV están en la misma carpeta del repo que este HTML
-const GITHUB_BASE = '';
-const GITHUB_RAW_FALLBACK = 'https://raw.githubusercontent.com/eliyahu1507/sare1507/main/';
+// ── Configuración de archivos históricos (CURP) ──
+// Usa el mismo patrón comprobado de nominal_procesos_anteriores.html:
+// fetch + PapaParse + ruta relativa simple, sin decodificación manual.
 const HIST_FILES = [
-  { id: 'basica',     file: 'basica.csv',      labelId: 'val-basica',     dotId: 'src-basica',     nivelLabel: 'BÁSICA',    curpCol: 'CURP', nombreCols: ['PRIMER APELLIDO','SEGUNDO APELLIDO','NOMBRE DEL TUTOR'], cctCol: 'CCT', procesoCol: 'PROCESO' },
-  { id: 'bueems',     file: 'bueems.csv',       labelId: 'val-bueems',     dotId: 'src-bueems',     nivelLabel: 'BUEMS',     curpCol: 'CURP', nombreCols: ['PRIMER APELLIDO','SEGUNDO APELLIDO','NOMBRE DEL BECARIO'], cctCol: 'CCT', procesoCol: 'PROCESO' },
-  { id: 'jef',        file: 'jef.csv',          labelId: 'val-jef',        dotId: 'src-jef',        nivelLabel: 'JEF',       curpCol: 'CURP', nombreCols: ['PRIMER APELLIDO','SEGUNDO APELLIDO','NOMBRE DEL BECARIO'], cctCol: 'CCT', procesoCol: 'PROCESO' },
-  { id: 'bueems_feb', file: 'bueems_feb.csv',   labelId: 'val-bueems-feb', dotId: 'src-bueems-feb', nivelLabel: 'BUEMS FEB', curpCol: 'CURP', nombreCols: ['PRIMER APELLIDO','SEGUNDO APELLIDO','NOMBRE DEL BECARIO'], cctCol: 'CCT', procesoCol: 'PROCESO' }
+  { url: 'basica.csv',     id: 'basica',     labelId: 'val-basica',     dotId: 'src-basica',     nivelLabel: 'BÁSICA' },
+  { url: 'bueems.csv',     id: 'bueems',     labelId: 'val-bueems',     dotId: 'src-bueems',     nivelLabel: 'BUEMS' },
+  { url: 'jef.csv',        id: 'jef',        labelId: 'val-jef',        dotId: 'src-jef',        nivelLabel: 'JEF' },
+  { url: 'bueems_feb.csv', id: 'bueems_feb', labelId: 'val-bueems-feb', dotId: 'src-bueems-feb', nivelLabel: 'BUEMS FEB' }
 ];
 
-// Mapas en memoria: { CURP → {nombre, nivel, cct, proceso} }
+// Mapas en memoria: { CURP → {nombre, nivel, cct, proceso, mun} }
 const HIST_MAPS = { basica: new Map(), bueems: new Map(), jef: new Map(), bueems_feb: new Map() };
-
-function parseCSVSemicolon(text) {
-  var lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
-  if(!lines.length) return [];
-  var headers = lines[0].split(';').map(function(h){ return h.trim().replace(/^\uFEFF/,''); });
-  var rows = [];
-  for(var i=1; i<lines.length; i++){
-    if(!lines[i].trim()) continue;
-    var cols = lines[i].split(';');
-    var obj = {};
-    headers.forEach(function(h,idx){ obj[h] = (cols[idx]||'').trim(); });
-    rows.push(obj);
-  }
-  return {headers: headers, rows: rows};
-}
-
-function buildNombreCompleto(row, def) {
-  // Intenta construir: APELLIDO_PAT APELLIDO_MAT NOMBRE(S)
-  var ap = (row['PRIMER APELLIDO']||'').trim();
-  var am = (row['SEGUNDO APELLIDO']||'').trim();
-  // Nombre puede estar en NOMBRE DEL BECARIO o NOMBRE DEL TUTOR
-  var nom = (row['NOMBRE DEL BECARIO'] || row['NOMBRE DEL TUTOR'] || '').trim();
-  if(ap && nom) return (ap+' '+am+' '+nom).replace(/\s+/g,' ').trim();
-  return def || '';
-}
 
 function setDotStatus(srcId, status) {
   var src = document.getElementById(srcId);
@@ -361,55 +337,58 @@ function setDotStatus(srcId, status) {
   dot.classList.add(status);
 }
 
-function fetchCSV(url) {
-  return fetch(url).then(function(r){
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return r.arrayBuffer();
-  }).then(function(buf){
-    return new TextDecoder('latin-1').decode(buf);
+function procesarDataCSVHist(data, cfg) {
+  var lineas = Papa.parse(data, { header: true, skipEmptyLines: true }).data;
+  var map = HIST_MAPS[cfg.id];
+  lineas.forEach(function(row){
+    var keys = Object.keys(row);
+    function getVal(posibles){
+      var key = keys.find(function(k){ return posibles.some(function(pn){ return k.toUpperCase().includes(pn); }); });
+      return key && row[key] ? row[key].trim().toUpperCase() : '';
+    }
+    var curp = getVal(['CURP']);
+    if(!curp || curp.length < 10) return;
+    var cct = getVal(['CCT']);
+    var mun = getVal(['MUN','MUNICIPIO']);
+    var nombreBase = getVal(['NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
+    var ap1 = getVal(['PRIMER APELLIDO','APELLIDO PATERNO']);
+    var ap2 = getVal(['SEGUNDO APELLIDO','APELLIDO MATERNO']);
+    var nombreCompleto = (nombreBase+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim();
+    var proceso = getVal(['PROCESO']);
+    map.set(curp, {
+      nombre: nombreCompleto,
+      nivel: cfg.nivelLabel,
+      cct: cct || 'N/A',
+      mun: mun || 'N/A',
+      proceso: proceso || cfg.nivelLabel
+    });
   });
 }
 
-function cargarHistorico(cfg) {
-  // Intenta ruta relativa (mismo repo en GitHub Pages),
-  // si falla usa raw.githubusercontent.com como fallback
-  var urlRelativa = cfg.file;
-  var urlRaw = GITHUB_RAW_FALLBACK + cfg.file;
-  return fetchCSV(urlRelativa)
-    .catch(function(){
-      console.log('Relativa falló para '+cfg.file+', usando raw...');
-      return fetchCSV(urlRaw);
-    })
-    .then(function(text){
-      var parsed = parseCSVSemicolon(text);
-      if(!parsed || !parsed.rows) throw new Error('CSV vacío');
-      var map = HIST_MAPS[cfg.id];
-      parsed.rows.forEach(function(row){
-        var curp = (row[cfg.curpCol]||'').trim().toUpperCase();
-        if(!curp || curp.length < 10) return;
-        var nombre = buildNombreCompleto(row, curp);
-        map.set(curp, {
-          nombre: nombre,
-          nivel: cfg.nivelLabel,
-          cct: (row['CCT']||'').trim(),
-          proceso: (row['PROCESO']||'').trim(),
-          mun: (row['MUN']||'').trim()
-        });
-      });
+async function cargarHistorico(cfg) {
+  try {
+    var response = await fetch(cfg.url);
+    if(response.ok){
+      var textData = await response.text();
+      procesarDataCSVHist(textData, cfg);
       var valEl = document.getElementById(cfg.labelId);
-      if(valEl) valEl.textContent = '🟢 ' + map.size.toLocaleString() + ' registros';
+      if(valEl) valEl.textContent = '🟢 ' + HIST_MAPS[cfg.id].size.toLocaleString() + ' registros';
       setDotStatus(cfg.dotId, 'ok');
-    })
-    .catch(function(err){
-      console.warn('Error cargando '+cfg.file+':', err);
-      var valEl = document.getElementById(cfg.labelId);
-      if(valEl) valEl.textContent = '🔴 Error de carga';
-      setDotStatus(cfg.dotId, 'err');
-    });
+    } else {
+      throw new Error('HTTP '+response.status);
+    }
+  } catch(err){
+    console.warn('Error cargando '+cfg.url+':', err);
+    var valEl2 = document.getElementById(cfg.labelId);
+    if(valEl2) valEl2.textContent = '🔴 Error de carga';
+    setDotStatus(cfg.dotId, 'err');
+  }
 }
 
-function iniciarCargaHistoricos() {
-  HIST_FILES.forEach(function(cfg){ cargarHistorico(cfg); });
+async function iniciarCargaHistoricos() {
+  for (const cfg of HIST_FILES) {
+    await cargarHistorico(cfg);
+  }
 }
 
 // ── BÚSQUEDA EN HISTÓRICOS POR CURP ──
@@ -488,9 +467,15 @@ function ocultarPanelHistorico() {
 var _origLimpiarScan = typeof limpiarScan !== 'undefined' ? limpiarScan : null;
 
 // Iniciar carga al cargar la página
-document.addEventListener('DOMContentLoaded', function(){
+// Se dispara en window.onload (igual que nominal_procesos_anteriores.html),
+// para no competir por red/CPU con el parseo del padrón BRCU embebido (~2.6MB)
+if (document.readyState === 'complete') {
   iniciarCargaHistoricos();
-});
+} else {
+  window.addEventListener('load', function(){
+    iniciarCargaHistoricos();
+  });
+}
 
 </script>
 
