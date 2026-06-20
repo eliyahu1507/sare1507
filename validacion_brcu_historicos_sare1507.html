@@ -316,8 +316,8 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 // ══════════════════════════════════════════════════════
 
 // ── Configuración de archivos históricos (CURP) ──
-// Usa el mismo patrón comprobado de nominal_procesos_anteriores.html:
-// fetch + PapaParse + ruta relativa simple, sin decodificación manual.
+// fetch + PapaParse, con cache-buster para evitar 404 cacheados por el navegador/CDN
+const APP_VERSION = '20260619b';
 const HIST_FILES = [
   { url: 'basica.csv',     id: 'basica',     labelId: 'val-basica',     dotId: 'src-basica',     nivelLabel: 'BÁSICA' },
   { url: 'bueems.csv',     id: 'bueems',     labelId: 'val-bueems',     dotId: 'src-bueems',     nivelLabel: 'BUEMS' },
@@ -327,6 +327,8 @@ const HIST_FILES = [
 
 // Mapas en memoria: { CURP → {nombre, nivel, cct, proceso, mun} }
 const HIST_MAPS = { basica: new Map(), bueems: new Map(), jef: new Map(), bueems_feb: new Map() };
+// Conteo desglosado por subnivel (solo aplica a 'basica', que mezcla primaria/secundaria/preescolar)
+const HIST_SUBNIVEL_COUNTS = { basica: { PRIMARIA: 0, SECUNDARIA: 0, PREESCOLAR: 0, OTRO: 0 } };
 
 function setDotStatus(srcId, status) {
   var src = document.getElementById(srcId);
@@ -335,6 +337,18 @@ function setDotStatus(srcId, status) {
   if(!dot) return;
   dot.classList.remove('loading','ok','err');
   dot.classList.add(status);
+}
+
+// Clasifica el subnivel educativo a partir del prefijo del CCT (estándar SEP):
+// PR=Primaria, JN/SN=Preescolar, ES/ST/TV/ML=Secundaria (general/técnica/telesec/CAM)
+function clasificarSubnivelPorCCT(cct) {
+  var m = /^\d{2}[DE]([A-Z]{2})/.exec(cct || '');
+  if(!m) return 'OTRO';
+  var clave = m[1];
+  if(clave === 'PR') return 'PRIMARIA';
+  if(clave === 'JN' || clave === 'SN') return 'PREESCOLAR';
+  if(clave === 'ES' || clave === 'ST' || clave === 'TV' || clave === 'ML') return 'SECUNDARIA';
+  return 'OTRO';
 }
 
 function procesarDataCSVHist(data, cfg) {
@@ -355,24 +369,39 @@ function procesarDataCSVHist(data, cfg) {
     var ap2 = getVal(['SEGUNDO APELLIDO','APELLIDO MATERNO']);
     var nombreCompleto = (nombreBase+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim();
     var proceso = getVal(['PROCESO']);
+    var yaExistia = map.has(curp);
     map.set(curp, {
       nombre: nombreCompleto,
       nivel: cfg.nivelLabel,
       cct: cct || 'N/A',
       mun: mun || 'N/A',
-      proceso: proceso || cfg.nivelLabel
+      proceso: proceso || cfg.nivelLabel,
+      subnivel: cfg.id === 'basica' ? clasificarSubnivelPorCCT(cct) : null
     });
   });
+  // Recalcular desglose de subnivel para básica (sobre CURP únicas, no filas)
+  if(cfg.id === 'basica'){
+    var counts = { PRIMARIA: 0, SECUNDARIA: 0, PREESCOLAR: 0, OTRO: 0 };
+    map.forEach(function(v){ counts[v.subnivel] = (counts[v.subnivel]||0) + 1; });
+    HIST_SUBNIVEL_COUNTS.basica = counts;
+  }
 }
 
 async function cargarHistorico(cfg) {
   try {
-    var response = await fetch(cfg.url);
+    // Cache-buster: evita que el navegador/CDN sirva un 404 o CSV viejo cacheado
+    var response = await fetch(cfg.url + '?v=' + APP_VERSION);
     if(response.ok){
       var textData = await response.text();
       procesarDataCSVHist(textData, cfg);
       var valEl = document.getElementById(cfg.labelId);
-      if(valEl) valEl.textContent = '🟢 ' + HIST_MAPS[cfg.id].size.toLocaleString() + ' registros';
+      var total = HIST_MAPS[cfg.id].size;
+      if(cfg.id === 'basica'){
+        var c = HIST_SUBNIVEL_COUNTS.basica;
+        if(valEl) valEl.textContent = '🟢 ' + total.toLocaleString() + ' (Sec: ' + c.SECUNDARIA.toLocaleString() + ' · Prim: ' + c.PRIMARIA.toLocaleString() + ')';
+      } else {
+        if(valEl) valEl.textContent = '🟢 ' + total.toLocaleString() + ' registros';
+      }
       setDotStatus(cfg.dotId, 'ok');
     } else {
       throw new Error('HTTP '+response.status);
@@ -442,7 +471,7 @@ function mostrarPanelHistorico(curpIngresada, hitBRCU) {
     html += '<div class="ficha-hist-grid">';
     html += '<div class="ficha-hist-field curp-field"><div class="ficha-hist-field-lbl">CURP</div><div class="ficha-hist-field-val">'+esc(curpIngresada)+'</div></div>';
     html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Nombre Completo</div><div class="ficha-hist-field-val">'+esc(hist.nombre||'—')+'</div></div>';
-    html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Nivel / Programa</div><div class="ficha-hist-field-val">'+esc(hist.nivel||'—')+'</div></div>';
+    html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Nivel / Programa</div><div class="ficha-hist-field-val">'+esc(hist.nivel||'—')+(hist.subnivel && hist.subnivel!=='OTRO' ? ' · '+esc(hist.subnivel) : '')+'</div></div>';
     html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">CCT</div><div class="ficha-hist-field-val">'+esc(hist.cct||'—')+'</div></div>';
     if(hist.mun){ html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Municipio</div><div class="ficha-hist-field-val">'+esc(hist.mun)+'</div></div>'; }
     html += '<div class="ficha-hist-field proceso-field"><div class="ficha-hist-field-lbl">Proceso Anterior</div><div class="ficha-hist-field-val">'+esc(hist.proceso||'—')+'</div></div>';
