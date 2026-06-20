@@ -196,8 +196,48 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
   .radio-group{flex-direction:column}
 }
 </style>
+<style>
+#login-overlay-sare{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#4d0011 0%,#6f1223 60%,#832231 100%);display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Inter',sans-serif;}
+#login-overlay-sare .login-box{background:#fff;border-radius:16px;max-width:420px;width:100%;padding:36px 32px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+#login-overlay-sare .login-logo{text-align:center;margin-bottom:24px;}
+#login-overlay-sare .login-logo img{height:48px;margin:0 auto 16px;display:block;opacity:.85;}
+#login-overlay-sare h1{font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.25rem;color:#4d0011;margin:0 0 4px;}
+#login-overlay-sare .login-sub{font-size:.85rem;color:#77592a;margin:0;}
+#login-overlay-sare label{display:block;font-size:.8rem;font-weight:600;color:#564242;margin-bottom:6px;}
+#login-overlay-sare input{width:100%;padding:12px 14px;border:1.5px solid #dcc0c0;border-radius:8px;font-size:.95rem;margin-bottom:16px;font-family:'Inter',sans-serif;box-sizing:border-box;}
+#login-overlay-sare input#login-nombre-sare{text-transform:uppercase;}
+#login-overlay-sare #login-error-sare{display:none;background:#ffdad6;color:#93000a;border-radius:8px;padding:10px 14px;font-size:.82rem;margin-bottom:14px;}
+#login-overlay-sare button[type=submit]{width:100%;background:#4d0011;color:#fff;border:none;border-radius:8px;padding:13px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;}
+#login-overlay-sare .login-foot{text-align:center;font-size:.7rem;color:#897172;margin:18px 0 0;}
+.sare-userbar{position:fixed;top:0;right:0;z-index:9998;background:rgba(74,14,41,.92);color:#fff;font-family:'Inter',sans-serif;font-size:.72rem;padding:6px 14px;border-radius:0 0 0 10px;display:flex;align-items:center;gap:10px;}
+.sare-userbar button{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:3px 9px;font-size:.7rem;cursor:pointer;font-weight:600;}
+.sare-userbar button:hover{background:rgba(255,255,255,.28);}
+</style>
 </head>
 <body>
+<div id="login-overlay-sare">
+  <div class="login-box">
+    <div class="login-logo">
+      <img src="https://framework-gb.cdn.gob.mx/landing/img/logoheader.svg" alt="Gobierno de México">
+      <h1>SARE 1507 ECATEPEC</h1>
+      <p class="login-sub">Acceso restringido · Personal autorizado</p>
+    </div>
+    <form id="login-form-sare" autocomplete="off">
+      <label>Nombre completo</label>
+      <input id="login-nombre-sare" type="text" placeholder="APELLIDO PATERNO APELLIDO MATERNO NOMBRE(S)" autocomplete="off">
+      <label>CUPO / Número de empleado</label>
+      <input id="login-cupo-sare" type="text" inputmode="numeric" placeholder="Ej. 1500585" autocomplete="off">
+      <div id="login-error-sare">⚠️ Nombre o CUPO incorrectos. Verifica e intenta de nuevo.</div>
+      <button type="submit">Ingresar</button>
+    </form>
+    <p class="login-foot">Uso exclusivo de personal SARE 1507. Sesión válida 8 horas en este dispositivo.</p>
+  </div>
+</div>
+<div class="sare-userbar" id="sare-userbar" style="display:none;">
+  <span id="sare-userbar-nombre"></span>
+  <button id="sare-userbar-logout">Cerrar sesión</button>
+</div>
+
 
 <div class="top-bar">
   <div>ESTADO DE MÉXICO — REGIÓN ECATEPEC</div>
@@ -1578,5 +1618,105 @@ document.getElementById('btn-cierre-dia').addEventListener('click', async () => 
 });
 </script>
 
+
+<script>
+(function(){
+  var USUARIOS_AUTORIZADOS = [{"NOMBRE": "CERVANTES JIMENEZ JOSE ELIAS", "CUPO": "159415"}, {"NOMBRE": "NOH CRUZ JOSE EDUARDO", "CUPO": "1500585"}, {"NOMBRE": "BARRERA MARTINEZ GUSTAVO", "CUPO": "1500723"}, {"NOMBRE": "CARRASCO GALLARDO STEFANY", "CUPO": "1501080"}, {"NOMBRE": "HERNANDEZ GUEVARA ANDREA", "CUPO": "1501112"}, {"NOMBRE": "MARTINEZ MOISES CELINA", "CUPO": "1501166"}, {"NOMBRE": "GALVEZ GARCIA NESTOR ENRIQUE", "CUPO": "1501193"}, {"NOMBRE": "ORDAZ VERA OSCAR URIEL", "CUPO": "1501604"}, {"NOMBRE": "ORDAZ HERNANDEZ MARIA DEL ROCIO", "CUPO": "1501620"}, {"NOMBRE": "HERNANDEZ HERNANDEZ CLAUDIA LIZET", "CUPO": "1501623"}, {"NOMBRE": "CEDILLO GARCIA MIGUEL", "CUPO": "1501626"}, {"NOMBRE": "MARTINEZ ARELLANO ROSA CARMINA", "CUPO": "1501640"}, {"NOMBRE": "PUENTE MAGAÑA JESUS ALBERTO", "CUPO": "1501644"}, {"NOMBRE": "SANCHEZ BERNABE MARIA GUADALUPE BRENDA", "CUPO": "1501974"}, {"NOMBRE": "CUEVAS SANCHEZ EMMELY DANIELA", "CUPO": "1501975"}, {"NOMBRE": "ORNELAS HURTADO DANA KARLA", "CUPO": "1501976"}, {"NOMBRE": "POMPA VALDEZ ABRAHAM LEVI", "CUPO": "1501977"}, {"NOMBRE": "QUINTOS HERNANDEZ ELDA BERENICE", "CUPO": "1501981"}, {"NOMBRE": "OLVERA SANCHEZ ANA LAURA", "CUPO": "1501982"}, {"NOMBRE": "MAGAÑA ABURTO MARIA ANGELICA", "CUPO": "1501983"}, {"NOMBRE": "GONZALEZ AVILA BERSAIN", "CUPO": "1501985"}, {"NOMBRE": "SANCHEZ BELTRAN MAYRA SUET", "CUPO": "1501986"}, {"NOMBRE": "LUNA VELAZQUEZ LUCIA", "CUPO": "1501987"}, {"NOMBRE": "RIVERA GONZALEZ ANDREA PATRICIA", "CUPO": "1501989"}, {"NOMBRE": "GONZALEZ LINDA NOHEMI JAZMIN", "CUPO": "1501991"}, {"NOMBRE": "RAMIREZ CRUZ ERICKA YESSENIA", "CUPO": "1502176"}, {"NOMBRE": "MARTINEZ SOSA MICHELLE", "CUPO": "1502177"}, {"NOMBRE": "SILVETI PEREZ ROCIO", "CUPO": "1502178"}, {"NOMBRE": "RAMIREZ CRUZ RUTH PAOLA", "CUPO": "1502179"}, {"NOMBRE": "PACHECO RAMIREZ DULCE JOCABET", "CUPO": "1502180"}, {"NOMBRE": "ESCOBAR NABOR EMMA NAZARAHI", "CUPO": "1502210"}, {"NOMBRE": "LIRA ESPINOZA PATRICIA ALEJANDRA", "CUPO": "1502220"}, {"NOMBRE": "MORALES ESCOBAR JANETH JOSELYN", "CUPO": "1502229"}, {"NOMBRE": "GONZALEZ CLEMENTE LAURA ANDREA", "CUPO": "1502290"}, {"NOMBRE": "GONZALEZ VARGAS GABRIEL YOSEF ARNALDO", "CUPO": "1502291"}, {"NOMBRE": "MARTINEZ SANDOVAL JUAN CARLOS", "CUPO": "1502292"}, {"NOMBRE": "MENDOZA ALVARADO DIANA ARELI", "CUPO": "1502293"}, {"NOMBRE": "PONCE NIEVES BRYAN", "CUPO": "1502294"}, {"NOMBRE": "REYES VAZQUEZ NORMA ANGELICA", "CUPO": "1502295"}, {"NOMBRE": "RUBIO VALADEZ FERNANDA ESTEFANIA", "CUPO": "1502296"}, {"NOMBRE": "SALAZAR MARTINEZ GUADALUPE ABIGAIL", "CUPO": "1502297"}];
+  var SESSION_KEY = 'sare1507_sesion';
+  var SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 horas
+
+  function normalizar(txt){
+    return (txt||'').toUpperCase().trim().replace(/\s+/g,' ')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  }
+
+  function getSesion(){
+    try {
+      var raw = localStorage.getItem(SESSION_KEY);
+      if(!raw) return null;
+      var data = JSON.parse(raw);
+      if(!data.expira || Date.now() > data.expira){
+        localStorage.removeItem(SESSION_KEY);
+        return null;
+      }
+      return data;
+    } catch(e){ return null; }
+  }
+
+  function ocultarBody(){
+    document.documentElement.style.visibility = 'hidden';
+  }
+  function mostrarBody(){
+    document.documentElement.style.visibility = 'visible';
+  }
+
+  function mostrarApp(usuario){
+    var ov = document.getElementById('login-overlay-sare');
+    if(ov) ov.style.display = 'none';
+    var bar = document.getElementById('sare-userbar');
+    if(bar){ bar.style.display = 'flex'; }
+    var nm = document.getElementById('sare-userbar-nombre');
+    if(nm && usuario) nm.textContent = usuario.NOMBRE;
+    mostrarBody();
+  }
+
+  function mostrarLogin(){
+    var ov = document.getElementById('login-overlay-sare');
+    if(ov) ov.style.display = 'flex';
+    var bar = document.getElementById('sare-userbar');
+    if(bar) bar.style.display = 'none';
+    mostrarBody();
+  }
+
+  ocultarBody();
+
+  function init(){
+    var sesion = getSesion();
+    if(sesion){
+      mostrarApp(sesion);
+    } else {
+      mostrarLogin();
+    }
+
+    var form = document.getElementById('login-form-sare');
+    if(form){
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        var nombreInput = normalizar(document.getElementById('login-nombre-sare').value);
+        var cupoInput = (document.getElementById('login-cupo-sare').value||'').trim();
+        var errorBox = document.getElementById('login-error-sare');
+
+        var encontrado = USUARIOS_AUTORIZADOS.find(function(u){
+          return normalizar(u.NOMBRE) === nombreInput && String(u.CUPO).trim() === cupoInput;
+        });
+
+        if(encontrado){
+          errorBox.style.display = 'none';
+          var sesionData = Object.assign({}, encontrado, { expira: Date.now() + SESSION_DURATION_MS });
+          localStorage.setItem(SESSION_KEY, JSON.stringify(sesionData));
+          mostrarApp(sesionData);
+        } else {
+          errorBox.style.display = 'block';
+        }
+      });
+    }
+
+    var btnLogout = document.getElementById('sare-userbar-logout');
+    if(btnLogout){
+      btnLogout.addEventListener('click', function(){
+        localStorage.removeItem(SESSION_KEY);
+        if(form) form.reset();
+        mostrarLogin();
+      });
+    }
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
 </body>
 </html>
