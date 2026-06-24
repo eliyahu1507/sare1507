@@ -2,9 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SARE 1507 — Validación BRCU + Históricos</title>
+<title>SARE 1507 — Nominal Becas Bienestar</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>:root{--guinda:#6B1C3E;--guinda-o:#4A0E29;--guinda-c:#8B2550;--dorado:#C8962A;--dorado-c:#E5B94E;--dorado-s:#F5E6C0;--verde:#1A7A3A;--verde-bg:#B9F5C8;--verde-c:#E8FFF0;--naranja:#E65C00;--naranja-bg:#FFF3E0;--azul:#1565C0;--azul-bg:#E3F2FD;--alerta:#FF6F00;--alerta-bg:#FFF8E1;--rojo:#C62828;--blanco:#FFF;--gris-bg:#F7F4F5;--gris:#EDE8EA;--texto:#1A0A10;--texto-s:#5A3A47;--sombra:rgba(74,14,41,.15)}
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--texto)}
 .top-bar{background:var(--guinda-o);padding:7px 20px;display:flex;align-items:center;gap:10px;font-size:.71rem;color:rgba(255,255,255,.82);border-bottom:2px solid var(--dorado)}.top-bar .sep{color:var(--dorado-c)}
@@ -185,47 +184,7 @@ tr[data-exacto="1"] mark.hit { background: #b7f0c0; color: #1B5E20; }
 tr[data-exacto="1"] .res-ben-nombre { color: #1B5E20; font-weight: 800; }
 
 footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;padding:15px;font-size:.72rem;border-top:3px solid var(--dorado)}footer strong{color:var(--dorado-c)}
-@media(max-width:560px){.stats-bar{grid-template-columns:repeat(2,1fr)}.nivel-stats-bar{grid-template-columns:repeat(2,1fr)}.header-content{padding:15px}.tabs .tab-btn{font-size:.63rem;padding:9px 3px}.obs-res-cards{grid-template-columns:repeat(2,1fr)}}
-/* ── NUEVA STATS BAR ── */
-.stats-bar-new{background:var(--guinda-o);display:grid;grid-template-columns:1fr 2px 1fr;border-top:3px solid var(--dorado);padding:14px 0}
-.sbn-col{padding:10px 20px}
-.sbn-divider{background:rgba(255,255,255,.15);margin:6px 0}
-.sbn-title{font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--dorado-c);opacity:.85;margin-bottom:8px}
-.sbn-main-num{font-family:'Montserrat',sans-serif;font-size:2rem;font-weight:900;color:var(--dorado-c);line-height:1;margin-bottom:8px}
-.sbn-detail{display:flex;flex-wrap:wrap;gap:6px}
-.sbn-chip{font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:20px;color:#fff}
-.sbn-chip.prim{background:rgba(26,122,58,.6);border:1px solid #1A7A3A}
-.sbn-chip.secu{background:rgba(21,101,192,.6);border:1px solid #1565C0}
-.sbn-sources{display:flex;flex-direction:column;gap:6px;justify-content:center;height:100%}
-.sbn-source{display:flex;align-items:center;gap:7px;font-size:.75rem;color:rgba(255,255,255,.9)}
-.sbn-src-lbl{font-weight:700;color:rgba(255,255,255,.7);min-width:80px}
-.sbn-src-val{font-family:'Montserrat',sans-serif;font-weight:700;color:var(--dorado-c)}
-.sbn-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background .3s}
-.sbn-dot.loading{background:#888;animation:pulse-dot 1s infinite}
-.sbn-dot.ok{background:#4CAF50}
-.sbn-dot.err{background:#F44336}
-@keyframes pulse-dot{0%,100%{opacity:.4}50%{opacity:1}}
-
-/* ── FICHA RESULTADO HISTÓRICO ── */
-.ficha-hist{background:#fff;border:2px solid var(--dorado);border-radius:14px;padding:18px 20px;margin:14px 0;box-shadow:0 3px 14px var(--sombra);animation:fadeIn .3s ease}
-.ficha-hist-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--dorado-s)}
-.ficha-hist-ico{font-size:1.6rem}
-.ficha-hist-tit{font-family:'Montserrat',sans-serif;font-weight:900;font-size:.95rem;color:var(--guinda)}
-.ficha-hist-sub{font-size:.7rem;color:var(--texto-s);margin-top:2px}
-.ficha-hist-badge{margin-left:auto;background:var(--dorado);color:var(--guinda-o);font-family:'Montserrat',sans-serif;font-size:.65rem;font-weight:800;padding:4px 12px;border-radius:20px;text-transform:uppercase}
-.ficha-hist-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.ficha-hist-field{background:var(--gris-bg);border-radius:8px;padding:10px 13px;border-left:3px solid var(--guinda-c)}
-.ficha-hist-field-lbl{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--texto-s);margin-bottom:3px}
-.ficha-hist-field-val{font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:700;color:var(--texto);word-break:break-word}
-.ficha-hist-field.curp-field{grid-column:1/-1;border-left-color:var(--dorado);background:var(--dorado-s)}
-.ficha-hist-field.curp-field .ficha-hist-field-val{font-size:.95rem;letter-spacing:.5px;color:var(--guinda-o)}
-.ficha-hist-field.proceso-field{grid-column:1/-1;border-left-color:var(--verde)}
-.ficha-hist-field.proceso-field .ficha-hist-field-val{color:var(--verde)}
-.ficha-brcu-badge{display:inline-block;background:var(--guinda);color:#fff;font-family:'Montserrat',sans-serif;font-size:.65rem;font-weight:800;padding:4px 12px;border-radius:20px;margin-bottom:10px}
-.ficha-no-hist{background:var(--naranja-bg);border:1px solid rgba(230,92,0,.3);border-radius:10px;padding:12px 16px;font-size:.8rem;color:var(--naranja);margin-top:8px;display:flex;align-items:center;gap:8px}
-.ficha-si-hist{background:var(--verde-bg);border:1px solid rgba(26,122,58,.3);border-radius:10px;padding:12px 16px;font-size:.8rem;color:var(--verde);margin-top:8px;display:flex;align-items:center;gap:8px;font-weight:600}
-
-</style>
+@media(max-width:560px){.stats-bar{grid-template-columns:repeat(2,1fr)}.nivel-stats-bar{grid-template-columns:repeat(2,1fr)}.header-content{padding:15px}.tabs .tab-btn{font-size:.63rem;padding:9px 3px}.obs-res-cards{grid-template-columns:repeat(2,1fr)}}</style>
 <style>
 #login-overlay-sare{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#4d0011 0%,#6f1223 60%,#832231 100%);display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Inter',sans-serif;}
 #login-overlay-sare .login-box{background:#fff;border-radius:16px;max-width:420px;width:100%;padding:36px 32px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
@@ -279,34 +238,15 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 
 <header>
 <div class="header-content">
-<div class="logo-row"><div class="logo-left"><div class="escudo">&#x1F393;</div><div class="logo-text"><div class="gob-label">SARE 1507 — Sistema de Validación Histórica</div><div class="prog-name">Becas Bienestar · ¡Educar es Transformar!</div></div></div><div class="header-clock"><div class="clock-time" id="clock-time">--:--:--</div><div class="clock-date" id="clock-date">---</div></div></div>
-<h1 class="tit">Validación de Beneficiarios<br><span class="hl">BRCU mayo-junio 2026</span> + Operativos Anteriores</h1>
-<div class="sub-h">Escaneo CURP · Búsqueda por nombre · Verificación simultánea en padrón actual e históricos</div>
-<div class="badge-row"><div class="badge gold">&#x1F4F7; Escaneo CURP</div><div class="badge">&#x1F3EB; Primaria</div><div class="badge">&#x1F4DA; Secundaria</div><div class="badge">&#x1F4C2; Históricos CURP</div></div>
+<div class="logo-row"><div class="logo-left"><div class="escudo">&#x1F393;</div><div class="logo-text"><div class="gob-label">SARE 1507 — Sistema de Consulta</div><div class="prog-name">Becas Bienestar · ¡Educar es Transformar!</div></div></div><div class="header-clock"><div class="clock-time" id="clock-time">--:--:--</div><div class="clock-date" id="clock-date">---</div></div></div>
+<h1 class="tit">Nominal de Beneficiarios<br><span class="hl">Básica · BUEMS · JEF</span> — 2026</h1>
+<div class="sub-h">Escaneo CURP · Búsqueda por nombre · Verificación de beneficiario</div>
+<div class="badge-row"><div class="badge gold">&#x1F4F7; Escaneo CURP</div><div class="badge">&#x1F3EB; Básica</div><div class="badge">&#x1F393; BUEMS</div><div class="badge">&#x1F3DB;&#xFE0F; JEF</div></div>
 </div>
-
-<div class="stats-bar-new" id="stats-bar-new">
-  <div class="sbn-col brcu-col">
-    <div class="sbn-title">&#x1F4CB; Operativo BRCU Actual</div>
-    <div class="sbn-main-num">59,095</div>
-    <div class="sbn-detail">
-      <span class="sbn-chip prim">&#x1F3EB; Primaria: 57,887</span>
-      <span class="sbn-chip secu">&#x1F4DA; Secundaria: 1,208</span>
-    </div>
-  </div>
-  <div class="sbn-divider"></div>
-  <div class="sbn-col hist-col">
-    <div class="sbn-title">&#x1F4C2; Operativos Anteriores (CURP)</div>
-    <div class="sbn-sources">
-      <div class="sbn-source" id="src-basica"><span class="sbn-dot loading"></span><span class="sbn-src-lbl">Básica:</span><span class="sbn-src-val" id="val-basica">Cargando…</span></div>
-      <div class="sbn-source" id="src-bueems"><span class="sbn-dot loading"></span><span class="sbn-src-lbl">BUEMS:</span><span class="sbn-src-val" id="val-bueems">Cargando…</span></div>
-      <div class="sbn-source" id="src-jef"><span class="sbn-dot loading"></span><span class="sbn-src-lbl">JEF:</span><span class="sbn-src-val" id="val-jef">Cargando…</span></div>
-      <div class="sbn-source" id="src-bueems-feb"><span class="sbn-dot loading"></span><span class="sbn-src-lbl">BUEMS Feb:</span><span class="sbn-src-val" id="val-bueems-feb">Cargando…</span></div>
-    </div>
-  </div>
-</div>
-
-<div class="elab-bar">&#x270F;&#xFE0F; Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</div>
+<div class="stats-bar" id="stats-bar"><div class="stat-item"><div class="stat-num" id="stat-basica">59,095</div><div class="stat-label" id="stat-basica-lbl">Básica</div></div><div class="stat-item" id="stat-item-prim" style="display:none"><div class="stat-num" id="stat-prim">0</div><div class="stat-label" id="stat-prim-lbl">Primaria</div></div><div class="stat-item" id="stat-item-sec" style="display:none"><div class="stat-num" id="stat-sec">0</div><div class="stat-label" id="stat-sec-lbl">Secundaria</div></div><div class="stat-item"><div class="stat-num" id="stat-buems">221</div><div class="stat-label" id="stat-buems-lbl">BUEMS</div></div><div class="stat-item"><div class="stat-num" id="stat-jef">106</div><div class="stat-label" id="stat-jef-lbl">JEF</div></div><div class="stat-item"><div class="stat-num" id="stat-total">59,422</div><div class="stat-label" id="stat-total-lbl">Total registros</div></div></div>
+<div class="nivel-stats-bar" id="nivel-stats"></div>
+<div class="mini-cal-wrap"><div class="mini-cal-label">&#x1F4C5; Calendario de Atención — Básica · BUEMS · JEF</div><div class="mini-cal-row" id="mini-cal"></div></div>
+<div class="elab-bar">&#x270F;&#xFE0F; Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong></div>
 </header>
 
 <main>
@@ -350,206 +290,8 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 
 <footer><strong>SARE 1507 ECATEPEC</strong> &nbsp;·&nbsp; Nominal Becas Bienestar · Básica · BUEMS · JEF<br><span style="opacity:.5;font-size:.67rem">59,422 registros · Uso oficial interno</span></footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js"></script>
 <script>
-// ══════════════════════════════════════════════════════
-//  INTEGRACIÓN HISTÓRICA — CURP Maps desde GitHub
-// ══════════════════════════════════════════════════════
-
-// ── Configuración de archivos históricos (CURP) ──
-// fetch + PapaParse, con cache-buster para evitar 404 cacheados por el navegador/CDN
-const APP_VERSION = '20260619b';
-const HIST_FILES = [
-  { url: 'basica.csv',     id: 'basica',     labelId: 'val-basica',     dotId: 'src-basica',     nivelLabel: 'BÁSICA' },
-  { url: 'bueems.csv',     id: 'bueems',     labelId: 'val-bueems',     dotId: 'src-bueems',     nivelLabel: 'BUEMS' },
-  { url: 'jef.csv',        id: 'jef',        labelId: 'val-jef',        dotId: 'src-jef',        nivelLabel: 'JEF' },
-  { url: 'bueems_feb.csv', id: 'bueems_feb', labelId: 'val-bueems-feb', dotId: 'src-bueems-feb', nivelLabel: 'BUEMS FEB' }
-];
-
-// Mapas en memoria: { CURP → {nombre, nivel, cct, proceso, mun} }
-const HIST_MAPS = { basica: new Map(), bueems: new Map(), jef: new Map(), bueems_feb: new Map() };
-// Conteo desglosado por subnivel (solo aplica a 'basica', que mezcla primaria/secundaria/preescolar)
-const HIST_SUBNIVEL_COUNTS = { basica: { PRIMARIA: 0, SECUNDARIA: 0, PREESCOLAR: 0, OTRO: 0 } };
-
-function setDotStatus(srcId, status) {
-  var src = document.getElementById(srcId);
-  if(!src) return;
-  var dot = src.querySelector('.sbn-dot');
-  if(!dot) return;
-  dot.classList.remove('loading','ok','err');
-  dot.classList.add(status);
-}
-
-// Clasifica el subnivel educativo a partir del prefijo del CCT (estándar SEP):
-// PR=Primaria, JN/SN=Preescolar, ES/ST/TV/ML=Secundaria (general/técnica/telesec/CAM)
-function clasificarSubnivelPorCCT(cct) {
-  var m = /^\d{2}[DE]([A-Z]{2})/.exec(cct || '');
-  if(!m) return 'OTRO';
-  var clave = m[1];
-  if(clave === 'PR') return 'PRIMARIA';
-  if(clave === 'JN' || clave === 'SN') return 'PREESCOLAR';
-  if(clave === 'ES' || clave === 'ST' || clave === 'TV' || clave === 'ML') return 'SECUNDARIA';
-  return 'OTRO';
-}
-
-function procesarDataCSVHist(data, cfg) {
-  var lineas = Papa.parse(data, { header: true, skipEmptyLines: true }).data;
-  var map = HIST_MAPS[cfg.id];
-  lineas.forEach(function(row){
-    var keys = Object.keys(row);
-    function getVal(posibles){
-      var key = keys.find(function(k){ return posibles.some(function(pn){ return k.toUpperCase().includes(pn); }); });
-      return key && row[key] ? row[key].trim().toUpperCase() : '';
-    }
-    var curp = getVal(['CURP']);
-    if(!curp || curp.length < 10) return;
-    var cct = getVal(['CCT']);
-    var mun = getVal(['MUN','MUNICIPIO']);
-    var nombreBase = getVal(['NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
-    var ap1 = getVal(['PRIMER APELLIDO','APELLIDO PATERNO']);
-    var ap2 = getVal(['SEGUNDO APELLIDO','APELLIDO MATERNO']);
-    var nombreCompleto = (nombreBase+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim();
-    var proceso = getVal(['PROCESO']);
-    var yaExistia = map.has(curp);
-    map.set(curp, {
-      nombre: nombreCompleto,
-      nivel: cfg.nivelLabel,
-      cct: cct || 'N/A',
-      mun: mun || 'N/A',
-      proceso: proceso || cfg.nivelLabel,
-      subnivel: cfg.id === 'basica' ? clasificarSubnivelPorCCT(cct) : null
-    });
-  });
-  // Recalcular desglose de subnivel para básica (sobre CURP únicas, no filas)
-  if(cfg.id === 'basica'){
-    var counts = { PRIMARIA: 0, SECUNDARIA: 0, PREESCOLAR: 0, OTRO: 0 };
-    map.forEach(function(v){ counts[v.subnivel] = (counts[v.subnivel]||0) + 1; });
-    HIST_SUBNIVEL_COUNTS.basica = counts;
-  }
-}
-
-async function cargarHistorico(cfg) {
-  try {
-    // Cache-buster: evita que el navegador/CDN sirva un 404 o CSV viejo cacheado
-    var response = await fetch(cfg.url + '?v=' + APP_VERSION);
-    if(response.ok){
-      var textData = await response.text();
-      procesarDataCSVHist(textData, cfg);
-      var valEl = document.getElementById(cfg.labelId);
-      var total = HIST_MAPS[cfg.id].size;
-      if(cfg.id === 'basica'){
-        var c = HIST_SUBNIVEL_COUNTS.basica;
-        if(valEl) valEl.textContent = '🟢 ' + total.toLocaleString() + ' (Sec: ' + c.SECUNDARIA.toLocaleString() + ' · Prim: ' + c.PRIMARIA.toLocaleString() + ')';
-      } else {
-        if(valEl) valEl.textContent = '🟢 ' + total.toLocaleString() + ' registros';
-      }
-      setDotStatus(cfg.dotId, 'ok');
-    } else {
-      throw new Error('HTTP '+response.status);
-    }
-  } catch(err){
-    console.warn('Error cargando '+cfg.url+':', err);
-    var valEl2 = document.getElementById(cfg.labelId);
-    if(valEl2) valEl2.textContent = '🔴 Error de carga';
-    setDotStatus(cfg.dotId, 'err');
-  }
-}
-
-async function iniciarCargaHistoricos() {
-  for (const cfg of HIST_FILES) {
-    await cargarHistorico(cfg);
-  }
-}
-
-// ── BÚSQUEDA EN HISTÓRICOS POR CURP ──
-function buscarEnHistoricos(curp) {
-  if(!curp || curp.length < 10) return null;
-  var curpUp = curp.trim().toUpperCase();
-  var found = null;
-  var srcId = null;
-  if(HIST_MAPS.basica.has(curpUp)){     found = HIST_MAPS.basica.get(curpUp);     srcId = 'BÁSICA'; }
-  else if(HIST_MAPS.bueems.has(curpUp)){ found = HIST_MAPS.bueems.get(curpUp);     srcId = 'BUEMS'; }
-  else if(HIST_MAPS.jef.has(curpUp)){   found = HIST_MAPS.jef.get(curpUp);         srcId = 'JEF'; }
-  else if(HIST_MAPS.bueems_feb.has(curpUp)){ found = HIST_MAPS.bueems_feb.get(curpUp); srcId = 'BUEMS FEB'; }
-  if(found) return Object.assign({}, found, {fuente: srcId});
-  return null;
-}
-
-// ── MOSTRAR PANEL DE RESULTADO HISTÓRICO ──
-function mostrarPanelHistorico(curpIngresada, hitBRCU) {
-  // Buscar en históricos
-  var hist = buscarEnHistoricos(curpIngresada);
-
-  // Contenedor: insertarlo debajo de alerta-curp
-  var contenedor = document.getElementById('panel-historico');
-  if(!contenedor){
-    contenedor = document.createElement('div');
-    contenedor.id = 'panel-historico';
-    var alertaCurp = document.getElementById('alerta-curp');
-    if(alertaCurp && alertaCurp.parentNode)
-      alertaCurp.parentNode.insertBefore(contenedor, alertaCurp.nextSibling);
-  }
-
-  var html = '';
-
-  // Si hay hit en BRCU actual
-  if(hitBRCU){
-    html += '<div class="ficha-hist" style="border-color:var(--guinda)">';
-    html += '<div class="ficha-hist-hdr"><span class="ficha-hist-ico">✅</span><div><div class="ficha-hist-tit">Encontrado en Padrón BRCU Actual</div><div class="ficha-hist-sub">'+esc(hitBRCU.escuela||'')+'</div></div><div class="ficha-hist-badge">BRCU mayo-junio 2026</div></div>';
-    html += '<div class="ficha-hist-grid">';
-    html += '<div class="ficha-hist-field curp-field"><div class="ficha-hist-field-lbl">CURP</div><div class="ficha-hist-field-val">'+esc(curpIngresada||'—')+'</div></div>';
-    html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Nombre Completo</div><div class="ficha-hist-field-val">'+esc(hitBRCU.nombre||'—')+'</div></div>';
-    html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Nivel Educativo</div><div class="ficha-hist-field-val">'+esc(hitBRCU.nivel||'—')+'</div></div>';
-    html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">CCT</div><div class="ficha-hist-field-val">'+esc(hitBRCU.cct||'—')+'</div></div>';
-    html += '<div class="ficha-hist-field proceso-field"><div class="ficha-hist-field-lbl">Proceso</div><div class="ficha-hist-field-val">BRCU mayo-junio 2026</div></div>';
-    html += '</div></div>';
-  }
-
-  // Si hay hit en históricos
-  if(hist){
-    html += '<div class="ficha-hist">';
-    html += '<div class="ficha-hist-hdr"><span class="ficha-hist-ico">📂</span><div><div class="ficha-hist-tit">Encontrado en Operativo Anterior</div><div class="ficha-hist-sub">Fuente: '+esc(hist.fuente||'')+'</div></div><div class="ficha-hist-badge">'+esc(hist.proceso||hist.fuente||'HISTÓRICO')+'</div></div>';
-    html += '<div class="ficha-hist-grid">';
-    html += '<div class="ficha-hist-field curp-field"><div class="ficha-hist-field-lbl">CURP</div><div class="ficha-hist-field-val">'+esc(curpIngresada)+'</div></div>';
-    html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Nombre Completo</div><div class="ficha-hist-field-val">'+esc(hist.nombre||'—')+'</div></div>';
-    html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Nivel / Programa</div><div class="ficha-hist-field-val">'+esc(hist.nivel||'—')+(hist.subnivel && hist.subnivel!=='OTRO' ? ' · '+esc(hist.subnivel) : '')+'</div></div>';
-    html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">CCT</div><div class="ficha-hist-field-val">'+esc(hist.cct||'—')+'</div></div>';
-    if(hist.mun){ html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Municipio</div><div class="ficha-hist-field-val">'+esc(hist.mun)+'</div></div>'; }
-    html += '<div class="ficha-hist-field proceso-field"><div class="ficha-hist-field-lbl">Proceso Anterior</div><div class="ficha-hist-field-val">'+esc(hist.proceso||'—')+'</div></div>';
-    html += '</div></div>';
-  }
-
-  // Si no hay hit en históricos
-  if(!hist){
-    html += '<div class="ficha-no-hist">⚡ Sin antecedentes en operativos anteriores con esta CURP</div>';
-  }
-
-  contenedor.innerHTML = html;
-  contenedor.style.display = 'block';
-}
-
-function ocultarPanelHistorico() {
-  var c = document.getElementById('panel-historico');
-  if(c){ c.innerHTML=''; c.style.display='none'; }
-}
-
-// Limpiar panel histórico cuando se limpia el scan
-var _origLimpiarScan = typeof limpiarScan !== 'undefined' ? limpiarScan : null;
-
-// Iniciar carga al cargar la página
-// Se dispara en window.onload (igual que nominal_procesos_anteriores.html),
-// para no competir por red/CPU con el parseo del padrón BRCU embebido (~2.6MB)
-if (document.readyState === 'complete') {
-  iniciarCargaHistoricos();
-} else {
-  window.addEventListener('load', function(){
-    iniciarCargaHistoricos();
-  });
-}
-
-</script>
-
-<script>
-
 const DB = {
   basica: JSON.parse(document.getElementById('d-basica').textContent),
   buems:  JSON.parse(document.getElementById('d-buems').textContent),
@@ -1018,9 +760,6 @@ function buscarPorNombreCompleto(apPat, apMat, nom){
   noRes.classList.remove('visible');
   inlineState.scan.rows = rows;
   inlineState.scan.page = 1;
-  var _curpActual = document.getElementById('scan-input').value.trim().toUpperCase();
-  if(_curpActual.length >= 18){ mostrarPanelHistorico(_curpActual, rows.length > 0 ? rows[0] : null); }
-  else { ocultarPanelHistorico(); }
 
   // Show match quality notice
   var aviso = document.getElementById('curp-aviso-resultado');
@@ -1300,9 +1039,6 @@ function buscarGlobal(){
   });
   inlineState.scan.rows = rows.slice(0,500); // cap at 500 for performance
   inlineState.scan.page = 1;
-  var _qCurp = qOrig.trim().toUpperCase();
-  if(_qCurp.length >= 18){ mostrarPanelHistorico(_qCurp, rows.length > 0 ? rows[0] : null); }
-  else { ocultarPanelHistorico(); }
   renderInline('scan');
 }
 
@@ -1323,7 +1059,6 @@ function ocultarScan(){
 function limpiarScan(){
   document.getElementById('scan-input').value='';
   document.getElementById('alerta-curp').style.display='none';
-  ocultarPanelHistorico();
   ocultarScan(); detenerCam();
 }
 
@@ -1624,7 +1359,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')cerrarModal(
   setInterval(tick, 1000);
 })();
 
-// mini-cal y nivel-stats eliminados en versión histórica
+buildMiniCal();
+buildNivelStats();
 
 // ── ALERTAS DE AUDIO (Web Speech API) ──
 function hablar(texto) {
@@ -1659,11 +1395,7 @@ if(window.speechSynthesis){
 }
 
 
-
 </script>
-
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js"></script>
-
 
 <script>
 (function(){
