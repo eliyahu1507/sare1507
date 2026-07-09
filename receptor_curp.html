@@ -99,7 +99,8 @@
 <div class="container">
 
   <div class="banner">
-    🔒 El CURP viaja directo y cifrado entre tu teléfono y esta PC (conexión WebRTC). No pasa por ningún servidor externo que lo almacene.
+    🔒 El CURP viaja directo y cifrado entre tu teléfono y esta PC (conexión WebRTC). No pasa por ningún servidor externo que lo almacene.<br>
+    ⚠️ Si activas el "modo teclado automático", el programa local escribirá el texto donde tengas el cursor en ese momento — asegúrate de tener el campo correcto enfocado antes de escanear.
   </div>
 
   <div class="card">
@@ -113,6 +114,34 @@
       <span id="connStatus">Iniciando…</span>
     </div>
     <p class="hint">En el teléfono, abre el Escáner CURP (QR), escribe este mismo código en "Enlace con PC" y toca "Conectar". Ese código solo sirve para presentarlos — cámbialo cuando quieras.</p>
+  </div>
+
+  <div class="card">
+    <label>⌨️ Modo teclado automático (opcional — requiere el programa local)</label>
+    <p class="hint" style="margin-top:0;">Escribe la CURP sola donde tengas el cursor, como un lector físico. Necesita que tengas corriendo <code>helper_lector_curp.py</code> en esta misma PC.</p>
+
+    <label style="margin-top:10px;">Código secreto del programa local</label>
+    <input type="text" id="helperToken" placeholder="Pégalo desde la ventana de helper_lector_curp.py">
+
+    <div style="display:flex; gap:16px; margin-top:12px; align-items:center; flex-wrap:wrap;">
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#ccc;">
+        <input type="checkbox" id="helperEnter" style="width:auto;"> Presionar Enter después de escribir
+      </label>
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#ccc;">
+        Retraso antes de escribir (ms)
+        <input type="text" id="helperDelay" value="600" style="width:70px; margin-top:0;">
+      </label>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-secondary" id="btnProbarHelper">Probar conexión</button>
+      <button class="btn-primary" id="btnArmarHelper">Activar escritura automática</button>
+    </div>
+
+    <div class="status-line">
+      <div class="dot" id="helperDot"></div>
+      <span id="helperStatus">Inactivo — el CURP solo se copia/muestra aquí</span>
+    </div>
   </div>
 
   <div class="card">
@@ -152,9 +181,100 @@
   const autoHint = document.getElementById('autoHint');
   const targetUrlInput = document.getElementById('targetUrl');
   const historyEl = document.getElementById('history');
+  const helperTokenInput = document.getElementById('helperToken');
+  const helperEnterInput = document.getElementById('helperEnter');
+  const helperDelayInput = document.getElementById('helperDelay');
+  const btnProbarHelper = document.getElementById('btnProbarHelper');
+  const btnArmarHelper = document.getElementById('btnArmarHelper');
+  const helperDot = document.getElementById('helperDot');
+  const helperStatus = document.getElementById('helperStatus');
 
   targetUrlInput.value = localStorage.getItem(STORAGE_URL) || '';
   targetUrlInput.addEventListener('input', () => localStorage.setItem(STORAGE_URL, targetUrlInput.value.trim()));
+
+  const HELPER_URL = 'http://127.0.0.1:8642';
+  helperTokenInput.value = localStorage.getItem('sare1507_helper_token') || '';
+  helperEnterInput.checked = localStorage.getItem('sare1507_helper_enter') === '1';
+  helperDelayInput.value = localStorage.getItem('sare1507_helper_delay') || '600';
+  helperTokenInput.addEventListener('input', () => localStorage.setItem('sare1507_helper_token', helperTokenInput.value.trim()));
+  helperEnterInput.addEventListener('change', () => localStorage.setItem('sare1507_helper_enter', helperEnterInput.checked ? '1' : '0'));
+  helperDelayInput.addEventListener('input', () => localStorage.setItem('sare1507_helper_delay', helperDelayInput.value.trim()));
+
+  let helperArmado = false;
+
+  function setHelperStatus(state, text) {
+    helperDot.className = 'dot ' + state;
+    helperStatus.textContent = text;
+  }
+
+  async function probarHelper(silencioso) {
+    try {
+      const resp = await fetch(HELPER_URL + '/salud');
+      if (resp.ok) {
+        if (!silencioso) setHelperStatus('connected', 'Programa local encontrado ✔');
+        return true;
+      }
+      if (!silencioso) setHelperStatus('error', 'El programa local respondió con error.');
+      return false;
+    } catch (e) {
+      if (!silencioso) setHelperStatus('error', 'No se encontró el programa local en esta PC. ¿Está corriendo "helper_lector_curp.py"?');
+      return false;
+    }
+  }
+
+  btnProbarHelper.addEventListener('click', () => probarHelper(false));
+
+  btnArmarHelper.addEventListener('click', async () => {
+    if (helperArmado) {
+      helperArmado = false;
+      btnArmarHelper.textContent = 'Activar escritura automática';
+      btnArmarHelper.className = 'btn-primary';
+      setHelperStatus('', 'Inactivo — el CURP solo se copia/muestra aquí');
+      return;
+    }
+    if (!helperTokenInput.value.trim()) {
+      setHelperStatus('error', 'Pega primero el código secreto que te dio el programa local.');
+      return;
+    }
+    setHelperStatus('waiting', 'Verificando…');
+    const ok = await probarHelper(true);
+    if (!ok) {
+      setHelperStatus('error', 'No se encontró el programa local. Ejecútalo primero y vuelve a intentar.');
+      return;
+    }
+    helperArmado = true;
+    btnArmarHelper.textContent = 'Desactivar escritura automática';
+    btnArmarHelper.className = 'btn-secondary';
+    setHelperStatus('connected', 'Escritura automática ACTIVA — se escribirá donde tengas el cursor ✔');
+  });
+
+  async function escribirEnFoco(texto) {
+    if (!helperArmado) return;
+    try {
+      const resp = await fetch(HELPER_URL + '/escribir', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + helperTokenInput.value.trim()
+        },
+        body: JSON.stringify({
+          texto: texto,
+          enter: helperEnterInput.checked,
+          retraso_ms: parseInt(helperDelayInput.value, 10) || 0
+        })
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        autoHint.textContent = 'Escrito automáticamente donde tenías el cursor ✔';
+      } else if (resp.status === 401) {
+        setHelperStatus('error', 'Código secreto incorrecto. Cópialo de nuevo desde la ventana del programa local.');
+      } else {
+        autoHint.textContent = 'El programa local no pudo escribir: ' + (data.error || 'error desconocido');
+      }
+    } catch (e) {
+      setHelperStatus('error', 'Se perdió la conexión con el programa local.');
+    }
+  }
 
   const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // sin 0/O/1/I/L para evitar confusión
   let peer = null;
@@ -240,6 +360,10 @@
       navigator.clipboard.writeText(curp).catch(() => {});
     }
     if (navigator.vibrate) navigator.vibrate(80);
+
+    if (helperArmado) {
+      escribirEnFoco(curp);
+    }
   }
 
   function renderHistory() {
