@@ -117,6 +117,11 @@
   details { margin-top: 12px; }
   summary { color: #9aa; font-size: 12px; cursor: pointer; }
 
+  .dot.waiting { background: #ffb84d; animation: pulse 1.4s infinite; }
+  .dot.connected { background: #3ddc84; }
+  .dot.error { background: #ff6b6b; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
   .banner {
     background: #3a2a10; border: 1px solid #7a5a1a; color: #ffcf8a;
     border-radius: 10px; padding: 10px 12px; font-size: 12px; margin-bottom: 12px;
@@ -152,8 +157,22 @@
     <div class="btn-row">
       <button class="action btn-primary" id="btnUse" disabled>Usar esta CURP</button>
       <button class="action btn-secondary" id="btnCopy" disabled>Copiar</button>
+      <button class="action btn-secondary" id="btnEnviarPC" disabled>Enviar a PC</button>
       <button class="action btn-secondary" id="btnRescan" disabled>Reescanear</button>
     </div>
+  </div>
+
+  <div class="card">
+    <label>📡 Enlace con PC (opcional — convierte el teléfono en lector remoto)</label>
+    <input type="text" id="roomCode" placeholder="Código de 4 letras que ves en la PC" maxlength="4" style="text-transform:uppercase;">
+    <div class="btn-row">
+      <button class="action btn-primary" id="btnConectarPC">Conectar con PC</button>
+    </div>
+    <div class="status-line" style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;">
+      <div class="dot" id="pcDot" style="width:10px;height:10px;border-radius:50%;background:#666;"></div>
+      <span id="pcStatus" style="color:#9aa;">No conectado</span>
+    </div>
+    <p style="font-size:11px;color:#666;margin-top:8px;line-height:1.5;">Abre "receptor_curp.html" en tu PC, escribe aquí el código que te muestre y toca "Conectar". Cada CURP escaneada se enviará automáticamente a esa pantalla.</p>
   </div>
 
   <div class="card">
@@ -189,6 +208,25 @@
     'https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js',
     'https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js'
   ];
+  window.__peerjsSources = [
+    'peerjs.min.js',
+    'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js',
+    'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js'
+  ];
+  window.__peerjsTried = 0;
+  function cargarSiguientePeerjs() {
+    if (window.__peerjsTried >= window.__peerjsSources.length) {
+      window.dispatchEvent(new Event('peerjs-load-failed'));
+      return;
+    }
+    var src = window.__peerjsSources[window.__peerjsTried++];
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = function () { window.dispatchEvent(new Event('peerjs-ready')); };
+    s.onerror = function () { cargarSiguientePeerjs(); };
+    document.head.appendChild(s);
+  }
+  cargarSiguientePeerjs();
   window.__zxingLoaded = false;
   window.__zxingTried = 0;
 
@@ -232,9 +270,19 @@
   const historyEl = document.getElementById('history');
   const manualCurpInput = document.getElementById('manualCurp');
   const btnManualUse = document.getElementById('btnManualUse');
+  const btnEnviarPC = document.getElementById('btnEnviarPC');
+  const roomCodeInput = document.getElementById('roomCode');
+  const btnConectarPC = document.getElementById('btnConectarPC');
+  const pcDot = document.getElementById('pcDot');
+  const pcStatus = document.getElementById('pcStatus');
 
   targetUrlInput.value = localStorage.getItem(STORAGE_URL) || '';
   paramNameInput.value = localStorage.getItem(STORAGE_PARAM) || 'curp';
+  roomCodeInput.value = localStorage.getItem('sare1507_qr_room_code') || '';
+  roomCodeInput.addEventListener('input', () => {
+    roomCodeInput.value = roomCodeInput.value.toUpperCase();
+    localStorage.setItem('sare1507_qr_room_code', roomCodeInput.value.trim());
+  });
   targetUrlInput.addEventListener('input', () => {
     localStorage.setItem(STORAGE_URL, targetUrlInput.value.trim());
     btnOpen.disabled = !currentCurp || !targetUrlInput.value.trim();
@@ -245,6 +293,72 @@
   let codeReader = null;
   let history = [];
   const CURP_REGEX = /[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d/;
+
+  // ── Enlace WebRTC con la PC ──────────────────────────
+  let pcPeer = null;
+  let pcConn = null;
+
+  function setPcStatus(state, text) {
+    pcDot.className = 'dot ' + state;
+    pcStatus.textContent = text;
+  }
+
+  function conectarConPC() {
+    const codigo = roomCodeInput.value.trim().toUpperCase();
+    if (!codigo || codigo.length < 4) {
+      setPcStatus('error', 'Escribe el código de 4 letras que aparece en la PC.');
+      return;
+    }
+    if (typeof Peer === 'undefined') {
+      setPcStatus('error', 'Librería de conexión no disponible. Verifica que subiste "peerjs.min.js" al repositorio.');
+      return;
+    }
+
+    setPcStatus('waiting', 'Conectando…');
+    btnConectarPC.disabled = true;
+    btnConectarPC.textContent = 'Conectando…';
+
+    if (pcPeer) { try { pcPeer.destroy(); } catch (e) {} }
+    pcPeer = new Peer(undefined, { debug: 1 });
+
+    pcPeer.on('open', function () {
+      pcConn = pcPeer.connect('sare1507-curp-' + codigo, { reliable: true });
+
+      pcConn.on('open', function () {
+        setPcStatus('connected', 'Conectado a la PC ✔');
+        btnConectarPC.disabled = false;
+        btnConectarPC.textContent = 'Reconectar';
+        // si ya había una CURP detectada antes de conectar, la enviamos
+        if (currentCurp) enviarCurpAPC(currentCurp);
+      });
+      pcConn.on('close', function () {
+        setPcStatus('error', 'Se cerró la conexión con la PC.');
+        btnConectarPC.disabled = false;
+        btnConectarPC.textContent = 'Conectar con PC';
+      });
+      pcConn.on('error', function () {
+        setPcStatus('error', 'No se encontró una PC con ese código. Verifica que "receptor_curp.html" esté abierto y el código sea correcto.');
+        btnConectarPC.disabled = false;
+        btnConectarPC.textContent = 'Reintentar';
+      });
+    });
+
+    pcPeer.on('error', function (err) {
+      console.error(err);
+      setPcStatus('error', 'No se encontró una PC con ese código. Verifica que "receptor_curp.html" esté abierto ahí y el código sea correcto.');
+      btnConectarPC.disabled = false;
+      btnConectarPC.textContent = 'Reintentar';
+    });
+  }
+
+  function enviarCurpAPC(curp) {
+    if (pcConn && pcConn.open) {
+      pcConn.send(curp);
+      setStatus('CURP enviada a la PC ✔', 'ok');
+    }
+  }
+
+  btnConectarPC.addEventListener('click', conectarConPC);
 
   // ── Diagnóstico inicial ──────────────────────────────
   function diagnosticoInicial() {
@@ -296,12 +410,14 @@
       curpBox.classList.remove('empty');
       btnUse.disabled = false;
       btnCopy.disabled = false;
+      btnEnviarPC.disabled = false;
       btnOpen.disabled = !targetUrlInput.value.trim();
     } else {
       curpBox.textContent = 'Esperando escaneo…';
       curpBox.classList.add('empty');
       btnUse.disabled = true;
       btnCopy.disabled = true;
+      btnEnviarPC.disabled = true;
       btnOpen.disabled = true;
     }
   }
@@ -346,12 +462,16 @@
   function onDecoded(text) {
     const curp = extractCurp(text);
     if (curp) {
-      setStatus('CURP detectada ✔', 'ok');
       setCurp(curp);
       addToHistory(curp);
       if (navigator.vibrate) navigator.vibrate(120);
       stopScanning();
       btnRescan.disabled = false;
+      if (pcConn && pcConn.open) {
+        enviarCurpAPC(curp);
+      } else {
+        setStatus('CURP detectada ✔', 'ok');
+      }
     } else {
       setStatus('QR leído, pero no se encontró una CURP válida. Sigue apuntando…', 'warn');
     }
@@ -457,6 +577,15 @@
   btnUse.addEventListener('click', () => {
     if (!currentCurp) return;
     setStatus('CURP lista para usar: ' + currentCurp, 'ok');
+  });
+
+  btnEnviarPC.addEventListener('click', () => {
+    if (!currentCurp) return;
+    if (pcConn && pcConn.open) {
+      enviarCurpAPC(currentCurp);
+    } else {
+      setStatus('No hay conexión activa con la PC. Toca "Conectar con PC" primero.', 'err');
+    }
   });
 
   btnOpen.addEventListener('click', () => {

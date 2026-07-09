@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receptor CURP - PC</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: #0f1115;
+    color: #eee;
+    min-height: 100vh;
+  }
+  header {
+    background: #1a1d24;
+    padding: 18px 24px;
+    text-align: center;
+    border-bottom: 1px solid #2a2e38;
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; font-size: 13px; color: #9aa; }
+
+  .container { padding: 20px; max-width: 640px; margin: 0 auto; }
+
+  .card {
+    background: #1a1d24;
+    border: 1px solid #2a2e38;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+  .card label { font-size: 13px; color: #9aa; display: block; margin-bottom: 6px; }
+
+  .room-code {
+    font-size: 40px; font-weight: 800; letter-spacing: 6px; text-align: center;
+    background: #0f1115; border: 2px dashed #3ddc84; border-radius: 12px;
+    padding: 18px; color: #3ddc84; margin: 10px 0;
+  }
+
+  .status-line {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 14px; margin-top: 10px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #666; }
+  .dot.waiting { background: #ffb84d; animation: pulse 1.4s infinite; }
+  .dot.connected { background: #3ddc84; }
+  .dot.error { background: #ff6b6b; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .curp-display {
+    font-size: 30px; font-weight: 800; letter-spacing: 2px; text-align: center;
+    background: #0f1115; border: 1px solid #2a2e38; border-radius: 12px;
+    padding: 24px; color: #3ddc84; margin-top: 10px; word-break: break-all;
+    min-height: 40px;
+  }
+  .curp-display.empty { color: #555; font-size: 16px; font-weight: 400; }
+  .curp-display.flash { animation: flash 0.6s; }
+  @keyframes flash { 0%{background:#204a30;} 100%{background:#0f1115;} }
+
+  input[type=text] {
+    width: 100%; padding: 12px; border-radius: 8px;
+    border: 1px solid #2a2e38; background: #0f1115; color: #eee;
+    font-size: 14px; margin-top: 4px;
+  }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  button {
+    flex: 1; min-width: 140px; padding: 13px; border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn-primary { background: #3ddc84; color: #0f1115; }
+  .btn-secondary { background: #2a2e38; color: #eee; }
+  button:disabled { opacity: .4; cursor: default; }
+
+  #history { margin-top: 10px; max-height: 200px; overflow-y: auto; }
+  #history .item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #0f1115; border: 1px solid #2a2e38; border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 6px; font-size: 14px;
+  }
+  #history .item button { flex: none; min-width: auto; padding: 6px 12px; font-size: 12px; }
+
+  .hint { font-size: 12px; color: #666; margin-top: 8px; line-height: 1.5; }
+  .banner {
+    background: #1c2e1f; border: 1px solid #2f5a3a; color: #a8e6b8;
+    border-radius: 10px; padding: 12px 14px; font-size: 12px; margin-bottom: 4px; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🖥️ Receptor CURP (para PC)</h1>
+  <p>SARE 1507 · Recibe en vivo lo que tu teléfono escanea</p>
+</header>
+
+<div class="container">
+
+  <div class="banner">
+    🔒 El CURP viaja directo y cifrado entre tu teléfono y esta PC (conexión WebRTC). No pasa por ningún servidor externo que lo almacene.
+  </div>
+
+  <div class="card">
+    <label>1. Código de enlace (dilo o muéstralo a quien tenga el teléfono)</label>
+    <div class="room-code" id="roomCode">····</div>
+    <div class="btn-row">
+      <button class="btn-secondary" id="btnNuevoCodigo">Generar otro código</button>
+    </div>
+    <div class="status-line">
+      <div class="dot" id="dot"></div>
+      <span id="connStatus">Iniciando…</span>
+    </div>
+    <p class="hint">En el teléfono, abre el Escáner CURP (QR), escribe este mismo código en "Enlace con PC" y toca "Conectar". Ese código solo sirve para presentarlos — cámbialo cuando quieras.</p>
+  </div>
+
+  <div class="card">
+    <label>2. CURP recibida</label>
+    <div class="curp-display empty" id="curpDisplay">Esperando que el teléfono envíe una CURP…</div>
+    <div class="btn-row">
+      <button class="btn-primary" id="btnCopy" disabled>Copiar</button>
+      <button class="btn-secondary" id="btnOpenAuto" disabled>Abrir y autocompletar</button>
+    </div>
+    <p class="hint" id="autoHint"></p>
+  </div>
+
+  <div class="card">
+    <label>Página de validación (para el botón "Abrir y autocompletar")</label>
+    <input type="text" id="targetUrl" placeholder="https://eliyahu1507.github.io/sare1507/index.html">
+    <p class="hint">Intenta detectar automáticamente el campo de CURP en esa página y llenarlo. Si no lo logra, el CURP ya está en tu portapapeles — solo pégalo (Ctrl+V) en el campo.</p>
+  </div>
+
+  <div class="card">
+    <label>Historial recibido en esta sesión</label>
+    <div id="history"><div style="color:#666;font-size:13px;">Sin registros aún</div></div>
+  </div>
+
+</div>
+
+<script src="peerjs.min.js"></script>
+<script>
+(function () {
+  const STORAGE_URL = 'sare1507_qr_target_url';
+  const roomCodeEl = document.getElementById('roomCode');
+  const btnNuevoCodigo = document.getElementById('btnNuevoCodigo');
+  const dotEl = document.getElementById('dot');
+  const connStatusEl = document.getElementById('connStatus');
+  const curpDisplay = document.getElementById('curpDisplay');
+  const btnCopy = document.getElementById('btnCopy');
+  const btnOpenAuto = document.getElementById('btnOpenAuto');
+  const autoHint = document.getElementById('autoHint');
+  const targetUrlInput = document.getElementById('targetUrl');
+  const historyEl = document.getElementById('history');
+
+  targetUrlInput.value = localStorage.getItem(STORAGE_URL) || '';
+  targetUrlInput.addEventListener('input', () => localStorage.setItem(STORAGE_URL, targetUrlInput.value.trim()));
+
+  const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // sin 0/O/1/I/L para evitar confusión
+  let peer = null;
+  let currentCurp = null;
+  let history = [];
+
+  function codigoAleatorio() {
+    let c = '';
+    for (let i = 0; i < 4; i++) c += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+    return c;
+  }
+
+  function setDot(state, text) {
+    dotEl.className = 'dot ' + state;
+    connStatusEl.textContent = text;
+  }
+
+  function iniciarSala(codigo) {
+    if (peer) { try { peer.destroy(); } catch (e) {} }
+    roomCodeEl.textContent = codigo;
+    setDot('waiting', 'Esperando conexión del teléfono…');
+
+    if (typeof Peer === 'undefined') {
+      setDot('error', 'No se pudo cargar la librería de conexión (peerjs.min.js). Verifica que subiste ese archivo al repositorio.');
+      return;
+    }
+
+    peer = new Peer('sare1507-curp-' + codigo, {
+      debug: 1
+    });
+
+    peer.on('open', function () {
+      // listo para recibir conexiones
+    });
+
+    peer.on('connection', function (conn) {
+      setDot('connected', 'Teléfono conectado ✔');
+      conn.on('data', function (data) {
+        if (data && typeof data === 'string') {
+          recibirCurp(data.trim().toUpperCase());
+        }
+      });
+      conn.on('close', function () {
+        setDot('waiting', 'Teléfono desconectado. Esperando reconexión…');
+      });
+    });
+
+    peer.on('error', function (err) {
+      console.error(err);
+      if (err && err.type === 'unavailable-id') {
+        // el código ya está en uso por otra sala activa; genera uno nuevo automáticamente
+        iniciarSala(codigoAleatorio());
+      } else if (err && err.type === 'peer-unavailable') {
+        // no aplica en el receptor
+      } else {
+        setDot('error', 'Error de conexión (' + (err && err.type ? err.type : 'desconocido') + '). Genera otro código o recarga la página.');
+      }
+    });
+
+    peer.on('disconnected', function () {
+      setDot('error', 'Se perdió la conexión con el servidor de enlace. Intentando reconectar…');
+      try { peer.reconnect(); } catch (e) {}
+    });
+  }
+
+  function recibirCurp(curp) {
+    currentCurp = curp;
+    curpDisplay.textContent = curp;
+    curpDisplay.classList.remove('empty');
+    curpDisplay.classList.remove('flash');
+    void curpDisplay.offsetWidth; // reinicia animación
+    curpDisplay.classList.add('flash');
+
+    btnCopy.disabled = false;
+    btnOpenAuto.disabled = !targetUrlInput.value.trim();
+
+    history.unshift({ curp, t: new Date().toLocaleTimeString() });
+    history = history.slice(0, 20);
+    renderHistory();
+
+    // Copiado automático (best-effort; algunos navegadores exigen gesto del usuario)
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(curp).catch(() => {});
+    }
+    if (navigator.vibrate) navigator.vibrate(80);
+  }
+
+  function renderHistory() {
+    if (!history.length) {
+      historyEl.innerHTML = '<div style="color:#666;font-size:13px;">Sin registros aún</div>';
+      return;
+    }
+    historyEl.innerHTML = '';
+    history.forEach(h => {
+      const row = document.createElement('div');
+      row.className = 'item';
+      row.innerHTML = `<span>${h.curp} <span style="color:#666;">(${h.t})</span></span>`;
+      const btn = document.createElement('button');
+      btn.className = 'btn-secondary';
+      btn.textContent = 'Usar';
+      btn.onclick = () => recibirCurp(h.curp);
+      row.appendChild(btn);
+      historyEl.appendChild(row);
+    });
+  }
+
+  btnCopy.addEventListener('click', async () => {
+    if (!currentCurp) return;
+    try {
+      await navigator.clipboard.writeText(currentCurp);
+      autoHint.textContent = 'Copiado ✔';
+      setTimeout(() => autoHint.textContent = '', 2000);
+    } catch (e) {
+      autoHint.textContent = 'No se pudo copiar automáticamente. Selecciona el texto manualmente.';
+    }
+  });
+
+  targetUrlInput.addEventListener('input', () => {
+    btnOpenAuto.disabled = !currentCurp || !targetUrlInput.value.trim();
+  });
+
+  btnOpenAuto.addEventListener('click', () => {
+    if (!currentCurp) return;
+    const url = targetUrlInput.value.trim();
+    if (!url) return;
+
+    const win = window.open(url, '_blank');
+    autoHint.textContent = 'Abriendo página… buscando el campo de CURP para autocompletar.';
+
+    let intentos = 0;
+    const maxIntentos = 25; // ~5s
+    const intervalo = setInterval(() => {
+      intentos++;
+      let logrado = false;
+      try {
+        if (win && !win.closed && win.document && win.document.readyState !== 'loading') {
+          const candidatos = Array.from(win.document.querySelectorAll('input[type=text], input:not([type])'));
+          const campo = candidatos.find(el =>
+            /curp/i.test(el.placeholder || '') ||
+            /curp/i.test(el.name || '') ||
+            /curp/i.test(el.id || '')
+          ) || candidatos[0];
+
+          if (campo) {
+            const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+            setter.call(campo, currentCurp);
+            campo.dispatchEvent(new Event('input', { bubbles: true }));
+            campo.dispatchEvent(new Event('change', { bubbles: true }));
+            campo.focus();
+            logrado = true;
+          }
+        }
+      } catch (e) {
+        // acceso bloqueado (probablemente otro dominio) — no se puede autocompletar
+        clearInterval(intervalo);
+        autoHint.textContent = 'La página se abrió, pero no se pudo autocompletar automáticamente (probablemente por seguridad del navegador). El CURP ya está copiado — pégalo con Ctrl+V.';
+        return;
+      }
+
+      if (logrado) {
+        clearInterval(intervalo);
+        autoHint.textContent = 'Campo autocompletado ✔ (verifica que sea el correcto antes de continuar).';
+      } else if (intentos >= maxIntentos) {
+        clearInterval(intervalo);
+        autoHint.textContent = 'No se encontró el campo automáticamente. El CURP ya está copiado — pégalo con Ctrl+V.';
+      }
+    }, 200);
+  });
+
+  btnNuevoCodigo.addEventListener('click', () => iniciarSala(codigoAleatorio()));
+
+  iniciarSala(codigoAleatorio());
+})();
+</script>
+
+</body>
+</html>
