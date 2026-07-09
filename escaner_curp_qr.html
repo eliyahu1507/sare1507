@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Escáner CURP - QR</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: #0f1115;
+    color: #eee;
+    min-height: 100vh;
+  }
+  header {
+    background: #1a1d24;
+    padding: 14px 16px;
+    text-align: center;
+    border-bottom: 1px solid #2a2e38;
+  }
+  header h1 { margin: 0; font-size: 18px; }
+  header p { margin: 4px 0 0; font-size: 12px; color: #9aa; }
+
+  .container { padding: 14px; max-width: 480px; margin: 0 auto; }
+
+  #video-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3/4;
+    background: #000;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 2px solid #2a2e38;
+  }
+  video { width: 100%; height: 100%; object-fit: cover; }
+  .scan-frame {
+    position: absolute; top: 20%; left: 10%; right: 10%; bottom: 20%;
+    border: 3px solid #3ddc84;
+    border-radius: 12px;
+    box-shadow: 0 0 0 2000px rgba(0,0,0,.35);
+    pointer-events: none;
+  }
+  .status {
+    text-align: center; font-size: 13px; color: #9aa; margin: 10px 0;
+    min-height: 18px;
+  }
+  .status.ok { color: #3ddc84; font-weight: 600; }
+  .status.err { color: #ff6b6b; font-weight: 600; }
+
+  .card {
+    background: #1a1d24;
+    border: 1px solid #2a2e38;
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 12px;
+  }
+  .card label { font-size: 12px; color: #9aa; display: block; margin-bottom: 6px; }
+  .curp-box {
+    font-size: 20px; font-weight: 700; letter-spacing: 1px;
+    background: #0f1115; border: 1px solid #2a2e38; border-radius: 8px;
+    padding: 12px; text-align: center; word-break: break-all;
+    color: #3ddc84;
+  }
+  .curp-box.empty { color: #666; font-weight: 400; font-size: 14px; }
+
+  input[type=text] {
+    width: 100%; padding: 10px; border-radius: 8px;
+    border: 1px solid #2a2e38; background: #0f1115; color: #eee;
+    font-size: 14px; margin-top: 4px;
+  }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    flex: 1; min-width: 120px; padding: 12px; border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn-primary { background: #3ddc84; color: #0f1115; }
+  .btn-secondary { background: #2a2e38; color: #eee; }
+  .btn-warn { background: #333; color: #ff9d9d; }
+  button:disabled { opacity: .4; }
+
+  #history { margin-top: 10px; max-height: 160px; overflow-y: auto; }
+  #history .item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #0f1115; border: 1px solid #2a2e38; border-radius: 8px;
+    padding: 8px 10px; margin-bottom: 6px; font-size: 13px;
+  }
+  #history .item button { flex: none; min-width: auto; padding: 6px 10px; font-size: 12px; }
+
+  details { margin-top: 12px; }
+  summary { color: #9aa; font-size: 12px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Escáner CURP (QR)</h1>
+  <p>SARE 1507 · Captura rápida desde formato impreso</p>
+</header>
+
+<div class="container">
+
+  <div id="video-wrap">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="scan-frame"></div>
+  </div>
+
+  <div class="status" id="status">Iniciando cámara…</div>
+
+  <div class="card">
+    <label>CURP detectada</label>
+    <div class="curp-box empty" id="curpBox">Esperando escaneo…</div>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="btnUse" disabled>Usar esta CURP</button>
+      <button class="btn-secondary" id="btnCopy" disabled>Copiar</button>
+      <button class="btn-secondary" id="btnRescan">Reescanear</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Página de validación (se abre con la CURP incluida)</label>
+    <input type="text" id="targetUrl" placeholder="https://eliyahu1507.github.io/sare1507/index.html">
+    <label style="margin-top:8px;">Nombre del parámetro en la URL</label>
+    <input type="text" id="paramName" value="curp">
+    <div class="btn-row">
+      <button class="btn-primary" id="btnOpen" disabled>Abrir página con esta CURP</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Historial de esta sesión</label>
+    <div id="history"><div style="color:#666;font-size:13px;">Sin escaneos aún</div></div>
+  </div>
+
+  <details>
+    <summary>Escribir/corregir CURP manualmente</summary>
+    <input type="text" id="manualCurp" maxlength="18" placeholder="Escribe la CURP manualmente" style="margin-top:8px; text-transform:uppercase;">
+    <div class="btn-row">
+      <button class="btn-secondary" id="btnManualUse">Usar CURP manual</button>
+    </div>
+  </details>
+
+</div>
+
+<script src="https://unpkg.com/@zxing/library@0.18.6"></script>
+<script>
+(function () {
+  const STORAGE_URL = 'sare1507_qr_target_url';
+  const STORAGE_PARAM = 'sare1507_qr_param_name';
+
+  const videoEl = document.getElementById('video');
+  const statusEl = document.getElementById('status');
+  const curpBox = document.getElementById('curpBox');
+  const btnUse = document.getElementById('btnUse');
+  const btnCopy = document.getElementById('btnCopy');
+  const btnOpen = document.getElementById('btnOpen');
+  const btnRescan = document.getElementById('btnRescan');
+  const targetUrlInput = document.getElementById('targetUrl');
+  const paramNameInput = document.getElementById('paramName');
+  const historyEl = document.getElementById('history');
+  const manualCurpInput = document.getElementById('manualCurp');
+  const btnManualUse = document.getElementById('btnManualUse');
+
+  // Restaurar configuración guardada
+  targetUrlInput.value = localStorage.getItem(STORAGE_URL) || '';
+  paramNameInput.value = localStorage.getItem(STORAGE_PARAM) || 'curp';
+  targetUrlInput.addEventListener('input', () => localStorage.setItem(STORAGE_URL, targetUrlInput.value.trim()));
+  paramNameInput.addEventListener('input', () => localStorage.setItem(STORAGE_PARAM, paramNameInput.value.trim()));
+
+  let currentCurp = null;
+  let codeReader = null;
+  let selectedDeviceId = null;
+  let history = [];
+
+  // Regex CURP estándar (18 caracteres)
+  const CURP_REGEX = /[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d/;
+
+  function setStatus(text, type) {
+    statusEl.textContent = text;
+    statusEl.className = 'status' + (type ? ' ' + type : '');
+  }
+
+  function setCurp(curp) {
+    currentCurp = curp;
+    if (curp) {
+      curpBox.textContent = curp;
+      curpBox.classList.remove('empty');
+      btnUse.disabled = false;
+      btnCopy.disabled = false;
+      btnOpen.disabled = !targetUrlInput.value.trim();
+    } else {
+      curpBox.textContent = 'Esperando escaneo…';
+      curpBox.classList.add('empty');
+      btnUse.disabled = true;
+      btnCopy.disabled = true;
+      btnOpen.disabled = true;
+    }
+  }
+
+  function addToHistory(curp) {
+    history.unshift({ curp, t: new Date().toLocaleTimeString() });
+    history = history.slice(0, 15);
+    renderHistory();
+  }
+
+  function renderHistory() {
+    if (!history.length) {
+      historyEl.innerHTML = '<div style="color:#666;font-size:13px;">Sin escaneos aún</div>';
+      return;
+    }
+    historyEl.innerHTML = '';
+    history.forEach(h => {
+      const row = document.createElement('div');
+      row.className = 'item';
+      row.innerHTML = `<span>${h.curp} <span style="color:#666;">(${h.t})</span></span>`;
+      const btn = document.createElement('button');
+      btn.className = 'btn-secondary';
+      btn.textContent = 'Usar';
+      btn.onclick = () => setCurp(h.curp);
+      row.appendChild(btn);
+      historyEl.appendChild(row);
+    });
+  }
+
+  function extractCurp(rawText) {
+    const clean = rawText.toUpperCase().trim();
+    const match = clean.match(CURP_REGEX);
+    if (match) return match[0];
+    // Si el QR trae datos separados por | (como en algunos formatos con PDF417),
+    // intenta encontrar el segmento que luzca como CURP
+    const parts = clean.split(/[|;,\s]+/);
+    for (const p of parts) {
+      const m = p.match(CURP_REGEX);
+      if (m) return m[0];
+    }
+    return null;
+  }
+
+  function onDecoded(text) {
+    const curp = extractCurp(text);
+    if (curp) {
+      setStatus('CURP detectada ✔', 'ok');
+      setCurp(curp);
+      addToHistory(curp);
+      // vibración corta si el dispositivo lo permite
+      if (navigator.vibrate) navigator.vibrate(120);
+      pauseScanning();
+    } else {
+      setStatus('QR leído, pero no se encontró una CURP válida. Intenta de nuevo.', 'err');
+    }
+  }
+
+  function pauseScanning() {
+    if (codeReader) codeReader.reset();
+  }
+
+  async function startScanning() {
+    setStatus('Iniciando cámara…');
+    setCurp(null);
+    codeReader = new ZXing.BrowserQRCodeReader();
+    try {
+      const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+      if (!devices.length) {
+        setStatus('No se encontró ninguna cámara en este dispositivo.', 'err');
+        return;
+      }
+      const back = devices.find(d => /back|rear|trasera|environment/i.test(d.label));
+      selectedDeviceId = (back || devices[devices.length - 1]).deviceId;
+
+      codeReader.decodeFromVideoDevice(selectedDeviceId, videoEl, (result, err) => {
+        if (result) {
+          onDecoded(result.getText());
+        }
+      });
+      setStatus('Apunta la cámara al código QR del formato');
+    } catch (e) {
+      setStatus('No se pudo acceder a la cámara. Revisa los permisos del navegador.', 'err');
+      console.error(e);
+    }
+  }
+
+  btnRescan.addEventListener('click', () => {
+    pauseScanning();
+    startScanning();
+  });
+
+  btnCopy.addEventListener('click', async () => {
+    if (!currentCurp) return;
+    try {
+      await navigator.clipboard.writeText(currentCurp);
+      setStatus('CURP copiada al portapapeles', 'ok');
+    } catch (e) {
+      setStatus('No se pudo copiar automáticamente. Cópiala manualmente.', 'err');
+    }
+  });
+
+  btnUse.addEventListener('click', () => {
+    if (!currentCurp) return;
+    setStatus('CURP lista para usar: ' + currentCurp, 'ok');
+  });
+
+  btnOpen.addEventListener('click', () => {
+    if (!currentCurp) return;
+    const base = targetUrlInput.value.trim();
+    const param = paramNameInput.value.trim() || 'curp';
+    if (!base) {
+      setStatus('Primero escribe la URL de la página de validación.', 'err');
+      return;
+    }
+    const sep = base.includes('?') ? '&' : '?';
+    const url = base + sep + encodeURIComponent(param) + '=' + encodeURIComponent(currentCurp);
+    window.location.href = url;
+  });
+
+  targetUrlInput.addEventListener('input', () => {
+    btnOpen.disabled = !currentCurp || !targetUrlInput.value.trim();
+  });
+
+  btnManualUse.addEventListener('click', () => {
+    const val = manualCurpInput.value.toUpperCase().trim();
+    const curp = extractCurp(val) || (val.length === 18 ? val : null);
+    if (curp) {
+      setCurp(curp);
+      addToHistory(curp);
+      setStatus('CURP manual cargada', 'ok');
+    } else {
+      setStatus('El texto no tiene el formato de una CURP (18 caracteres).', 'err');
+    }
+  });
+
+  startScanning();
+})();
+</script>
+
+</body>
+</html>
