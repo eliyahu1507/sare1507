@@ -32,21 +32,48 @@
     border-radius: 14px;
     overflow: hidden;
     border: 2px solid #2a2e38;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  video { width: 100%; height: 100%; object-fit: cover; }
+  video { width: 100%; height: 100%; object-fit: cover; display: none; }
+  video.active { display: block; }
   .scan-frame {
     position: absolute; top: 20%; left: 10%; right: 10%; bottom: 20%;
     border: 3px solid #3ddc84;
     border-radius: 12px;
     box-shadow: 0 0 0 2000px rgba(0,0,0,.35);
     pointer-events: none;
+    display: none;
   }
+  .scan-frame.active { display: block; }
+
+  #btnStart {
+    background: #3ddc84;
+    color: #0f1115;
+    border: none;
+    padding: 16px 24px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #btnStart:disabled { opacity: .5; }
+
   .status {
     text-align: center; font-size: 13px; color: #9aa; margin: 10px 0;
     min-height: 18px;
   }
   .status.ok { color: #3ddc84; font-weight: 600; }
   .status.err { color: #ff6b6b; font-weight: 600; }
+  .status.warn { color: #ffb84d; font-weight: 600; }
+
+  .diag {
+    font-size: 11px; color: #666; text-align: center; margin-top: -4px; margin-bottom: 8px;
+  }
 
   .card {
     background: #1a1d24;
@@ -71,14 +98,13 @@
   }
 
   .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-  button {
+  button.action {
     flex: 1; min-width: 120px; padding: 12px; border: none; border-radius: 10px;
     font-size: 14px; font-weight: 600; cursor: pointer;
   }
   .btn-primary { background: #3ddc84; color: #0f1115; }
   .btn-secondary { background: #2a2e38; color: #eee; }
-  .btn-warn { background: #333; color: #ff9d9d; }
-  button:disabled { opacity: .4; }
+  button.action:disabled { opacity: .4; }
 
   #history { margin-top: 10px; max-height: 160px; overflow-y: auto; }
   #history .item {
@@ -90,6 +116,11 @@
 
   details { margin-top: 12px; }
   summary { color: #9aa; font-size: 12px; cursor: pointer; }
+
+  .banner {
+    background: #3a2a10; border: 1px solid #7a5a1a; color: #ffcf8a;
+    border-radius: 10px; padding: 10px 12px; font-size: 12px; margin-bottom: 12px;
+  }
 </style>
 </head>
 <body>
@@ -101,21 +132,27 @@
 
 <div class="container">
 
-  <div id="video-wrap">
-    <video id="video" autoplay playsinline muted></video>
-    <div class="scan-frame"></div>
+  <div id="httpsBanner" class="banner" style="display:none;">
+    ⚠️ Esta página no está en HTTPS. Los teléfonos bloquean el acceso a la cámara fuera de HTTPS (excepto en localhost). Ábrela desde tu enlace de GitHub Pages (https://...).
   </div>
 
-  <div class="status" id="status">Iniciando cámara…</div>
+  <div id="video-wrap">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="scan-frame" id="scanFrame"></div>
+    <button id="btnStart">📷 Activar cámara</button>
+  </div>
+
+  <div class="status" id="status">Toca "Activar cámara" para comenzar</div>
+  <div class="diag" id="diag"></div>
 
   <div class="card">
     <label>CURP detectada</label>
     <div class="curp-box empty" id="curpBox">Esperando escaneo…</div>
 
     <div class="btn-row">
-      <button class="btn-primary" id="btnUse" disabled>Usar esta CURP</button>
-      <button class="btn-secondary" id="btnCopy" disabled>Copiar</button>
-      <button class="btn-secondary" id="btnRescan">Reescanear</button>
+      <button class="action btn-primary" id="btnUse" disabled>Usar esta CURP</button>
+      <button class="action btn-secondary" id="btnCopy" disabled>Copiar</button>
+      <button class="action btn-secondary" id="btnRescan" disabled>Reescanear</button>
     </div>
   </div>
 
@@ -125,7 +162,7 @@
     <label style="margin-top:8px;">Nombre del parámetro en la URL</label>
     <input type="text" id="paramName" value="curp">
     <div class="btn-row">
-      <button class="btn-primary" id="btnOpen" disabled>Abrir página con esta CURP</button>
+      <button class="action btn-primary" id="btnOpen" disabled>Abrir página con esta CURP</button>
     </div>
   </div>
 
@@ -138,7 +175,7 @@
     <summary>Escribir/corregir CURP manualmente</summary>
     <input type="text" id="manualCurp" maxlength="18" placeholder="Escribe la CURP manualmente" style="margin-top:8px; text-transform:uppercase;">
     <div class="btn-row">
-      <button class="btn-secondary" id="btnManualUse">Usar CURP manual</button>
+      <button class="action btn-secondary" id="btnManualUse">Usar CURP manual</button>
     </div>
   </details>
 
@@ -151,7 +188,11 @@
   const STORAGE_PARAM = 'sare1507_qr_param_name';
 
   const videoEl = document.getElementById('video');
+  const scanFrame = document.getElementById('scanFrame');
+  const btnStart = document.getElementById('btnStart');
   const statusEl = document.getElementById('status');
+  const diagEl = document.getElementById('diag');
+  const httpsBanner = document.getElementById('httpsBanner');
   const curpBox = document.getElementById('curpBox');
   const btnUse = document.getElementById('btnUse');
   const btnCopy = document.getElementById('btnCopy');
@@ -163,19 +204,42 @@
   const manualCurpInput = document.getElementById('manualCurp');
   const btnManualUse = document.getElementById('btnManualUse');
 
-  // Restaurar configuración guardada
   targetUrlInput.value = localStorage.getItem(STORAGE_URL) || '';
   paramNameInput.value = localStorage.getItem(STORAGE_PARAM) || 'curp';
-  targetUrlInput.addEventListener('input', () => localStorage.setItem(STORAGE_URL, targetUrlInput.value.trim()));
+  targetUrlInput.addEventListener('input', () => {
+    localStorage.setItem(STORAGE_URL, targetUrlInput.value.trim());
+    btnOpen.disabled = !currentCurp || !targetUrlInput.value.trim();
+  });
   paramNameInput.addEventListener('input', () => localStorage.setItem(STORAGE_PARAM, paramNameInput.value.trim()));
 
   let currentCurp = null;
   let codeReader = null;
-  let selectedDeviceId = null;
   let history = [];
-
-  // Regex CURP estándar (18 caracteres)
   const CURP_REGEX = /[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d/;
+
+  // ── Diagnóstico inicial ──────────────────────────────
+  function diagnosticoInicial() {
+    const isSecure = window.isSecureContext === true;
+    diagEl.textContent = 'Protocolo: ' + location.protocol + ' · Contexto seguro: ' + (isSecure ? 'sí' : 'no');
+
+    if (!isSecure) {
+      httpsBanner.style.display = 'block';
+      setStatus('Se requiere HTTPS para usar la cámara en este teléfono.', 'err');
+      btnStart.disabled = true;
+      return false;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setStatus('Este navegador no permite acceso a cámara. Prueba con Chrome o Safari actualizado.', 'err');
+      btnStart.disabled = true;
+      return false;
+    }
+    if (typeof ZXing === 'undefined') {
+      setStatus('No se pudo cargar la librería de escaneo (revisa tu conexión a internet) — recarga la página.', 'err');
+      btnStart.disabled = true;
+      return false;
+    }
+    return true;
+  }
 
   function setStatus(text, type) {
     statusEl.textContent = text;
@@ -228,8 +292,6 @@
     const clean = rawText.toUpperCase().trim();
     const match = clean.match(CURP_REGEX);
     if (match) return match[0];
-    // Si el QR trae datos separados por | (como en algunos formatos con PDF417),
-    // intenta encontrar el segmento que luzca como CURP
     const parts = clean.split(/[|;,\s]+/);
     for (const p of parts) {
       const m = p.match(CURP_REGEX);
@@ -244,46 +306,99 @@
       setStatus('CURP detectada ✔', 'ok');
       setCurp(curp);
       addToHistory(curp);
-      // vibración corta si el dispositivo lo permite
       if (navigator.vibrate) navigator.vibrate(120);
-      pauseScanning();
+      stopScanning();
+      btnRescan.disabled = false;
     } else {
-      setStatus('QR leído, pero no se encontró una CURP válida. Intenta de nuevo.', 'err');
+      setStatus('QR leído, pero no se encontró una CURP válida. Sigue apuntando…', 'warn');
     }
   }
 
-  function pauseScanning() {
-    if (codeReader) codeReader.reset();
+  function stopScanning() {
+    if (codeReader) {
+      try { codeReader.reset(); } catch (e) {}
+    }
+    videoEl.classList.remove('active');
+    scanFrame.classList.remove('active');
+    btnStart.style.display = 'flex';
+    btnStart.disabled = false;
+    btnStart.textContent = '📷 Reactivar cámara';
   }
 
-  async function startScanning() {
-    setStatus('Iniciando cámara…');
-    setCurp(null);
-    codeReader = new ZXing.BrowserQRCodeReader();
-    try {
-      const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
-      if (!devices.length) {
-        setStatus('No se encontró ninguna cámara en este dispositivo.', 'err');
-        return;
-      }
-      const back = devices.find(d => /back|rear|trasera|environment/i.test(d.label));
-      selectedDeviceId = (back || devices[devices.length - 1]).deviceId;
+  // ── Iniciar cámara (debe llamarse desde un toque del usuario) ──
+  async function iniciarCamara() {
+    setStatus('Solicitando permiso de cámara…');
+    btnStart.disabled = true;
+    btnStart.textContent = 'Iniciando…';
 
-      codeReader.decodeFromVideoDevice(selectedDeviceId, videoEl, (result, err) => {
+    // Timeout de seguridad: si en 12s no ha pasado nada, avisar
+    const timeoutId = setTimeout(() => {
+      setStatus('La cámara está tardando demasiado. Verifica que aceptaste el permiso de cámara en el navegador, o recarga la página.', 'warn');
+    }, 12000);
+
+    try {
+      codeReader = new ZXing.BrowserQRCodeReader();
+
+      const constraints = {
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false
+      };
+
+      await codeReader.decodeFromConstraints(constraints, videoEl, (result, err) => {
+        clearTimeout(timeoutId);
         if (result) {
           onDecoded(result.getText());
         }
+        // err aquí es normal mientras no detecta nada (NotFoundException); se ignora.
       });
+
+      clearTimeout(timeoutId);
+      videoEl.classList.add('active');
+      scanFrame.classList.add('active');
+      btnStart.style.display = 'none';
+      btnRescan.disabled = false;
       setStatus('Apunta la cámara al código QR del formato');
+
     } catch (e) {
-      setStatus('No se pudo acceder a la cámara. Revisa los permisos del navegador.', 'err');
+      clearTimeout(timeoutId);
       console.error(e);
+      btnStart.disabled = false;
+      btnStart.textContent = '📷 Reintentar';
+
+      const name = e && e.name ? e.name : '';
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        setStatus('Permiso de cámara denegado. Revisa los ajustes del navegador (Configuración del sitio → Cámara) y vuelve a intentar.', 'err');
+      } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+        setStatus('No se encontró ninguna cámara trasera en este dispositivo.', 'err');
+      } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+        setStatus('La cámara está siendo usada por otra app. Cierra otras apps que la usen e intenta de nuevo.', 'err');
+      } else if (name === 'OverconstrainedError') {
+        setStatus('No se pudo configurar la cámara trasera. Reintentando con cualquier cámara disponible…', 'warn');
+        // Reintento simple sin facingMode
+        try {
+          await codeReader.decodeFromConstraints({ video: true, audio: false }, videoEl, (result) => {
+            if (result) onDecoded(result.getText());
+          });
+          videoEl.classList.add('active');
+          scanFrame.classList.add('active');
+          btnStart.style.display = 'none';
+          btnRescan.disabled = false;
+          setStatus('Apunta la cámara al código QR del formato');
+        } catch (e2) {
+          setStatus('No se pudo activar ninguna cámara. Intenta con otro navegador.', 'err');
+        }
+      } else {
+        setStatus('No se pudo acceder a la cámara (' + (name || 'error desconocido') + '). Recarga la página e inténtalo de nuevo.', 'err');
+      }
     }
   }
 
+  btnStart.addEventListener('click', iniciarCamara);
+
   btnRescan.addEventListener('click', () => {
-    pauseScanning();
-    startScanning();
+    setCurp(null);
+    setStatus('Solicitando permiso de cámara…');
+    iniciarCamara();
   });
 
   btnCopy.addEventListener('click', async () => {
@@ -314,10 +429,6 @@
     window.location.href = url;
   });
 
-  targetUrlInput.addEventListener('input', () => {
-    btnOpen.disabled = !currentCurp || !targetUrlInput.value.trim();
-  });
-
   btnManualUse.addEventListener('click', () => {
     const val = manualCurpInput.value.toUpperCase().trim();
     const curp = extractCurp(val) || (val.length === 18 ? val : null);
@@ -330,7 +441,7 @@
     }
   });
 
-  startScanning();
+  diagnosticoInicial();
 })();
 </script>
 
