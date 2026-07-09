@@ -139,7 +139,7 @@
   <div id="video-wrap">
     <video id="video" autoplay playsinline muted></video>
     <div class="scan-frame" id="scanFrame"></div>
-    <button id="btnStart">📷 Activar cámara</button>
+    <button id="btnStart" disabled>📷 Activar cámara</button>
   </div>
 
   <div class="status" id="status">Toca "Activar cámara" para comenzar</div>
@@ -181,7 +181,36 @@
 
 </div>
 
-<script src="https://unpkg.com/@zxing/library@0.18.6"></script>
+<script>
+  // Carga ZXing: primero intenta el archivo local (recomendado, no depende de internet externo).
+  // Si no existe (por ejemplo aún no lo subiste al repo), intenta CDNs externos como respaldo.
+  window.__zxingSources = [
+    'zxing.min.js',
+    'https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js',
+    'https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js'
+  ];
+  window.__zxingLoaded = false;
+  window.__zxingTried = 0;
+
+  function cargarSiguienteZxing() {
+    if (window.__zxingTried >= window.__zxingSources.length) {
+      window.dispatchEvent(new Event('zxing-load-failed'));
+      return;
+    }
+    var src = window.__zxingSources[window.__zxingTried++];
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = function () {
+      window.__zxingLoaded = true;
+      window.dispatchEvent(new Event('zxing-ready'));
+    };
+    s.onerror = function () {
+      cargarSiguienteZxing();
+    };
+    document.head.appendChild(s);
+  }
+  cargarSiguienteZxing();
+</script>
 <script>
 (function () {
   const STORAGE_URL = 'sare1507_qr_target_url';
@@ -226,19 +255,33 @@
       httpsBanner.style.display = 'block';
       setStatus('Se requiere HTTPS para usar la cámara en este teléfono.', 'err');
       btnStart.disabled = true;
-      return false;
+      return;
     }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setStatus('Este navegador no permite acceso a cámara. Prueba con Chrome o Safari actualizado.', 'err');
       btnStart.disabled = true;
-      return false;
+      return;
     }
-    if (typeof ZXing === 'undefined') {
-      setStatus('No se pudo cargar la librería de escaneo (revisa tu conexión a internet) — recarga la página.', 'err');
+
+    // Mientras se resuelve la carga de ZXing (local o CDN de respaldo)
+    btnStart.disabled = true;
+    setStatus('Cargando librería de escaneo…');
+
+    if (window.__zxingLoaded && typeof ZXing !== 'undefined') {
+      btnStart.disabled = false;
+      setStatus('Toca "Activar cámara" para comenzar');
+      return;
+    }
+
+    window.addEventListener('zxing-ready', function () {
+      btnStart.disabled = false;
+      setStatus('Toca "Activar cámara" para comenzar');
+    });
+
+    window.addEventListener('zxing-load-failed', function () {
+      setStatus('No se pudo cargar la librería de escaneo (ni local ni por internet). Verifica que subiste el archivo "zxing.min.js" junto a esta página en tu repositorio.', 'err');
       btnStart.disabled = true;
-      return false;
-    }
-    return true;
+    });
   }
 
   function setStatus(text, type) {
