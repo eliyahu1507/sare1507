@@ -292,6 +292,7 @@
   let currentCurp = null;
   let codeReader = null;
   let history = [];
+  let escaneoBloqueado = false; // evita procesar el mismo QR varias veces mientras se apaga la cámara
   const CURP_REGEX = /[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d/;
 
   // ── Enlace WebRTC con la PC ──────────────────────────
@@ -460,8 +461,10 @@
   }
 
   function onDecoded(text) {
+    if (escaneoBloqueado) return; // ya se está procesando/cerrando un resultado; ignorar el resto
     const curp = extractCurp(text);
     if (curp) {
+      escaneoBloqueado = true; // bloquea de inmediato, antes de que lleguen más frames del mismo QR
       setCurp(curp);
       addToHistory(curp);
       if (navigator.vibrate) navigator.vibrate(120);
@@ -481,6 +484,14 @@
     if (codeReader) {
       try { codeReader.reset(); } catch (e) {}
     }
+    // Apagado forzado: detiene las pistas de video directamente, no solo se lo pide a ZXing.
+    try {
+      const stream = videoEl.srcObject;
+      if (stream && stream.getTracks) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+      videoEl.srcObject = null;
+    } catch (e) {}
     videoEl.classList.remove('active');
     scanFrame.classList.remove('active');
     btnStart.style.display = 'flex';
@@ -490,6 +501,7 @@
 
   // ── Iniciar cámara (debe llamarse desde un toque del usuario) ──
   async function iniciarCamara() {
+    escaneoBloqueado = false; // nueva sesión de escaneo: se vuelve a permitir procesar resultados
     setStatus('Solicitando permiso de cámara…');
     btnStart.disabled = true;
     btnStart.textContent = 'Iniciando…';
