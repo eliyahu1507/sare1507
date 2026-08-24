@@ -302,6 +302,7 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
       <div class="sbn-source" id="src-bueems"><span class="sbn-dot loading"></span><span class="sbn-src-lbl">BUEMS:</span><span class="sbn-src-val" id="val-bueems">Cargando…</span></div>
       <div class="sbn-source" id="src-jef"><span class="sbn-dot loading"></span><span class="sbn-src-lbl">JEF:</span><span class="sbn-src-val" id="val-jef">Cargando…</span></div>
       <div class="sbn-source" id="src-bueems-feb"><span class="sbn-dot loading"></span><span class="sbn-src-lbl">BUEMS Feb:</span><span class="sbn-src-val" id="val-bueems-feb">Cargando…</span></div>
+      <div class="sbn-source" id="src-agosto" style="margin-top:4px;border-top:1px solid rgba(200,150,42,.25);padding-top:4px"><span class="sbn-dot loading"></span><span class="sbn-src-lbl" style="color:var(--dorado-c);font-weight:700">Complementos Agosto 2026:</span><span class="sbn-src-val" id="val-agosto-total">Cargando…</span></div>
     </div>
   </div>
 </div>
@@ -359,14 +360,25 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 // fetch + PapaParse, con cache-buster para evitar 404 cacheados por el navegador/CDN
 const APP_VERSION = '20260619b';
 const HIST_FILES = [
-  { url: 'basica.csv',     id: 'basica',     labelId: 'val-basica',     dotId: 'src-basica',     nivelLabel: 'BÁSICA' },
-  { url: 'bueems.csv',     id: 'bueems',     labelId: 'val-bueems',     dotId: 'src-bueems',     nivelLabel: 'BUEMS' },
-  { url: 'jef.csv',        id: 'jef',        labelId: 'val-jef',        dotId: 'src-jef',        nivelLabel: 'JEF' },
-  { url: 'bueems_feb.csv', id: 'bueems_feb', labelId: 'val-bueems-feb', dotId: 'src-bueems-feb', nivelLabel: 'BUEMS FEB' }
+  { url: 'basica.csv',              id: 'basica',         labelId: 'val-basica',         dotId: 'src-basica',         nivelLabel: 'BÁSICA'                    },
+  { url: 'bueems.csv',              id: 'bueems',         labelId: 'val-bueems',         dotId: 'src-bueems',         nivelLabel: 'BUEMS'                     },
+  { url: 'jef.csv',                 id: 'jef',            labelId: 'val-jef',            dotId: 'src-jef',            nivelLabel: 'JEF'                       },
+  { url: 'bueems_feb.csv',          id: 'bueems_feb',     labelId: 'val-bueems-feb',     dotId: 'src-bueems-feb',     nivelLabel: 'BUEMS FEB'                 },
+  { url: 'brcu_agosto_2026.csv',    id: 'brcu_ago',       labelId: 'val-brcu-ago',       dotId: 'src-brcu-ago',       nivelLabel: 'BRCU AGOSTO 2026',   sep: ',' },
+  { url: 'bueems_agosto_2026.csv',  id: 'bueems_ago',     labelId: 'val-bueems-ago',     dotId: 'src-bueems-ago',     nivelLabel: 'BUEEMS AGOSTO 2026', sep: ',' },
+  { url: 'jef_agosto_2026.csv',     id: 'jef_ago',        labelId: 'val-jef-ago',        dotId: 'src-jef-ago',        nivelLabel: 'JEF AGOSTO 2026',    sep: ',' }
 ];
 
 // Mapas en memoria: { CURP → {nombre, nivel, cct, proceso, mun} }
-const HIST_MAPS = { basica: new Map(), bueems: new Map(), jef: new Map(), bueems_feb: new Map() };
+const HIST_MAPS = {
+  basica:     new Map(),
+  bueems:     new Map(),
+  jef:        new Map(),
+  bueems_feb: new Map(),
+  brcu_ago:   new Map(),   // Complementos Agosto 2026 — BRCU Primaria/Secundaria
+  bueems_ago: new Map(),   // Complementos Agosto 2026 — BUEMS
+  jef_ago:    new Map()    // Complementos Agosto 2026 — JEF
+};
 // Conteo desglosado por subnivel (solo aplica a 'basica', que mezcla primaria/secundaria/preescolar)
 const HIST_SUBNIVEL_COUNTS = { basica: { PRIMARIA: 0, SECUNDARIA: 0, PREESCOLAR: 0, OTRO: 0 } };
 
@@ -392,33 +404,65 @@ function clasificarSubnivelPorCCT(cct) {
 }
 
 function procesarDataCSVHist(data, cfg) {
-  var lineas = Papa.parse(data, { header: true, skipEmptyLines: true }).data;
+  // Auto-detectar separador: si la 1.ª línea tiene más ";" que "," usar punto y coma
+  var primeraLinea = data.split('\n')[0] || '';
+  var sepDetectado = (primeraLinea.split(';').length > primeraLinea.split(',').length) ? ';' : ',';
+  var sep = cfg.sep || sepDetectado;
+
+  var lineas = Papa.parse(data, { header: true, skipEmptyLines: true, delimiter: sep }).data;
   var map = HIST_MAPS[cfg.id];
+
   lineas.forEach(function(row){
     var keys = Object.keys(row);
     function getVal(posibles){
       var key = keys.find(function(k){ return posibles.some(function(pn){ return k.toUpperCase().includes(pn); }); });
       return key && row[key] ? row[key].trim().toUpperCase() : '';
     }
+
+    var cct     = getVal(['CCT']);
+    var mun     = getVal(['MUN','MUNICIPIO']);
+    var proceso = getVal(['PROCESO','PROGRAMA','REMESA']);
+
     var curp = getVal(['CURP']);
-    if(!curp || curp.length < 10) return;
-    var cct = getVal(['CCT']);
-    var mun = getVal(['MUN','MUNICIPIO']);
-    var nombreBase = getVal(['NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
-    var ap1 = getVal(['PRIMER APELLIDO','APELLIDO PATERNO']);
-    var ap2 = getVal(['SEGUNDO APELLIDO','APELLIDO MATERNO']);
-    var nombreCompleto = (nombreBase+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim();
-    var proceso = getVal(['PROCESO']);
-    var yaExistia = map.has(curp);
-    map.set(curp, {
+
+    // ── Archivos con CURP (padrones históricos originales) ──
+    if(curp && curp.length >= 10) {
+      var nombreBase = getVal(['NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE COMPLETO','NOMBRE']);
+      var ap1 = getVal(['PRIMER APELLIDO','APELLIDO PATERNO']);
+      var ap2 = getVal(['SEGUNDO APELLIDO','APELLIDO MATERNO']);
+      var nombreCompleto = (nombreBase+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim();
+      map.set(curp, {
+        nombre: nombreCompleto,
+        nivel: cfg.nivelLabel,
+        cct: cct || 'N/A',
+        mun: mun || 'N/A',
+        proceso: proceso || cfg.nivelLabel,
+        subnivel: cfg.id === 'basica' ? clasificarSubnivelPorCCT(cct) : null
+      });
+      return;
+    }
+
+    // ── Archivos SIN CURP (complementos agosto 2026) — indexar por nombre normalizado ──
+    // La columna puede llamarse "NOMBRE COMPLETO" o "COMPLETO" (bueems_agosto_2026.csv)
+    var nombreCompleto = getVal(['NOMBRE COMPLETO','COMPLETO','NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
+    if(!nombreCompleto) return;
+
+    // Clave única: nombre normalizado (sin acentos, sin espacios dobles)
+    var clave = nombreCompleto.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+    var escuela = getVal(['NOMBRE DE LA ESCUELA','ESCUELA','PLANTEL']);
+
+    map.set(clave, {
       nombre: nombreCompleto,
       nivel: cfg.nivelLabel,
       cct: cct || 'N/A',
       mun: mun || 'N/A',
+      escuela: escuela || '',
       proceso: proceso || cfg.nivelLabel,
-      subnivel: cfg.id === 'basica' ? clasificarSubnivelPorCCT(cct) : null
+      subnivel: null,
+      sinCurp: true   // marca para búsqueda alternativa por nombre
     });
   });
+
   // Recalcular desglose de subnivel para básica (sobre CURP únicas, no filas)
   if(cfg.id === 'basica'){
     var counts = { PRIMARIA: 0, SECUNDARIA: 0, PREESCOLAR: 0, OTRO: 0 };
@@ -443,6 +487,15 @@ async function cargarHistorico(cfg) {
         if(valEl) valEl.textContent = '🟢 ' + total.toLocaleString() + ' registros';
       }
       setDotStatus(cfg.dotId, 'ok');
+
+      // Actualizar total combinado de los 3 complementos de agosto 2026
+      var AGO_IDS = ['brcu_ago', 'bueems_ago', 'jef_ago'];
+      if(AGO_IDS.indexOf(cfg.id) !== -1){
+        var totalAgo = AGO_IDS.reduce(function(acc, id){ return acc + HIST_MAPS[id].size; }, 0);
+        var elAgo = document.getElementById('val-agosto-total');
+        if(elAgo) elAgo.textContent = '🟢 ' + totalAgo.toLocaleString() + ' tarjetas';
+        setDotStatus('src-agosto', 'ok');
+      }
     } else {
       throw new Error('HTTP '+response.status);
     }
@@ -455,29 +508,54 @@ async function cargarHistorico(cfg) {
 }
 
 async function iniciarCargaHistoricos() {
-  for (const cfg of HIST_FILES) {
-    await cargarHistorico(cfg);
-  }
+  // Carga en paralelo — los 7 archivos se descargan simultáneamente
+  await Promise.all(HIST_FILES.map(function(cfg){ return cargarHistorico(cfg); }));
 }
 
 // ── BÚSQUEDA EN HISTÓRICOS POR CURP ──
+// Para archivos con CURP: búsqueda exacta por CURP.
+// Para complementos agosto 2026 (sin CURP): el panel histórico los mostrará
+// cuando la búsqueda por nombre encuentre una coincidencia (ver buscarEnHistoricosPorNombre).
 function buscarEnHistoricos(curp) {
   if(!curp || curp.length < 10) return null;
   var curpUp = curp.trim().toUpperCase();
   var found = null;
   var srcId = null;
-  if(HIST_MAPS.basica.has(curpUp)){     found = HIST_MAPS.basica.get(curpUp);     srcId = 'BÁSICA'; }
-  else if(HIST_MAPS.bueems.has(curpUp)){ found = HIST_MAPS.bueems.get(curpUp);     srcId = 'BUEMS'; }
-  else if(HIST_MAPS.jef.has(curpUp)){   found = HIST_MAPS.jef.get(curpUp);         srcId = 'JEF'; }
-  else if(HIST_MAPS.bueems_feb.has(curpUp)){ found = HIST_MAPS.bueems_feb.get(curpUp); srcId = 'BUEMS FEB'; }
+  if     (HIST_MAPS.basica.has(curpUp))     { found = HIST_MAPS.basica.get(curpUp);     srcId = 'BÁSICA';    }
+  else if(HIST_MAPS.bueems.has(curpUp))     { found = HIST_MAPS.bueems.get(curpUp);     srcId = 'BUEMS';     }
+  else if(HIST_MAPS.jef.has(curpUp))        { found = HIST_MAPS.jef.get(curpUp);         srcId = 'JEF';      }
+  else if(HIST_MAPS.bueems_feb.has(curpUp)) { found = HIST_MAPS.bueems_feb.get(curpUp); srcId = 'BUEMS FEB'; }
   if(found) return Object.assign({}, found, {fuente: srcId});
+  return null;
+}
+
+// ── BÚSQUEDA EN COMPLEMENTOS AGOSTO 2026 POR NOMBRE NORMALIZADO ──
+// Se usa como segunda pasada después de buscarEnHistoricos cuando hay nombre disponible.
+function buscarEnHistoricosPorNombre(nombreCompleto) {
+  if(!nombreCompleto) return null;
+  var clave = nombreCompleto.toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ').trim();
+  var AGO_IDS = ['brcu_ago', 'bueems_ago', 'jef_ago'];
+  for(var i = 0; i < AGO_IDS.length; i++){
+    var id = AGO_IDS[i];
+    if(HIST_MAPS[id].has(clave)){
+      var found = HIST_MAPS[id].get(clave);
+      return Object.assign({}, found, {fuente: found.nivel});
+    }
+  }
   return null;
 }
 
 // ── MOSTRAR PANEL DE RESULTADO HISTÓRICO ──
 function mostrarPanelHistorico(curpIngresada, hitBRCU) {
-  // Buscar en históricos
+  // 1.ª pasada: búsqueda por CURP exacta en padrones históricos (basica, bueems, jef, bueems_feb)
   var hist = buscarEnHistoricos(curpIngresada);
+
+  // 2.ª pasada: si no hay hit por CURP, buscar en complementos agosto 2026 por nombre (extraído de BRCU o del resultado)
+  if(!hist && hitBRCU && hitBRCU.nombre){
+    hist = buscarEnHistoricosPorNombre(hitBRCU.nombre);
+  }
 
   // Contenedor: insertarlo debajo de alerta-curp
   var contenedor = document.getElementById('panel-historico');
