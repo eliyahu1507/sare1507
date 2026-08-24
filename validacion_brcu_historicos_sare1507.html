@@ -358,7 +358,7 @@ footer{background:var(--guinda-o);color:rgba(255,255,255,.7);text-align:center;p
 
 // ── Configuración de archivos históricos (CURP) ──
 // fetch + PapaParse, con cache-buster para evitar 404 cacheados por el navegador/CDN
-const APP_VERSION = '20260619b';
+const APP_VERSION = '20260824a';
 const HIST_FILES = [
   { url: 'basica.csv',              id: 'basica',         labelId: 'val-basica',         dotId: 'src-basica',         nivelLabel: 'BÁSICA'                    },
   { url: 'bueems.csv',              id: 'bueems',         labelId: 'val-bueems',         dotId: 'src-bueems',         nivelLabel: 'BUEMS'                     },
@@ -412,30 +412,49 @@ function procesarDataCSVHist(data, cfg) {
   var lineas = Papa.parse(data, { header: true, skipEmptyLines: true, delimiter: sep }).data;
   var map = HIST_MAPS[cfg.id];
 
+  // Construir índice de columnas en MAYÚSCULAS una sola vez (fuera del forEach)
+  var colKeys = lineas.length > 0 ? Object.keys(lineas[0]) : [];
+  // Mapa: NOMBRE_COLUMNA_MAYÚSCULAS → nombre_columna_original
+  var colMap = {};
+  colKeys.forEach(function(k){ colMap[k.trim().toUpperCase()] = k; });
+
   lineas.forEach(function(row){
-    var keys = Object.keys(row);
-    function getVal(posibles){
-      var key = keys.find(function(k){ return posibles.some(function(pn){ return k.toUpperCase().includes(pn); }); });
-      return key && row[key] ? row[key].trim().toUpperCase() : '';
+    // ── getValExacto: coincidencia EXACTA de nombre de columna (en mayúsculas) ──
+    // Evita que "NOMBRE DE LA ESCUELA" capture búsquedas de "NOMBRE" o "NOMBRE COMPLETO".
+    // Prueba cada candidato en orden de prioridad y devuelve el primero que existe en el CSV.
+    function getValExacto(candidatos) {
+      for(var i = 0; i < candidatos.length; i++){
+        var key = colMap[candidatos[i].toUpperCase()];
+        if(key && row[key] != null && String(row[key]).trim() !== '') {
+          return String(row[key]).trim().toUpperCase();
+        }
+      }
+      return '';
     }
 
-    var cct     = getVal(['CCT']);
-    var mun     = getVal(['MUN','MUNICIPIO']);
-    var proceso = getVal(['PROCESO','PROGRAMA','REMESA']);
+    var cct     = getValExacto(['CCT']);
+    var mun     = getValExacto(['MUNICIPIO', 'MUN']);
+    var proceso = getValExacto(['PROGRAMA', 'PROCESO', 'REMESA']);
+    var escuela = getValExacto(['NOMBRE DE LA ESCUELA', 'ESCUELA', 'PLANTEL']);
 
-    var curp = getVal(['CURP']);
+    var curp = getValExacto(['CURP']);
 
-    // ── Archivos con CURP (padrones históricos originales) ──
+    // ── Archivos CON CURP (padrones históricos originales) ──
     if(curp && curp.length >= 10) {
-      var nombreBase = getVal(['NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE COMPLETO','NOMBRE']);
-      var ap1 = getVal(['PRIMER APELLIDO','APELLIDO PATERNO']);
-      var ap2 = getVal(['SEGUNDO APELLIDO','APELLIDO MATERNO']);
-      var nombreCompleto = (nombreBase+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim();
+      // Intentar nombre en columna única primero; si no, reconstruir desde partes
+      var nombreCompleto = getValExacto(['NOMBRE COMPLETO', 'NOMBRE DEL TUTOR', 'NOMBRE DEL BECARIO']);
+      if(!nombreCompleto) {
+        var nombreBase = getValExacto(['NOMBRE']);
+        var ap1 = getValExacto(['PRIMER APELLIDO', 'APELLIDO PATERNO']);
+        var ap2 = getValExacto(['SEGUNDO APELLIDO', 'APELLIDO MATERNO']);
+        nombreCompleto = (nombreBase+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim();
+      }
       map.set(curp, {
         nombre: nombreCompleto,
         nivel: cfg.nivelLabel,
         cct: cct || 'N/A',
         mun: mun || 'N/A',
+        escuela: escuela || '',
         proceso: proceso || cfg.nivelLabel,
         subnivel: cfg.id === 'basica' ? clasificarSubnivelPorCCT(cct) : null
       });
@@ -443,13 +462,16 @@ function procesarDataCSVHist(data, cfg) {
     }
 
     // ── Archivos SIN CURP (complementos agosto 2026) — indexar por nombre normalizado ──
-    // La columna puede llamarse "NOMBRE COMPLETO" o "COMPLETO" (bueems_agosto_2026.csv)
-    var nombreCompleto = getVal(['NOMBRE COMPLETO','COMPLETO','NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
+    // BRCU/JEF: columna "NOMBRE COMPLETO"
+    // BUEEMS:   columna "COMPLETO" (o ya corregida a "NOMBRE COMPLETO" en el CSV)
+    var nombreCompleto = getValExacto(['NOMBRE COMPLETO', 'COMPLETO', 'NOMBRE DEL TUTOR', 'NOMBRE DEL BECARIO']);
     if(!nombreCompleto) return;
 
-    // Clave única: nombre normalizado (sin acentos, sin espacios dobles)
-    var clave = nombreCompleto.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
-    var escuela = getVal(['NOMBRE DE LA ESCUELA','ESCUELA','PLANTEL']);
+    // Clave: nombre normalizado sin acentos, en mayúsculas, espacios simples
+    // Se usará tanto para indexar como para buscar desde la interfaz
+    var clave = nombreCompleto
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/\s+/g,' ').trim();
 
     map.set(clave, {
       nombre: nombreCompleto,
@@ -459,7 +481,7 @@ function procesarDataCSVHist(data, cfg) {
       escuela: escuela || '',
       proceso: proceso || cfg.nivelLabel,
       subnivel: null,
-      sinCurp: true   // marca para búsqueda alternativa por nombre
+      sinCurp: true
     });
   });
 
@@ -529,13 +551,18 @@ function buscarEnHistoricos(curp) {
   return null;
 }
 
-// ── BÚSQUEDA EN COMPLEMENTOS AGOSTO 2026 POR NOMBRE NORMALIZADO ──
-// Se usa como segunda pasada después de buscarEnHistoricos cuando hay nombre disponible.
-function buscarEnHistoricosPorNombre(nombreCompleto) {
-  if(!nombreCompleto) return null;
-  var clave = nombreCompleto.toUpperCase()
+// ── BÚSQUEDA EN COMPLEMENTOS AGOSTO 2026 POR NOMBRE ──
+// Normalizar texto: quitar acentos, mayúsculas, espacios dobles
+function normAgo(t){
+  return String(t||'').toUpperCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/\s+/g,' ').trim();
+}
+
+// Búsqueda EXACTA por clave normalizada (usada desde panel histórico cuando hay nombre preciso)
+function buscarEnHistoricosPorNombre(nombreCompleto) {
+  if(!nombreCompleto) return null;
+  var clave = normAgo(nombreCompleto);
   var AGO_IDS = ['brcu_ago', 'bueems_ago', 'jef_ago'];
   for(var i = 0; i < AGO_IDS.length; i++){
     var id = AGO_IDS[i];
@@ -545,6 +572,24 @@ function buscarEnHistoricosPorNombre(nombreCompleto) {
     }
   }
   return null;
+}
+
+// Búsqueda por TOKENS (para búsqueda manual desde el input de texto)
+// Devuelve TODOS los registros de agosto cuyos nombres contienen todos los tokens de la consulta
+function buscarEnAgostoPorTexto(query) {
+  if(!query || query.trim().length < 2) return [];
+  var tokens = normAgo(query).split(/\s+/).filter(function(t){ return t.length > 1; });
+  if(!tokens.length) return [];
+  var resultados = [];
+  var AGO_IDS = ['brcu_ago', 'bueems_ago', 'jef_ago'];
+  AGO_IDS.forEach(function(id){
+    HIST_MAPS[id].forEach(function(val, clave){
+      // Todos los tokens deben aparecer en la clave normalizada del nombre
+      var coincide = tokens.every(function(tok){ return clave.includes(tok); });
+      if(coincide) resultados.push(Object.assign({}, val, {fuente: val.nivel}));
+    });
+  });
+  return resultados;
 }
 
 // ── MOSTRAR PANEL DE RESULTADO HISTÓRICO ──
@@ -608,6 +653,41 @@ function mostrarPanelHistorico(curpIngresada, hitBRCU) {
 function ocultarPanelHistorico() {
   var c = document.getElementById('panel-historico');
   if(c){ c.innerHTML=''; c.style.display='none'; }
+}
+
+// ── PANEL DE RESULTADOS AGOSTO 2026 (búsqueda manual por nombre) ──
+function mostrarPanelHistoricoAgosto(resultados) {
+  var contenedor = document.getElementById('panel-historico');
+  if(!contenedor){
+    contenedor = document.createElement('div');
+    contenedor.id = 'panel-historico';
+    var alertaCurp = document.getElementById('alerta-curp');
+    if(alertaCurp && alertaCurp.parentNode)
+      alertaCurp.parentNode.insertBefore(contenedor, alertaCurp.nextSibling);
+  }
+
+  var html = '<div class="ficha-hist" style="border-color:var(--dorado)">';
+  html += '<div class="ficha-hist-hdr">'
+    + '<span class="ficha-hist-ico">📋</span>'
+    + '<div><div class="ficha-hist-tit">Encontrado en Complementos Agosto 2026</div>'
+    + '<div class="ficha-hist-sub">' + resultados.length + ' registro' + (resultados.length!==1?'s':'') + ' coincidente' + (resultados.length!==1?'s':'') + '</div></div>'
+    + '<div class="ficha-hist-badge" style="background:var(--dorado);color:var(--guinda-o)">AGO 2026</div>'
+    + '</div>';
+
+  resultados.forEach(function(r){
+    html += '<div class="ficha-hist-grid" style="border-top:1px solid rgba(200,150,42,.2);margin-top:8px;padding-top:8px">';
+    html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Nombre</div><div class="ficha-hist-field-val">' + esc(r.nombre||'—') + '</div></div>';
+    html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Programa</div><div class="ficha-hist-field-val">' + esc(r.nivel||r.fuente||'—') + '</div></div>';
+    html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Escuela</div><div class="ficha-hist-field-val">' + esc(r.escuela||'—') + '</div></div>';
+    html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">CCT</div><div class="ficha-hist-field-val">' + esc(r.cct||'—') + '</div></div>';
+    if(r.mun) html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Municipio</div><div class="ficha-hist-field-val">' + esc(r.mun) + '</div></div>';
+    if(r.proceso) html += '<div class="ficha-hist-field proceso-field"><div class="ficha-hist-field-lbl">Remesa</div><div class="ficha-hist-field-val">' + esc(r.proceso) + '</div></div>';
+    html += '</div>';
+  });
+
+  html += '</div>';
+  contenedor.innerHTML = html;
+  contenedor.style.display = 'block';
 }
 
 // Limpiar panel histórico cuando se limpia el scan
@@ -1361,8 +1441,22 @@ function buscarGlobal(){
     });
   });
 
+  // ── Búsqueda adicional en Complementos Agosto 2026 ──
+  var agoResultados = buscarEnAgostoPorTexto(qOrig);
+  // Mostrar u ocultar el panel histórico de agosto según resultados
+  var _qCurp = qOrig.trim().toUpperCase();
+  if(_qCurp.length >= 18){
+    // Es una CURP: búsqueda por CURP en históricos + fallback nombre
+    mostrarPanelHistorico(_qCurp, rows.length > 0 ? rows[0] : null);
+  } else if(agoResultados.length > 0){
+    // Búsqueda por texto encontró resultados en agosto: mostrar panel histórico con el primer hit
+    mostrarPanelHistoricoAgosto(agoResultados);
+  } else {
+    ocultarPanelHistorico();
+  }
+
   var noRes = document.getElementById('no-result-scan');
-  if(!rows.length){
+  if(!rows.length && !agoResultados.length){
     noRes.classList.add('visible');
     document.getElementById('no-result-txt').textContent = 'Sin resultados para "'+qOrig+'"';
     document.getElementById('res-scan').classList.remove('visible');
@@ -1378,10 +1472,8 @@ function buscarGlobal(){
   });
   inlineState.scan.rows = rows.slice(0,500); // cap at 500 for performance
   inlineState.scan.page = 1;
-  var _qCurp = qOrig.trim().toUpperCase();
-  if(_qCurp.length >= 18){ mostrarPanelHistorico(_qCurp, rows.length > 0 ? rows[0] : null); }
-  else { ocultarPanelHistorico(); }
-  renderInline('scan');
+  if(rows.length) renderInline('scan');
+  else ocultarScan();
 }
 
 function selCoinQ(s,prog,q){ abrirModal(s,prog,q); }
