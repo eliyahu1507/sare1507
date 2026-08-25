@@ -594,12 +594,18 @@ function buscarEnAgostoPorTexto(query) {
 
 // ── MOSTRAR PANEL DE RESULTADO HISTÓRICO ──
 function mostrarPanelHistorico(curpIngresada, hitBRCU) {
-  // 1.ª pasada: búsqueda por CURP exacta en padrones históricos (basica, bueems, jef, bueems_feb)
+  // 1.ª pasada: búsqueda exacta por CURP en padrones históricos (basica, bueems, jef, bueems_feb)
   var hist = buscarEnHistoricos(curpIngresada);
 
-  // 2.ª pasada: si no hay hit por CURP, buscar en complementos agosto 2026 por nombre (extraído de BRCU o del resultado)
-  if(!hist && hitBRCU && hitBRCU.nombre){
-    hist = buscarEnHistoricosPorNombre(hitBRCU.nombre);
+  // 2.ª pasada: si no hay hit por CURP, buscar por nombre exacto normalizado en agosto 2026
+  var agoHits = [];
+  if(hitBRCU && hitBRCU.nombre) {
+    if(!hist) {
+      hist = buscarEnHistoricosPorNombre(hitBRCU.nombre);
+    }
+    // 3.ª pasada: búsqueda por tokens en agosto (más flexible que la exacta)
+    // Se ejecuta siempre que hay nombre — puede haber en agosto aunque ya haya hist en anteriores
+    agoHits = buscarEnAgostoPorTexto(hitBRCU.nombre);
   }
 
   // Contenedor: insertarlo debajo de alerta-curp
@@ -614,7 +620,7 @@ function mostrarPanelHistorico(curpIngresada, hitBRCU) {
 
   var html = '';
 
-  // Si hay hit en BRCU actual
+  // ── Bloque 1: Hit en padrón BRCU actual ──
   if(hitBRCU){
     html += '<div class="ficha-hist" style="border-color:var(--guinda)">';
     html += '<div class="ficha-hist-hdr"><span class="ficha-hist-ico">✅</span><div><div class="ficha-hist-tit">Encontrado en Padrón BRCU Actual</div><div class="ficha-hist-sub">'+esc(hitBRCU.escuela||'')+'</div></div><div class="ficha-hist-badge">BRCU mayo-junio 2026</div></div>';
@@ -627,7 +633,7 @@ function mostrarPanelHistorico(curpIngresada, hitBRCU) {
     html += '</div></div>';
   }
 
-  // Si hay hit en históricos
+  // ── Bloque 2: Hit en operativos anteriores (por CURP o nombre exacto) ──
   if(hist){
     html += '<div class="ficha-hist">';
     html += '<div class="ficha-hist-hdr"><span class="ficha-hist-ico">📂</span><div><div class="ficha-hist-tit">Encontrado en Operativo Anterior</div><div class="ficha-hist-sub">Fuente: '+esc(hist.fuente||'')+'</div></div><div class="ficha-hist-badge">'+esc(hist.proceso||hist.fuente||'HISTÓRICO')+'</div></div>';
@@ -639,11 +645,31 @@ function mostrarPanelHistorico(curpIngresada, hitBRCU) {
     if(hist.mun){ html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Municipio</div><div class="ficha-hist-field-val">'+esc(hist.mun)+'</div></div>'; }
     html += '<div class="ficha-hist-field proceso-field"><div class="ficha-hist-field-lbl">Proceso Anterior</div><div class="ficha-hist-field-val">'+esc(hist.proceso||'—')+'</div></div>';
     html += '</div></div>';
+  } else if(!agoHits.length) {
+    // Solo mostrar "sin antecedentes" si tampoco hay hits en agosto
+    html += '<div class="ficha-no-hist">⚡ Sin antecedentes en operativos anteriores con esta CURP</div>';
   }
 
-  // Si no hay hit en históricos
-  if(!hist){
-    html += '<div class="ficha-no-hist">⚡ Sin antecedentes en operativos anteriores con esta CURP</div>';
+  // ── Bloque 3: Hits en Complementos Agosto 2026 (dentro del mismo panel) ──
+  if(agoHits.length > 0){
+    html += '<div class="ficha-hist" style="border-color:var(--dorado)">';
+    html += '<div class="ficha-hist-hdr">'
+      + '<span class="ficha-hist-ico">📋</span>'
+      + '<div><div class="ficha-hist-tit">Encontrado en Complementos Agosto 2026</div>'
+      + '<div class="ficha-hist-sub">' + agoHits.length + ' registro' + (agoHits.length!==1?'s':'') + ' coincidente' + (agoHits.length!==1?'s':'') + '</div></div>'
+      + '<div class="ficha-hist-badge" style="background:var(--dorado);color:var(--guinda-o)">AGO 2026</div>'
+      + '</div>';
+    agoHits.forEach(function(r){
+      html += '<div class="ficha-hist-grid" style="border-top:1px solid rgba(200,150,42,.2);margin-top:8px;padding-top:8px">';
+      html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Nombre</div><div class="ficha-hist-field-val">' + esc(r.nombre||'—') + '</div></div>';
+      html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Programa</div><div class="ficha-hist-field-val">' + esc(r.nivel||r.fuente||'—') + '</div></div>';
+      if(r.escuela) html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Escuela</div><div class="ficha-hist-field-val">' + esc(r.escuela) + '</div></div>';
+      html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">CCT</div><div class="ficha-hist-field-val">' + esc(r.cct||'—') + '</div></div>';
+      if(r.mun) html += '<div class="ficha-hist-field"><div class="ficha-hist-field-lbl">Municipio</div><div class="ficha-hist-field-val">' + esc(r.mun) + '</div></div>';
+      if(r.proceso) html += '<div class="ficha-hist-field proceso-field"><div class="ficha-hist-field-lbl">Remesa</div><div class="ficha-hist-field-val">' + esc(r.proceso) + '</div></div>';
+      html += '</div>';
+    });
+    html += '</div>';
   }
 
   contenedor.innerHTML = html;
@@ -1177,8 +1203,20 @@ function buscarPorNombreCompleto(apPat, apMat, nom){
   inlineState.scan.rows = rows;
   inlineState.scan.page = 1;
   var _curpActual = document.getElementById('scan-input').value.trim().toUpperCase();
-  if(_curpActual.length >= 18){ mostrarPanelHistorico(_curpActual, rows.length > 0 ? rows[0] : null); }
-  else { ocultarPanelHistorico(); }
+
+  // ── Panel histórico por CURP + búsqueda en agosto (todo en un solo panel) ──
+  if(_curpActual.length >= 18){
+    mostrarPanelHistorico(_curpActual, rows.length > 0 ? rows[0] : null);
+  } else {
+    // Sin CURP: buscar agosto por nombre del PDF417 y mostrar panel específico
+    var queryAgoNom = (apPat + ' ' + apMat + ' ' + nom).trim();
+    var agoResNom = buscarEnAgostoPorTexto(queryAgoNom);
+    if(!agoResNom.length && apPat && nom) {
+      agoResNom = buscarEnAgostoPorTexto(apPat + ' ' + nom);
+    }
+    if(agoResNom.length > 0) mostrarPanelHistoricoAgosto(agoResNom);
+    else ocultarPanelHistorico();
+  }
 
   // Show match quality notice
   var aviso = document.getElementById('curp-aviso-resultado');
@@ -1291,6 +1329,12 @@ function buscarPorCurpExtraido(datos){
 
   inlineState.scan.rows = rows;
   inlineState.scan.page = 1;
+
+  // ── Panel histórico: incluye BRCU actual + operativos anteriores + agosto 2026 ──
+  // mostrarPanelHistorico ya busca en agosto internamente usando el nombre del hitBRCU
+  var _curpVal = datos.curp || '';
+  var hitBRCUparaHist = rows.length > 0 ? rows[0] : null;
+  mostrarPanelHistorico(_curpVal, hitBRCUparaHist);
 
   // Update aviso based on results
   var aviso = document.getElementById('curp-aviso-resultado');
@@ -1443,13 +1487,14 @@ function buscarGlobal(){
 
   // ── Búsqueda adicional en Complementos Agosto 2026 ──
   var agoResultados = buscarEnAgostoPorTexto(qOrig);
-  // Mostrar u ocultar el panel histórico de agosto según resultados
+
+  // ── Panel histórico y panel agosto según tipo de query ──
   var _qCurp = qOrig.trim().toUpperCase();
   if(_qCurp.length >= 18){
-    // Es una CURP: búsqueda por CURP en históricos + fallback nombre
+    // Es CURP: mostrarPanelHistorico busca en agosto usando el nombre del primer hit BRCU
     mostrarPanelHistorico(_qCurp, rows.length > 0 ? rows[0] : null);
   } else if(agoResultados.length > 0){
-    // Búsqueda por texto encontró resultados en agosto: mostrar panel histórico con el primer hit
+    // Búsqueda por texto: mostrar panel específico de agosto
     mostrarPanelHistoricoAgosto(agoResultados);
   } else {
     ocultarPanelHistorico();
