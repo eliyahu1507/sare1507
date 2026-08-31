@@ -371,13 +371,13 @@ const HIST_FILES = [
 
 // Mapas en memoria: { CURP → {nombre, nivel, cct, proceso, mun} }
 const HIST_MAPS = {
-  basica:     new Map(),
-  bueems:     new Map(),
-  jef:        new Map(),
-  bueems_feb: new Map(),
-  brcu_ago:   new Map(),   // Complementos Agosto 2026 — BRCU Primaria/Secundaria
-  bueems_ago: new Map(),   // Complementos Agosto 2026 — BUEMS
-  jef_ago:    new Map()    // Complementos Agosto 2026 — JEF
+  basica:     new Map(),   // clave: CURP  → objeto único
+  bueems:     new Map(),   // clave: CURP  → objeto único
+  jef:        new Map(),   // clave: CURP  → objeto único
+  bueems_feb: new Map(),   // clave: CURP  → objeto único
+  brcu_ago:   new Map(),   // clave: nombre normalizado → Array de objetos (preserva homónimos)
+  bueems_ago: new Map(),   // clave: nombre normalizado → Array de objetos (preserva homónimos)
+  jef_ago:    new Map()    // clave: nombre normalizado → Array de objetos (preserva homónimos)
 };
 // Conteo desglosado por subnivel (solo aplica a 'basica', que mezcla primaria/secundaria/preescolar)
 const HIST_SUBNIVEL_COUNTS = { basica: { PRIMARIA: 0, SECUNDARIA: 0, PREESCOLAR: 0, OTRO: 0 } };
@@ -468,12 +468,11 @@ function procesarDataCSVHist(data, cfg) {
     if(!nombreCompleto) return;
 
     // Clave: nombre normalizado sin acentos, en mayúsculas, espacios simples
-    // Se usará tanto para indexar como para buscar desde la interfaz
     var clave = nombreCompleto
       .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
       .replace(/\s+/g,' ').trim();
 
-    map.set(clave, {
+    var registro = {
       nombre: nombreCompleto,
       nivel: cfg.nivelLabel,
       cct: cct || 'N/A',
@@ -482,7 +481,15 @@ function procesarDataCSVHist(data, cfg) {
       proceso: proceso || cfg.nivelLabel,
       subnivel: null,
       sinCurp: true
-    });
+    };
+
+    // Almacenar como LISTA para soportar homónimos (misma persona en distintos archivos
+    // o personas distintas con el mismo nombre en distintos programas)
+    if(map.has(clave)){
+      map.get(clave).push(registro);
+    } else {
+      map.set(clave, [registro]);
+    }
   });
 
   // Recalcular desglose de subnivel para básica (sobre CURP únicas, no filas)
@@ -501,7 +508,16 @@ async function cargarHistorico(cfg) {
       var textData = await response.text();
       procesarDataCSVHist(textData, cfg);
       var valEl = document.getElementById(cfg.labelId);
-      var total = HIST_MAPS[cfg.id].size;
+      // Para mapas de agosto (listas por clave), contar la suma de registros en todas las listas
+      var AGO_IDS = ['brcu_ago', 'bueems_ago', 'jef_ago'];
+      var esAgo = AGO_IDS.indexOf(cfg.id) !== -1;
+      var total;
+      if(esAgo){
+        total = 0;
+        HIST_MAPS[cfg.id].forEach(function(lista){ total += lista.length; });
+      } else {
+        total = HIST_MAPS[cfg.id].size;
+      }
       if(cfg.id === 'basica'){
         var c = HIST_SUBNIVEL_COUNTS.basica;
         if(valEl) valEl.textContent = '🟢 ' + total.toLocaleString() + ' (Sec: ' + c.SECUNDARIA.toLocaleString() + ' · Prim: ' + c.PRIMARIA.toLocaleString() + ')';
@@ -511,9 +527,11 @@ async function cargarHistorico(cfg) {
       setDotStatus(cfg.dotId, 'ok');
 
       // Actualizar total combinado de los 3 complementos de agosto 2026
-      var AGO_IDS = ['brcu_ago', 'bueems_ago', 'jef_ago'];
-      if(AGO_IDS.indexOf(cfg.id) !== -1){
-        var totalAgo = AGO_IDS.reduce(function(acc, id){ return acc + HIST_MAPS[id].size; }, 0);
+      if(esAgo){
+        var totalAgo = 0;
+        AGO_IDS.forEach(function(id){
+          HIST_MAPS[id].forEach(function(lista){ totalAgo += lista.length; });
+        });
         var elAgo = document.getElementById('val-agosto-total');
         if(elAgo) elAgo.textContent = '🟢 ' + totalAgo.toLocaleString() + ' tarjetas';
         setDotStatus('src-agosto', 'ok');
@@ -559,19 +577,45 @@ function normAgo(t){
     .replace(/\s+/g,' ').trim();
 }
 
-// Búsqueda EXACTA por clave normalizada (usada desde panel histórico cuando hay nombre preciso)
+// Búsqueda EXACTA por clave normalizada en agosto 2026
+// Devuelve ARRAY de registros (soporta homónimos reales)
+// Prueba el nombre en el orden dado Y con las palabras reordenadas,
+// para resolver el mismatch AP AM NOM (formato DB) vs NOM AP AM (formato CSV agosto)
 function buscarEnHistoricosPorNombre(nombreCompleto) {
-  if(!nombreCompleto) return null;
+  if(!nombreCompleto) return [];
   var clave = normAgo(nombreCompleto);
   var AGO_IDS = ['brcu_ago', 'bueems_ago', 'jef_ago'];
-  for(var i = 0; i < AGO_IDS.length; i++){
-    var id = AGO_IDS[i];
-    if(HIST_MAPS[id].has(clave)){
-      var found = HIST_MAPS[id].get(clave);
-      return Object.assign({}, found, {fuente: found.nivel});
-    }
+  var todos = [];
+
+  // Generar variantes de orden del nombre para comparar contra la clave del Map
+  // La DB almacena como "AP AM NOM(S)", el CSV agosto como "NOM(S) AP AM"
+  var partes = clave.split(/\s+/);
+  var variantes = new Set([clave]);
+
+  // Si hay 3+ palabras, probar rotaciones: [AP AM NOM] → [NOM AP AM] y [AM NOM AP]
+  if(partes.length >= 3){
+    // Mover última(s) palabra(s) al frente (NOM AP AM)
+    variantes.add(partes.slice(-1).concat(partes.slice(0,-1)).join(' '));
+    variantes.add(partes.slice(-2).concat(partes.slice(0,-2)).join(' '));
+    // Mover primera(s) palabra(s) al final (AP AM NOM)
+    variantes.add(partes.slice(1).concat(partes.slice(0,1)).join(' '));
+    variantes.add(partes.slice(2).concat(partes.slice(0,2)).join(' '));
   }
-  return null;
+
+  AGO_IDS.forEach(function(id){
+    variantes.forEach(function(variante){
+      if(HIST_MAPS[id].has(variante)){
+        var lista = HIST_MAPS[id].get(variante);
+        lista.forEach(function(r){
+          // Evitar duplicados si múltiples variantes matchean la misma entrada
+          var yaEsta = todos.some(function(x){ return x.cct === r.cct && x.nombre === r.nombre && x.nivel === r.nivel; });
+          if(!yaEsta) todos.push(Object.assign({}, r, {fuente: r.nivel}));
+        });
+      }
+    });
+  });
+
+  return todos;
 }
 
 // Búsqueda por TOKENS (para búsqueda manual desde el input de texto)
@@ -583,10 +627,12 @@ function buscarEnAgostoPorTexto(query) {
   var resultados = [];
   var AGO_IDS = ['brcu_ago', 'bueems_ago', 'jef_ago'];
   AGO_IDS.forEach(function(id){
-    HIST_MAPS[id].forEach(function(val, clave){
+    HIST_MAPS[id].forEach(function(lista, clave){
       // Todos los tokens deben aparecer en la clave normalizada del nombre
       var coincide = tokens.every(function(tok){ return clave.includes(tok); });
-      if(coincide) resultados.push(Object.assign({}, val, {fuente: val.nivel}));
+      if(coincide){
+        lista.forEach(function(r){ resultados.push(Object.assign({}, r, {fuente: r.nivel})); });
+      }
     });
   });
   return resultados;
@@ -597,15 +643,13 @@ function mostrarPanelHistorico(curpIngresada, hitBRCU) {
   // 1.ª pasada: búsqueda exacta por CURP en padrones históricos (basica, bueems, jef, bueems_feb)
   var hist = buscarEnHistoricos(curpIngresada);
 
-  // 2.ª pasada: si no hay hit por CURP, buscar por nombre exacto normalizado en agosto 2026
+  // 2.ª pasada: buscar en agosto 2026 SOLO por nombre EXACTO normalizado
+  // ⚠️  NO se usan tokens parciales aquí: si hay 2 personas con nombre parecido,
+  //     los tokens cruzarían y mostrarían datos de la persona equivocada.
+  //     Solo se muestra un registro de agosto si el nombre coincide exactamente.
   var agoHits = [];
   if(hitBRCU && hitBRCU.nombre) {
-    if(!hist) {
-      hist = buscarEnHistoricosPorNombre(hitBRCU.nombre);
-    }
-    // 3.ª pasada: búsqueda por tokens en agosto (más flexible que la exacta)
-    // Se ejecuta siempre que hay nombre — puede haber en agosto aunque ya haya hist en anteriores
-    agoHits = buscarEnAgostoPorTexto(hitBRCU.nombre);
+    agoHits = buscarEnHistoricosPorNombre(hitBRCU.nombre);
   }
 
   // Contenedor: insertarlo debajo de alerta-curp
