@@ -1196,16 +1196,14 @@ function buscarPorNombreCompleto(apPat, apMat, nom){
   document.getElementById('curp-aviso-resultado').classList.remove('visible');
 
   var rows = [];
-  // Buscar en DB con los 3 tokens (AP + AM + NOM) en cualquier orden
+  // ── PASO 1: 3 tokens exactos (AP + AM + NOM) en cualquier orden ──
   var tokFull = [norm(apPat), norm(apMat), norm(nom)].filter(Boolean);
 
   ['basica','buems','jef'].forEach(function(prog){
     DB[prog].forEach(function(s){
       s.beneficiarios.forEach(function(b){
         var bn = norm(b.n);
-        // Los 3 tokens deben estar presentes (matchAll ya ignora el orden)
-        var allTokens = tokFull.every(function(tok){ return tok && bn.includes(tok); });
-        if(allTokens){
+        if(tokFull.every(function(tok){ return tok && bn.includes(tok); })){
           rows.push({nombre:b.n, obs:b.o||'', escuela:s.nombre, cct:s.cct,
             municipio:s.municipio, nivel:s.nivel||'', fecha:s.fecha, prog:prog,
             q: apPat+' '+apMat+' '+nom,
@@ -1215,10 +1213,35 @@ function buscarPorNombreCompleto(apPat, apMat, nom){
     });
   });
 
-  // Fallback solo con AP: si con 3 tokens no hay resultados, ampliar con AP + NOM
-  // pero marcar explícitamente como parcial para que el operador verifique
+  // ── PASO 2: Si no hay en BRCU con 3 tokens → buscar en agosto 2026 ──
+  // ⚠️  DEBE ir ANTES del fallback de 2 tokens: el fallback puede encontrar
+  //     personas homónimas parciales que oculten el registro real de agosto.
   var esFallback = false;
-  if(!rows.length && apPat && nom){
+  var agoResultados = [];
+  if(!rows.length){
+    var queryAgo3 = [norm(apPat), norm(apMat), norm(nom)].filter(Boolean).join(' ');
+    agoResultados = buscarEnAgostoPorTexto(queryAgo3);
+    // Si 3 tokens no dan agosto, intentar 2 (AP + NOM)
+    if(!agoResultados.length && apPat && nom){
+      agoResultados = buscarEnAgostoPorTexto(norm(apPat)+' '+norm(nom));
+    }
+
+    if(agoResultados.length > 0){
+      // Persona solo en agosto: mostrar panel y aviso sin mostrar lista de BRCU
+      mostrarPanelHistoricoAgosto(agoResultados);
+      var aviso0 = document.getElementById('curp-aviso-resultado');
+      aviso0.innerHTML = '📋 <strong>No está en el padrón BRCU actual</strong> — ' +
+        'encontrado en Complementos Agosto 2026 (' + agoResultados.length + ' registro' +
+        (agoResultados.length!==1?'s':'') + ').';
+      aviso0.style.background='#FFF8E1'; aviso0.style.borderColor='#FFD54F'; aviso0.style.color='#795548';
+      aviso0.classList.add('visible');
+      document.getElementById('spin-scan').classList.remove('active');
+      document.getElementById('no-result-scan').classList.remove('visible');
+      document.getElementById('res-scan').classList.remove('visible');
+      return;
+    }
+
+    // ── PASO 3: Tampoco en agosto → fallback 2 tokens en BRCU (último recurso) ──
     var tokFallback = [norm(apPat), norm(nom)].filter(Boolean);
     ['basica','buems','jef'].forEach(function(prog){
       DB[prog].forEach(function(s){
@@ -1235,40 +1258,17 @@ function buscarPorNombreCompleto(apPat, apMat, nom){
     if(rows.length) esFallback = true;
   }
 
+  // Si después de todo tampoco hay resultados en BRCU
+  document.getElementById('spin-scan').classList.remove('active');
+  var noRes = document.getElementById('no-result-scan');
   if(!rows.length){
-    // ── Fallback agosto 2026: puede estar solo en complementos, no en BRCU actual ──
-    var queryAgoFallback = [norm(apPat), norm(apMat), norm(nom)].filter(Boolean).join(' ');
-    var agoFallback = buscarEnAgostoPorTexto(queryAgoFallback);
-    if(!agoFallback.length && apPat && nom){
-      agoFallback = buscarEnAgostoPorTexto(norm(apPat)+' '+norm(nom));
-    }
-    if(agoFallback.length > 0){
-      // Encontrado solo en agosto: mostrar su panel y aviso claro
-      mostrarPanelHistoricoAgosto(agoFallback);
-      var aviso = document.getElementById('curp-aviso-resultado');
-      aviso.innerHTML = '📋 <strong>No está en el padrón BRCU actual</strong> — ' +
-        'encontrado en Complementos Agosto 2026 (' + agoFallback.length + ' registro' +
-        (agoFallback.length!==1?'s':'') + ').';
-      aviso.style.background='#FFF8E1'; aviso.style.borderColor='#FFD54F'; aviso.style.color='#795548';
-      aviso.classList.add('visible');
-      document.getElementById('spin-scan').classList.remove('active');
-      document.getElementById('no-result-scan').classList.remove('visible');
-      document.getElementById('res-scan').classList.remove('visible');
-      return;
-    }
-    document.getElementById('spin-scan').classList.remove('active');
-    var noRes = document.getElementById('no-result-scan');
     noRes.classList.add('visible');
     document.getElementById('no-result-txt').textContent =
       'No se encontró a '+apPat+' '+apMat+' '+nom+' en ningún programa.';
     document.getElementById('res-scan').classList.remove('visible');
     return;
   }
-
-  document.getElementById('spin-scan').classList.remove('active');
-  var noRes = document.getElementById('no-result-scan');
   noRes.classList.remove('visible');
-  inlineState.scan.rows = rows;
   inlineState.scan.page = 1;
   var _curpActual = document.getElementById('scan-input').value.trim().toUpperCase();
 
