@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SARE 1507 — Búsqueda Nominal Procesos Anteriores</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+
+<style>
+:root {
+  --guinda: #6B1C3E; --guinda-o: #4A0E29; --guinda-d: #8B2252;
+  --dorado: #C8962A; --dorado-l: #E8B84B;
+  --verde: #1A7A3A; --azul: #1565C0; --alerta: #FF6F00;
+  --rojo: #C62828; --blanco: #FFF;
+  --gris-bg: #F5F2F3; --gris: #EDE8EA; --texto: #1A0A10;
+  --sombra: rgba(74,14,41,0.18);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Open Sans', sans-serif; background: var(--gris-bg); color: var(--texto); padding-bottom: 80px; }
+
+/* ── BARRA INSTITUCIONAL ── */
+.top-bar {
+  background: #1a0a10; color: rgba(255,255,255,0.75);
+  font-family: 'Open Sans', sans-serif; font-size: 0.68rem;
+  padding: 5px 20px; display: flex; align-items: center; gap: 18px;
+  letter-spacing: 0.3px;
+}
+.top-bar span { opacity: 0.5; }
+
+/* ── HERO HEADER ── */
+.hero {
+  background: linear-gradient(135deg, var(--guinda-o) 0%, var(--guinda) 55%, var(--guinda-d) 100%);
+  color: var(--blanco); padding: 28px 32px 24px;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; right: -60px; top: -60px;
+  width: 280px; height: 280px;
+  background: radial-gradient(circle, rgba(200,150,42,0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.hero-brand { display: flex; align-items: center; gap: 12px; }
+.hero-brand-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+}
+.hero-brand-text { font-size: 0.7rem; opacity: 0.75; letter-spacing: 0.5px; }
+.hero-brand-text strong { display: block; font-size: 0.85rem; color: var(--dorado-l); font-weight: 700; }
+.hero-clock { text-align: right; }
+.hero-clock-time { font-family: 'Montserrat', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1; }
+.hero-clock-date { font-size: 0.72rem; opacity: 0.7; margin-top: 3px; }
+
+.hero-title { margin-top: 18px; }
+.hero-title h1 {
+  font-family: 'Montserrat', sans-serif; font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.1;
+}
+.hero-title h1 span { color: var(--dorado-l); }
+.hero-title p { font-size: 0.8rem; opacity: 0.75; margin-top: 6px; }
+
+.hero-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.chip {
+  padding: 5px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;
+  border: 1.5px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.9); cursor: default; display: flex; align-items: center; gap: 5px;
+}
+.chip.active { background: var(--dorado); border-color: var(--dorado); color: #1a0a10; }
+
+/* ── LOADER ── */
+#loader-db {
+  background: linear-gradient(90deg, var(--guinda-o), var(--guinda));
+  color: white; padding: 14px 20px; text-align: center;
+  font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.9rem;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+#loader-db::before { content: ''; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── PANEL DE ESTADÍSTICAS ── */
+.stats-panel {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  background: var(--blanco); box-shadow: 0 4px 16px var(--sombra);
+}
+@media (max-width: 640px) { .stats-panel { grid-template-columns: 1fr; } }
+
+.stats-col {
+  padding: 20px 24px;
+}
+.stats-col-left { border-right: 1px solid var(--gris); }
+.stats-col-label {
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--dorado); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+.stats-col-label::before { content: '▶'; font-size: 0.55rem; }
+
+.stat-big { font-family: 'Montserrat', sans-serif; font-size: 3rem; font-weight: 900; color: var(--guinda); line-height: 1; }
+.stat-big-label { font-size: 0.72rem; color: #888; margin-top: 4px; }
+
+.stat-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.stat-chip {
+  padding: 4px 12px; border-radius: 16px; font-size: 0.72rem; font-weight: 700;
+  display: flex; align-items: center; gap: 5px;
+}
+.stat-chip.mayjun { background: #FFF3E0; color: var(--alerta); }
+.stat-chip.agosto  { background: #E8F5E9; color: var(--verde); }
+
+.stats-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.stats-list li {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 0.82rem; padding: 6px 0; border-bottom: 1px solid var(--gris);
+}
+.stats-list li:last-child { border-bottom: none; }
+.stats-list .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.stats-list .lbl { flex: 1; margin-left: 9px; color: #555; }
+.stats-list .val { font-family: 'Montserrat', sans-serif; font-weight: 800; color: var(--guinda); font-size: 0.88rem; }
+
+/* ── CONTAINER ── */
+.container { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+
+/* ── SECTION BOX ── */
+.section-box {
+  background: var(--blanco); border-radius: 14px; padding: 24px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06); margin-bottom: 20px;
+}
+.section-title {
+  font-family: 'Montserrat', sans-serif; font-size: 1rem; font-weight: 800;
+  color: var(--guinda); text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.section-title::before { content: attr(data-icon); font-size: 1.1rem; }
+
+/* ── INPUTS Y BOTONES ── */
+.search-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.input-text {
+  padding: 13px 16px; flex: 1; min-width: 220px; max-width: 420px;
+  border: 2px solid var(--gris); border-radius: 10px;
+  font-size: 1rem; font-family: 'Open Sans', sans-serif;
+  transition: border-color 0.2s;
+}
+.input-text:focus { outline: none; border-color: var(--guinda); }
+.btn {
+  padding: 13px 24px; border: none; border-radius: 10px;
+  font-weight: 800; cursor: pointer; font-family: 'Montserrat', sans-serif;
+  transition: all 0.2s; font-size: 0.9rem; letter-spacing: 0.3px;
+}
+.btn-primary { background: var(--guinda); color: white; }
+.btn-primary:hover { background: var(--guinda-o); }
+.btn-secondary { background: var(--gris); color: var(--texto); }
+.btn-secondary:hover { background: #ddd; }
+.btn-danger { background: var(--rojo); color: white; }
+
+/* ── CÁMARA ── */
+#video-preview {
+  width: 100%; max-width: 480px; border-radius: 12px;
+  border: 3px solid var(--gris); display: block; margin: 0 auto 16px;
+  background: #111; min-height: 120px;
+}
+.scanner-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* ── MODAL ── */
+#modal-bg {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75); z-index: 2000;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-content {
+  background: var(--blanco); width: 92%; max-width: 560px;
+  border-radius: 18px; padding: 28px 24px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+  max-height: 88vh; overflow-y: auto;
+}
+.modal-content.success { border-top: 6px solid var(--verde); }
+.modal-content.error   { border-top: 6px solid var(--rojo); }
+#modal-title {
+  font-family: 'Montserrat', sans-serif; font-size: 1.3rem; font-weight: 900;
+  text-align: center; margin-bottom: 16px;
+}
+.success #modal-title { color: var(--verde); }
+.error   #modal-title { color: var(--rojo); }
+
+.registro-card {
+  background: var(--gris-bg); border: 1px solid #e0d8da;
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 12px;
+}
+.registro-card p { font-size: 0.88rem; margin-bottom: 6px; line-height: 1.4; }
+.registro-card p:last-child { margin-bottom: 0; }
+.registro-card strong { color: var(--guinda); font-weight: 700; }
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 6px;
+  font-weight: 800; font-size: 0.72rem; margin-bottom: 10px; color: #fff;
+}
+
+.btn-close-modal {
+  width: 100%; padding: 14px; background: var(--guinda); color: white;
+  border: none; border-radius: 10px; font-family: 'Montserrat', sans-serif;
+  font-weight: 800; font-size: 1rem; cursor: pointer; margin-top: 12px;
+  transition: background 0.2s;
+}
+.btn-close-modal:hover { background: var(--guinda-o); }
+
+/* ── FOOTER ── */
+footer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--guinda-o); color: rgba(255,255,255,0.7);
+  font-size: 0.68rem; text-align: center; padding: 8px;
+  letter-spacing: 0.3px; z-index: 100;
+}
+footer strong { color: var(--dorado-l); }
+</style>
+
+<style>
+#login-overlay-sare{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#4d0011 0%,#6f1223 60%,#832231 100%);display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Inter',sans-serif;}
+#login-overlay-sare .login-box{background:#fff;border-radius:16px;max-width:420px;width:100%;padding:36px 32px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+#login-overlay-sare .login-logo{text-align:center;margin-bottom:24px;}
+#login-overlay-sare .login-logo img{height:48px;margin:0 auto 16px;display:block;opacity:.85;}
+#login-overlay-sare h1{font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.25rem;color:#4d0011;margin:0 0 4px;}
+#login-overlay-sare .login-sub{font-size:.85rem;color:#77592a;margin:0;}
+#login-overlay-sare label{display:block;font-size:.8rem;font-weight:600;color:#564242;margin-bottom:6px;}
+#login-overlay-sare input{width:100%;padding:12px 14px;border:1.5px solid #dcc0c0;border-radius:8px;font-size:.95rem;margin-bottom:16px;font-family:'Inter',sans-serif;box-sizing:border-box;}
+#login-overlay-sare input#login-nombre-sare{text-transform:uppercase;}
+#login-overlay-sare #login-error-sare{display:none;background:#ffdad6;color:#93000a;border-radius:8px;padding:10px 14px;font-size:.82rem;margin-bottom:14px;}
+#login-overlay-sare button[type=submit]{width:100%;background:#4d0011;color:#fff;border:none;border-radius:8px;padding:13px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;}
+#login-overlay-sare .login-foot{text-align:center;font-size:.7rem;color:#897172;margin:18px 0 0;}
+.sare-userbar{position:fixed;top:0;right:0;z-index:9998;background:rgba(74,14,41,.92);color:#fff;font-family:'Inter',sans-serif;font-size:.72rem;padding:6px 14px;border-radius:0 0 0 10px;display:flex;align-items:center;gap:10px;}
+.sare-userbar button{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:3px 9px;font-size:.7rem;cursor:pointer;font-weight:600;}
+.sare-userbar button:hover{background:rgba(255,255,255,.28);}
+</style>
+</head>
+<body>
+
+<div id="login-overlay-sare">
+  <div class="login-box">
+    <div class="login-logo">
+      <img src="https://framework-gb.cdn.gob.mx/landing/img/logoheader.svg" alt="Gobierno de México">
+      <h1>SARE 1507 ECATEPEC</h1>
+      <p class="login-sub">Acceso restringido · Personal autorizado</p>
+    </div>
+    <form id="login-form-sare" autocomplete="off">
+      <label>Nombre completo</label>
+      <input id="login-nombre-sare" type="text" placeholder="APELLIDO PATERNO APELLIDO MATERNO NOMBRE(S)" autocomplete="off">
+      <label>CUPO / Número de empleado</label>
+      <input id="login-cupo-sare" type="text" inputmode="numeric" placeholder="Ej. 1500585" autocomplete="off">
+      <div id="login-error-sare">⚠️ Nombre o CUPO incorrectos. Verifica e intenta de nuevo.</div>
+      <button type="submit">Ingresar</button>
+    </form>
+    <p class="login-foot">Uso exclusivo de personal SARE 1507. Sesión válida 8 horas en este dispositivo.</p>
+  </div>
+</div>
+<div class="sare-userbar" id="sare-userbar" style="display:none;">
+  <span id="sare-userbar-nombre"></span>
+  <button id="sare-userbar-logout">Cerrar sesión</button>
+</div>
+
+<!-- ── BARRA INSTITUCIONAL ── -->
+<div class="top-bar">
+  <span>MX GOBIERNO DE MÉXICO</span>
+  <span>|</span>
+  <span>SECRETARÍA DE EDUCACIÓN PÚBLICA</span>
+  <span>|</span>
+  <span>COORDINACIÓN NACIONAL DE BECAS PARA EL BIENESTAR</span>
+  <div style="flex:1"></div>
+  <span id="sare-userbar-top"></span>
+</div>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="hero-top">
+    <div class="hero-brand">
+      <div class="hero-brand-icon">🎓</div>
+      <div>
+        <div class="hero-brand-text">SARE 1507 — BÚSQUEDA NOMINAL</div>
+        <div class="hero-brand-text"><strong>Becas Bienestar · ¡Educar es Transformar!</strong></div>
+      </div>
+    </div>
+    <div class="hero-clock">
+      <div class="hero-clock-time" id="clock-time">00:00:00</div>
+      <div class="hero-clock-date" id="clock-date"></div>
+    </div>
+  </div>
+  <div class="hero-title">
+    <h1>BÚSQUEDA NOMINAL<br><span>PROCESOS ANTERIORES + ACTUALES</span></h1>
+    <p>Escaneo CURP · Búsqueda por nombre · Verificación en nominales históricos y complementos</p>
+  </div>
+  <div class="hero-chips">
+    <div class="chip active">📷 Escaneo CURP</div>
+    <div class="chip">📚 Básica</div>
+    <div class="chip">🎓 BUEEMS</div>
+    <div class="chip">💼 JEF</div>
+    <div class="chip">📋 Complementos</div>
+  </div>
+</div>
+
+<!-- ── LOADER ── -->
+<div id="loader-db">Descargando e indexando padrones, por favor espera…</div>
+
+<!-- ── PANEL DE ESTADÍSTICAS ── -->
+<div class="stats-panel" id="stats-panel" style="display:none">
+  <!-- Columna izquierda: complementos actuales -->
+  <div class="stats-col stats-col-left">
+    <div class="stats-col-label">Nominales Actuales (Sin CURP)</div>
+    <div class="stat-big" id="stat-total">0</div>
+    <div class="stat-big-label">registros en complementos</div>
+    <div class="stat-chips" style="margin-top:14px">
+      <div class="stat-chip mayjun">📅 May-Jun 26: <strong id="stat-mayjun">0</strong></div>
+      <div class="stat-chip agosto">📅 Ago 26: <strong id="stat-agosto">0</strong></div>
+    </div>
+  </div>
+  <!-- Columna derecha: históricos con CURP -->
+  <div class="stats-col">
+    <div class="stats-col-label">Operativos Anteriores (CURP)</div>
+    <ul class="stats-list">
+      <li>
+        <div class="dot" style="background:var(--verde)"></div>
+        <span class="lbl">Básica:</span>
+        <span class="val" id="stat-basica">0</span>
+      </li>
+      <li>
+        <div class="dot" style="background:var(--azul)"></div>
+        <span class="lbl">BUEEMS:</span>
+        <span class="val" id="stat-bueems">0</span>
+      </li>
+      <li>
+        <div class="dot" style="background:var(--alerta)"></div>
+        <span class="lbl">JEF:</span>
+        <span class="val" id="stat-jef">0</span>
+      </li>
+      <li>
+        <div class="dot" style="background:var(--azul)"></div>
+        <span class="lbl">BUEEMS Feb 26:</span>
+        <span class="val" id="stat-bueems-feb">0</span>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── CONTENIDO PRINCIPAL ── -->
+<div class="container">
+
+  <div class="section-box">
+    <div class="section-title" data-icon="🔍">Búsqueda Manual (CURP o Nombre)</div>
+    <div class="search-row">
+      <input type="text" id="manual-search-input" class="input-text"
+        placeholder="Escribe nombre completo o CURP…"
+        onkeypress="if(event.key==='Enter') buscarManual()">
+      <button class="btn btn-primary" onclick="buscarManual()">Buscar</button>
+      <button class="btn btn-secondary" onclick="limpiarBusqueda()">Limpiar</button>
+    </div>
+  </div>
+
+  <div class="section-box">
+    <div class="section-title" data-icon="📷">Escáner de CURP</div>
+    <video id="video-preview"></video>
+    <div class="scanner-btns">
+      <button class="btn btn-primary" id="btn-start" onclick="iniciarScanner()" disabled style="opacity:0.5">Cámara Desactivada</button>
+      <button class="btn btn-danger"  id="btn-stop"  onclick="detenerScanner()" style="display:none">⏹ Detener Cámara</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── MODAL ── -->
+<div id="modal-bg">
+  <div class="modal-content" id="modal-box">
+    <div id="modal-title">Resultado</div>
+    <div id="modal-body"></div>
+    <button class="btn-close-modal" onclick="cerrarModal()">ACEPTAR Y CONTINUAR</button>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  ✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507
+</footer>
+
+<script>
+// === RELOJ Y FECHA ===
+function mostrarUsuarioTopBar(nombre) {
+  const el = document.getElementById('sare-userbar-top');
+  if (el) el.textContent = nombre;
+}
+function actualizarReloj() {
+    const now = new Date();
+    document.getElementById('clock-time').textContent = now.toLocaleTimeString();
+    document.getElementById('clock-date').textContent = now.toLocaleDateString('es-ES', {weekday: 'long', day: 'numeric', month: 'short'});
+}
+setInterval(actualizarReloj, 1000);
+actualizarReloj();
+
+// === DATOS ===
+// nominalDatos: registros CON CURP (historicos) — búsqueda exacta por CURP
+// complementoDatos: registros SIN CURP (mayo-junio y agosto 2026) — búsqueda por nombre
+let nominalDatos = [];
+let complementoDatos = [];
+
+// Normaliza texto: mayusculas, sin acentos, espacios simples
+function norm(t) {
+  return String(t||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+}
+
+// === PROCESAMIENTO CSV CON CURP ===
+function procesarDataCSV(data, nivelConfig) {
+  const sep = (data.split('\n')[0]||'').split(';').length > (data.split('\n')[0]||'').split(',').length ? ';' : ',';
+  const lineas = Papa.parse(data, { header: true, skipEmptyLines: true, delimiter: sep }).data;
+  lineas.forEach(row => {
+    const keys = Object.keys(row);
+    const getVal = (nombres) => {
+      const key = keys.find(k => nombres.some(n => k.trim().toUpperCase() === n.toUpperCase()));
+      return key ? String(row[key]||'').trim().toUpperCase() : '';
+    };
+    const curp = getVal(['CURP']);
+    if (!curp || curp.length < 10) return;
+    const cct = getVal(['CCT']);
+    const mun = getVal(['MUNICIPIO','MUN']);
+    const nombrePila = getVal(['NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
+    const ap1 = getVal(['PRIMER APELLIDO','APELLIDO PATERNO']);
+    const ap2 = getVal(['SEGUNDO APELLIDO','APELLIDO MATERNO']);
+    const nombreCompleto = getVal(['NOMBRE COMPLETO']);
+    // Estructura basica/bueems/jef: NOMBRE DEL TUTOR + PRIMER APELLIDO + SEGUNDO APELLIDO
+    // Estructura con columna única: NOMBRE COMPLETO
+    const nombre = nombreCompleto
+      || ((nombrePila+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim());
+    nominalDatos.push({
+      curp, nivel: nivelConfig.nombre, rol: nivelConfig.rol, nombre,
+      proceso: getVal(['PROCESO','FECHA','REMESA']) || nivelConfig.nombre,
+      cct: cct||'N/A', mun: mun||'N/A'
+    });
+  });
+}
+
+// === PROCESAMIENTO CSV SIN CURP (complementos) ===
+function procesarDataCSVSinCurp(data, nivelConfig) {
+  const sep = (data.split('\n')[0]||'').split(';').length > (data.split('\n')[0]||'').split(',').length ? ';' : ',';
+  const lineas = Papa.parse(data, { header: true, skipEmptyLines: true, delimiter: sep }).data;
+  lineas.forEach(row => {
+    const keys = Object.keys(row);
+    const getVal = (nombres) => {
+      const key = keys.find(k => nombres.some(n => k.trim().toUpperCase() === n.toUpperCase()));
+      return key ? String(row[key]||'').trim().toUpperCase() : '';
+    };
+    // Buscar columna nombre (mayo-jun usa "NOMBRE COMPLETO", agosto puede variar)
+    const nombre = getVal(['NOMBRE COMPLETO','NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
+    if (!nombre) return;
+    const cct  = getVal(['CCT']);
+    const mun  = getVal(['MUNICIPIO','MUN']);
+    const proc = getVal(['PROCESO','FECHA','REMESA','PROGRAMA']) || nivelConfig.nombre;
+    complementoDatos.push({
+      nombre, nivel: nivelConfig.nombre, ciclo: nivelConfig.ciclo,
+      proceso: proc, cct: cct||'N/A', mun: mun||'N/A', sinCurp: true
+    });
+  });
+}
+
+// === CARGA DE PADRONES ===
+async function cargarPadrones() {
+  // Archivos CON CURP
+  const archivosConCurp = [
+    { url: 'basica.csv',     config: { nombre: 'BÁSICA',        rol: 'TUTOR'    } },
+    { url: 'bueems.csv',     config: { nombre: 'BUEEMS',        rol: 'BECARIO'  } },
+    { url: 'jef.csv',        config: { nombre: 'JEF',           rol: 'BECARIO'  } },
+    { url: 'bueems_feb.csv', config: { nombre: 'BUEEMS FEB 26', rol: 'BECARIO'  } }
+  ];
+  // Archivos SIN CURP (complementos)
+  const archivosSinCurp = [
+    { url: 'brcu_prim_secu_mayo_junio_2026.csv', config: { nombre: 'BRCU MAYO-JUN 26',  ciclo: 'Mayo-Junio 2026'  } },
+    { url: 'bueems_mayo_junio_2026.csv',         config: { nombre: 'BUEEMS MAYO-JUN 26',ciclo: 'Mayo-Junio 2026'  } },
+    { url: 'jef_mayo_junio_2026.csv',            config: { nombre: 'JEF MAYO-JUN 26',   ciclo: 'Mayo-Junio 2026'  } },
+    { url: 'brcu_agosto_2026.csv',               config: { nombre: 'BRCU AGOSTO 26',     ciclo: 'Agosto 2026'      } },
+    { url: 'bueems_agosto_2026.csv',             config: { nombre: 'BUEEMS AGOSTO 26',   ciclo: 'Agosto 2026'      } },
+    { url: 'jef_agosto_2026.csv',                config: { nombre: 'JEF AGOSTO 26',      ciclo: 'Agosto 2026'      } }
+  ];
+
+  const cargar = async (url, fn, cfg) => {
+    try {
+      const r = await fetch(url + '?v=20261002');
+      if (r.ok) fn(await r.text(), cfg);
+    } catch(e) {}
+  };
+
+  await Promise.all([
+    ...archivosConCurp.map(a => cargar(a.url, procesarDataCSV, a.config)),
+    ...archivosSinCurp.map(a => cargar(a.url, procesarDataCSVSinCurp, a.config))
+  ]);
+
+  document.getElementById('loader-db').style.display = 'none';
+  document.getElementById('stats-panel').style.display = 'grid';
+  const btnStart = document.getElementById('btn-start');
+  btnStart.disabled = false; btnStart.style.opacity = '1'; btnStart.textContent = 'Iniciar Cámara';
+
+  // Actualizar contadores
+  document.getElementById('stat-total').textContent  = complementoDatos.length.toLocaleString();
+  document.getElementById('stat-basica').textContent = nominalDatos.filter(d => d.nivel === 'BÁSICA').length.toLocaleString();
+  document.getElementById('stat-bueems').textContent = nominalDatos.filter(d => d.nivel.includes('BUEEMS')).length.toLocaleString();
+  document.getElementById('stat-jef').textContent    = nominalDatos.filter(d => d.nivel === 'JEF').length.toLocaleString();
+  document.getElementById('stat-mayjun').textContent = complementoDatos.filter(d => d.ciclo === 'Mayo-Junio 2026').length.toLocaleString();
+  document.getElementById('stat-agosto').textContent = complementoDatos.filter(d => d.ciclo === 'Agosto 2026').length.toLocaleString();
+  document.getElementById('stat-bueems-feb').textContent = nominalDatos.filter(d => d.nivel === 'BUEEMS FEB 26').length.toLocaleString();
+}
+window.onload = cargarPadrones;
+
+// === BÚSQUEDA ===
+function limpiarBusqueda() {
+  document.getElementById('manual-search-input').value = '';
+  document.getElementById('manual-search-input').focus();
+}
+
+function buscarManual() {
+  const input = norm(document.getElementById('manual-search-input').value);
+  if (!input || input.length < 3) return;
+
+  // Buscar en nominales con CURP (exacta por CURP, o por nombre con tokens)
+  const resCurp = nominalDatos.filter(r => {
+    if (r.curp === input) return true;
+    const tokens = input.split(' ').filter(t => t.length > 1);
+    const bn = norm(r.nombre);
+    return tokens.every(t => (' '+bn+' ').includes(' '+t+' '));
+  });
+
+  // Buscar en complementos por nombre (tokens con word-boundary)
+  const resComp = complementoDatos.filter(r => {
+    const tokens = input.split(' ').filter(t => t.length > 1);
+    const bn = norm(r.nombre);
+    return tokens.every(t => (' '+bn+' ').includes(' '+t+' '));
+  });
+
+  const todos = [...resCurp, ...resComp];
+  if (todos.length > 0) mostrarExito('Búsqueda Manual', todos);
+  else mostrarError(input, 'No se encontraron registros coincidentes.');
+}
+
+// Búsqueda por CURP extraída del escáner
+function buscarPorCurp(curp) {
+  const c = curp.trim().toUpperCase();
+  const res = nominalDatos.filter(r => r.curp === c);
+  if (res.length > 0) mostrarExito(c, res);
+  else mostrarError(c, 'CURP no encontrada en ningún nominal.');
+}
+
+// === ESCÁNER ZXING (mejor lectura de PDF417) ===
+let zxingReader = null;
+let scannerActivo = false;
+
+function iniciarScanner() {
+  document.getElementById('btn-start').style.display = 'none';
+  document.getElementById('btn-stop').style.display = 'inline-block';
+  scannerActivo = true;
+
+  const hints = new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+    ZXing.BarcodeFormat.PDF_417,
+    ZXing.BarcodeFormat.QR_CODE,
+    ZXing.BarcodeFormat.CODE_128
+  ]);
+  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+  zxingReader = new ZXing.BrowserMultiFormatReader(hints);
+
+  zxingReader.decodeFromConstraints(
+    { video: { facingMode: 'environment' } },
+    'video-preview',
+    (result, err) => {
+      if (!result || !scannerActivo) return;
+      const txt = result.getText();
+      // PDF417 del CURP impreso: CURP|NOMBRE|AP_PATERNO|AP_MATERNO|DIA|MES|AÑO|SEXO|ENTIDAD
+      const partes = txt.split('|');
+      let curpRaw = partes[0].toUpperCase();
+      const match = curpRaw.match(/[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]/);
+      const curp = match ? match[0] : curpRaw;
+      if (curp && curp.length >= 18) {
+        scannerActivo = false;
+        buscarPorCurp(curp);
+      }
+    }
+  );
+}
+
+function detenerScanner() {
+  scannerActivo = false;
+  if (zxingReader) { zxingReader.reset(); zxingReader = null; }
+  document.getElementById('btn-start').style.display = 'inline-block';
+  document.getElementById('btn-stop').style.display = 'none';
+}
+
+// === MODAL ===
+function colorNivel(nivel) {
+  if (nivel.includes('BÁSICA') || nivel.includes('BRCU')) return 'var(--verde)';
+  if (nivel.includes('BUEEMS')) return 'var(--azul)';
+  if (nivel.includes('JEF')) return 'var(--alerta)';
+  return 'var(--guinda)';
+}
+
+function mostrarExito(titulo, registros) {
+  const modalBox = document.getElementById('modal-box');
+  modalBox.className = 'modal-content success';
+  document.getElementById('modal-title').textContent = '¡REGISTRO LOCALIZADO!';
+  let html = `<p>Búsqueda: <strong>${titulo}</strong></p><br>`;
+  registros.forEach(reg => {
+    html += `<div class="registro-encontrado">
+      <div class="badge-nivel" style="background:${colorNivel(reg.nivel)}">${reg.nivel}</div>
+      <p><strong>NOMBRE:</strong> ${reg.nombre}</p>
+      <p><strong>PROCESO:</strong> ${reg.proceso}</p>
+      <p><strong>CCT:</strong> ${reg.cct}</p>
+      <p><strong>MUNICIPIO:</strong> ${reg.mun}</p>
+    </div>`;
+  });
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-bg').style.display = 'flex';
+}
+
+function mostrarError(titulo, mensaje) {
+  document.getElementById('modal-box').className = 'modal-content error';
+  document.getElementById('modal-title').textContent = 'NO ENCONTRADO';
+  document.getElementById('modal-body').innerHTML = `<p>${mensaje}</p>`;
+  document.getElementById('modal-bg').style.display = 'flex';
+}
+
+function cerrarModal() {
+  document.getElementById('modal-bg').style.display = 'none';
+  // Reanudar escáner si estaba activo
+  if (zxingReader && !scannerActivo) scannerActivo = true;
+}
+</script>
+
+<script>
+(function(){
+  var USUARIOS_AUTORIZADOS = [{"NOMBRE": "CERVANTES JIMENEZ JOSE ELIAS", "CUPO": "159415"}, {"NOMBRE": "NOH CRUZ JOSE EDUARDO", "CUPO": "1500585"}, {"NOMBRE": "BARRERA MARTINEZ GUSTAVO", "CUPO": "1500723"}, {"NOMBRE": "CARRASCO GALLARDO STEFANY", "CUPO": "1501080"}, {"NOMBRE": "HERNANDEZ GUEVARA ANDREA", "CUPO": "1501112"}, {"NOMBRE": "MARTINEZ MOISES CELINA", "CUPO": "1501166"}, {"NOMBRE": "GALVEZ GARCIA NESTOR ENRIQUE", "CUPO": "1501193"}, {"NOMBRE": "ORDAZ VERA OSCAR URIEL", "CUPO": "1501604"}, {"NOMBRE": "ORDAZ HERNANDEZ MARIA DEL ROCIO", "CUPO": "1501620"}, {"NOMBRE": "HERNANDEZ HERNANDEZ CLAUDIA LIZET", "CUPO": "1501623"}, {"NOMBRE": "CEDILLO GARCIA MIGUEL", "CUPO": "1501626"}, {"NOMBRE": "MARTINEZ ARELLANO ROSA CARMINA", "CUPO": "1501640"}, {"NOMBRE": "PUENTE MAGAÑA JESUS ALBERTO", "CUPO": "1501644"}, {"NOMBRE": "SANCHEZ BERNABE MARIA GUADALUPE BRENDA", "CUPO": "1501974"}, {"NOMBRE": "CUEVAS SANCHEZ EMMELY DANIELA", "CUPO": "1501975"}, {"NOMBRE": "ORNELAS HURTADO DANA KARLA", "CUPO": "1501976"}, {"NOMBRE": "POMPA VALDEZ ABRAHAM LEVI", "CUPO": "1501977"}, {"NOMBRE": "QUINTOS HERNANDEZ ELDA BERENICE", "CUPO": "1501981"}, {"NOMBRE": "OLVERA SANCHEZ ANA LAURA", "CUPO": "1501982"}, {"NOMBRE": "MAGAÑA ABURTO MARIA ANGELICA", "CUPO": "1501983"}, {"NOMBRE": "GONZALEZ AVILA BERSAIN", "CUPO": "1501985"}, {"NOMBRE": "SANCHEZ BELTRAN MAYRA SUET", "CUPO": "1501986"}, {"NOMBRE": "LUNA VELAZQUEZ LUCIA", "CUPO": "1501987"}, {"NOMBRE": "RIVERA GONZALEZ ANDREA PATRICIA", "CUPO": "1501989"}, {"NOMBRE": "GONZALEZ LINDA NOHEMI JAZMIN", "CUPO": "1501991"}, {"NOMBRE": "RAMIREZ CRUZ ERICKA YESSENIA", "CUPO": "1502176"}, {"NOMBRE": "MARTINEZ SOSA MICHELLE", "CUPO": "1502177"}, {"NOMBRE": "SILVETI PEREZ ROCIO", "CUPO": "1502178"}, {"NOMBRE": "RAMIREZ CRUZ RUTH PAOLA", "CUPO": "1502179"}, {"NOMBRE": "PACHECO RAMIREZ DULCE JOCABET", "CUPO": "1502180"}, {"NOMBRE": "ESCOBAR NABOR EMMA NAZARAHI", "CUPO": "1502210"}, {"NOMBRE": "LIRA ESPINOZA PATRICIA ALEJANDRA", "CUPO": "1502220"}, {"NOMBRE": "MORALES ESCOBAR JANETH JOSELYN", "CUPO": "1502229"}, {"NOMBRE": "GONZALEZ CLEMENTE LAURA ANDREA", "CUPO": "1502290"}, {"NOMBRE": "GONZALEZ VARGAS GABRIEL YOSEF ARNALDO", "CUPO": "1502291"}, {"NOMBRE": "MARTINEZ SANDOVAL JUAN CARLOS", "CUPO": "1502292"}, {"NOMBRE": "MENDOZA ALVARADO DIANA ARELI", "CUPO": "1502293"}, {"NOMBRE": "PONCE NIEVES BRYAN", "CUPO": "1502294"}, {"NOMBRE": "REYES VAZQUEZ NORMA ANGELICA", "CUPO": "1502295"}, {"NOMBRE": "RUBIO VALADEZ FERNANDA ESTEFANIA", "CUPO": "1502296"}, {"NOMBRE": "SALAZAR MARTINEZ GUADALUPE ABIGAIL", "CUPO": "1502297"}];
+  var SESSION_KEY = 'sare1507_sesion';
+  var SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 horas
+
+  function normalizar(txt){
+    return (txt||'').toUpperCase().trim().replace(/\s+/g,' ')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  }
+
+  function getSesion(){
+    try {
+      var raw = localStorage.getItem(SESSION_KEY);
+      if(!raw) return null;
+      var data = JSON.parse(raw);
+      if(!data.expira || Date.now() > data.expira){
+        localStorage.removeItem(SESSION_KEY);
+        return null;
+      }
+      return data;
+    } catch(e){ return null; }
+  }
+
+  function ocultarBody(){
+    document.documentElement.style.visibility = 'hidden';
+  }
+  function mostrarBody(){
+    document.documentElement.style.visibility = 'visible';
+  }
+
+  function mostrarApp(usuario){
+    var ov = document.getElementById('login-overlay-sare');
+    if(ov) ov.style.display = 'none';
+    var bar = document.getElementById('sare-userbar');
+    if(bar){ bar.style.display = 'flex'; }
+    var nm = document.getElementById('sare-userbar-nombre');
+    if(nm && usuario) nm.textContent = usuario.NOMBRE;
+    mostrarBody();
+  }
+
+  function mostrarLogin(){
+    var ov = document.getElementById('login-overlay-sare');
+    if(ov) ov.style.display = 'flex';
+    var bar = document.getElementById('sare-userbar');
+    if(bar) bar.style.display = 'none';
+    mostrarBody();
+  }
+
+  ocultarBody();
+
+  function init(){
+    var sesion = getSesion();
+    if(sesion){
+      mostrarApp(sesion);
+    } else {
+      mostrarLogin();
+    }
+
+    var form = document.getElementById('login-form-sare');
+    if(form){
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        var nombreInput = normalizar(document.getElementById('login-nombre-sare').value);
+        var cupoInput = (document.getElementById('login-cupo-sare').value||'').trim();
+        var errorBox = document.getElementById('login-error-sare');
+
+        var encontrado = USUARIOS_AUTORIZADOS.find(function(u){
+          return normalizar(u.NOMBRE) === nombreInput && String(u.CUPO).trim() === cupoInput;
+        });
+
+        if(encontrado){
+          errorBox.style.display = 'none';
+          var sesionData = Object.assign({}, encontrado, { expira: Date.now() + SESSION_DURATION_MS });
+          localStorage.setItem(SESSION_KEY, JSON.stringify(sesionData));
+          mostrarApp(sesionData);
+        } else {
+          errorBox.style.display = 'block';
+        }
+      });
+    }
+
+    var btnLogout = document.getElementById('sare-userbar-logout');
+    if(btnLogout){
+      btnLogout.addEventListener('click', function(){
+        localStorage.removeItem(SESSION_KEY);
+        if(form) form.reset();
+        mostrarLogin();
+      });
+    }
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+</body>
+</html>
