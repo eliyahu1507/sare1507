@@ -670,17 +670,16 @@ function buscarEnAgostoPorTexto(query) {
 }
 
 // ── MOSTRAR PANEL DE RESULTADO HISTÓRICO ──
-function mostrarPanelHistorico(curpIngresada, hitBRCU) {
+function mostrarPanelHistorico(curpIngresada, hitBRCU, nombreFallback) {
   // 1.ª pasada: búsqueda exacta por CURP en padrones históricos (basica, bueems, jef, bueems_feb)
   var hist = buscarEnHistoricos(curpIngresada);
 
-  // 2.ª pasada: buscar en agosto 2026 SOLO por nombre EXACTO normalizado
-  // ⚠️  NO se usan tokens parciales aquí: si hay 2 personas con nombre parecido,
-  //     los tokens cruzarían y mostrarían datos de la persona equivocada.
-  //     Solo se muestra un registro de agosto si el nombre coincide exactamente.
+  // 2.ª pasada: buscar en complementos por nombre
+  // Usar nombre del hitBRCU si existe, o el nombreFallback del PDF417 si no
   var agoHits = [];
-  if(hitBRCU && hitBRCU.nombre) {
-    agoHits = buscarEnHistoricosPorNombre(hitBRCU.nombre);
+  var nombreParaCompl = (hitBRCU && hitBRCU.nombre) ? hitBRCU.nombre : (nombreFallback || '');
+  if(nombreParaCompl) {
+    agoHits = buscarEnHistoricosPorNombre(nombreParaCompl);
   }
 
   // Contenedor: insertarlo debajo de alerta-curp
@@ -1298,20 +1297,35 @@ function buscarPorNombreCompleto(apPat, apMat, nom){
   // Si después de todo tampoco hay resultados en BRCU
   document.getElementById('spin-scan').classList.remove('active');
   var noRes = document.getElementById('no-result-scan');
+  var _curpActual = document.getElementById('scan-input').value.trim().toUpperCase();
   if(!rows.length){
-    noRes.classList.add('visible');
-    document.getElementById('no-result-txt').textContent =
-      'No se encontró a '+apPat+' '+apMat+' '+nom+' en ningún programa.';
-    document.getElementById('res-scan').classList.remove('visible');
+    // Sin resultados en BRCU actual ni agosto — pero puede estar en históricos por CURP
+    if(_curpActual.length >= 18){
+      // Buscar en históricos CSV (basica/bueems/jef con CURP) usando la CURP escaneada
+      // Pasar nombre del PDF417 como fallback para buscar en complementos sin CURP
+      var nombrePDF = (nom + ' ' + apPat + ' ' + apMat).trim();
+      mostrarPanelHistorico(_curpActual, null, nombrePDF);
+      noRes.classList.remove('visible');
+      document.getElementById('res-scan').classList.remove('visible');
+      var avisoCurp = document.getElementById('curp-aviso-resultado');
+      avisoCurp.innerHTML = '📋 <strong>No está en el padrón BRCU actual</strong> — buscando en operativos anteriores...';
+      avisoCurp.style.background='#FFF8E1'; avisoCurp.style.borderColor='#FFD54F'; avisoCurp.style.color='#795548';
+      avisoCurp.classList.add('visible');
+    } else {
+      noRes.classList.add('visible');
+      document.getElementById('no-result-txt').textContent =
+        'No se encontró a '+apPat+' '+apMat+' '+nom+' en ningún programa.';
+      document.getElementById('res-scan').classList.remove('visible');
+    }
     return;
   }
   noRes.classList.remove('visible');
   inlineState.scan.page = 1;
-  var _curpActual = document.getElementById('scan-input').value.trim().toUpperCase();
 
   // ── Panel histórico por CURP + búsqueda en agosto (todo en un solo panel) ──
+  var _nombrePDF2 = (nom + ' ' + apPat + ' ' + apMat).trim();
   if(_curpActual.length >= 18){
-    mostrarPanelHistorico(_curpActual, rows.length > 0 ? rows[0] : null);
+    mostrarPanelHistorico(_curpActual, rows.length > 0 ? rows[0] : null, _nombrePDF2);
   } else {
     // Sin CURP: buscar agosto por nombre del PDF417 y mostrar panel específico
     var queryAgoNom = (apPat + ' ' + apMat + ' ' + nom).trim();
@@ -1443,7 +1457,9 @@ function buscarPorCurpExtraido(datos){
   var _curpVal = datos.curp || '';
   var hitExacto = rows.find(function(r){ return r.exacto; });
   var hitBRCUparaHist = hitExacto || (rows.length > 0 ? rows[0] : null);
-  mostrarPanelHistorico(_curpVal, hitBRCUparaHist);
+  // Pasar nombre del PDF417 (si vino) como fallback para complementos sin CURP
+  var _nomFallbackCurp = ((datos.nombre||'')+' '+(datos.apellidoPaterno||'')+' '+(datos.apellidoMaterno||'')).trim();
+  mostrarPanelHistorico(_curpVal, hitBRCUparaHist, _nomFallbackCurp || null);
 
   // Update aviso based on results
   var aviso = document.getElementById('curp-aviso-resultado');
