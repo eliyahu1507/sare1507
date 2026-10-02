@@ -6,7 +6,7 @@
 <title>SARE 1507 — Búsqueda Nominal Procesos Anteriores</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
 
 <style>
   :root {
@@ -69,6 +69,11 @@
   
   .btn-close { width: 100%; padding: 15px; background: var(--gris); color: var(--texto); border: none; border-radius: 8px; font-weight: 700; font-size: 1.1rem; cursor: pointer; margin-top: 10px; }
   .btn-close:hover { background: #ddd; }
+
+  .badge-nivel.complemento { background-color: var(--alerta); }
+  .stat-card.complemento { border-color: var(--alerta); }
+  .stat-card.complemento .numero { color: var(--alerta); }
+  .stats-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 </style>
 <style>
 #login-overlay-sare{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#4d0011 0%,#6f1223 60%,#832231 100%);display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Inter',sans-serif;}
@@ -138,6 +143,8 @@
     <div class="stat-card basica"><h3>Básica</h3><div class="numero" id="stat-basica">0</div></div>
     <div class="stat-card bueems"><h3>BUEEMS</h3><div class="numero" id="stat-bueems">0</div></div>
     <div class="stat-card jef"><h3>JEF</h3><div class="numero" id="stat-jef">0</div></div>
+    <div class="stat-card complemento"><h3>May-Jun 26</h3><div class="numero" id="stat-mayjun">0</div></div>
+    <div class="stat-card complemento"><h3>Agosto 26</h3><div class="numero" id="stat-agosto">0</div></div>
   </div>
 
   <div class="section-box">
@@ -151,7 +158,7 @@
 
   <div class="section-box">
     <h2 class="title-section">Escáner de CURP</h2>
-    <div id="reader"></div>
+    <video id="video-preview" style="width:100%;max-width:500px;border-radius:12px;border:3px solid var(--gris);display:block;margin:0 auto;background:#000"></video>
     <div style="margin-top: 20px;">
       <button class="btn btn-start" id="btn-start" onclick="iniciarScanner()" disabled style="opacity: 0.5;">Cámara Desactivada</button>
       <button class="btn btn-stop" id="btn-stop" onclick="detenerScanner()" style="display:none;">Detener Cámara</button>
@@ -177,133 +184,231 @@ function actualizarReloj() {
 setInterval(actualizarReloj, 1000);
 actualizarReloj();
 
-// === PROCESAMIENTO DE DATOS ===
+// === DATOS ===
+// nominalDatos: registros CON CURP (historicos) — búsqueda exacta por CURP
+// complementoDatos: registros SIN CURP (mayo-junio y agosto 2026) — búsqueda por nombre
 let nominalDatos = [];
+let complementoDatos = [];
 
+// Normaliza texto: mayusculas, sin acentos, espacios simples
+function norm(t) {
+  return String(t||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+}
+
+// === PROCESAMIENTO CSV CON CURP ===
 function procesarDataCSV(data, nivelConfig) {
-  const lineas = Papa.parse(data, { header: true, skipEmptyLines: true }).data;
+  const sep = (data.split('\n')[0]||'').split(';').length > (data.split('\n')[0]||'').split(',').length ? ';' : ',';
+  const lineas = Papa.parse(data, { header: true, skipEmptyLines: true, delimiter: sep }).data;
   lineas.forEach(row => {
     const keys = Object.keys(row);
-    const getVal = (posiblesNombres) => {
-      const key = keys.find(k => posiblesNombres.some(pn => k.toUpperCase().includes(pn)));
-      return key ? row[key].trim().toUpperCase() : '';
+    const getVal = (nombres) => {
+      const key = keys.find(k => nombres.some(n => k.trim().toUpperCase() === n.toUpperCase()));
+      return key ? String(row[key]||'').trim().toUpperCase() : '';
     };
-    
     const curp = getVal(['CURP']);
-    if (!curp) return;
-    
-    // Extrayendo el CCT y el MUNICIPIO
+    if (!curp || curp.length < 10) return;
     const cct = getVal(['CCT']);
-    const mun = getVal(['MUN', 'MUNICIPIO']);
-
-    const nombreBase = getVal(['NOMBRE DEL TUTOR', 'NOMBRE DEL BECARIO', 'NOMBRE']);
-    const ap1 = getVal(['PRIMER APELLIDO', 'APELLIDO PATERNO']);
-    const ap2 = getVal(['SEGUNDO APELLIDO', 'APELLIDO MATERNO']);
-    const nombreCompleto = `${nombreBase} ${ap1} ${ap2}`.replace(/\s+/g, ' ').trim();
-    
-    nominalDatos.push({ 
-        curp: curp, 
-        nivel: nivelConfig.nombre, 
-        rol: nivelConfig.rol, 
-        nombre: nombreCompleto, 
-        proceso: getVal(['PROCESO']),
-        cct: cct || 'N/A', // Si no lo encuentra, pone N/A
-        mun: mun || 'N/A'  // Si no lo encuentra, pone N/A
+    const mun = getVal(['MUNICIPIO','MUN']);
+    const nombreBase = getVal(['NOMBRE COMPLETO','NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
+    const ap1 = getVal(['PRIMER APELLIDO','APELLIDO PATERNO']);
+    const ap2 = getVal(['SEGUNDO APELLIDO','APELLIDO MATERNO']);
+    const nombre = nombreBase || ((getVal(['NOMBRE'])+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim());
+    nominalDatos.push({
+      curp, nivel: nivelConfig.nombre, rol: nivelConfig.rol, nombre,
+      proceso: getVal(['PROCESO','FECHA','REMESA']) || nivelConfig.nombre,
+      cct: cct||'N/A', mun: mun||'N/A'
     });
   });
 }
 
+// === PROCESAMIENTO CSV SIN CURP (complementos) ===
+function procesarDataCSVSinCurp(data, nivelConfig) {
+  const sep = (data.split('\n')[0]||'').split(';').length > (data.split('\n')[0]||'').split(',').length ? ';' : ',';
+  const lineas = Papa.parse(data, { header: true, skipEmptyLines: true, delimiter: sep }).data;
+  lineas.forEach(row => {
+    const keys = Object.keys(row);
+    const getVal = (nombres) => {
+      const key = keys.find(k => nombres.some(n => k.trim().toUpperCase() === n.toUpperCase()));
+      return key ? String(row[key]||'').trim().toUpperCase() : '';
+    };
+    // Buscar columna nombre (mayo-jun usa "NOMBRE COMPLETO", agosto puede variar)
+    const nombre = getVal(['NOMBRE COMPLETO','NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
+    if (!nombre) return;
+    const cct  = getVal(['CCT']);
+    const mun  = getVal(['MUNICIPIO','MUN']);
+    const proc = getVal(['PROCESO','FECHA','REMESA','PROGRAMA']) || nivelConfig.nombre;
+    complementoDatos.push({
+      nombre, nivel: nivelConfig.nombre, ciclo: nivelConfig.ciclo,
+      proceso: proc, cct: cct||'N/A', mun: mun||'N/A', sinCurp: true
+    });
+  });
+}
+
+// === CARGA DE PADRONES ===
 async function cargarPadrones() {
-  const archivos = [
-      { url: 'basica.csv', config: { nombre: 'BÁSICA', rol: 'TUTOR' } }, 
-      { url: 'bueems.csv', config: { nombre: 'BUEEMS', rol: 'BECARIO' } }, 
-      { url: 'jef.csv', config: { nombre: 'JEF', rol: 'BECARIO' } }, 
-      { url: 'bueems_feb.csv', config: { nombre: 'BUEEMS FEB 26', rol: 'BECARIO' } }
+  // Archivos CON CURP
+  const archivosConCurp = [
+    { url: 'basica.csv',     config: { nombre: 'BÁSICA',        rol: 'TUTOR'    } },
+    { url: 'bueems.csv',     config: { nombre: 'BUEEMS',        rol: 'BECARIO'  } },
+    { url: 'jef.csv',        config: { nombre: 'JEF',           rol: 'BECARIO'  } },
+    { url: 'bueems_feb.csv', config: { nombre: 'BUEEMS FEB 26', rol: 'BECARIO'  } }
   ];
-  for (const archivo of archivos) {
+  // Archivos SIN CURP (complementos)
+  const archivosSinCurp = [
+    { url: 'brcu_prim_secu_mayo_junio_2026.csv', config: { nombre: 'BRCU MAYO-JUN 26',  ciclo: 'Mayo-Junio 2026'  } },
+    { url: 'bueems_mayo_junio_2026.csv',         config: { nombre: 'BUEEMS MAYO-JUN 26',ciclo: 'Mayo-Junio 2026'  } },
+    { url: 'jef_mayo_junio_2026.csv',            config: { nombre: 'JEF MAYO-JUN 26',   ciclo: 'Mayo-Junio 2026'  } },
+    { url: 'brcu_agosto_2026.csv',               config: { nombre: 'BRCU AGOSTO 26',     ciclo: 'Agosto 2026'      } },
+    { url: 'bueems_agosto_2026.csv',             config: { nombre: 'BUEEMS AGOSTO 26',   ciclo: 'Agosto 2026'      } },
+    { url: 'jef_agosto_2026.csv',                config: { nombre: 'JEF AGOSTO 26',      ciclo: 'Agosto 2026'      } }
+  ];
+
+  const cargar = async (url, fn, cfg) => {
     try {
-      const response = await fetch(archivo.url);
-      if (response.ok) {
-        const textData = await response.text();
-        procesarDataCSV(textData, archivo.config);
-      }
-    } catch (err) {}
-  }
+      const r = await fetch(url + '?v=20261002');
+      if (r.ok) fn(await r.text(), cfg);
+    } catch(e) {}
+  };
+
+  await Promise.all([
+    ...archivosConCurp.map(a => cargar(a.url, procesarDataCSV, a.config)),
+    ...archivosSinCurp.map(a => cargar(a.url, procesarDataCSVSinCurp, a.config))
+  ]);
+
   document.getElementById('loader-db').style.display = 'none';
   const btnStart = document.getElementById('btn-start');
   btnStart.disabled = false; btnStart.style.opacity = '1'; btnStart.textContent = 'Iniciar Cámara';
-  document.getElementById('stat-total').textContent = nominalDatos.length;
-  document.getElementById('stat-basica').textContent = nominalDatos.filter(d => d.nivel === 'BÁSICA').length;
-  document.getElementById('stat-bueems').textContent = nominalDatos.filter(d => d.nivel.includes('BUEEMS')).length;
-  document.getElementById('stat-jef').textContent = nominalDatos.filter(d => d.nivel === 'JEF').length;
+
+  // Actualizar contadores
+  document.getElementById('stat-total').textContent  = (nominalDatos.length + complementoDatos.length).toLocaleString();
+  document.getElementById('stat-basica').textContent = nominalDatos.filter(d => d.nivel === 'BÁSICA').length.toLocaleString();
+  document.getElementById('stat-bueems').textContent = nominalDatos.filter(d => d.nivel.includes('BUEEMS')).length.toLocaleString();
+  document.getElementById('stat-jef').textContent    = nominalDatos.filter(d => d.nivel === 'JEF').length.toLocaleString();
+  document.getElementById('stat-mayjun').textContent = complementoDatos.filter(d => d.ciclo === 'Mayo-Junio 2026').length.toLocaleString();
+  document.getElementById('stat-agosto').textContent = complementoDatos.filter(d => d.ciclo === 'Agosto 2026').length.toLocaleString();
 }
 window.onload = cargarPadrones;
 
+// === BÚSQUEDA ===
 function limpiarBusqueda() {
-    document.getElementById('manual-search-input').value = '';
-    document.getElementById('manual-search-input').focus();
+  document.getElementById('manual-search-input').value = '';
+  document.getElementById('manual-search-input').focus();
 }
 
 function buscarManual() {
-  const input = document.getElementById('manual-search-input').value.trim().toUpperCase();
-  if(!input) return;
-  const resultados = nominalDatos.filter(r => r.curp === input || r.nombre.includes(input));
-  if(resultados.length > 0) mostrarExito("Búsqueda Manual", resultados);
-  else mostrarError(input, "No se encontraron registros coincidentes.");
+  const input = norm(document.getElementById('manual-search-input').value);
+  if (!input || input.length < 3) return;
+
+  // Buscar en nominales con CURP (exacta por CURP, o por nombre con tokens)
+  const resCurp = nominalDatos.filter(r => {
+    if (r.curp === input) return true;
+    const tokens = input.split(' ').filter(t => t.length > 1);
+    const bn = norm(r.nombre);
+    return tokens.every(t => (' '+bn+' ').includes(' '+t+' '));
+  });
+
+  // Buscar en complementos por nombre (tokens con word-boundary)
+  const resComp = complementoDatos.filter(r => {
+    const tokens = input.split(' ').filter(t => t.length > 1);
+    const bn = norm(r.nombre);
+    return tokens.every(t => (' '+bn+' ').includes(' '+t+' '));
+  });
+
+  const todos = [...resCurp, ...resComp];
+  if (todos.length > 0) mostrarExito('Búsqueda Manual', todos);
+  else mostrarError(input, 'No se encontraron registros coincidentes.');
 }
+
+// Búsqueda por CURP extraída del escáner
+function buscarPorCurp(curp) {
+  const c = curp.trim().toUpperCase();
+  const res = nominalDatos.filter(r => r.curp === c);
+  if (res.length > 0) mostrarExito(c, res);
+  else mostrarError(c, 'CURP no encontrada en ningún nominal.');
+}
+
+// === ESCÁNER ZXING (mejor lectura de PDF417) ===
+let zxingReader = null;
+let scannerActivo = false;
 
 function iniciarScanner() {
   document.getElementById('btn-start').style.display = 'none';
   document.getElementById('btn-stop').style.display = 'inline-block';
-  html5QrcodeScanner = new Html5Qrcode("reader");
-  html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-    const curpMatch = text.match(/[A-Z]{4}\d{6}[HM][A-Z]{5}\d{2}/);
-    if(curpMatch) {
-      const res = nominalDatos.filter(r => r.curp === curpMatch[0]);
-      if(res.length > 0) mostrarExito(curpMatch[0], res);
-      else mostrarError(curpMatch[0], "CURP no encontrada.");
+  scannerActivo = true;
+
+  const hints = new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+    ZXing.BarcodeFormat.PDF_417,
+    ZXing.BarcodeFormat.QR_CODE,
+    ZXing.BarcodeFormat.CODE_128
+  ]);
+  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+  zxingReader = new ZXing.BrowserMultiFormatReader(hints);
+
+  zxingReader.decodeFromConstraints(
+    { video: { facingMode: 'environment' } },
+    'video-preview',
+    (result, err) => {
+      if (!result || !scannerActivo) return;
+      const txt = result.getText();
+      // PDF417 del CURP impreso: CURP|NOMBRE|AP_PATERNO|AP_MATERNO|DIA|MES|AÑO|SEXO|ENTIDAD
+      const partes = txt.split('|');
+      let curpRaw = partes[0].toUpperCase();
+      const match = curpRaw.match(/[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]/);
+      const curp = match ? match[0] : curpRaw;
+      if (curp && curp.length >= 18) {
+        scannerActivo = false;
+        buscarPorCurp(curp);
+      }
     }
-  });
+  );
 }
 
 function detenerScanner() {
-  if (html5QrcodeScanner) {
-    html5QrcodeScanner.stop().then(() => {
-      document.getElementById('btn-start').style.display = 'inline-block';
-      document.getElementById('btn-stop').style.display = 'none';
-    });
-  }
+  scannerActivo = false;
+  if (zxingReader) { zxingReader.reset(); zxingReader = null; }
+  document.getElementById('btn-start').style.display = 'inline-block';
+  document.getElementById('btn-stop').style.display = 'none';
+}
+
+// === MODAL ===
+function colorNivel(nivel) {
+  if (nivel.includes('BÁSICA') || nivel.includes('BRCU')) return 'var(--verde)';
+  if (nivel.includes('BUEEMS')) return 'var(--azul)';
+  if (nivel.includes('JEF')) return 'var(--alerta)';
+  return 'var(--guinda)';
 }
 
 function mostrarExito(titulo, registros) {
   const modalBox = document.getElementById('modal-box');
   modalBox.className = 'modal-content success';
-  document.getElementById('modal-title').textContent = "¡REGISTRO LOCALIZADO!";
-  let html = `<p>Busqueda: <strong>${titulo}</strong></p><br>`;
-  
+  document.getElementById('modal-title').textContent = '¡REGISTRO LOCALIZADO!';
+  let html = `<p>Búsqueda: <strong>${titulo}</strong></p><br>`;
   registros.forEach(reg => {
     html += `<div class="registro-encontrado">
-        <div class="badge-nivel" style="background-color: var(--verde);">${reg.nivel}</div>
-        <p><strong>NOMBRE:</strong> ${reg.nombre}</p>
-        <p><strong>PROCESO:</strong> ${reg.proceso}</p>
-        <p><strong>CCT:</strong> ${reg.cct}</p>
-        <p><strong>MUNICIPIO:</strong> ${reg.mun}</p>
+      <div class="badge-nivel" style="background:${colorNivel(reg.nivel)}">${reg.nivel}</div>
+      <p><strong>NOMBRE:</strong> ${reg.nombre}</p>
+      <p><strong>PROCESO:</strong> ${reg.proceso}</p>
+      <p><strong>CCT:</strong> ${reg.cct}</p>
+      <p><strong>MUNICIPIO:</strong> ${reg.mun}</p>
     </div>`;
   });
-  
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('modal-bg').style.display = 'flex';
 }
 
 function mostrarError(titulo, mensaje) {
-  const modalBox = document.getElementById('modal-box');
-  modalBox.className = 'modal-content error';
-  document.getElementById('modal-title').textContent = "NO ENCONTRADO";
+  document.getElementById('modal-box').className = 'modal-content error';
+  document.getElementById('modal-title').textContent = 'NO ENCONTRADO';
   document.getElementById('modal-body').innerHTML = `<p>${mensaje}</p>`;
   document.getElementById('modal-bg').style.display = 'flex';
 }
 
-function cerrarModal() { document.getElementById('modal-bg').style.display = 'none'; }
+function cerrarModal() {
+  document.getElementById('modal-bg').style.display = 'none';
+  // Reanudar escáner si estaba activo
+  if (zxingReader && !scannerActivo) scannerActivo = true;
+}
 </script>
 
 <script>
