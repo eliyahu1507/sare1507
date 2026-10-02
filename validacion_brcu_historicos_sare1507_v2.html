@@ -5,21 +5,39 @@
 <title>SARE 1507 — Validación BRCU + Históricos</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="historial_config.js" onerror="window._configError=true"></script>
 <script>
-// Guard: si historial_config.js no cargó, mostrar aviso y definir variables mínimas
-if(typeof HISTORIAL_CONFIG==='undefined' || window._configError){
-  console.error('[SARE] historial_config.js no cargó — verifica que el archivo esté en GitHub Pages');
-  window.HISTORIAL_CONFIG = [];
-  window.HIST_MAPS = {};
-  window.IDS_SIN_CURP = [];
-  window.IDS_CON_CURP = [];
-  window.CICLOS_COMPLEMENTO = {};
-  document.addEventListener('DOMContentLoaded', function(){
-    var el = document.getElementById('sbn-sources-hist');
-    if(el) el.innerHTML = '<div style="color:var(--rojo,#c62828);padding:10px;font-weight:bold">⚠️ Error: historial_config.js no encontrado — sube el archivo a GitHub Pages y recarga.</div>';
-  });
-}
+// ── CONFIGURACIÓN DE NOMINALES HISTÓRICOS — incrustada directamente en el HTML ──
+// Para agregar un nuevo ciclo: copia uno de los bloques de complemento, cambia
+// url, id, nivelLabel y ciclo. Luego sube el CSV a GitHub Pages y listo.
+const HISTORIAL_CONFIG = [
+  // BLOQUE 1 — Padrones históricos con CURP
+  { url:'basica.csv',       id:'basica',      label:'Básica',       nivelLabel:'BÁSICA',                         hasCurp:true,  sep:',', grupo:'historico' },
+  { url:'bueems.csv',       id:'bueems',      label:'BUEMS',        nivelLabel:'BUEMS',                          hasCurp:true,  sep:',', grupo:'historico' },
+  { url:'jef.csv',          id:'jef',         label:'JEF',          nivelLabel:'JEF',                            hasCurp:true,  sep:',', grupo:'historico' },
+  { url:'bueems_feb.csv',   id:'bueems_feb',  label:'BUEMS Feb 26', nivelLabel:'BUEMS FEB 2026',                 hasCurp:true,  sep:',', grupo:'historico' },
+  // BLOQUE 2 — Complementos Mayo-Junio 2026 (sin CURP, separador ;)
+  { url:'brcu_prim_secu_mayo_junio_2026.csv', id:'brcu_may_jun',   label:'BRCU Prim/Sec', nivelLabel:'REZAGO BRCU PRIMARIA/SECUNDARIA MAYO-JUNIO 2026', hasCurp:false, sep:';', grupo:'complemento', ciclo:'Complementos Mayo-Junio 2026' },
+  { url:'bueems_mayo_junio_2026.csv',         id:'bueems_may_jun', label:'BUEEMS',        nivelLabel:'REZAGO BUEEMS MAYO-JUNIO 2026',                   hasCurp:false, sep:';', grupo:'complemento', ciclo:'Complementos Mayo-Junio 2026' },
+  { url:'jef_mayo_junio_2026.csv',            id:'jef_may_jun',    label:'JEF',           nivelLabel:'REZAGO JEF MAYO-JUNIO 2026',                      hasCurp:false, sep:';', grupo:'complemento', ciclo:'Complementos Mayo-Junio 2026' },
+  // BLOQUE 3 — Complementos Agosto 2026 (sin CURP, separador ,, columna PROGRAMA como nivel)
+  { url:'brcu_agosto_2026.csv',   id:'brcu_ago',   label:'BRCU',  nivelLabel:'BRCU AGOSTO 2026',  hasCurp:false, sep:',', grupo:'complemento', ciclo:'Complementos Agosto 2026', colNivel:'PROGRAMA', fechaFija:'Agosto 2026' },
+  { url:'bueems_agosto_2026.csv', id:'bueems_ago', label:'BUEEMS',nivelLabel:'BUEEMS AGOSTO 2026',hasCurp:false, sep:',', grupo:'complemento', ciclo:'Complementos Agosto 2026', colNombre:'NOMBRE COMPLETO', colNivel:'PROGRAMA', colFecha:'REMESA', fechaFija:'Agosto 2026' },
+  { url:'jef_agosto_2026.csv',    id:'jef_ago',    label:'JEF',   nivelLabel:'JEF AGOSTO 2026',   hasCurp:false, sep:',', grupo:'complemento', ciclo:'Complementos Agosto 2026', colNivel:'PROGRAMA', fechaFija:'Agosto 2026' },
+  // ── Para agregar un nuevo ciclo, copia este bloque y edita los 4 campos marcados: ──
+  // { url:'brcu_octubre_2026.csv', id:'brcu_oct_2026', label:'BRCU', nivelLabel:'BRCU OCTUBRE 2026', hasCurp:false, sep:',', grupo:'complemento', ciclo:'Complementos Octubre 2026' },
+  // { url:'bueems_octubre_2026.csv', id:'bueems_oct_2026', label:'BUEEMS', nivelLabel:'BUEEMS OCTUBRE 2026', hasCurp:false, sep:',', grupo:'complemento', ciclo:'Complementos Octubre 2026' },
+  // { url:'jef_octubre_2026.csv', id:'jef_oct_2026', label:'JEF', nivelLabel:'JEF OCTUBRE 2026', hasCurp:false, sep:',', grupo:'complemento', ciclo:'Complementos Octubre 2026' },
+];
+// Variables derivadas automáticamente
+const HIST_MAPS = {};
+HISTORIAL_CONFIG.forEach(function(cfg){ HIST_MAPS[cfg.id] = new Map(); });
+const IDS_SIN_CURP = HISTORIAL_CONFIG.filter(function(c){ return !c.hasCurp; }).map(function(c){ return c.id; });
+const IDS_CON_CURP = HISTORIAL_CONFIG.filter(function(c){ return  c.hasCurp; }).map(function(c){ return c.id; });
+const CICLOS_COMPLEMENTO = {};
+HISTORIAL_CONFIG.filter(function(c){ return c.grupo==='complemento'; }).forEach(function(c){
+  if(!CICLOS_COMPLEMENTO[c.ciclo]) CICLOS_COMPLEMENTO[c.ciclo]=[];
+  CICLOS_COMPLEMENTO[c.ciclo].push(c.id);
+});
 </script>
 <style>:root{--guinda:#6B1C3E;--guinda-o:#4A0E29;--guinda-c:#8B2550;--dorado:#C8962A;--dorado-c:#E5B94E;--dorado-s:#F5E6C0;--verde:#1A7A3A;--verde-bg:#B9F5C8;--verde-c:#E8FFF0;--naranja:#E65C00;--naranja-bg:#FFF3E0;--azul:#1565C0;--azul-bg:#E3F2FD;--alerta:#FF6F00;--alerta-bg:#FFF8E1;--rojo:#C62828;--blanco:#FFF;--gris-bg:#F7F4F5;--gris:#EDE8EA;--texto:#1A0A10;--texto-s:#5A3A47;--sombra:rgba(74,14,41,.15)}
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--texto)}
