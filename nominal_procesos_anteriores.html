@@ -209,15 +209,14 @@ function procesarDataCSV(data, nivelConfig) {
     if (!curp || curp.length < 10) return;
     const cct = getVal(['CCT']);
     const mun = getVal(['MUNICIPIO','MUN']);
-    const nombreBase = getVal(['NOMBRE COMPLETO','NOMBRE DEL TUTOR','NOMBRE DEL BECARIO']);
+    const nombrePila = getVal(['NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
     const ap1 = getVal(['PRIMER APELLIDO','APELLIDO PATERNO']);
     const ap2 = getVal(['SEGUNDO APELLIDO','APELLIDO MATERNO']);
-    const nombreSolo = getVal(['NOMBRE']);
-    // Si hay apellidos en columnas separadas, construir nombre completo
-    // Si ya viene el nombre completo en una sola columna, usarlo directo
-    const nombre = (ap1 || ap2)
-      ? ((nombreSolo+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim())
-      : (nombreBase || nombreSolo);
+    const nombreCompleto = getVal(['NOMBRE COMPLETO']);
+    // Estructura basica/bueems/jef: NOMBRE DEL TUTOR + PRIMER APELLIDO + SEGUNDO APELLIDO
+    // Estructura con columna única: NOMBRE COMPLETO
+    const nombre = nombreCompleto
+      || ((nombrePila+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim());
     nominalDatos.push({
       curp, nivel: nivelConfig.nombre, rol: nivelConfig.rol, nombre,
       proceso: getVal(['PROCESO','FECHA','REMESA']) || nivelConfig.nombre,
