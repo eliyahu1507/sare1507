@@ -209,10 +209,15 @@ function procesarDataCSV(data, nivelConfig) {
     if (!curp || curp.length < 10) return;
     const cct = getVal(['CCT']);
     const mun = getVal(['MUNICIPIO','MUN']);
-    const nombreBase = getVal(['NOMBRE COMPLETO','NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
+    const nombreBase = getVal(['NOMBRE COMPLETO','NOMBRE DEL TUTOR','NOMBRE DEL BECARIO']);
     const ap1 = getVal(['PRIMER APELLIDO','APELLIDO PATERNO']);
     const ap2 = getVal(['SEGUNDO APELLIDO','APELLIDO MATERNO']);
-    const nombre = nombreBase || ((getVal(['NOMBRE'])+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim());
+    const nombreSolo = getVal(['NOMBRE']);
+    // Si hay apellidos en columnas separadas, construir nombre completo
+    // Si ya viene el nombre completo en una sola columna, usarlo directo
+    const nombre = (ap1 || ap2)
+      ? ((nombreSolo+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim())
+      : (nombreBase || nombreSolo);
     nominalDatos.push({
       curp, nivel: nivelConfig.nombre, rol: nivelConfig.rol, nombre,
       proceso: getVal(['PROCESO','FECHA','REMESA']) || nivelConfig.nombre,
