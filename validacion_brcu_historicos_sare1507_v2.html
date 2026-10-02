@@ -5,7 +5,22 @@
 <title>SARE 1507 — Validación BRCU + Históricos</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="historial_config.js"></script>
+<script src="historial_config.js" onerror="window._configError=true"></script>
+<script>
+// Guard: si historial_config.js no cargó, mostrar aviso y definir variables mínimas
+if(typeof HISTORIAL_CONFIG==='undefined' || window._configError){
+  console.error('[SARE] historial_config.js no cargó — verifica que el archivo esté en GitHub Pages');
+  window.HISTORIAL_CONFIG = [];
+  window.HIST_MAPS = {};
+  window.IDS_SIN_CURP = [];
+  window.IDS_CON_CURP = [];
+  window.CICLOS_COMPLEMENTO = {};
+  document.addEventListener('DOMContentLoaded', function(){
+    var el = document.getElementById('sbn-sources-hist');
+    if(el) el.innerHTML = '<div style="color:var(--rojo,#c62828);padding:10px;font-weight:bold">⚠️ Error: historial_config.js no encontrado — sube el archivo a GitHub Pages y recarga.</div>';
+  });
+}
+</script>
 <style>:root{--guinda:#6B1C3E;--guinda-o:#4A0E29;--guinda-c:#8B2550;--dorado:#C8962A;--dorado-c:#E5B94E;--dorado-s:#F5E6C0;--verde:#1A7A3A;--verde-bg:#B9F5C8;--verde-c:#E8FFF0;--naranja:#E65C00;--naranja-bg:#FFF3E0;--azul:#1565C0;--azul-bg:#E3F2FD;--alerta:#FF6F00;--alerta-bg:#FFF8E1;--rojo:#C62828;--blanco:#FFF;--gris-bg:#F7F4F5;--gris:#EDE8EA;--texto:#1A0A10;--texto-s:#5A3A47;--sombra:rgba(74,14,41,.15)}
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--texto)}
 .top-bar{background:var(--guinda-o);padding:7px 20px;display:flex;align-items:center;gap:10px;font-size:.71rem;color:rgba(255,255,255,.82);border-bottom:2px solid var(--dorado)}.top-bar .sep{color:var(--dorado-c)}
@@ -646,7 +661,7 @@ function buscarEnAgostoPorTexto(query) {
   IDS_SIN_CURP.forEach(function(id){
     if(!HIST_MAPS[id]) return;
     HIST_MAPS[id].forEach(function(lista, clave){
-      var coincide = tokens.every(function(tok){ return clave.includes(tok); });
+      var coincide = tokens.every(function(tok){ return (' '+clave+' ').includes(' '+tok+' '); });
       if(coincide)
         lista.forEach(function(r){ resultados.push(Object.assign({}, r, {fuente: r.nivel})); });
     });
@@ -1115,7 +1130,8 @@ function iniciarCam(){
     codeReader.decodeFromStream(stream,video,function(result,err){
       if(result){
         var txt=result.getText().trim();
-        // PDF417 del CURP impreso entrega: CURP|num|APPATERNO|APMATERNO|NOMBRE|...
+        // PDF417 del CURP impreso (RENAPO): CURP|NOMBRE|AP_PATERNO|AP_MATERNO|DIA|MES|AÑO|SEXO|ENTIDAD
+        //  [0]=CURP  [1]=NOMBRE(S)  [2]=AP_PATERNO  [3]=AP_MATERNO  [4]=DIA  [5]=MES  [6]=AÑO
         var partesPipe = txt.split('|');
         var curpRaw = partesPipe[0].toUpperCase();
         // Extraer solo el código CURP (18 chars) si viene con basura antes
@@ -1124,7 +1140,7 @@ function iniciarCam(){
         // Si viene nombre en los pipes, guardarlo para búsqueda directa
         var apPaterno = partesPipe[2] ? partesPipe[2].toUpperCase().trim() : '';
         var apMaterno = partesPipe[3] ? partesPipe[3].toUpperCase().trim() : '';
-        var nombre    = partesPipe[4] ? partesPipe[4].toUpperCase().trim() : '';
+        var nombre    = partesPipe[1] ? partesPipe[1].toUpperCase().trim() : '';  // [1]=NOMBRE, NO [4]=DIA
         status.innerHTML='\u2705 CURP: <strong>'+curp+'</strong>'+(apPaterno?' · '+apPaterno+' '+apMaterno+' '+nombre:'');
         detenerCam();
         procesarCurpEscaneado(curp, apPaterno, apMaterno, nombre);
@@ -1224,7 +1240,7 @@ function buscarPorNombreCompleto(apPat, apMat, nom){
     DB[prog].forEach(function(s){
       s.beneficiarios.forEach(function(b){
         var bn = norm(b.n);
-        if(tokFull.every(function(tok){ return tok && bn.includes(tok); })){
+        if(tokFull.every(function(tok){ return tok && (' '+bn+' ').includes(' '+tok+' '); })){
           rows.push({nombre:b.n, obs:b.o||'', escuela:s.nombre, cct:s.cct,
             municipio:s.municipio, nivel:s.nivel||'', fecha:s.fecha, prog:prog,
             q: apPat+' '+apMat+' '+nom,
@@ -1268,7 +1284,7 @@ function buscarPorNombreCompleto(apPat, apMat, nom){
       DB[prog].forEach(function(s){
         s.beneficiarios.forEach(function(b){
           var bn = norm(b.n);
-          if(tokFallback.every(function(tok){ return bn.includes(tok); })){
+          if(tokFallback.every(function(tok){ return (' '+bn+' ').includes(' '+tok+' '); })){
             rows.push({nombre:b.n, obs:b.o||'', escuela:s.nombre, cct:s.cct,
               municipio:s.municipio, nivel:s.nivel||'', fecha:s.fecha, prog:prog,
               q: apPat+' '+nom, exacto: false, parcialSinAM: true});
