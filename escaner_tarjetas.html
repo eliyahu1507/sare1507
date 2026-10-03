@@ -223,8 +223,22 @@ footer strong { color: var(--dorado-l); }
         <span style="font-weight:400;color:#aaa"> (opcional)</span>
       </label>
       <input type="number" id="inp-total-cajas" class="input-field"
-        placeholder="Ej. 8" min="1" style="margin-bottom:6px">
-      <p style="font-size:0.72rem;color:#888;margin-bottom:16px">
+        placeholder="Ej. 8" min="1" style="margin-bottom:10px"
+        oninput="toggleUltimaCaja()">
+
+      <!-- Campo de última caja — aparece solo cuando se escribe total de cajas -->
+      <div id="wrap-ultima-caja" style="display:none;margin-bottom:6px">
+        <label class="field-label">Tarjetas en la última caja
+          <span style="font-weight:400;color:#aaa"> (para cálculo exacto)</span>
+        </label>
+        <input type="number" id="inp-ultima-caja" class="input-field"
+          placeholder="Ej. 423" min="1" max="699">
+        <p style="font-size:0.72rem;color:#888;margin-top:4px">
+          La última caja siempre tiene menos de 700. Esto permite calcular el total exacto de tarjetas del municipio.
+        </p>
+      </div>
+
+      <p id="hint-cajas" style="font-size:0.72rem;color:#888;margin-bottom:16px">
         Si lo sabes, el sistema calculará las tarjetas esperadas y mostrará el progreso por caja. Podrás cambiar de caja en cualquier momento.
       </p>
 
@@ -573,7 +587,8 @@ let feedbackTimer = null;
 
 // Lógica de cajas
 const TARJETAS_POR_CAJA = 700;
-let totalCajas = 0; // 0 = no configurado
+let totalCajas = 0;          // 0 = no configurado
+let tarjetasUltimaCaja = 0;  // 0 = no especificado (cálculo parcial)
 
 // ══════════════════════════════════════════
 // AUDIO — Web Audio API (sin archivos externos)
@@ -587,37 +602,58 @@ function getAudioCtx(){
 }
 
 function beepOK(){
-  // Sonido único: dos tonos ascendentes rápidos (como pistola de bodega)
+  // Sonido escaneo OK: dos pitidos ascendentes fuertes (estilo escáner de bodega)
   try{
-    const ctx = getAudioCtx();
-    [880, 1320].forEach((freq, i) => {
+    const ctx  = getAudioCtx();
+    // Compresor para maximizar volumen percibido
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -12;
+    comp.knee.value      = 4;
+    comp.ratio.value     = 8;
+    comp.attack.value    = 0.001;
+    comp.release.value   = 0.1;
+    comp.connect(ctx.destination);
+
+    [1046, 1568].forEach((freq, i) => {          // Do6 → Sol6, más agudos y brillantes
       const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
+      osc.connect(gain); gain.connect(comp);
       osc.type = 'square';
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.18, ctx.currentTime + i*0.07);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.07 + 0.08);
-      osc.start(ctx.currentTime + i*0.07);
-      osc.stop(ctx.currentTime + i*0.07 + 0.09);
+      const t0 = ctx.currentTime + i * 0.09;
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.75, t0 + 0.005);  // ataque rápido
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.11);
+      osc.start(t0);
+      osc.stop(t0 + 0.12);
     });
   }catch(e){}
 }
 
 function beepDUP(){
-  // Sonido de alerta: tono grave oscilante (muy diferente al OK)
+  // Sonido duplicado: tres tonos graves descendentes — muy diferente al OK
   try{
-    const ctx = getAudioCtx();
-    [400, 320, 400].forEach((freq, i) => {
+    const ctx  = getAudioCtx();
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -12;
+    comp.knee.value      = 4;
+    comp.ratio.value     = 8;
+    comp.attack.value    = 0.001;
+    comp.release.value   = 0.1;
+    comp.connect(ctx.destination);
+
+    [440, 330, 220].forEach((freq, i) => {        // La4 → Mi4 → La3, bajando
       const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
+      osc.connect(gain); gain.connect(comp);
       osc.type = 'sawtooth';
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.22, ctx.currentTime + i*0.1);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.1 + 0.09);
-      osc.start(ctx.currentTime + i*0.1);
-      osc.stop(ctx.currentTime + i*0.1 + 0.1);
+      const t0 = ctx.currentTime + i * 0.13;
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.8, t0 + 0.006);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.14);
+      osc.start(t0);
+      osc.stop(t0 + 0.15);
     });
   }catch(e){}
 }
@@ -661,8 +697,9 @@ function persistirSesion(){
   idbScanPut('cajasUsadas',[...cajasUsadas]);
   idbScanPut('registros',  registros);
   idbScanPut('dupCount',   dupCount);
-  idbScanPut('totalCajas', totalCajas);
-  idbScanPut('activa',     true);
+  idbScanPut('totalCajas',        totalCajas);
+  idbScanPut('tarjetasUltimaCaja', tarjetasUltimaCaja);
+  idbScanPut('activa',             true);
 }
 
 async function restaurarSesion(){
@@ -675,7 +712,8 @@ async function restaurarSesion(){
   cajasUsadas = new Set(cajas);
   registros   = (await idbScanGet('registros'))  || [];
   dupCount    = (await idbScanGet('dupCount'))   || 0;
-  totalCajas  = (await idbScanGet('totalCajas')) || 0;
+  totalCajas         = (await idbScanGet('totalCajas'))         || 0;
+  tarjetasUltimaCaja = (await idbScanGet('tarjetasUltimaCaja')) || 0;
   numerosSet  = new Set(registros.filter(r=>!r.dup).map(r=>r.num));
   // reconstruir numerosSet considerando todos (para detección de dup)
   const todos = new Set();
@@ -700,6 +738,23 @@ function mostrarPantalla(id) {
 // ══════════════════════════════════════════
 // PANTALLA 1 → INICIAR SESIÓN
 // ══════════════════════════════════════════
+function toggleUltimaCaja() {
+  const totalVal = parseInt(document.getElementById('inp-total-cajas').value) || 0;
+  const wrap  = document.getElementById('wrap-ultima-caja');
+  const hint  = document.getElementById('hint-cajas');
+  if (wrap) wrap.style.display = totalVal > 0 ? 'block' : 'none';
+  if (hint) {
+    hint.textContent = totalVal > 0
+      ? `Total esperado: ${(totalVal - 1) * TARJETAS_POR_CAJA} tarjetas en cajas completas${
+          parseInt(document.getElementById('inp-ultima-caja').value) > 0
+            ? ' + ' + document.getElementById('inp-ultima-caja').value + ' en última = ' +
+              ((totalVal - 1) * TARJETAS_POR_CAJA + parseInt(document.getElementById('inp-ultima-caja').value)) + ' total'
+            : ' (+ última caja pendiente)'
+        }.`
+      : 'Si lo sabes, el sistema calculará las tarjetas esperadas y mostrará el progreso por caja. Podrás cambiar de caja en cualquier momento.';
+  }
+}
+
 function iniciarSesion() {
   const nom = document.getElementById('inp-operador').value.trim().toUpperCase();
   const caja = parseInt(document.getElementById('inp-caja').value);
@@ -717,7 +772,8 @@ function iniciarSesion() {
   registros = [];
   numerosSet = new Set();
   dupCount = 0;
-  totalCajas = parseInt(document.getElementById('inp-total-cajas').value) || 0;
+  totalCajas          = parseInt(document.getElementById('inp-total-cajas').value)  || 0;
+  tarjetasUltimaCaja  = parseInt(document.getElementById('inp-ultima-caja').value)   || 0;
 
   document.getElementById('lbl-operador-hero').textContent = operador;
   document.getElementById('lbl-caja-actual').textContent = 'CAJA #' + cajaActual;
@@ -917,30 +973,45 @@ function actualizarContadores() {
   if (cardEsp) {
     if (totalCajas > 0) {
       cardEsp.style.display = 'block';
-      // Tarjetas esperadas = (totalCajas - 1) × 700 + lo que haya en la última
-      // Pero hasta que no sabemos cuántas van en la última, estimamos el mínimo (1)
-      // y el máximo (699). Mostramos el mínimo real escaneado en última + el resto.
+
+      // Total exacto si se conoce tarjetasUltimaCaja, estimado si no
+      const tieneUltima = tarjetasUltimaCaja > 0;
+      const totalExacto = tieneUltima
+        ? (totalCajas - 1) * TARJETAS_POR_CAJA + tarjetasUltimaCaja
+        : 0; // desconocido — calculamos en base a cajas completas
+
       const enUltima = registros.filter(r => !r.dup && r.caja === totalCajas).length;
-      const esperadasMinimas = cajasCompletas * TARJETAS_POR_CAJA + (enUltima || '?');
-      const totalEsperado    = cajasCompletas * TARJETAS_POR_CAJA; // sin contar última (variable)
-      const pctTotal = totalEsperado > 0
-        ? Math.round(Math.min(100, unicos / (totalEsperado + Math.max(enUltima, 1)) * 100))
-        : 0;
-      const faltan = Math.max(0, totalEsperado - (unicos - enUltima));
 
-      document.getElementById('lbl-esp-escaneados').textContent = unicos;
-      document.getElementById('lbl-esp-total').textContent =
-        cajasCompletas > 0
-          ? (cajasCompletas * TARJETAS_POR_CAJA) + '+ (última pendiente)'
+      let totalLbl, pctTotal, faltanLbl, statLbl;
+      if (tieneUltima) {
+        // Cálculo exacto
+        const faltan = Math.max(0, totalExacto - unicos);
+        pctTotal  = Math.round(Math.min(100, unicos / totalExacto * 100));
+        totalLbl  = totalExacto.toLocaleString('es-MX');
+        faltanLbl = faltan > 0 ? faltan.toLocaleString('es-MX') : '✓ Completo';
+        statLbl   = 'de ' + totalExacto.toLocaleString('es-MX');
+      } else {
+        // Estimado: solo contamos cajas completas, última es incógnita
+        const baseEsperado = cajasCompletas * TARJETAS_POR_CAJA;
+        pctTotal  = baseEsperado > 0
+          ? Math.round(Math.min(99, unicos / (baseEsperado + Math.max(enUltima, 1)) * 100))
+          : 0;
+        totalLbl  = cajasCompletas > 0
+          ? (cajasCompletas * TARJETAS_POR_CAJA).toLocaleString('es-MX') + '+ (última pendiente)'
           : '— (solo última caja)';
-      document.getElementById('lbl-esp-pct').textContent  = pctTotal + '%';
-      document.getElementById('lbl-esp-faltan').textContent =
-        cajasCompletas > 0 && faltan > 0 ? faltan + ' en cajas completas' : '✓';
-      document.getElementById('barra-total').style.width = pctTotal + '%';
+        const faltanBase = Math.max(0, baseEsperado - (unicos - enUltima));
+        faltanLbl = faltanBase > 0 ? faltanBase.toLocaleString('es-MX') + ' en cajas completas' : '✓';
+        statLbl   = cajasCompletas > 0 ? 'de ' + (cajasCompletas * TARJETAS_POR_CAJA).toLocaleString('es-MX') + '+' : 'Escaneados';
+      }
 
-      // Stat label con total
+      document.getElementById('lbl-esp-escaneados').textContent = unicos.toLocaleString('es-MX');
+      document.getElementById('lbl-esp-total').textContent      = totalLbl;
+      document.getElementById('lbl-esp-pct').textContent        = pctTotal + '%';
+      document.getElementById('lbl-esp-faltan').textContent     = faltanLbl;
+      document.getElementById('barra-total').style.width        = pctTotal + '%';
+
       const lblStat = document.getElementById('lbl-total-stat');
-      if (lblStat) lblStat.textContent = 'de ' + cajasCompletas * TARJETAS_POR_CAJA + '+';
+      if (lblStat) lblStat.textContent = statLbl;
     } else {
       cardEsp.style.display = 'none';
       const lblStat = document.getElementById('lbl-total-stat');
