@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SARE 1507 — Escáner de Tarjetas</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+
+<style>
+:root {
+  --guinda: #6B1C3E; --guinda-o: #4A0E29; --guinda-d: #8B2252;
+  --dorado: #C8962A; --dorado-l: #E8B84B;
+  --verde: #1A7A3A; --verde-l: #E8F5E9;
+  --azul: #1565C0;
+  --rojo: #C62828; --rojo-l: #FFEBEE;
+  --naranja: #FF6F00; --naranja-l: #FFF3E0;
+  --blanco: #FFF; --gris-bg: #F5F2F3; --gris: #EDE8EA;
+  --texto: #1A0A10; --sombra: rgba(74,14,41,0.18);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Open Sans', sans-serif; background: var(--gris-bg); color: var(--texto); min-height: 100vh; }
+
+/* ── PANTALLAS ── */
+.screen { display: none; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ── HERO / HEADER ── */
+.hero {
+  background: linear-gradient(135deg, var(--guinda-o) 0%, var(--guinda) 60%, var(--guinda-d) 100%);
+  color: var(--blanco); padding: 20px 20px 18px; position: relative; overflow: hidden;
+}
+.hero::after {
+  content: ''; position: absolute; right: -40px; top: -40px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(200,150,42,0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-row { display: flex; justify-content: space-between; align-items: center; }
+.hero-brand { font-size: 0.65rem; opacity: 0.75; letter-spacing: 0.4px; }
+.hero-brand strong { display: block; font-size: 0.9rem; color: var(--dorado-l); font-weight: 800; margin-top: 2px; }
+.hero-badge {
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px; padding: 6px 12px; font-size: 0.7rem; font-weight: 700;
+  color: var(--dorado-l); text-align: right;
+}
+.hero-title { margin-top: 14px; }
+.hero-title h1 {
+  font-family: 'Montserrat', sans-serif; font-size: 1.35rem; font-weight: 900;
+  text-transform: uppercase; line-height: 1.15;
+}
+.hero-title h1 span { color: var(--dorado-l); }
+.hero-title p { font-size: 0.72rem; opacity: 0.7; margin-top: 5px; }
+
+/* ── CONTENIDO ── */
+.content { flex: 1; padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--blanco); border-radius: 14px;
+  padding: 18px 16px; box-shadow: 0 3px 12px rgba(0,0,0,0.07);
+}
+.card-title {
+  font-family: 'Montserrat', sans-serif; font-size: 0.78rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.5px; color: var(--guinda);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+}
+
+/* ── INPUTS ── */
+.input-field {
+  width: 100%; padding: 13px 14px; border: 2px solid var(--gris);
+  border-radius: 10px; font-size: 1rem; font-family: 'Open Sans', sans-serif;
+  transition: border-color 0.2s; background: var(--gris-bg);
+}
+.input-field:focus { outline: none; border-color: var(--guinda); background: var(--blanco); }
+.input-field.uppercase { text-transform: uppercase; }
+.field-label { font-size: 0.75rem; font-weight: 600; color: #666; margin-bottom: 6px; display: block; }
+
+/* ── BOTONES ── */
+.btn {
+  width: 100%; padding: 15px; border: none; border-radius: 12px;
+  font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1rem;
+  cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-primary { background: var(--guinda); color: var(--blanco); }
+.btn-primary:active { background: var(--guinda-o); transform: scale(0.98); }
+.btn-success { background: var(--verde); color: var(--blanco); }
+.btn-success:active { background: #145a2a; transform: scale(0.98); }
+.btn-danger  { background: var(--rojo);  color: var(--blanco); }
+.btn-danger:active  { background: #a32020; transform: scale(0.98); }
+.btn-secondary { background: var(--gris); color: var(--texto); }
+.btn-whatsapp { background: #25D366; color: var(--blanco); font-size: 1.05rem; }
+.btn-whatsapp:active { background: #1da851; transform: scale(0.98); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+.btn-sm { width: auto; padding: 8px 16px; font-size: 0.8rem; border-radius: 8px; }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0;
+  background: var(--guinda-o); border-radius: 12px; overflow: hidden;
+}
+.stat-item { padding: 12px 8px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
+.stat-item:last-child { border-right: none; }
+.stat-num {
+  font-family: 'Montserrat', sans-serif; font-size: 1.8rem; font-weight: 900;
+  color: var(--dorado-l); line-height: 1;
+}
+.stat-lbl { font-size: 0.62rem; color: rgba(255,255,255,0.65); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+/* ── INFO CAJA ── */
+.info-caja {
+  background: var(--naranja-l); border: 2px solid var(--naranja);
+  border-radius: 10px; padding: 10px 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.info-caja-text { font-size: 0.8rem; color: var(--naranja); }
+.info-caja-text strong { font-family: 'Montserrat', sans-serif; font-size: 1rem; display: block; }
+
+/* ── VIDEO ── */
+#video-scan {
+  width: 100%; border-radius: 12px; border: 3px solid var(--gris);
+  background: #111; display: block; min-height: 200px; max-height: 280px;
+  object-fit: cover;
+}
+.scan-overlay {
+  position: relative; margin-bottom: 12px;
+}
+.scan-line {
+  position: absolute; left: 10%; right: 10%; height: 2px;
+  background: var(--dorado-l); opacity: 0;
+  top: 50%; transform: translateY(-50%);
+  box-shadow: 0 0 8px var(--dorado);
+  transition: opacity 0.3s;
+}
+.scan-line.active { opacity: 1; animation: scanpulse 1.2s ease-in-out infinite; }
+@keyframes scanpulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+/* ── FEEDBACK ESCANEO ── */
+.scan-feedback {
+  border-radius: 10px; padding: 12px 14px; text-align: center;
+  font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.95rem;
+  min-height: 48px; display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s;
+}
+.scan-feedback.ok    { background: var(--verde-l); color: var(--verde); border: 2px solid var(--verde); }
+.scan-feedback.dup   { background: var(--naranja-l); color: var(--naranja); border: 2px solid var(--naranja); }
+.scan-feedback.idle  { background: var(--gris); color: #888; border: 2px solid transparent; font-size: 0.8rem; font-weight: 400; }
+
+/* ── LISTA DE ESCANEOS ── */
+.scan-list { max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.scan-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--gris-bg); border-radius: 8px; padding: 9px 12px;
+  font-size: 0.82rem; border-left: 4px solid var(--verde);
+}
+.scan-item.dup { border-left-color: var(--naranja); background: var(--naranja-l); }
+.scan-item-num { font-family: 'Montserrat', sans-serif; font-weight: 700; flex: 1; }
+.scan-item-meta { font-size: 0.68rem; color: #888; text-align: right; white-space: nowrap; }
+.scan-empty { text-align: center; color: #aaa; font-size: 0.82rem; padding: 20px; }
+
+/* ── MODAL ── */
+#modal-bg {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+  z-index: 3000; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 20px;
+}
+#modal-bg.active { display: flex; }
+.modal-box {
+  background: var(--blanco); border-radius: 18px; padding: 24px 20px;
+  width: 100%; max-width: 420px; box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+}
+.modal-icon { font-size: 2.5rem; text-align: center; margin-bottom: 10px; }
+.modal-title {
+  font-family: 'Montserrat', sans-serif; font-size: 1.15rem; font-weight: 900;
+  text-align: center; color: var(--guinda); margin-bottom: 8px;
+}
+.modal-body { font-size: 0.85rem; color: #555; text-align: center; margin-bottom: 20px; line-height: 1.5; }
+.modal-btns { display: flex; flex-direction: column; gap: 8px; }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--guinda-o); color: rgba(255,255,255,0.6);
+  font-size: 0.65rem; text-align: center; padding: 10px;
+  letter-spacing: 0.3px;
+}
+footer strong { color: var(--dorado-l); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     PANTALLA 1: IDENTIFICACIÓN DEL OPERADOR
+═══════════════════════════════════════════ -->
+<div class="screen active" id="screen-login">
+  <div class="hero">
+    <div class="hero-row">
+      <div class="hero-brand">
+        SARE 1507 · BECAS BIENESTAR
+        <strong>Escáner de Tarjetas</strong>
+      </div>
+      <div class="hero-badge">📦 TOLUCA<br>OPERATIVO</div>
+    </div>
+    <div class="hero-title">
+      <h1>RECEPCIÓN DE<br><span>TARJETAS</span></h1>
+      <p>Identificación del operador antes de escanear</p>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="card">
+      <div class="card-title">👤 Datos del operador</div>
+      <label class="field-label">Tu nombre completo</label>
+      <input type="text" id="inp-operador" class="input-field uppercase"
+        placeholder="APELLIDO PATERNO APELLIDO MATERNO NOMBRE(S)"
+        autocomplete="off" style="margin-bottom:14px">
+
+      <label class="field-label">Número de caja inicial</label>
+      <input type="number" id="inp-caja" class="input-field"
+        placeholder="Ej. 1" min="1" style="margin-bottom:6px">
+      <p style="font-size:0.72rem;color:#888;margin-bottom:16px">
+        Podrás cambiar de caja en cualquier momento durante el escaneo.
+      </p>
+
+      <button class="btn btn-primary" onclick="iniciarSesion()">
+        ▶ Iniciar escaneo
+      </button>
+    </div>
+
+    <div class="card" style="background:var(--naranja-l);border:1.5px solid var(--naranja)">
+      <div style="font-size:0.8rem;color:var(--naranja);line-height:1.6">
+        <strong style="font-family:'Montserrat',sans-serif;display:block;margin-bottom:6px">⚠️ Instrucciones</strong>
+        1. Escribe tu nombre completo.<br>
+        2. Anota el número de la caja que vas a trabajar.<br>
+        3. Escanea cada sobre — uno por uno.<br>
+        4. Al terminar una caja, cambia el número antes de la siguiente.<br>
+        5. Al terminar todo, exporta y comparte por WhatsApp.
+      </div>
+    </div>
+  </div>
+
+  <footer>✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     PANTALLA 2: ESCANEO
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-scan">
+  <div class="hero">
+    <div class="hero-row">
+      <div class="hero-brand">
+        SARE 1507 · BECAS BIENESTAR
+        <strong id="lbl-operador-hero">OPERADOR</strong>
+      </div>
+      <div class="hero-badge" id="lbl-fecha-hero" style="font-size:0.65rem"></div>
+    </div>
+    <div class="hero-title">
+      <h1><span>ESCANEO</span> EN CURSO</h1>
+      <p>Apunta la cámara al código de barras del sobre</p>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- STATS -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-num" id="cnt-total">0</div>
+        <div class="stat-lbl">Escaneados</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="cnt-cajas">0</div>
+        <div class="stat-lbl">Cajas</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="cnt-dup" style="color:#FFB74D">0</div>
+        <div class="stat-lbl">Duplicados</div>
+      </div>
+    </div>
+
+    <!-- CAJA ACTUAL -->
+    <div class="info-caja">
+      <div class="info-caja-text">
+        <strong id="lbl-caja-actual">CAJA #1</strong>
+        Caja en curso
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="abrirCambiarCaja()" style="width:auto">
+        🔄 Cambiar caja
+      </button>
+    </div>
+
+    <!-- CÁMARA -->
+    <div class="card" style="padding:14px">
+      <div class="scan-overlay">
+        <video id="video-scan" playsinline autoplay muted></video>
+        <div class="scan-line" id="scan-line"></div>
+        <!-- Botón sobre el video cuando la cámara no está activa -->
+        <div id="btn-activar-wrap" style="
+          position:absolute;inset:0;display:flex;flex-direction:column;
+          align-items:center;justify-content:center;gap:10px;
+          background:rgba(0,0,0,0.55);border-radius:10px;">
+          <button onclick="activarCamara()" style="
+            background:var(--dorado-l);color:var(--guinda-o);border:none;
+            border-radius:12px;padding:14px 28px;
+            font-family:'Montserrat',sans-serif;font-weight:900;font-size:1rem;
+            cursor:pointer;letter-spacing:0.3px;">
+            📷 Activar cámara
+          </button>
+          <span style="color:rgba(255,255,255,0.7);font-size:0.72rem">Toca para iniciar el escáner</span>
+        </div>
+      </div>
+      <div class="scan-feedback idle" id="scan-feedback">
+        Toca "Activar cámara" para comenzar…
+      </div>
+    </div>
+
+    <!-- BOTONES ACCIÓN -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button class="btn btn-danger btn-sm" onclick="confirmarTerminar()" style="width:100%;padding:13px">
+        ⏹ Terminar
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="verLista()" style="width:100%;padding:13px">
+        📋 Ver lista
+      </button>
+    </div>
+
+  </div>
+  <footer>✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     PANTALLA 3: LISTA DE ESCANEOS
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-lista">
+  <div class="hero">
+    <div class="hero-row">
+      <div class="hero-brand">SARE 1507 · ESCANEO<strong>Lista de registros</strong></div>
+      <div class="hero-badge" id="lbl-total-lista">0 registros</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="card">
+      <div class="card-title">📋 Tarjetas escaneadas</div>
+      <div class="scan-list" id="scan-list">
+        <div class="scan-empty">Sin registros aún</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="volverEscaneo()">
+      ← Volver al escaneo
+    </button>
+  </div>
+  <footer>✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     PANTALLA 4: EXPORTAR
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-export">
+  <div class="hero">
+    <div class="hero-row">
+      <div class="hero-brand">SARE 1507 · ESCANEO<strong>Sesión finalizada</strong></div>
+    </div>
+    <div class="hero-title">
+      <h1>✅ SESIÓN<br><span>COMPLETADA</span></h1>
+      <p>Exporta tu archivo y envíalo al supervisor</p>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- RESUMEN -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-num" id="exp-total">0</div>
+        <div class="stat-lbl">Escaneados</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="exp-cajas">0</div>
+        <div class="stat-lbl">Cajas</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="exp-dup" style="color:#FFB74D">0</div>
+        <div class="stat-lbl">Duplicados</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📤 Exportar y compartir</div>
+      <p style="font-size:0.82rem;color:#555;margin-bottom:16px;line-height:1.6">
+        Descarga tu archivo CSV con todos los registros y envíalo al supervisor por WhatsApp.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-success" onclick="descargarCSV()">
+          ⬇️ Descargar archivo CSV
+        </button>
+        <button class="btn btn-whatsapp" onclick="compartirWhatsApp()">
+          📲 Compartir por WhatsApp
+        </button>
+      </div>
+    </div>
+
+    <div class="card" style="background:var(--verde-l);border:1.5px solid var(--verde)">
+      <p style="font-size:0.8rem;color:var(--verde);line-height:1.6">
+        <strong style="font-family:'Montserrat',sans-serif;display:block;margin-bottom:4px">📌 Instrucciones</strong>
+        1. Toca <strong>Descargar archivo CSV</strong>.<br>
+        2. El archivo se guarda en tu carpeta de Descargas.<br>
+        3. Toca <strong>Compartir por WhatsApp</strong> — se abrirá WhatsApp con un mensaje listo.<br>
+        4. Adjunta el archivo CSV descargado y envíalo al supervisor.
+      </p>
+    </div>
+
+    <button class="btn btn-secondary" onclick="nuevaSesion()">
+      🔄 Nueva sesión / Nuevo operador
+    </button>
+  </div>
+  <footer>✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
+</div>
+
+
+<!-- ══════ MODALES ══════ -->
+<div id="modal-bg">
+
+  <!-- Modal: cambiar caja -->
+  <div class="modal-box" id="modal-caja" style="display:none">
+    <div class="modal-icon">📦</div>
+    <div class="modal-title">Cambiar de caja</div>
+    <div class="modal-body">Escribe el número de la siguiente caja que vas a escanear.</div>
+    <input type="number" id="inp-nueva-caja" class="input-field" placeholder="Número de caja" min="1" style="margin-bottom:16px;text-align:center;font-size:1.3rem;font-weight:700">
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="confirmarCambioCaja()">✅ Confirmar cambio</button>
+      <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Modal: confirmar terminar -->
+  <div class="modal-box" id="modal-terminar" style="display:none">
+    <div class="modal-icon">⏹</div>
+    <div class="modal-title">¿Terminar sesión?</div>
+    <div class="modal-body" id="modal-terminar-body">
+      Vas a finalizar el escaneo. Podrás exportar tu archivo para enviarlo al supervisor.
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-danger" onclick="terminarSesion()">Sí, terminar y exportar</button>
+      <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar, seguir escaneando</button>
+    </div>
+  </div>
+
+</div>
+
+
+<script>
+// ══════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════
+let operador = '';
+let cajaActual = 1;
+let cajasUsadas = new Set();
+let registros = []; // { num, caja, ts }
+let numerosSet = new Set(); // para detección de duplicados
+let dupCount = 0;
+let zxingReader = null;
+let scanActivo = false;
+let feedbackTimer = null;
+
+// ══════════════════════════════════════════
+// NAVEGACIÓN ENTRE PANTALLAS
+// ══════════════════════════════════════════
+function mostrarPantalla(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ══════════════════════════════════════════
+// PANTALLA 1 → INICIAR SESIÓN
+// ══════════════════════════════════════════
+function iniciarSesion() {
+  const nom = document.getElementById('inp-operador').value.trim().toUpperCase();
+  const caja = parseInt(document.getElementById('inp-caja').value);
+  if (!nom || nom.length < 3) {
+    alert('Escribe tu nombre completo.');
+    return;
+  }
+  if (!caja || caja < 1) {
+    alert('Escribe un número de caja válido.');
+    return;
+  }
+  operador = nom;
+  cajaActual = caja;
+  cajasUsadas.add(caja);
+  registros = [];
+  numerosSet = new Set();
+  dupCount = 0;
+
+  document.getElementById('lbl-operador-hero').textContent = operador;
+  document.getElementById('lbl-caja-actual').textContent = 'CAJA #' + cajaActual;
+  actualizarFechaHero();
+  actualizarContadores();
+  mostrarPantalla('screen-scan');
+  arrancarScanner();
+}
+
+function actualizarFechaHero() {
+  const now = new Date();
+  const fecha = now.toLocaleDateString('es-MX', { weekday:'short', day:'numeric', month:'short' });
+  const hora  = now.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+  document.getElementById('lbl-fecha-hero').innerHTML = fecha + '<br>' + hora;
+}
+
+// ══════════════════════════════════════════
+// ESCÁNER ZXING
+// ══════════════════════════════════════════
+// La cámara se activa con un botón explícito (gesto de usuario requerido
+// por iOS/Android para otorgar permiso). Igual que en nominal_busqueda_v2.
+
+function arrancarScanner() {
+  // Solo preparar la pantalla — la cámara la activa el usuario
+  scanActivo = false;
+  const wrap = document.getElementById('btn-activar-wrap');
+  if (wrap) wrap.style.display = 'flex';
+  const fb = document.getElementById('scan-feedback');
+  fb.className = 'scan-feedback idle';
+  fb.textContent = 'Toca "Activar cámara" para comenzar…';
+}
+
+function activarCamara() {
+  // Ocultar botón de activación
+  const wrap = document.getElementById('btn-activar-wrap');
+  if (wrap) wrap.style.display = 'none';
+
+  scanActivo = true;
+  document.getElementById('scan-line').classList.add('active');
+  const fb = document.getElementById('scan-feedback');
+  fb.className = 'scan-feedback idle';
+  fb.textContent = 'Apunta al código de barras del sobre…';
+
+  const hints = new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+    ZXing.BarcodeFormat.CODE_128,
+    ZXing.BarcodeFormat.CODE_39,
+    ZXing.BarcodeFormat.EAN_13,
+    ZXing.BarcodeFormat.PDF_417,
+    ZXing.BarcodeFormat.ITF
+  ]);
+  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+
+  zxingReader = new ZXing.BrowserMultiFormatReader(hints);
+  zxingReader.decodeFromConstraints(
+    { video: { facingMode: { ideal: 'environment' } } },
+    'video-scan',
+    (result, err) => {
+      if (!scanActivo) return;
+      if (!result) return;
+      const codigo = result.getText().trim();
+      if (codigo) procesarEscaneo(codigo);
+    }
+  );
+}
+
+function detenerScanner() {
+  scanActivo = false;
+  document.getElementById('scan-line').classList.remove('active');
+  if (zxingReader) { try { zxingReader.reset(); } catch(e){} zxingReader = null; }
+  // Mostrar botón de activación de nuevo por si se reanuda
+  const wrap = document.getElementById('btn-activar-wrap');
+  if (wrap) wrap.style.display = 'flex';
+}
+
+// ══════════════════════════════════════════
+// PROCESAR ESCANEO
+// ══════════════════════════════════════════
+function procesarEscaneo(codigo) {
+  // Pausa breve para evitar lecturas repetidas del mismo código
+  scanActivo = false;
+  setTimeout(() => { if (zxingReader) scanActivo = true; }, 1200);
+
+  const esDup = numerosSet.has(codigo);
+  const ts = new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+  registros.push({ num: codigo, caja: cajaActual, ts, dup: esDup });
+  numerosSet.add(codigo);
+  if (esDup) dupCount++;
+
+  actualizarContadores();
+  mostrarFeedback(codigo, esDup);
+
+  // Vibración en móvil
+  if (navigator.vibrate) navigator.vibrate(esDup ? [100,50,100] : 60);
+}
+
+function mostrarFeedback(codigo, esDup) {
+  const fb = document.getElementById('scan-feedback');
+  if (esDup) {
+    fb.className = 'scan-feedback dup';
+    fb.textContent = '⚠️ DUPLICADO: ' + codigo;
+  } else {
+    fb.className = 'scan-feedback ok';
+    fb.textContent = '✅ ' + codigo;
+  }
+  clearTimeout(feedbackTimer);
+  feedbackTimer = setTimeout(() => {
+    fb.className = 'scan-feedback idle';
+    fb.textContent = 'Apunta al código de barras del sobre…';
+  }, 2000);
+}
+
+function actualizarContadores() {
+  const totales = registros.filter(r => !r.dup).length;
+  document.getElementById('cnt-total').textContent = totales;
+  document.getElementById('cnt-cajas').textContent = cajasUsadas.size;
+  document.getElementById('cnt-dup').textContent   = dupCount;
+}
+
+// ══════════════════════════════════════════
+// CAMBIO DE CAJA
+// ══════════════════════════════════════════
+function abrirCambiarCaja() {
+  document.getElementById('inp-nueva-caja').value = '';
+  abrirModal('modal-caja');
+}
+
+function confirmarCambioCaja() {
+  const nueva = parseInt(document.getElementById('inp-nueva-caja').value);
+  if (!nueva || nueva < 1) { alert('Número de caja inválido.'); return; }
+  cajaActual = nueva;
+  cajasUsadas.add(nueva);
+  document.getElementById('lbl-caja-actual').textContent = 'CAJA #' + cajaActual;
+  actualizarContadores();
+  cerrarModal();
+}
+
+// ══════════════════════════════════════════
+// VER LISTA
+// ══════════════════════════════════════════
+function verLista() {
+  scanActivo = false; // pausar mientras se ve la lista
+  const lista = document.getElementById('scan-list');
+  document.getElementById('lbl-total-lista').textContent = registros.length + ' registros';
+
+  if (registros.length === 0) {
+    lista.innerHTML = '<div class="scan-empty">Sin registros aún</div>';
+  } else {
+    // Mostrar en orden inverso (más reciente primero)
+    lista.innerHTML = [...registros].reverse().map(r =>
+      `<div class="scan-item ${r.dup ? 'dup' : ''}">
+        <div class="scan-item-num">${r.num}</div>
+        <div class="scan-item-meta">Caja #${r.caja}<br>${r.ts}${r.dup ? '<br>⚠️ DUP' : ''}</div>
+      </div>`
+    ).join('');
+  }
+  mostrarPantalla('screen-lista');
+}
+
+function volverEscaneo() {
+  mostrarPantalla('screen-scan');
+  // Si la cámara ya estaba activa (zxingReader existe), reactivar bandera
+  if (zxingReader) {
+    scanActivo = true;
+    const wrap = document.getElementById('btn-activar-wrap');
+    if (wrap) wrap.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════
+// TERMINAR SESIÓN
+// ══════════════════════════════════════════
+function confirmarTerminar() {
+  const unicos = registros.filter(r => !r.dup).length;
+  document.getElementById('modal-terminar-body').innerHTML =
+    `Llevas <strong>${unicos}</strong> tarjetas escaneadas en <strong>${cajasUsadas.size}</strong> caja(s).<br>
+     ${dupCount > 0 ? `<span style="color:var(--naranja)">⚠️ ${dupCount} duplicado(s) detectado(s).</span><br>` : ''}
+     Al terminar podrás exportar y enviar el archivo al supervisor.`;
+  abrirModal('modal-terminar');
+}
+
+function terminarSesion() {
+  detenerScanner();
+  cerrarModal();
+
+  const unicos = registros.filter(r => !r.dup).length;
+  document.getElementById('exp-total').textContent = unicos;
+  document.getElementById('exp-cajas').textContent = cajasUsadas.size;
+  document.getElementById('exp-dup').textContent   = dupCount;
+
+  mostrarPantalla('screen-export');
+}
+
+// ══════════════════════════════════════════
+// EXPORTAR CSV
+// ══════════════════════════════════════════
+function generarCSV() {
+  const fecha = new Date().toISOString().slice(0,10);
+  let csv = 'NUM_TARJETA,CAJA,OPERADOR,HORA,DUPLICADO\n';
+  registros.forEach(r => {
+    csv += `${r.num},${r.caja},"${operador}",${r.ts},${r.dup ? 'SI' : 'NO'}\n`;
+  });
+  return csv;
+}
+
+function nombreArchivo() {
+  const fecha = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const op = operador.split(' ')[0]; // primer apellido
+  return `escaneo_${fecha}_${op}_cajas${[...cajasUsadas].sort((a,b)=>a-b).join('-')}.csv`;
+}
+
+function descargarCSV() {
+  const csv = generarCSV();
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = nombreArchivo();
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function compartirWhatsApp() {
+  const unicos  = registros.filter(r => !r.dup).length;
+  const cajasList = [...cajasUsadas].sort((a,b)=>a-b).join(', ');
+  const fecha   = new Date().toLocaleDateString('es-MX');
+  const archivo = nombreArchivo();
+  const msg = encodeURIComponent(
+    `📦 *ESCANEO TARJETAS — SARE 1507*\n` +
+    `📅 Fecha: ${fecha}\n` +
+    `👤 Operador: ${operador}\n` +
+    `✅ Tarjetas escaneadas: ${unicos}\n` +
+    `📦 Cajas trabajadas: ${cajasList}\n` +
+    `⚠️ Duplicados: ${dupCount}\n\n` +
+    `Archivo adjunto: ${archivo}`
+  );
+  window.open(`https://wa.me/?text=${msg}`, '_blank');
+}
+
+// ══════════════════════════════════════════
+// NUEVA SESIÓN
+// ══════════════════════════════════════════
+function nuevaSesion() {
+  operador = ''; cajaActual = 1;
+  cajasUsadas = new Set(); registros = [];
+  numerosSet = new Set(); dupCount = 0;
+  document.getElementById('inp-operador').value = '';
+  document.getElementById('inp-caja').value = '';
+  mostrarPantalla('screen-login');
+}
+
+// ══════════════════════════════════════════
+// MODALES
+// ══════════════════════════════════════════
+function abrirModal(id) {
+  document.querySelectorAll('.modal-box').forEach(m => m.style.display = 'none');
+  document.getElementById(id).style.display = 'block';
+  document.getElementById('modal-bg').classList.add('active');
+}
+function cerrarModal() {
+  document.getElementById('modal-bg').classList.remove('active');
+}
+
+// Cerrar modal tocando fondo
+document.getElementById('modal-bg').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModal();
+});
+
+// Actualizar fecha cada minuto
+setInterval(actualizarFechaHero, 60000);
+</script>
+</body>
+</html>
