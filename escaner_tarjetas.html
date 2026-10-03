@@ -542,15 +542,31 @@ function activarCamara() {
   hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
     ZXing.BarcodeFormat.CODE_128,
     ZXing.BarcodeFormat.CODE_39,
+    ZXing.BarcodeFormat.CODE_93,
     ZXing.BarcodeFormat.EAN_13,
+    ZXing.BarcodeFormat.EAN_8,
+    ZXing.BarcodeFormat.UPC_A,
+    ZXing.BarcodeFormat.UPC_E,
     ZXing.BarcodeFormat.PDF_417,
-    ZXing.BarcodeFormat.ITF
+    ZXing.BarcodeFormat.ITF,
+    ZXing.BarcodeFormat.QR_CODE,
+    ZXing.BarcodeFormat.DATA_MATRIX,
+    ZXing.BarcodeFormat.AZTEC,
+    ZXing.BarcodeFormat.CODABAR
   ]);
   hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+  hints.set(ZXing.DecodeHintType.ASSUME_GS1, false);
 
   zxingReader = new ZXing.BrowserMultiFormatReader(hints);
+  // Resolución alta para mejor detección en móvil
   zxingReader.decodeFromConstraints(
-    { video: { facingMode: { ideal: 'environment' } } },
+    {
+      video: {
+        facingMode: { ideal: 'environment' },
+        width:  { ideal: 1920, min: 640 },
+        height: { ideal: 1080, min: 480 }
+      }
+    },
     'video-scan',
     (result, err) => {
       if (!scanActivo) return;
