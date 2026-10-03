@@ -217,9 +217,15 @@ footer strong { color: var(--dorado-l); }
 
       <label class="field-label">Número de caja inicial</label>
       <input type="number" id="inp-caja" class="input-field"
-        placeholder="Ej. 1" min="1" style="margin-bottom:6px">
+        placeholder="Ej. 1" min="1" style="margin-bottom:14px">
+
+      <label class="field-label">Total de cajas a trabajar
+        <span style="font-weight:400;color:#aaa"> (opcional)</span>
+      </label>
+      <input type="number" id="inp-total-cajas" class="input-field"
+        placeholder="Ej. 8" min="1" style="margin-bottom:6px">
       <p style="font-size:0.72rem;color:#888;margin-bottom:16px">
-        Podrás cambiar de caja en cualquier momento durante el escaneo.
+        Si lo sabes, el sistema calculará las tarjetas esperadas y mostrará el progreso por caja. Podrás cambiar de caja en cualquier momento.
       </p>
 
       <button class="btn btn-primary" onclick="iniciarSesion()">
@@ -231,7 +237,7 @@ footer strong { color: var(--dorado-l); }
       <div style="font-size:0.8rem;color:var(--naranja);line-height:1.6">
         <strong style="font-family:'Montserrat',sans-serif;display:block;margin-bottom:6px">⚠️ Instrucciones</strong>
         1. Escribe tu nombre completo.<br>
-        2. Anota el número de la caja que vas a trabajar.<br>
+        2. Anota el número de caja inicial y el total de cajas (si lo sabes).<br>
         3. Escanea cada sobre — uno por uno.<br>
         4. Al terminar una caja, cambia el número antes de la siguiente.<br>
         5. Al terminar todo, exporta y comparte por WhatsApp.
@@ -267,7 +273,7 @@ footer strong { color: var(--dorado-l); }
     <div class="stats-bar">
       <div class="stat-item">
         <div class="stat-num" id="cnt-total">0</div>
-        <div class="stat-lbl">Escaneados</div>
+        <div class="stat-lbl" id="lbl-total-stat">Escaneados</div>
       </div>
       <div class="stat-item">
         <div class="stat-num" id="cnt-cajas">0</div>
@@ -279,15 +285,54 @@ footer strong { color: var(--dorado-l); }
       </div>
     </div>
 
-    <!-- CAJA ACTUAL -->
+    <!-- PROGRESO CAJA ACTUAL -->
     <div class="info-caja">
-      <div class="info-caja-text">
+      <div class="info-caja-text" style="flex:1;min-width:0">
         <strong id="lbl-caja-actual">CAJA #1</strong>
-        Caja en curso
+        <span id="lbl-caja-sub" style="font-size:0.7rem;opacity:.75;margin-left:4px">Caja en curso</span>
+        <!-- Barra de progreso de la caja -->
+        <div id="barra-caja-wrap" style="display:none;margin-top:6px">
+          <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:#666;margin-bottom:3px">
+            <span id="lbl-barra-num">0 / 700</span>
+            <span id="lbl-barra-pct">0%</span>
+          </div>
+          <div style="height:6px;background:var(--gris);border-radius:4px;overflow:hidden">
+            <div id="barra-caja" style="height:100%;width:0%;border-radius:4px;
+              background:linear-gradient(90deg,var(--guinda),var(--dorado-l));
+              transition:width .3s ease"></div>
+          </div>
+        </div>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="abrirCambiarCaja()" style="width:auto">
+      <button class="btn btn-secondary btn-sm" onclick="abrirCambiarCaja()" style="width:auto;flex-shrink:0">
         🔄 Cambiar caja
       </button>
+    </div>
+
+    <!-- RESUMEN TOTAL ESPERADO (visible solo si se configuró total cajas) -->
+    <div id="card-esperado" style="display:none;
+      background:var(--verde-l);border:1.5px solid var(--verde);
+      border-radius:12px;padding:12px 14px;font-size:0.78rem;color:var(--verde)">
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.72rem;
+        text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">
+        📊 Progreso total del municipio
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <div><span id="lbl-esp-escaneados" style="font-size:1.1rem;font-weight:700">0</span>
+          <span style="opacity:.7"> / </span><span id="lbl-esp-total">—</span>
+          <div style="font-size:0.65rem;opacity:.75">tarjetas esperadas</div>
+        </div>
+        <div><span id="lbl-esp-pct" style="font-size:1.1rem;font-weight:700">0%</span>
+          <div style="font-size:0.65rem;opacity:.75">completado</div>
+        </div>
+        <div><span id="lbl-esp-faltan" style="font-size:1.1rem;font-weight:700">—</span>
+          <div style="font-size:0.65rem;opacity:.75">faltan</div>
+        </div>
+      </div>
+      <!-- Barra general -->
+      <div style="margin-top:8px;height:8px;background:rgba(0,0,0,.1);border-radius:4px;overflow:hidden">
+        <div id="barra-total" style="height:100%;width:0%;border-radius:4px;
+          background:var(--verde);transition:width .3s ease"></div>
+      </div>
     </div>
 
     <!-- CÁMARA -->
@@ -325,6 +370,16 @@ footer strong { color: var(--dorado-l); }
       </button>
     </div>
 
+    <!-- Reiniciar: enlace discreto, no botón grande para evitar toques accidentales -->
+    <div style="text-align:center;padding-bottom:4px">
+      <button onclick="confirmarReiniciar()" style="
+        background:none;border:none;color:#aaa;font-size:0.72rem;
+        font-family:'Open Sans',sans-serif;cursor:pointer;text-decoration:underline;
+        padding:4px 8px">
+        🔄 Reiniciar conteo desde cero
+      </button>
+    </div>
+
   </div>
   <footer>✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
 </div>
@@ -357,9 +412,15 @@ footer strong { color: var(--dorado-l); }
         <div class="scan-empty">Sin registros aún</div>
       </div>
     </div>
-    <button class="btn btn-primary" onclick="volverEscaneo()">
-      ← Volver al escaneo
-    </button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button class="btn btn-primary" onclick="volverEscaneo()">
+        ← Volver al escaneo
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="confirmarReiniciar()" style="
+        width:100%;padding:13px;border-color:#ddd;color:#999">
+        🔄 Reiniciar
+      </button>
+    </div>
   </div>
   <footer>✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
 </div>
@@ -396,6 +457,9 @@ footer strong { color: var(--dorado-l); }
         <div class="stat-lbl">Duplicados</div>
       </div>
     </div>
+
+    <!-- Desglose por cajas (visible si había totalCajas configurado) -->
+    <div id="exp-resumen-cajas" class="card" style="display:none;padding:14px 16px"></div>
 
     <div class="card">
       <div class="card-title">📤 Exportar y compartir</div>
@@ -438,6 +502,9 @@ footer strong { color: var(--dorado-l); }
     <div class="modal-icon">📦</div>
     <div class="modal-title">Cambiar de caja</div>
     <div class="modal-body">Escribe el número de la siguiente caja que vas a escanear.</div>
+    <div id="modal-caja-info" style="display:none;font-size:0.78rem;
+      font-family:'Montserrat',sans-serif;font-weight:700;margin-bottom:10px;
+      padding:8px 12px;background:var(--gris);border-radius:8px;text-align:center"></div>
     <input type="number" id="inp-nueva-caja" class="input-field" placeholder="Número de caja" min="1" style="margin-bottom:16px;text-align:center;font-size:1.3rem;font-weight:700">
     <div class="modal-btns">
       <button class="btn btn-primary" onclick="confirmarCambioCaja()">✅ Confirmar cambio</button>
@@ -458,6 +525,35 @@ footer strong { color: var(--dorado-l); }
     </div>
   </div>
 
+  <!-- Modal: confirmar reiniciar -->
+  <div class="modal-box" id="modal-reiniciar" style="display:none">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title" style="color:var(--rojo)">¿Reiniciar conteo?</div>
+    <div class="modal-body" id="modal-reiniciar-body">
+      Se borrarán <strong id="modal-rei-num">todos los registros</strong> de esta sesión.
+      El nombre del operador y la caja inicial se conservarán.<br><br>
+      <strong style="color:var(--rojo)">Esta acción no se puede deshacer.</strong>
+    </div>
+    <!-- Segundo paso de confirmación: el usuario debe escribir "REINICIAR" -->
+    <div style="margin-bottom:12px">
+      <label style="font-size:0.72rem;font-weight:600;color:#666;display:block;margin-bottom:6px">
+        Escribe <strong>REINICIAR</strong> para confirmar:
+      </label>
+      <input type="text" id="inp-confirmar-reinicio" class="input-field"
+        placeholder="REINICIAR" autocomplete="off" autocorrect="off"
+        style="text-align:center;font-weight:700;letter-spacing:2px;text-transform:uppercase"
+        oninput="validarTextoReinicio()">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-danger" id="btn-confirmar-reinicio"
+        onclick="ejecutarReinicio()" disabled
+        style="opacity:0.4;transition:opacity .2s">
+        🗑 Sí, borrar todo y reiniciar
+      </button>
+      <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+
 </div>
 
 
@@ -474,6 +570,10 @@ let dupCount = 0;
 let zxingReader = null;
 let scanActivo = false;
 let feedbackTimer = null;
+
+// Lógica de cajas
+const TARJETAS_POR_CAJA = 700;
+let totalCajas = 0; // 0 = no configurado
 
 // ══════════════════════════════════════════
 // AUDIO — Web Audio API (sin archivos externos)
@@ -561,6 +661,7 @@ function persistirSesion(){
   idbScanPut('cajasUsadas',[...cajasUsadas]);
   idbScanPut('registros',  registros);
   idbScanPut('dupCount',   dupCount);
+  idbScanPut('totalCajas', totalCajas);
   idbScanPut('activa',     true);
 }
 
@@ -574,6 +675,7 @@ async function restaurarSesion(){
   cajasUsadas = new Set(cajas);
   registros   = (await idbScanGet('registros'))  || [];
   dupCount    = (await idbScanGet('dupCount'))   || 0;
+  totalCajas  = (await idbScanGet('totalCajas')) || 0;
   numerosSet  = new Set(registros.filter(r=>!r.dup).map(r=>r.num));
   // reconstruir numerosSet considerando todos (para detección de dup)
   const todos = new Set();
@@ -615,6 +717,7 @@ function iniciarSesion() {
   registros = [];
   numerosSet = new Set();
   dupCount = 0;
+  totalCajas = parseInt(document.getElementById('inp-total-cajas').value) || 0;
 
   document.getElementById('lbl-operador-hero').textContent = operador;
   document.getElementById('lbl-caja-actual').textContent = 'CAJA #' + cajaActual;
@@ -751,17 +854,124 @@ function mostrarFeedback(codigo, esDup) {
 }
 
 function actualizarContadores() {
-  const totales = registros.filter(r => !r.dup).length;
-  document.getElementById('cnt-total').textContent = totales;
+  const unicos = registros.filter(r => !r.dup).length;
+  document.getElementById('cnt-total').textContent = unicos;
   document.getElementById('cnt-cajas').textContent = cajasUsadas.size;
   document.getElementById('cnt-dup').textContent   = dupCount;
+
+  // ── Progreso de caja actual ──────────────────────────
+  const enCajaActual = registros.filter(r => !r.dup && r.caja === cajaActual).length;
+  const esUltimaCaja = totalCajas > 0 && cajaActual === totalCajas;
+  const cajasCompletas = totalCajas > 0 ? totalCajas - 1 : 0; // todas menos la última
+
+  // Barra de caja actual solo si hay totalCajas configurado
+  const barraWrap = document.getElementById('barra-caja-wrap');
+  if (barraWrap) {
+    if (totalCajas > 0) {
+      barraWrap.style.display = 'block';
+      const meta = esUltimaCaja ? null : TARJETAS_POR_CAJA; // última: sin límite fijo
+      const pct  = meta ? Math.min(100, Math.round(enCajaActual / meta * 100)) : null;
+      const barraNum = document.getElementById('lbl-barra-num');
+      const barraPct = document.getElementById('lbl-barra-pct');
+      const barra    = document.getElementById('barra-caja');
+
+      if (esUltimaCaja) {
+        // Última caja: mostramos conteo pero sin barra de 700
+        barraNum.textContent = enCajaActual + ' (última caja)';
+        barraPct.textContent = '';
+        barra.style.width = '100%';
+        barra.style.background = 'var(--dorado-l)';
+      } else {
+        barraNum.textContent = enCajaActual + ' / ' + TARJETAS_POR_CAJA;
+        barraPct.textContent = pct + '%';
+        barra.style.width = pct + '%';
+        // Verde cuando completa, guinda→dorado en progreso
+        barra.style.background = pct >= 100
+          ? 'var(--verde)'
+          : 'linear-gradient(90deg,var(--guinda),var(--dorado-l))';
+      }
+
+      // Sub-etiqueta de estado
+      const sub = document.getElementById('lbl-caja-sub');
+      if (sub) {
+        if (esUltimaCaja) {
+          sub.textContent = '· Última caja del municipio';
+          sub.style.color = 'var(--dorado)';
+        } else if (!esUltimaCaja && enCajaActual >= TARJETAS_POR_CAJA) {
+          sub.textContent = '· ✅ Caja completa — cambia a la siguiente';
+          sub.style.color = 'var(--verde)';
+        } else {
+          sub.textContent = '· Caja en curso';
+          sub.style.color = '';
+        }
+      }
+    } else {
+      barraWrap.style.display = 'none';
+      const sub = document.getElementById('lbl-caja-sub');
+      if (sub) { sub.textContent = 'Caja en curso'; sub.style.color = ''; }
+    }
+  }
+
+  // ── Resumen total esperado ───────────────────────────
+  const cardEsp = document.getElementById('card-esperado');
+  if (cardEsp) {
+    if (totalCajas > 0) {
+      cardEsp.style.display = 'block';
+      // Tarjetas esperadas = (totalCajas - 1) × 700 + lo que haya en la última
+      // Pero hasta que no sabemos cuántas van en la última, estimamos el mínimo (1)
+      // y el máximo (699). Mostramos el mínimo real escaneado en última + el resto.
+      const enUltima = registros.filter(r => !r.dup && r.caja === totalCajas).length;
+      const esperadasMinimas = cajasCompletas * TARJETAS_POR_CAJA + (enUltima || '?');
+      const totalEsperado    = cajasCompletas * TARJETAS_POR_CAJA; // sin contar última (variable)
+      const pctTotal = totalEsperado > 0
+        ? Math.round(Math.min(100, unicos / (totalEsperado + Math.max(enUltima, 1)) * 100))
+        : 0;
+      const faltan = Math.max(0, totalEsperado - (unicos - enUltima));
+
+      document.getElementById('lbl-esp-escaneados').textContent = unicos;
+      document.getElementById('lbl-esp-total').textContent =
+        cajasCompletas > 0
+          ? (cajasCompletas * TARJETAS_POR_CAJA) + '+ (última pendiente)'
+          : '— (solo última caja)';
+      document.getElementById('lbl-esp-pct').textContent  = pctTotal + '%';
+      document.getElementById('lbl-esp-faltan').textContent =
+        cajasCompletas > 0 && faltan > 0 ? faltan + ' en cajas completas' : '✓';
+      document.getElementById('barra-total').style.width = pctTotal + '%';
+
+      // Stat label con total
+      const lblStat = document.getElementById('lbl-total-stat');
+      if (lblStat) lblStat.textContent = 'de ' + cajasCompletas * TARJETAS_POR_CAJA + '+';
+    } else {
+      cardEsp.style.display = 'none';
+      const lblStat = document.getElementById('lbl-total-stat');
+      if (lblStat) lblStat.textContent = 'Escaneados';
+    }
+  }
 }
 
 // ══════════════════════════════════════════
 // CAMBIO DE CAJA
 // ══════════════════════════════════════════
 function abrirCambiarCaja() {
-  document.getElementById('inp-nueva-caja').value = '';
+  // Pre-sugerir el número siguiente lógico
+  const siguienteNum = cajaActual + 1;
+  document.getElementById('inp-nueva-caja').value = siguienteNum;
+
+  // Si había totalCajas: mostrar estado de caja actual en el modal
+  const enCajaActual = registros.filter(r => !r.dup && r.caja === cajaActual).length;
+  const esUltima = totalCajas > 0 && cajaActual === totalCajas;
+  const infoEl = document.getElementById('modal-caja-info');
+  if (infoEl) {
+    if (totalCajas > 0 && !esUltima) {
+      const completa = enCajaActual >= TARJETAS_POR_CAJA;
+      infoEl.style.display = 'block';
+      infoEl.innerHTML = completa
+        ? `<span style="color:var(--verde)">✅ Caja ${cajaActual} completa — ${enCajaActual} tarjetas</span>`
+        : `<span style="color:var(--naranja)">⚠️ Caja ${cajaActual} tiene ${enCajaActual} / ${TARJETAS_POR_CAJA} tarjetas</span>`;
+    } else {
+      infoEl.style.display = 'none';
+    }
+  }
   abrirModal('modal-caja');
 }
 
@@ -850,10 +1060,26 @@ function volverEscaneo() {
 // ══════════════════════════════════════════
 function confirmarTerminar() {
   const unicos = registros.filter(r => !r.dup).length;
-  document.getElementById('modal-terminar-body').innerHTML =
-    `Llevas <strong>${unicos}</strong> tarjetas escaneadas en <strong>${cajasUsadas.size}</strong> caja(s).<br>
-     ${dupCount > 0 ? `<span style="color:var(--naranja)">⚠️ ${dupCount} duplicado(s) detectado(s).</span><br>` : ''}
-     Al terminar podrás exportar y enviar el archivo al supervisor.`;
+  let resumen = `Llevas <strong>${unicos}</strong> tarjetas escaneadas en <strong>${cajasUsadas.size}</strong> caja(s).<br>`;
+  if (dupCount > 0) {
+    resumen += `<span style="color:var(--naranja)">⚠️ ${dupCount} duplicado(s) detectado(s).</span><br>`;
+  }
+  if (totalCajas > 0) {
+    const cajasCompletas = totalCajas - 1;
+    const esperadas = cajasCompletas * TARJETAS_POR_CAJA;
+    const enUltima  = registros.filter(r => !r.dup && r.caja === totalCajas).length;
+    const cajasIncompletas = [...cajasUsadas].filter(nc =>
+      nc !== totalCajas && registros.filter(r => !r.dup && r.caja === nc).length < TARJETAS_POR_CAJA
+    );
+    resumen += `<br><span style="font-size:.8rem;color:#555">`;
+    resumen += `📦 ${cajasCompletas} caja(s) de 700 + última caja con ${enUltima} tarjetas.<br>`;
+    if (cajasIncompletas.length > 0) {
+      resumen += `<span style="color:var(--naranja)">⚠️ Cajas incompletas: ${cajasIncompletas.join(', ')}</span><br>`;
+    }
+    resumen += `</span>`;
+  }
+  resumen += `Al terminar podrás exportar y enviar el archivo al supervisor.`;
+  document.getElementById('modal-terminar-body').innerHTML = resumen;
   abrirModal('modal-terminar');
 }
 
@@ -866,6 +1092,40 @@ function terminarSesion() {
   document.getElementById('exp-total').textContent = unicos;
   document.getElementById('exp-cajas').textContent = cajasUsadas.size;
   document.getElementById('exp-dup').textContent   = dupCount;
+
+  // Mostrar desglose por cajas si había configuración
+  const resumenExtra = document.getElementById('exp-resumen-cajas');
+  if (resumenExtra) {
+    if (totalCajas > 0) {
+      const cajasCompletas = totalCajas - 1;
+      const enUltima = registros.filter(r => !r.dup && r.caja === totalCajas).length;
+      const esperadasBase = cajasCompletas * TARJETAS_POR_CAJA;
+      let html = `<div style="font-family:'Montserrat',sans-serif;font-size:.72rem;
+        font-weight:800;text-transform:uppercase;letter-spacing:.4px;
+        color:var(--guinda);margin-bottom:8px">📊 Desglose de cajas</div>`;
+      // Una fila por caja trabajada
+      const cajasArr = [...cajasUsadas].sort((a,b)=>a-b);
+      cajasArr.forEach(nc => {
+        const cnt = registros.filter(r => !r.dup && r.caja === nc).length;
+        const esUlt = nc === totalCajas;
+        const completa = !esUlt && cnt >= TARJETAS_POR_CAJA;
+        const icono = esUlt ? '🔚' : (completa ? '✅' : '⚠️');
+        html += `<div style="display:flex;justify-content:space-between;
+          padding:5px 0;border-bottom:1px solid var(--gris);font-size:.8rem">
+          <span>${icono} Caja #${nc}${esUlt ? ' (última)' : ''}</span>
+          <strong>${cnt}${!esUlt ? ' / 700' : ''}</strong>
+        </div>`;
+      });
+      html += `<div style="display:flex;justify-content:space-between;
+        padding:8px 0;font-size:.85rem;font-weight:700;color:var(--guinda)">
+        <span>TOTAL ÚNICO</span><strong>${unicos}</strong>
+      </div>`;
+      resumenExtra.innerHTML = html;
+      resumenExtra.style.display = 'block';
+    } else {
+      resumenExtra.style.display = 'none';
+    }
+  }
 
   mostrarPantalla('screen-export');
 }
@@ -932,6 +1192,92 @@ function nuevaSesion() {
   }catch(e){ if(inp) inp.value = ''; }
   document.getElementById('inp-caja').value = '';
   mostrarPantalla('screen-login');
+}
+
+// ══════════════════════════════════════════
+// REINICIAR CONTEO
+// ══════════════════════════════════════════
+function confirmarReiniciar() {
+  const total = registros.length;
+  const unicos = registros.filter(r => !r.dup).length;
+  const numEl = document.getElementById('modal-rei-num');
+  if (numEl) {
+    numEl.textContent = total === 0
+      ? 'los 0 registros (ya está vacío)'
+      : `los ${unicos} registro(s) únicos${dupCount > 0 ? ' y ' + dupCount + ' duplicado(s)' : ''}`;
+  }
+  // Limpiar y deshabilitar el botón de confirmación
+  const inp = document.getElementById('inp-confirmar-reinicio');
+  const btn = document.getElementById('btn-confirmar-reinicio');
+  if (inp) { inp.value = ''; }
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
+  // Si ya está vacío: aviso y no pedir confirmación
+  if (total === 0) {
+    document.getElementById('modal-reiniciar-body').innerHTML =
+      'El conteo ya está en cero. No hay nada que borrar.';
+    document.querySelector('#modal-reiniciar .modal-btns').innerHTML =
+      '<button class="btn btn-secondary" onclick="cerrarModal()">Cerrar</button>';
+  } else {
+    // Restaurar modal a su estado normal (por si se abrió antes)
+    document.getElementById('modal-reiniciar-body').innerHTML = `
+      Se borrarán <strong id="modal-rei-num">${numEl ? numEl.textContent : 'todos los registros'}</strong> de esta sesión.
+      El nombre del operador y la caja inicial se conservarán.<br><br>
+      <strong style="color:var(--rojo)">Esta acción no se puede deshacer.</strong>`;
+    document.querySelector('#modal-reiniciar .modal-btns').innerHTML = `
+      <button class="btn btn-danger" id="btn-confirmar-reinicio"
+        onclick="ejecutarReinicio()" disabled style="opacity:0.4;transition:opacity .2s">
+        🗑 Sí, borrar todo y reiniciar
+      </button>
+      <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>`;
+  }
+  abrirModal('modal-reiniciar');
+}
+
+function validarTextoReinicio() {
+  const inp = document.getElementById('inp-confirmar-reinicio');
+  const btn = document.getElementById('btn-confirmar-reinicio');
+  if (!inp || !btn) return;
+  const ok = inp.value.trim().toUpperCase() === 'REINICIAR';
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '1' : '0.4';
+}
+
+function ejecutarReinicio() {
+  // Guardar nombre y caja para no perderlos
+  const nombreActual = operador;
+  const cajaInicial  = [...cajasUsadas][0] || cajaActual;
+
+  // Limpiar todo
+  registros   = [];
+  numerosSet  = new Set();
+  cajasUsadas = new Set([cajaInicial]);
+  dupCount    = 0;
+  cajaActual  = cajaInicial;
+
+  // Persistir estado limpio
+  persistirSesion();
+
+  cerrarModal();
+  detenerScanner();
+
+  // Actualizar UI
+  document.getElementById('lbl-caja-actual').textContent = 'CAJA #' + cajaActual;
+  actualizarContadores();
+
+  // Si venimos de la lista, volver al escaneo
+  mostrarPantalla('screen-scan');
+  arrancarScanner();
+
+  // Feedback breve
+  const fb = document.getElementById('scan-feedback');
+  if (fb) {
+    fb.className = 'scan-feedback ok';
+    fb.textContent = '✅ Conteo reiniciado — listo para escanear';
+    setTimeout(() => {
+      fb.className = 'scan-feedback idle';
+      fb.textContent = 'Toca "Activar cámara" para comenzar…';
+    }, 2500);
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1010,6 +1356,7 @@ setInterval(actualizarFechaHero, 60000);
       </div>
       <div style="font-size:.8rem;opacity:.85;margin-bottom:10px">
         ✅ ${unicos} tarjeta(s) · 📦 Caja(s): ${cajasList || cajaActual}
+        ${totalCajas > 0 ? ` de ${totalCajas}` : ''}
         ${dupCount > 0 ? ` · ⚠️ ${dupCount} dup` : ''}
       </div>
       <div style="display:flex;gap:10px">
