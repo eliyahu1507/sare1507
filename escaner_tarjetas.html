@@ -344,6 +344,15 @@ footer strong { color: var(--dorado-l); }
   <div class="content">
     <div class="card">
       <div class="card-title">📋 Tarjetas escaneadas</div>
+      <!-- Botón eliminar duplicados — visible solo si hay dups -->
+      <button id="btn-eliminar-dup" onclick="eliminarDuplicados()" style="
+        display:none;align-items:center;justify-content:center;gap:8px;
+        width:100%;margin-bottom:12px;padding:10px 16px;
+        border:none;border-radius:10px;
+        background:var(--naranja,#e65100);color:#fff;
+        font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:700;
+        cursor:pointer;letter-spacing:.3px;
+      ">🗑 Eliminar duplicados</button>
       <div class="scan-list" id="scan-list">
         <div class="scan-empty">Sin registros aún</div>
       </div>
@@ -715,8 +724,14 @@ function procesarEscaneo(codigo) {
   actualizarContadores();
   mostrarFeedback(codigo, esDup);
 
+  // Sonido distintivo (Web Audio API — no requiere archivos)
+  if (esDup) beepDUP(); else beepOK();
+
   // Vibración en móvil
   if (navigator.vibrate) navigator.vibrate(esDup ? [100,50,100] : 60);
+
+  // Persistir inmediatamente
+  persistirSesion();
 }
 
 function mostrarFeedback(codigo, esDup) {
@@ -757,6 +772,7 @@ function confirmarCambioCaja() {
   cajasUsadas.add(nueva);
   document.getElementById('lbl-caja-actual').textContent = 'CAJA #' + cajaActual;
   actualizarContadores();
+  persistirSesion();
   cerrarModal();
 }
 
@@ -765,21 +781,58 @@ function confirmarCambioCaja() {
 // ══════════════════════════════════════════
 function verLista() {
   scanActivo = false; // pausar mientras se ve la lista
-  const lista = document.getElementById('scan-list');
+  renderLista();
+  mostrarPantalla('screen-lista');
+}
+
+function renderLista() {
+  const lista  = document.getElementById('scan-list');
+  const btnDup = document.getElementById('btn-eliminar-dup');
+
   document.getElementById('lbl-total-lista').textContent = registros.length + ' registros';
+
+  // Mostrar/ocultar botón según haya duplicados
+  if (btnDup) btnDup.style.display = dupCount > 0 ? 'flex' : 'none';
 
   if (registros.length === 0) {
     lista.innerHTML = '<div class="scan-empty">Sin registros aún</div>';
   } else {
     // Mostrar en orden inverso (más reciente primero)
-    lista.innerHTML = [...registros].reverse().map(r =>
+    lista.innerHTML = [...registros].reverse().map((r, i) =>
       `<div class="scan-item ${r.dup ? 'dup' : ''}">
         <div class="scan-item-num">${r.num}</div>
         <div class="scan-item-meta">Caja #${r.caja}<br>${r.ts}${r.dup ? '<br>⚠️ DUP' : ''}</div>
       </div>`
     ).join('');
   }
-  mostrarPantalla('screen-lista');
+}
+
+function eliminarDuplicados() {
+  if (dupCount === 0) return;
+  const vistos  = new Set();
+  registros = registros.filter(r => {
+    if (vistos.has(r.num)) return false;
+    vistos.add(r.num);
+    return true;
+  });
+  // Marcar todos como no-dup y reconstruir set
+  registros.forEach(r => { r.dup = false; });
+  numerosSet = new Set(registros.map(r => r.num));
+  dupCount   = 0;
+  actualizarContadores();
+  persistirSesion();
+  renderLista();
+  // Pequeño feedback visual
+  const btn = document.getElementById('btn-eliminar-dup');
+  if (btn) {
+    btn.textContent = '✓ Duplicados eliminados';
+    btn.style.background = 'var(--verde,#2e7d32)';
+    setTimeout(() => {
+      btn.textContent = '🗑 Eliminar duplicados';
+      btn.style.background = '';
+      btn.style.display = 'none';
+    }, 1800);
+  }
 }
 
 function volverEscaneo() {
@@ -807,6 +860,7 @@ function confirmarTerminar() {
 function terminarSesion() {
   detenerScanner();
   cerrarModal();
+  limpiarSesionIDB(); // la sesión se da por finalizada
 
   const unicos = registros.filter(r => !r.dup).length;
   document.getElementById('exp-total').textContent = unicos;
@@ -869,6 +923,7 @@ function nuevaSesion() {
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
   numerosSet = new Set(); dupCount = 0;
+  limpiarSesionIDB();
   // Restaurar nombre desde sesión (no borrarlo si viene del index)
   const inp = document.getElementById('inp-operador');
   try{
@@ -906,29 +961,105 @@ setInterval(actualizarFechaHero, 60000);
   try{
     const ses = JSON.parse(sessionStorage.getItem('sare1507_sesion'));
     if(ses && ses.NOMBRE){
-      // Prellenar campo de nombre
       const inp = document.getElementById('inp-operador');
-      if(inp) inp.value = ses.NOMBRE;
-      // Marcar campo como bloqueado (viene de sesión, no debe editarse)
       if(inp){
+        inp.value = ses.NOMBRE;
         inp.readOnly = true;
         inp.style.background = 'rgba(107,28,62,.08)';
         inp.style.color = 'var(--guinda)';
         inp.style.fontWeight = '700';
         inp.title = 'Nombre cargado desde tu sesión';
       }
-      // Mostrar badge de sesión junto al label
       const lbl = inp ? inp.previousElementSibling : null;
       if(lbl) lbl.insertAdjacentHTML('beforeend',
         ' <span style="font-size:.6rem;background:var(--guinda);color:#fff;'
         +'border-radius:10px;padding:1px 7px;font-weight:700">✓ Sesión activa</span>');
-      // Actualizar footers con nombre real
       document.querySelectorAll('footer').forEach(f=>{
         f.innerHTML = `✏️ <strong>${ses.NOMBRE}</strong> — SARE 1507`;
       });
     }
   }catch(e){}
 })();
+
+// ══════════════════════════════════════════
+// RESTAURAR SESIÓN GUARDADA (IndexedDB)
+// ══════════════════════════════════════════
+(async function(){
+  try{
+    const hayDatos = await restaurarSesion();
+    if(!hayDatos) return; // sin sesión previa, pantalla de login normal
+
+    const unicos = registros.filter(r => !r.dup).length;
+    const cajasList = [...cajasUsadas].sort((a,b)=>a-b).join(', ');
+
+    // Mostrar banner de recuperación
+    const banner = document.createElement('div');
+    banner.id = 'banner-retomar';
+    banner.style.cssText = `
+      position:fixed;bottom:0;left:0;right:0;z-index:9999;
+      background:var(--guinda);color:#fff;
+      padding:14px 16px 18px;font-family:'Open Sans',sans-serif;
+      box-shadow:0 -4px 20px rgba(0,0,0,.35);
+    `;
+    banner.innerHTML = `
+      <div style="font-size:.72rem;opacity:.8;margin-bottom:4px;font-family:'Montserrat',sans-serif;letter-spacing:.5px">
+        📂 SESIÓN GUARDADA ENCONTRADA
+      </div>
+      <div style="font-size:.88rem;font-weight:600;margin-bottom:2px">
+        👤 ${operador}
+      </div>
+      <div style="font-size:.8rem;opacity:.85;margin-bottom:10px">
+        ✅ ${unicos} tarjeta(s) · 📦 Caja(s): ${cajasList || cajaActual}
+        ${dupCount > 0 ? ` · ⚠️ ${dupCount} dup` : ''}
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="retomarSesion()" style="
+          flex:1;padding:10px;border:none;border-radius:10px;
+          background:#fff;color:var(--guinda);font-weight:700;
+          font-size:.82rem;cursor:pointer;font-family:'Montserrat',sans-serif">
+          ▶ Continuar sesión
+        </button>
+        <button onclick="descartarSesionGuardada()" style="
+          flex:1;padding:10px;border:2px solid rgba(255,255,255,.5);
+          border-radius:10px;background:transparent;color:#fff;
+          font-weight:600;font-size:.82rem;cursor:pointer;
+          font-family:'Montserrat',sans-serif">
+          ✕ Empezar nueva
+        </button>
+      </div>
+    `;
+    document.body.appendChild(banner);
+  }catch(e){ console.warn('restaurarSesion error', e); }
+})();
+
+function retomarSesion() {
+  const b = document.getElementById('banner-retomar');
+  if(b) b.remove();
+  // Actualizar UI con datos recuperados
+  document.getElementById('lbl-operador-hero').textContent = operador;
+  document.getElementById('lbl-caja-actual').textContent   = 'CAJA #' + cajaActual;
+  actualizarFechaHero();
+  actualizarContadores();
+  mostrarPantalla('screen-scan');
+  arrancarScanner();
+}
+
+function descartarSesionGuardada() {
+  // Limpiar en memoria y en IDB, empezar desde pantalla login
+  operador = ''; cajaActual = 1;
+  cajasUsadas = new Set(); registros = [];
+  numerosSet = new Set(); dupCount = 0;
+  limpiarSesionIDB();
+  const b = document.getElementById('banner-retomar');
+  if(b) b.remove();
+  // Restaurar nombre desde sesión de index
+  const inp = document.getElementById('inp-operador');
+  try{
+    const ses = JSON.parse(sessionStorage.getItem('sare1507_sesion'));
+    if(inp && ses && ses.NOMBRE) inp.value = ses.NOMBRE;
+  }catch(e){}
+  mostrarPantalla('screen-login');
+}
 </script>
 </body>
 </html>
