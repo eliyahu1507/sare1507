@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SARE 1507 — Pega de Carteles</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --guinda:#6B1C3E;--guinda-o:#4A0E29;--guinda-d:#8B2252;
+  --dorado:#C8962A;--dorado-l:#E8B84B;
+  --verde:#1A7A3A;--verde-l:#E8F5E9;--verde-d:#145a2a;
+  --azul:#1565C0;--azul-l:#E3F2FD;
+  --naranja:#E65100;--naranja-l:#FFF3E0;
+  --morado:#6A1B9A;--morado-l:#F3E5F5;
+  --gris-bg:#F5F2F3;--gris:#EDE8EA;--gris-d:#D5CFD1;
+  --blanco:#FFF;--texto:#1A0A10;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--texto);min-height:100vh}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--guinda-o) 0%,var(--guinda) 60%,var(--guinda-d) 100%);
+  color:var(--blanco);padding:18px 18px 16px;position:relative;overflow:hidden;flex-shrink:0}
+.hero::after{content:'';position:absolute;right:-30px;top:-30px;width:160px;height:160px;
+  background:radial-gradient(circle,rgba(200,150,42,.2) 0%,transparent 70%);pointer-events:none}
+.hero-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hero-brand{font-size:.62rem;opacity:.7;letter-spacing:.3px}
+.hero-brand strong{display:block;font-size:.85rem;color:var(--dorado-l);font-weight:800;margin-top:2px}
+.hero-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  border-radius:7px;padding:5px 10px;font-size:.65rem;font-weight:700;
+  color:var(--dorado-l);text-align:right;white-space:nowrap;flex-shrink:0}
+.hero-title{margin-top:12px}
+.hero-title h1{font-family:'Montserrat',sans-serif;font-size:1.25rem;font-weight:900;
+  text-transform:uppercase;line-height:1.15}
+.hero-title h1 span{color:var(--dorado-l)}
+.hero-title p{font-size:.7rem;opacity:.65;margin-top:4px}
+
+/* LAYOUT */
+.content{flex:1;padding:16px 14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.card{background:var(--blanco);border-radius:13px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.card-title{font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--guinda);margin-bottom:11px}
+
+/* STATS */
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);background:var(--guinda-o);border-radius:11px;overflow:hidden}
+.stat-item{padding:10px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.1)}
+.stat-item:last-child{border-right:none}
+.stat-num{font-family:'Montserrat',sans-serif;font-size:1.5rem;font-weight:900;color:var(--dorado-l);line-height:1}
+.stat-lbl{font-size:.58rem;color:rgba(255,255,255,.6);margin-top:2px;text-transform:uppercase}
+
+/* PROGRESO */
+.progreso-bar{height:6px;background:var(--gris);border-radius:3px;overflow:hidden;margin-top:6px}
+.progreso-fill{height:100%;background:var(--verde);border-radius:3px;transition:width .3s}
+
+/* ZONA HEADER */
+.zona-header{
+  display:flex;align-items:center;gap:8px;margin-top:6px;
+  font-family:'Montserrat',sans-serif;font-size:.65rem;font-weight:900;
+  text-transform:uppercase;letter-spacing:.8px;padding:7px 10px;border-radius:8px;
+}
+.zona-CENTRO          {background:#E8F5E9;color:#1B5E20}
+.zona-GUADALUPE       {background:#E3F2FD;color:#0D47A1}
+.zona-CERRO           {background:#FFF3E0;color:#BF360C}
+.zona-ATZOLCO         {background:#FCE4EC;color:#880E4F}
+
+/* SEPARADOR DE PARADA */
+.sep-parada{
+  display:flex;align-items:center;gap:8px;
+  font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;
+  text-transform:uppercase;letter-spacing:.6px;color:var(--guinda);opacity:.5;
+  margin-top:2px;padding:0 2px;
+}
+.sep-parada::before,.sep-parada::after{content:'';flex:1;height:1px;background:var(--gris-d)}
+
+/* CCT ITEM */
+.cct-item{background:var(--blanco);border-radius:11px;padding:12px 13px;
+  border-left:5px solid var(--gris-d);box-shadow:0 1px 6px rgba(0,0,0,.05);
+  cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:10px}
+.cct-item:active{transform:scale(.98)}
+.cct-item.completado{border-left-color:var(--verde);background:#f6fdf7}
+.cct-item.en-curso  {border-left-color:var(--dorado);background:#fffbf0}
+.cct-item.pendiente {border-left-color:var(--gris-d)}
+.cct-num{width:30px;height:30px;border-radius:50%;background:var(--guinda);
+  color:var(--blanco);font-family:'Montserrat',sans-serif;font-weight:900;
+  font-size:.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cct-item.completado .cct-num{background:var(--verde)}
+.cct-item.en-curso   .cct-num{background:var(--dorado);color:var(--guinda-o)}
+.cct-info{flex:1;min-width:0}
+.cct-nombre{font-weight:700;font-size:.8rem;line-height:1.3}
+.cct-codigo{font-size:.63rem;color:#aaa;margin-top:1px;font-family:'Montserrat',sans-serif}
+.cct-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
+.badge{display:inline-block;border-radius:4px;padding:1px 6px;font-size:.6rem;font-weight:700}
+.badge-virtual   {background:var(--azul-l);color:var(--azul)}
+.badge-presencial{background:var(--naranja-l);color:var(--naranja)}
+.badge-compartido{background:var(--morado-l);color:var(--morado)}
+.badge-video     {background:#FFF3E0;color:#E65100}
+.cct-fotos{text-align:right;font-size:.68rem;font-weight:700;white-space:nowrap;color:#ccc;flex-shrink:0}
+.cct-fotos.ok    {color:var(--verde)}
+.cct-fotos.parcial{color:var(--dorado)}
+
+/* DETALLE */
+.detalle-header{background:linear-gradient(135deg,var(--guinda-o),var(--guinda-d));
+  color:var(--blanco);padding:16px 14px;flex-shrink:0}
+.detalle-header h2{font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900;line-height:1.3;margin-bottom:3px}
+.detalle-cct{font-size:.7rem;opacity:.7;margin-bottom:8px}
+.detalle-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.detalle-ubicacion{background:rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;
+  font-size:.7rem;line-height:1.5;opacity:.85}
+.back-btn{background:none;border:none;color:rgba(255,255,255,.75);font-size:.8rem;
+  cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;margin-bottom:10px;
+  font-family:'Open Sans',sans-serif}
+.back-btn:active{opacity:.6}
+
+/* FOTOS */
+.fotos-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.foto-slot{border-radius:10px;overflow:hidden;position:relative;background:var(--gris-bg);
+  border:2px dashed var(--gris-d);aspect-ratio:4/3;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;cursor:pointer}
+.foto-slot.tomada{border:2px solid var(--verde)}
+.foto-slot:active{opacity:.8}
+.foto-slot input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.foto-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.foto-placeholder{text-align:center;pointer-events:none;padding:8px}
+.foto-placeholder .icono{font-size:1.6rem;margin-bottom:4px}
+.foto-placeholder .lbl{font-size:.6rem;font-weight:700;color:#aaa;font-family:'Montserrat',sans-serif;
+  text-transform:uppercase;line-height:1.3}
+.foto-check{position:absolute;top:5px;right:5px;width:22px;height:22px;background:var(--verde);
+  border-radius:50%;display:none;align-items:center;justify-content:center;
+  color:#fff;font-size:.75rem;font-weight:900;z-index:2}
+.foto-slot.tomada .foto-check{display:flex}
+
+/* VIDEO */
+.video-slot{border-radius:10px;background:#111;border:2px dashed var(--gris-d);
+  padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;
+  position:relative;transition:border-color .2s}
+.video-slot.tomado{border:2px solid #FF6D00}
+.video-slot input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.video-icono{font-size:2rem}
+.video-info{flex:1}
+.video-info .lbl{font-size:.72rem;font-weight:700;color:#fff;font-family:'Montserrat',sans-serif}
+.video-info .sub{font-size:.62rem;color:rgba(255,255,255,.5);margin-top:2px}
+.video-check{color:#FF6D00;font-size:.75rem;font-weight:900;white-space:nowrap}
+
+/* BOTONES */
+.btn{width:100%;padding:14px;border:none;border-radius:11px;
+  font-family:'Montserrat',sans-serif;font-weight:800;font-size:.95rem;
+  cursor:pointer;transition:all .18s;letter-spacing:.3px;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary {background:var(--guinda);color:var(--blanco)}
+.btn-primary:active{background:var(--guinda-o);transform:scale(.98)}
+.btn-success {background:var(--verde);color:var(--blanco)}
+.btn-success:active{background:var(--verde-d);transform:scale(.98)}
+.btn-secondary{background:var(--gris);color:var(--texto)}
+.btn-secondary:active{opacity:.8;transform:scale(.98)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+
+/* EXPORTACIÓN */
+.export-cct-row{
+  display:flex;align-items:center;gap:10px;padding:9px 0;
+  border-bottom:1px solid var(--gris)
+}
+.export-cct-info{flex:1;min-width:0}
+.export-cct-nombre{font-size:.78rem;font-weight:700;line-height:1.25}
+.export-cct-codigo{font-size:.63rem;color:#aaa;font-family:'Montserrat',sans-serif;margin-top:1px}
+.export-cct-fotos{font-size:.68rem;color:#888;margin-top:2px}
+.btn-dl{
+  background:var(--guinda);color:var(--blanco);border:none;border-radius:8px;
+  padding:7px 11px;font-family:'Montserrat',sans-serif;font-weight:800;
+  font-size:.68rem;cursor:pointer;white-space:nowrap;flex-shrink:0
+}
+.btn-dl:active{background:var(--guinda-o);transform:scale(.97)}
+.btn-dl:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn-dl.ok{background:var(--verde)}
+.onedrive-box{
+  background:var(--blanco);border-radius:12px;padding:14px;
+  box-shadow:0 2px 10px rgba(0,0,0,.06)
+}
+.onedrive-input{
+  width:100%;border:1.5px solid var(--gris-d);border-radius:9px;padding:10px 12px;
+  font-family:'Open Sans',sans-serif;font-size:.8rem;color:var(--texto);
+  margin-top:8px;margin-bottom:10px;outline:none
+}
+.onedrive-input:focus{border-color:var(--azul)}
+
+footer{background:var(--guinda-o);color:rgba(255,255,255,.55);font-size:.62rem;
+  text-align:center;padding:9px;letter-spacing:.3px;flex-shrink:0}
+footer strong{color:var(--dorado-l)}
+</style>
+</head>
+<body>
+
+<!-- PANTALLA 1: LISTA -->
+<div class="screen active" id="screen-lista">
+  <div class="hero">
+    <div class="hero-row">
+      <div class="hero-brand">SARE 1507 · BECAS BIENESTAR<strong>Pega de Carteles</strong></div>
+      <div class="hero-badge" id="lbl-fecha">—</div>
+    </div>
+    <div class="hero-title">
+      <h1>RUTA DE <span>CARTELES</span></h1>
+      <p>Educación Básica — Ecatepec Centro · Lunes 6 Oct 2026</p>
+    </div>
+  </div>
+  <div class="content">
+    <div class="stats-bar">
+      <div class="stat-item"><div class="stat-num">21</div><div class="stat-lbl">CCTs</div></div>
+      <div class="stat-item"><div class="stat-num" id="cnt-listos" style="color:#6FCF97">0</div><div class="stat-lbl">Listos</div></div>
+      <div class="stat-item"><div class="stat-num" id="cnt-fotos">0</div><div class="stat-lbl">Fotos</div></div>
+      <div class="stat-item"><div class="stat-num" id="cnt-videos" style="color:#FF6D00">0/5</div><div class="stat-lbl">Videos</div></div>
+    </div>
+    <div class="card" style="padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:.72rem;font-weight:700;color:var(--guinda)">AVANCE GENERAL</span>
+        <span style="font-size:.72rem;color:#888" id="lbl-pct">0 de 21 CCTs</span>
+      </div>
+      <div class="progreso-bar"><div class="progreso-fill" id="barra-prog" style="width:0%"></div></div>
+    </div>
+    <div id="lista-ccts"></div>
+    <button class="btn btn-primary" onclick="mostrarResumen()">📊 Ver resumen del día</button>
+    <button class="btn" style="background:var(--azul);color:#fff" onclick="abrirExportar()">📤 Exportar fotos a OneDrive</button>
+  </div>
+  <footer>✏️ <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
+</div>
+
+<!-- PANTALLA 2: DETALLE -->
+<div class="screen" id="screen-detalle">
+  <div class="detalle-header">
+    <button class="back-btn" onclick="volverLista()">← Volver a la ruta</button>
+    <h2 id="det-nombre">—</h2>
+    <div class="detalle-cct" id="det-cct">—</div>
+    <div class="detalle-badges" id="det-badges"></div>
+    <div class="detalle-ubicacion" id="det-ubicacion"></div>
+  </div>
+  <div class="content" id="detalle-content"></div>
+</div>
+
+<!-- PANTALLA 4: EXPORTAR A ONEDRIVE -->
+<div class="screen" id="screen-exportar">
+  <div class="hero">
+    <div class="hero-row">
+      <div class="hero-brand">SARE 1507<strong>Exportar fotos</strong></div>
+      <button class="back-btn" style="margin-bottom:0;margin-top:2px" onclick="mostrarPantalla('screen-lista')">← Ruta</button>
+    </div>
+    <div class="hero-title">
+      <h1>📤 SUBIR A <span>OneDrive</span></h1>
+      <p>Carpeta: JOSE ELIAS CERVANTES JIMENEZ / [CCT]</p>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- ENLACE ONEDRIVE -->
+    <div class="onedrive-box">
+      <div class="card-title" style="margin-bottom:6px">🔗 Enlace de OneDrive (del jefe)</div>
+      <p style="font-size:.72rem;color:#888;line-height:1.5;margin-bottom:6px">
+        Cuando el jefe comparta el enlace, pégalo aquí para abrirlo directo.
+      </p>
+      <input class="onedrive-input" type="url" id="onedrive-url"
+        placeholder="https://1drv.ms/... o enlace compartido"
+        oninput="guardarUrlOD(this.value)">
+      <button class="btn btn-primary" id="btn-abrir-od" onclick="abrirOneDrive()" style="margin-top:0">
+        ☁️ Abrir OneDrive
+      </button>
+    </div>
+
+    <!-- INSTRUCCIONES -->
+    <div class="card" style="padding:13px 14px">
+      <div class="card-title">📋 Cómo subir las fotos</div>
+      <ol style="font-size:.73rem;line-height:1.8;color:#555;padding-left:16px">
+        <li>Descarga cada carpeta-CCT con el botón <strong style="color:var(--guinda)">⬇ Descargar</strong></li>
+        <li>Abre el enlace de OneDrive → crea tu carpeta <strong>JOSE ELIAS CERVANTES JIMENEZ</strong></li>
+        <li>Dentro crea una subcarpeta por cada CCT (el nombre ya viene en el ZIP)</li>
+        <li>Sube las fotos descargadas a cada subcarpeta correspondiente</li>
+      </ol>
+    </div>
+
+    <!-- LISTA DE CCTs CON FOTOS -->
+    <div class="card" style="padding:13px 14px">
+      <div class="card-title" id="export-titulo">Fotos por CCT</div>
+      <div id="export-lista"></div>
+    </div>
+
+    <!-- DESCARGA TODO -->
+    <button class="btn btn-success" id="btn-dl-todo" onclick="descargarTodo()">
+      ⬇ Descargar todas las fotos (ZIP)
+    </button>
+    <button class="btn btn-secondary" onclick="mostrarPantalla('screen-lista')">← Volver a la ruta</button>
+  </div>
+  <footer>✏️ <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
+</div>
+
+<!-- PANTALLA 3: RESUMEN -->
+<div class="screen" id="screen-resumen">
+  <div class="hero">
+    <div class="hero-row"><div class="hero-brand">SARE 1507<strong>Resumen del día</strong></div></div>
+    <div class="hero-title"><h1>📋 RESUMEN <span>CARTELEO</span></h1><p>Avance al cierre de la jornada</p></div>
+  </div>
+  <div class="content">
+    <div class="stats-bar">
+      <div class="stat-item"><div class="stat-num" id="res-listos">0</div><div class="stat-lbl">Listos</div></div>
+      <div class="stat-item"><div class="stat-num" id="res-fotos">0</div><div class="stat-lbl">Fotos</div></div>
+      <div class="stat-item"><div class="stat-num" id="res-videos" style="color:#FF6D00">0</div><div class="stat-lbl">Videos</div></div>
+      <div class="stat-item"><div class="stat-num" id="res-pct" style="color:#6FCF97">0%</div><div class="stat-lbl">Avance</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📍 Estado por CCT</div>
+      <div id="res-lista" style="display:flex;flex-direction:column;gap:5px"></div>
+    </div>
+    <button class="btn btn-primary" onclick="mostrarPantalla('screen-lista')">← Volver a la ruta</button>
+  </div>
+  <footer>✏️ <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════
+// DATOS — exactamente del Excel, nombres sin modificar
+// compartido:true = mismo inmueble físico (misma dirección)
+// compartido:false = inmueble independiente (aunque misma zona/parada)
+// ═══════════════════════════════════════════════════════
+const CCT_DATA = [
+  // ── ZONA: CENTRO ──────────────────────────────────────
+  {
+    id:1, parada:1, zona:'CENTRO',
+    cct:'15DES0236E', nombre:'Sec. Federalizada No. 113 David Alfaro Siqueiros',
+    tipo:'VIRTUAL', compartido:false,
+    ubicacion:'San Cristobal Centro, Av. Hidalgo, Atrás de Preparatoria Anexa a la Normal de Ecatepec'
+  },
+  {
+    id:2, parada:2, zona:'CENTRO',
+    cct:'15EPR4613X', nombre:'Ricardo Flores Magon',
+    tipo:'VIRTUAL', compartido:false,
+    ubicacion:'San Cristobal Centro, cerca de la escuela David Alfaro Siqueiros'
+  },
+  {
+    id:3, parada:3, zona:'CENTRO',
+    cct:'15EES1424D', nombre:'Ofic No 0935 Camarada Profesor Misael Nuñez Acosta',
+    tipo:'VIRTUAL', compartido:false,
+    ubicacion:'San Cristobal Centro, circuito Zapata Vive, u. habitacional Sergio Mendez, a 3 cuadras de la Preparatoria anexa a la normal de Ecatepec'
+  },
+  {
+    id:4, parada:4, zona:'CENTRO',
+    cct:'15EPR0153B', nombre:'Primaria Oficial Emiliano Zapata',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15EPR0154Z',
+    ubicacion:'San Cristobal Centro, Av. Revolución, cerca de la estación del Mexibus El Carmen'
+  },
+  {
+    id:5, parada:4, zona:'CENTRO',
+    cct:'15EPR0154Z', nombre:'Primaria Oficial Emiliano Zapata',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15EPR0153B',
+    ubicacion:'San Cristobal Centro, Av. Revolución, cerca de la estación del Mexibus El Carmen'
+  },
+  {
+    id:6, parada:5, zona:'CENTRO',
+    cct:'15EES0208H', nombre:'Generalisimo Jose Maria Morelos Y Pavon',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15EES0618K',
+    ubicacion:'San Cristobal Centro, Av. Revolución, cerca de la estación del Mexibus El Carmen'
+  },
+  {
+    id:7, parada:5, zona:'CENTRO',
+    cct:'15EES0618K', nombre:'Generalisimo Jose Maria Morelos Y Pavon',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15EES0208H',
+    ubicacion:'San Cristobal Centro, Av. Revolución, cerca de la estación del Mexibus El Carmen'
+  },
+  {
+    id:8, parada:9, zona:'CENTRO',
+    cct:'15EES1283V', nombre:'Ofic No 0852 Ehecatl',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15EES1320I',
+    ubicacion:'San Cristobal Centro, Tierra Blanca, calle Valparaiso y esmeralda a 2 calles del CBETIS 29'
+  },
+  {
+    id:9, parada:9, zona:'CENTRO',
+    cct:'15EES1320I', nombre:'Ofic No 0852 Ehecatl',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15EES1283V',
+    ubicacion:'San Cristobal Centro, Tierra Blanca, calle Valparaiso y esmeralda a 2 calles del CBETIS 29'
+  },
+  {
+    id:10, parada:10, zona:'CENTRO',
+    cct:'15EPR0162J', nombre:'Primaria José María Morelos y Pavón',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15EPR1805S',
+    ubicacion:'San Cristobal Centro, Av. Vicente Villada y Emiliano Zapata, cerca de la secundaria Ignacio Ramirez'
+  },
+  {
+    id:11, parada:10, zona:'CENTRO',
+    cct:'15EPR1805S', nombre:'Primaria José María Morelos y Pavón',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15EPR0162J',
+    ubicacion:'San Cristobal Centro, Av. Vicente Villada y Emiliano Zapata, cerca de la secundaria Ignacio Ramirez'
+  },
+  {
+    id:12, parada:11, zona:'CENTRO',
+    cct:'15DST0062X', nombre:'Sec. Técnica No. 54 Ignacio Ramírez',
+    tipo:'PRESENCIAL', compartido:false,
+    ubicacion:'San Cristobal Centro, Av. Vicente Villada y Emiliano Zapata'
+  },
+  // ── ZONA: GUADALUPE VICTORIA ──────────────────────────
+  {
+    id:13, parada:6, zona:'GUADALUPE VICTORIA',
+    cct:'15DPR0919O', nombre:'JOSEFA ORTIZ DE DOMINGUEZ',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15DPR1066O',
+    ubicacion:'calle Venustiano Carranza, estación del Mexibus Venustiano Carranza, rumbo al Conalep Ecatepec 3'
+  },
+  {
+    id:14, parada:6, zona:'GUADALUPE VICTORIA',
+    cct:'15DPR1066O', nombre:'MARGARITA MAZA DE JUAREZ',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15DPR0919O',
+    ubicacion:'calle Venustiano Carranza, estación del Mexibus Venustiano Carranza, rumbo al Conalep Ecatepec 3'
+  },
+  {
+    id:15, parada:7, zona:'GUADALUPE VICTORIA',
+    cct:'15DPR1389W', nombre:'GRAL. GUADALUPE VICTORIA',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15DPR1849Q',
+    ubicacion:'Av Morelos y cerrada del Arbol, estación del Mexibus Venustiano Carranza, rumbo al Conalep Ecatepec 3 en Guadalupe Victoria'
+  },
+  {
+    id:16, parada:7, zona:'GUADALUPE VICTORIA',
+    cct:'15DPR1849Q', nombre:'MANUEL M. PONCE',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15DPR1389W',
+    ubicacion:'Av Morelos y cerrada del Arbol, estación del Mexibus Venustiano Carranza, rumbo al Conalep Ecatepec 3 en Guadalupe Victoria'
+  },
+  {
+    id:17, parada:8, zona:'GUADALUPE VICTORIA',
+    cct:'15DST0065U', nombre:'GRAL. PORFIRIO DIAZ',
+    tipo:'PRESENCIAL', compartido:false,
+    ubicacion:'Av Morelos, estación del Mexibus Venustiano Carranza, rumbo al Conalep Ecatepec 3 en Guadalupe Victoria'
+  },
+  // ── ZONA: COLINAS DE ECATEPEC (CERRO) ────────────────
+  // Frida Kahlo y Juventino Rosas: distinta dirección → inmuebles independientes
+  {
+    id:18, parada:12, zona:'CERRO',
+    cct:'15EES1445Q', nombre:'Ofic No 0962 Frida Kahlo',
+    tipo:'VIRTUAL', compartido:false,
+    ubicacion:'av. Cerro del viento, Colinas de Ecatepec, (cerro)'
+  },
+  {
+    id:19, parada:12, zona:'CERRO',
+    cct:'15EPR4806L', nombre:'Juventino Rosas',
+    tipo:'VIRTUAL', compartido:false,
+    ubicacion:'Circuito Colinjas, calle crisantemos, Colinas de Ecatepec, (cerro)'
+  },
+  // ── ZONA: ATZOLCO (CERRO) ─────────────────────────────
+  {
+    id:20, parada:13, zona:'ATZOLCO',
+    cct:'15EPR1954Z', nombre:'Escuela primaria Americas',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15EPR4305R',
+    ubicacion:'calle 5 de mayo y Miguel Hidalgo, Atzolco (cerro)'
+  },
+  {
+    id:21, parada:13, zona:'ATZOLCO',
+    cct:'15EPR4305R', nombre:'Escuela primaria Americas',
+    tipo:'VIRTUAL', compartido:true,
+    compañero:'15EPR1954Z',
+    ubicacion:'calle 5 de mayo y Miguel Hidalgo, Atzolco (cerro)'
+  },
+];
+
+// Zonas en orden de recorrido
+const ZONAS = [
+  { key:'CENTRO',      label:'📍 Centro',                  css:'zona-CENTRO'    },
+  { key:'GUADALUPE VICTORIA', label:'📍 Guadalupe Victoria', css:'zona-GUADALUPE' },
+  { key:'CERRO',       label:'📍 Colinas de Ecatepec (Cerro)', css:'zona-CERRO'  },
+  { key:'ATZOLCO',     label:'📍 Atzolco (Cerro)',           css:'zona-ATZOLCO'  },
+];
+
+// Fotos requeridas según tipo
+function fotosReq(c){ return c.tipo==='PRESENCIAL' ? 4 : 3; }
+
+// ESTADO
+let estado = {};
+CCT_DATA.forEach(c => { estado[c.id] = { fotos: Array(fotosReq(c)).fill(null), video:false }; });
+
+// ── UTILIDADES ──
+function mostrarPantalla(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function fotosTomadas(id){ return estado[id].fotos.filter(f=>f!==null).length; }
+function fotosOk(id){ return fotosTomadas(id) >= fotosReq(CCT_DATA.find(c=>c.id===id)); }
+function totalFotos(){ return CCT_DATA.reduce((s,c)=>s+fotosTomadas(c.id),0); }
+function totalVideos(){ return CCT_DATA.filter(c=>estado[c.id].video).length; }
+function totalListos(){ return CCT_DATA.filter(c=>fotosOk(c.id)).length; }
+
+// Paradas dentro de cada zona
+function paradasDeZona(zonaKey){
+  const ccts = CCT_DATA.filter(c=>c.zona===zonaKey);
+  return [...new Set(ccts.map(c=>c.parada))];
+}
+
+// ── RENDER LISTA ──
+function renderLista(){
+  const cont = document.getElementById('lista-ccts');
+  cont.innerHTML = '';
+
+  ZONAS.forEach(zona => {
+    const paradas = paradasDeZona(zona.key);
+    if(!paradas.length) return;
+
+    // Header de zona
+    const zh = document.createElement('div');
+    zh.className = 'zona-header '+zona.css;
+    zh.innerHTML = `<strong>${zona.label}</strong>`;
+    cont.appendChild(zh);
+
+    paradas.forEach(p => {
+      const ccts_p = CCT_DATA.filter(c=>c.parada===p && c.zona===zona.key);
+      const hayCompartido = ccts_p.some(c=>c.compartido);
+
+      // Separador de parada si hay >1 CCT en ella
+      if(ccts_p.length > 1){
+        const sep = document.createElement('div');
+        sep.className = 'sep-parada';
+        sep.textContent = hayCompartido
+          ? `Parada ${p} · ${ccts_p.length} CCTs · mismo inmueble`
+          : `Parada ${p} · ${ccts_p.length} CCTs · inmuebles distintos`;
+        cont.appendChild(sep);
+      }
+
+      ccts_p.forEach(c => {
+        const tomadas = fotosTomadas(c.id);
+        const req     = fotosReq(c);
+        const ok      = fotosOk(c.id);
+        const parcial = tomadas>0 && !ok;
+        const vid     = estado[c.id].video;
+
+        const div = document.createElement('div');
+        div.className = 'cct-item '+(ok?'completado':parcial?'en-curso':'pendiente');
+        div.onclick = ()=>abrirDetalle(c.id);
+        const fc = ok?'ok':parcial?'parcial':'';
+        div.innerHTML = `
+          <div class="cct-num">${ok?'✓':c.id}</div>
+          <div class="cct-info">
+            <div class="cct-nombre">${c.nombre}</div>
+            <div class="cct-codigo">${c.cct}</div>
+            <div class="cct-badges">
+              <span class="badge badge-${c.tipo.toLowerCase()}">${c.tipo}</span>
+              ${c.compartido ? '<span class="badge badge-compartido">Mismo inmueble</span>' : ''}
+              ${vid ? '<span class="badge badge-video">🎬 Video</span>' : ''}
+            </div>
+          </div>
+          <div class="cct-fotos ${fc}">${tomadas}/${req} 📷</div>`;
+        cont.appendChild(div);
+      });
+    });
+  });
+
+  // Stats
+  const listos = totalListos();
+  document.getElementById('cnt-listos').textContent = listos;
+  document.getElementById('cnt-fotos').textContent  = totalFotos();
+  document.getElementById('cnt-videos').textContent = totalVideos()+'/5';
+  document.getElementById('lbl-pct').textContent    = listos+' de '+CCT_DATA.length+' CCTs';
+  document.getElementById('barra-prog').style.width = Math.round(listos/CCT_DATA.length*100)+'%';
+}
+
+// ── DETALLE ──
+function abrirDetalle(id){
+  const c  = CCT_DATA.find(x=>x.id===id);
+  const st = estado[id];
+  const req= fotosReq(c);
+
+  document.getElementById('det-nombre').textContent = c.nombre;
+  document.getElementById('det-cct').textContent    = c.cct+' · Parada '+c.parada+' · '+c.zona;
+  document.getElementById('det-ubicacion').textContent = '📍 '+c.ubicacion;
+
+  document.getElementById('det-badges').innerHTML = `
+    <span class="badge badge-${c.tipo.toLowerCase()}" style="font-size:.65rem;padding:2px 8px">${c.tipo}</span>
+    <span class="badge" style="background:rgba(255,255,255,.15);color:#fff;font-size:.65rem;padding:2px 8px">${req} fotos req.</span>
+    ${c.compartido?'<span class="badge badge-compartido" style="background:rgba(255,255,255,.15);color:#fff;font-size:.65rem;padding:2px 8px">Mismo inmueble</span>':''}
+  `;
+
+  // Nota si comparte inmueble
+  let notaComp = '';
+  if(c.compartido){
+    notaComp = `
+      <div style="background:var(--morado-l);border:1.5px solid #CE93D8;border-radius:9px;
+        padding:10px 12px;font-size:.73rem;color:var(--morado);line-height:1.5">
+        <strong>⚠️ Mismo inmueble — fotos INDEPENDIENTES</strong><br>
+        Comparte inmueble con otro CCT (<code style="font-size:.7rem">${c.compañero}</code>).<br>
+        <span style="opacity:.75;font-size:.68rem">Toma ${req} fotos y/o video exclusivos para este CCT. El otro CCT tiene su propio registro.</span>
+      </div>`;
+  }
+
+  const LABELS = [
+    '📸 Cartel en puerta',
+    '🏫 Cartel + fachada',
+    '🙋 Servidor educativo + cartel',
+    '🤝 Directivo + servidor + cartel'
+  ];
+
+  let fotosHtml = '<div class="fotos-grid">';
+  for(let i=0;i<req;i++){
+    const ok = st.fotos[i]!==null;
+    fotosHtml += `
+      <div class="foto-slot ${ok?'tomada':''}" id="slot-${id}-${i}">
+        <input type="file" accept="image/*" capture="environment" onchange="tomarFoto(${id},${i},this)">
+        ${ok
+          ? `<img src="${st.fotos[i]}" id="img-${id}-${i}">`
+          : `<div class="foto-placeholder"><div class="icono">📷</div><div class="lbl">${LABELS[i]}</div></div>`}
+        <div class="foto-check">✓</div>
+      </div>`;
+  }
+  fotosHtml += '</div>';
+
+  const vid = estado[id].video;
+  const videosUsados = totalVideos() - (vid?1:0);
+  const puedeVideo = vid || videosUsados < 5;
+  const videoHtml = `
+    <div class="video-slot ${vid?'tomado':''}" id="video-slot-${id}"
+      ${!puedeVideo?'style="opacity:.4;pointer-events:none"':''}>
+      <input type="file" accept="video/*" capture="environment" onchange="tomarVideo(${id},this)">
+      <div class="video-icono">🎬</div>
+      <div class="video-info">
+        <div class="lbl">${!puedeVideo?'Video (límite de 5 alcanzado)':'Video del cartel'}</div>
+        <div class="sub">15 seg · alejarse de la puerta · Opcional — ${5-videosUsados-(vid?0:0)} disponibles</div>
+      </div>
+      <div class="video-check">${vid?'✅ Grabado':''}</div>
+    </div>`;
+
+  document.getElementById('detalle-content').innerHTML = `
+    ${notaComp}
+    <div class="card">
+      <div class="card-title">📷 Fotos requeridas · ${c.tipo} (${req})</div>
+      ${fotosHtml}
+    </div>
+    <div class="card" style="background:#111;border-radius:13px;padding:14px">
+      <div class="card-title" style="color:var(--dorado-l);margin-bottom:10px">🎬 Video (opcional · máx 5 en total)</div>
+      ${videoHtml}
+    </div>
+    <button class="btn btn-success" id="btn-listo" onclick="marcarListo(${id})"
+      ${fotosOk(id)?'':'disabled'}>
+      ✅ CCT listo — siguiente
+    </button>
+    <button class="btn btn-secondary" onclick="volverLista()">← Volver a la ruta</button>
+  `;
+
+  mostrarPantalla('screen-detalle');
+}
+
+// ── TOMAR FOTO ──
+function tomarFoto(id, idx, input){
+  if(!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    estado[id].fotos[idx] = e.target.result;
+    guardarEstado();
+    const slot = document.getElementById(`slot-${id}-${idx}`);
+    if(slot){
+      slot.classList.add('tomada');
+      let img = document.getElementById(`img-${id}-${idx}`);
+      if(!img){ img=document.createElement('img'); img.id=`img-${id}-${idx}`; slot.appendChild(img); }
+      img.src = e.target.result;
+      const ph=slot.querySelector('.foto-placeholder');
+      if(ph) ph.style.display='none';
+    }
+    const btn=document.getElementById('btn-listo');
+    if(btn) btn.disabled=!fotosOk(id);
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+// ── TOMAR VIDEO ──
+function tomarVideo(id, input){
+  if(!input.files[0]) return;
+  const file = input.files[0];
+  // Guardar el video como dataURL para persistencia y exportación
+  const reader = new FileReader();
+  reader.onload = e => {
+    estado[id].video    = true;
+    estado[id].videoUrl = e.target.result;
+    guardarEstado();
+    const slot=document.getElementById(`video-slot-${id}`);
+    if(slot){
+      slot.classList.add('tomado');
+      const ch=slot.querySelector('.video-check');
+      if(ch) ch.textContent='✅ Grabado';
+      const sub=slot.querySelector('.sub');
+      if(sub) sub.textContent='Video guardado · '+Math.round(file.size/1024)+'KB';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── MARCAR LISTO ──
+function marcarListo(id){
+  if(!fotosOk(id)) return;
+  const sig = CCT_DATA.find(x=>x.id>id && !fotosOk(x.id));
+  volverLista();
+  if(sig) setTimeout(()=>abrirDetalle(sig.id),160);
+}
+
+function volverLista(){ renderLista(); mostrarPantalla('screen-lista'); }
+
+// ── RESUMEN ──
+function mostrarResumen(){
+  const listos=totalListos();
+  document.getElementById('res-listos').textContent=listos;
+  document.getElementById('res-fotos').textContent =totalFotos();
+  document.getElementById('res-videos').textContent=totalVideos();
+  document.getElementById('res-pct').textContent   =Math.round(listos/CCT_DATA.length*100)+'%';
+
+  document.getElementById('res-lista').innerHTML = CCT_DATA.map(c=>{
+    const ok=fotosOk(c.id), tom=fotosTomadas(c.id), req=fotosReq(c), vid=estado[c.id].video;
+    const col=ok?'var(--verde)':tom>0?'var(--dorado)':'#ccc';
+    return `
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--gris)">
+        <div style="width:24px;height:24px;border-radius:50%;background:${col};flex-shrink:0;
+          display:flex;align-items:center;justify-content:center;color:#fff;font-size:.68rem;font-weight:900">
+          ${ok?'✓':c.id}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.75rem;font-weight:700;line-height:1.25">${c.nombre}</div>
+          <div style="font-size:.62rem;color:#888">${c.cct} · ${c.tipo} · ${tom}/${req}📷${vid?' · 🎬':''}</div>
+        </div>
+        <div style="font-size:.85rem">${ok?'✅':tom>0?'⏳':'⬜'}</div>
+      </div>`;
+  }).join('');
+
+  mostrarPantalla('screen-resumen');
+}
+
+// ── PERSISTENCIA COMPLETA (fotos + video) ──
+// v4: guarda las dataURLs reales para que las fotos no se pierdan al salir
+const LS='sare1507_carteles_v4_oct2026';
+
+function guardarEstado(){
+  try{
+    const data={};
+    CCT_DATA.forEach(c=>{
+      data[c.id]={
+        fotos: estado[c.id].fotos,          // array de dataURL|null
+        video: estado[c.id].video,           // bool
+        videoUrl: estado[c.id].videoUrl||null // dataURL del video
+      };
+    });
+    localStorage.setItem(LS, JSON.stringify(data));
+  }catch(e){
+    // Si el localStorage se llena (límite ~5MB) avisa una sola vez
+    if(!window._lsWarn){
+      window._lsWarn=true;
+      console.warn('localStorage lleno; algunas fotos pueden no persistir.',e);
+    }
+  }
+}
+
+function cargarEstado(){
+  try{
+    const raw=localStorage.getItem(LS); if(!raw) return;
+    const data=JSON.parse(raw);
+    CCT_DATA.forEach(c=>{
+      if(!data[c.id]) return;
+      // Restaurar fotos (array ya tiene la longitud correcta)
+      const savedFotos = data[c.id].fotos || [];
+      savedFotos.forEach((f,i)=>{ if(f && i < estado[c.id].fotos.length) estado[c.id].fotos[i]=f; });
+      estado[c.id].video    = data[c.id].video    || false;
+      estado[c.id].videoUrl = data[c.id].videoUrl || null;
+    });
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORTAR A ONEDRIVE
+// Estructura ZIP:
+//   JOSE_ELIAS_CERVANTES_JIMENEZ/
+//     {CCT}/
+//       1-cartel_en_puerta.jpg
+//       2-cartel_y_fachada.jpg
+//       3-servidor_educativo_y_cartel.jpg
+//       4-directivo_servidor_y_cartel.jpg  (solo PRESENCIAL)
+//       cartel_{CCT}.mp4  (si hay video)
+// ═══════════════════════════════════════════════════════
+const MI_NOMBRE = 'JOSE_ELIAS_CERVANTES_JIMENEZ';
+const LS_OD = 'sare1507_onedrive_url';
+
+// Nombres descriptivos por posición de foto (índice 0-3)
+const FOTO_NOMBRES = [
+  '1-cartel_en_puerta',
+  '2-cartel_y_fachada',
+  '3-servidor_educativo_y_cartel',
+  '4-directivo_servidor_y_cartel'
+];
+
+function guardarUrlOD(val){
+  try{ localStorage.setItem(LS_OD, val.trim()); }catch(e){}
+}
+
+function abrirOneDrive(){
+  const url = (document.getElementById('onedrive-url').value||'').trim()
+            || (localStorage.getItem(LS_OD)||'').trim();
+  if(!url){ alert('Primero pega el enlace de OneDrive que te compartió el jefe.'); return; }
+  window.open(url,'_blank','noopener');
+}
+
+// Convierte dataURL a Uint8Array para JSZip
+function dataURLtoUint8(dataUrl){
+  const base64 = dataUrl.split(',')[1];
+  const binary  = atob(base64);
+  const arr     = new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) arr[i]=binary.charCodeAt(i);
+  return arr;
+}
+
+// Detecta extensión desde dataURL (imagen o video)
+function extFromDataUrl(dataUrl){
+  const m = dataUrl.match(/^data:(image|video)\/(\w+);/);
+  if(!m) return 'bin';
+  const t = m[2].toLowerCase();
+  if(t==='jpeg') return 'jpg';
+  if(t==='quicktime') return 'mov';
+  return t;
+}
+
+// Agrega fotos y video de un CCT a una carpeta JSZip
+function agregarCCTaZip(dir, c){
+  const st = estado[c.id];
+  // Fotos con nombres descriptivos
+  st.fotos.forEach((f, i)=>{
+    if(!f) return;
+    const nombre = FOTO_NOMBRES[i] || `foto_${i+1}`;
+    dir.file(`${nombre}.${extFromDataUrl(f)}`, dataURLtoUint8(f));
+  });
+  // Video con nombre del CCT
+  if(st.video && st.videoUrl){
+    const ext = extFromDataUrl(st.videoUrl);
+    dir.file(`cartel_${c.cct}.${ext}`, dataURLtoUint8(st.videoUrl));
+  }
+}
+
+// Descarga las fotos+video de UN solo CCT como ZIP
+async function descargarFotosCCT(id){
+  const c  = CCT_DATA.find(x=>x.id===id);
+  const st = estado[id];
+  const hayFotos = st.fotos.some(f=>f!==null);
+  const hayVideo = st.video && st.videoUrl;
+  if(!hayFotos && !hayVideo){ alert('Aún no hay fotos ni video para '+c.nombre); return; }
+
+  const zip = new JSZip();
+  const dir = zip.folder(MI_NOMBRE).folder(c.cct);
+  agregarCCTaZip(dir, c);
+
+  const blob = await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+  const link = document.createElement('a');
+  link.href  = URL.createObjectURL(blob);
+  link.download = `${c.cct}.zip`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+
+  const btn = document.getElementById('btn-dl-'+id);
+  if(btn){ btn.textContent='✓ Descargado'; btn.classList.add('ok'); }
+}
+
+// Descarga TODAS las fotos+videos en un solo ZIP con subcarpetas por CCT
+async function descargarTodo(){
+  const conEvidencia = CCT_DATA.filter(c=>
+    fotosTomadas(c.id)>0 || (estado[c.id].video && estado[c.id].videoUrl)
+  );
+  if(!conEvidencia.length){ alert('Aún no hay fotos ni videos registrados.'); return; }
+
+  const btn = document.getElementById('btn-dl-todo');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generando ZIP…';
+
+  try{
+    const zip  = new JSZip();
+    const raiz = zip.folder(MI_NOMBRE);
+
+    conEvidencia.forEach(c=>{
+      agregarCCTaZip(raiz.folder(c.cct), c);
+    });
+
+    const blob = await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+    const link = document.createElement('a');
+    link.href  = URL.createObjectURL(blob);
+    link.download = `${MI_NOMBRE}_evidencias.zip`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    btn.textContent = '✓ Descargado correctamente';
+    btn.style.background = 'var(--verde)';
+  }catch(err){
+    btn.disabled = false;
+    btn.textContent = '⬇ Descargar todas las fotos (ZIP)';
+    alert('Error al generar el ZIP: '+err.message);
+  }
+}
+
+// Render lista de CCTs en pantalla exportar
+function renderExportLista(){
+  const cont  = document.getElementById('export-lista');
+  const titulo= document.getElementById('export-titulo');
+  const conEvidencia = CCT_DATA.filter(c=>
+    fotosTomadas(c.id)>0 || (estado[c.id].video && estado[c.id].videoUrl)
+  );
+  const totalF   = conEvidencia.reduce((s,c)=>s+fotosTomadas(c.id),0);
+  const totalVid = conEvidencia.filter(c=>estado[c.id].video && estado[c.id].videoUrl).length;
+
+  titulo.textContent = conEvidencia.length
+    ? `Evidencias · ${conEvidencia.length} CCTs · ${totalF} fotos · ${totalVid} videos`
+    : 'Fotos por CCT';
+
+  if(!conEvidencia.length){
+    cont.innerHTML='<p style="font-size:.75rem;color:#aaa;text-align:center;padding:12px 0">Aún no hay fotos ni videos registrados.<br>Regresa a la ruta y toma las fotos primero.</p>';
+    document.getElementById('btn-dl-todo').disabled = true;
+    return;
+  }
+
+  document.getElementById('btn-dl-todo').disabled = false;
+
+  cont.innerHTML = conEvidencia.map(c=>{
+    const tom = fotosTomadas(c.id);
+    const req = fotosReq(c);
+    const ok  = fotosOk(c.id);
+    const vid = estado[c.id].video && estado[c.id].videoUrl;
+    return `
+      <div class="export-cct-row">
+        <div class="export-cct-info">
+          <div class="export-cct-nombre">${c.nombre}</div>
+          <div class="export-cct-codigo">${c.cct}</div>
+          <div class="export-cct-fotos">📷 ${tom}/${req}${ok?' ✅':' ⏳'}${vid?' · 🎬 Video':''}
+          </div>
+        </div>
+        <button class="btn-dl" id="btn-dl-${c.id}" onclick="descargarFotosCCT(${c.id})">⬇ ZIP</button>
+      </div>`;
+  }).join('');
+}
+
+// Navegar a pantalla exportar
+function abrirExportar(){
+  // Restaurar botón global si ya se descargó antes
+  const btn = document.getElementById('btn-dl-todo');
+  btn.disabled = false;
+  btn.textContent = '⬇ Descargar todas las fotos (ZIP)';
+  btn.style.background = '';
+
+  // Restaurar URL guardada
+  const savedUrl = localStorage.getItem(LS_OD)||'';
+  const inp = document.getElementById('onedrive-url');
+  if(inp && savedUrl) inp.value = savedUrl;
+
+  renderExportLista();
+  mostrarPantalla('screen-exportar');
+}
+
+// ── FECHA ──
+function actualizarFecha(){
+  const n=new Date();
+  const f=n.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+  const h=n.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('lbl-fecha').innerHTML=f+'<br>'+h;
+}
+
+// ── INIT ──
+cargarEstado();
+actualizarFecha();
+setInterval(actualizarFecha,60000);
+renderLista();
+</script>
+</body>
+</html>
