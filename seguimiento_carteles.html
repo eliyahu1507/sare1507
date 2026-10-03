@@ -222,7 +222,7 @@ footer strong{color:var(--dorado-l)}
     <button class="btn btn-primary" onclick="mostrarResumen()">📊 Ver resumen del día</button>
     <button class="btn" style="background:var(--azul);color:#fff" onclick="abrirExportar()">📤 Exportar fotos a OneDrive</button>
   </div>
-  <footer>✏️ <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
+  <footer id="footer-usuario">✏️ <strong>SARE 1507</strong></footer>
 </div>
 
 <!-- PANTALLA 2: DETALLE -->
@@ -279,6 +279,7 @@ footer strong{color:var(--dorado-l)}
     <!-- LISTA DE CCTs CON FOTOS -->
     <div class="card" style="padding:13px 14px">
       <div class="card-title" id="export-titulo">Fotos por CCT</div>
+      <div id="export-carpeta" style="font-size:.7rem;color:var(--dorado-l);margin:-4px 0 8px;opacity:.85"></div>
       <div id="export-lista"></div>
     </div>
 
@@ -288,7 +289,7 @@ footer strong{color:var(--dorado-l)}
     </button>
     <button class="btn btn-secondary" onclick="mostrarPantalla('screen-lista')">← Volver a la ruta</button>
   </div>
-  <footer>✏️ <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
+  <footer id="footer-usuario">✏️ <strong>SARE 1507</strong></footer>
 </div>
 
 <!-- PANTALLA 3: RESUMEN -->
@@ -310,7 +311,7 @@ footer strong{color:var(--dorado-l)}
     </div>
     <button class="btn btn-primary" onclick="mostrarPantalla('screen-lista')">← Volver a la ruta</button>
   </div>
-  <footer>✏️ <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
+  <footer id="footer-usuario">✏️ <strong>SARE 1507</strong></footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -481,7 +482,7 @@ function fotosReq(c){ return c.tipo==='PRESENCIAL' ? 4 : 3; }
 
 // ESTADO
 let estado = {};
-CCT_DATA.forEach(c => { estado[c.id] = { fotos: Array(fotosReq(c)).fill(null), video:false }; });
+CCT_DATA.forEach(c => { estado[c.id] = { fotos: Array(fotosReq(c)).fill(null), video:false, videoBlob:null }; });
 
 // ── UTILIDADES ──
 function mostrarPantalla(id){
@@ -651,19 +652,41 @@ function abrirDetalle(id){
   mostrarPantalla('screen-detalle');
 }
 
+// ── TOAST ──
+function mostrarToast(msg, color){
+  let t=document.getElementById('toast-idb');
+  if(!t){
+    t=document.createElement('div');
+    t.id='toast-idb';
+    t.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);'
+      +'padding:9px 20px;border-radius:24px;font-size:.78rem;font-weight:700;'
+      +'color:#fff;z-index:9999;pointer-events:none;opacity:0;transition:opacity .25s';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;
+  t.style.background=color||'var(--verde)';
+  t.style.opacity='1';
+  clearTimeout(window._toastTimer);
+  window._toastTimer=setTimeout(()=>{ t.style.opacity='0'; },2000);
+}
+
 // ── TOMAR FOTO ──
 function tomarFoto(id, idx, input){
   if(!input.files[0]) return;
   const reader = new FileReader();
-  reader.onload = e => {
-    estado[id].fotos[idx] = e.target.result;
-    guardarEstado();
+  reader.onload = async e => {
+    const dataUrl = e.target.result;
+    estado[id].fotos[idx] = dataUrl;
+    // Persistir en IDB inmediatamente
+    await persistirFoto(id, idx, dataUrl);
+    mostrarToast('📷 Foto guardada ✓');
+
     const slot = document.getElementById(`slot-${id}-${idx}`);
     if(slot){
       slot.classList.add('tomada');
       let img = document.getElementById(`img-${id}-${idx}`);
       if(!img){ img=document.createElement('img'); img.id=`img-${id}-${idx}`; slot.appendChild(img); }
-      img.src = e.target.result;
+      img.src = dataUrl;
       const ph=slot.querySelector('.foto-placeholder');
       if(ph) ph.style.display='none';
     }
@@ -674,25 +697,24 @@ function tomarFoto(id, idx, input){
 }
 
 // ── TOMAR VIDEO ──
-function tomarVideo(id, input){
+async function tomarVideo(id, input){
   if(!input.files[0]) return;
   const file = input.files[0];
-  // Guardar el video como dataURL para persistencia y exportación
-  const reader = new FileReader();
-  reader.onload = e => {
-    estado[id].video    = true;
-    estado[id].videoUrl = e.target.result;
-    guardarEstado();
-    const slot=document.getElementById(`video-slot-${id}`);
-    if(slot){
-      slot.classList.add('tomado');
-      const ch=slot.querySelector('.video-check');
-      if(ch) ch.textContent='✅ Grabado';
-      const sub=slot.querySelector('.sub');
-      if(sub) sub.textContent='Video guardado · '+Math.round(file.size/1024)+'KB';
-    }
-  };
-  reader.readAsDataURL(file);
+  // Guardar el Blob directamente — NO convertir a base64 (demasiado grande para móvil)
+  estado[id].video     = true;
+  estado[id].videoBlob = file;
+  await persistirVideo(id, file, true);
+  mostrarToast('🎬 Video guardado ✓');
+
+  const slot=document.getElementById(`video-slot-${id}`);
+  if(slot){
+    slot.classList.add('tomado');
+    const ch=slot.querySelector('.video-check');
+    if(ch) ch.textContent='✅ Grabado';
+    const sub=slot.querySelector('.sub');
+    const kb=Math.round(file.size/1024);
+    if(sub) sub.textContent=`Video guardado · ${kb<1024?kb+'KB':Math.round(kb/1024)+'MB'}`;
+  }
 }
 
 // ── MARCAR LISTO ──
@@ -732,60 +754,109 @@ function mostrarResumen(){
   mostrarPantalla('screen-resumen');
 }
 
-// ── PERSISTENCIA COMPLETA (fotos + video) ──
-// v4: guarda las dataURLs reales para que las fotos no se pierdan al salir
-const LS='sare1507_carteles_v4_oct2026';
+// ═══════════════════════════════════════════════════════
+// PERSISTENCIA — IndexedDB (sin límite de tamaño)
+// Guarda fotos como Blob y video como Blob
+// ═══════════════════════════════════════════════════════
+const IDB_NAME    = 'sare1507_carteles';
+const IDB_VERSION = 1;
+const IDB_STORE   = 'evidencias';
+let   idb         = null;
 
-function guardarEstado(){
-  try{
-    const data={};
-    CCT_DATA.forEach(c=>{
-      data[c.id]={
-        fotos: estado[c.id].fotos,          // array de dataURL|null
-        video: estado[c.id].video,           // bool
-        videoUrl: estado[c.id].videoUrl||null // dataURL del video
-      };
-    });
-    localStorage.setItem(LS, JSON.stringify(data));
-  }catch(e){
-    // Si el localStorage se llena (límite ~5MB) avisa una sola vez
-    if(!window._lsWarn){
-      window._lsWarn=true;
-      console.warn('localStorage lleno; algunas fotos pueden no persistir.',e);
-    }
-  }
+function abrirIDB(){
+  return new Promise((res, rej)=>{
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = e=>{
+      e.target.result.createObjectStore(IDB_STORE, {keyPath:'key'});
+    };
+    req.onsuccess = e=>{ idb=e.target.result; res(idb); };
+    req.onerror   = e=>rej(e.target.error);
+  });
 }
 
-function cargarEstado(){
+function idbPut(key, value){
+  return new Promise((res,rej)=>{
+    const tx  = idb.transaction(IDB_STORE,'readwrite');
+    const st  = tx.objectStore(IDB_STORE);
+    const req = st.put({key, value});
+    req.onsuccess = ()=>res();
+    req.onerror   = e=>rej(e.target.error);
+  });
+}
+
+function idbGet(key){
+  return new Promise((res,rej)=>{
+    const tx  = idb.transaction(IDB_STORE,'readonly');
+    const st  = tx.objectStore(IDB_STORE);
+    const req = st.get(key);
+    req.onsuccess = e=>res(e.target.result ? e.target.result.value : null);
+    req.onerror   = e=>rej(e.target.error);
+  });
+}
+
+// Guarda foto (dataURL) inmediatamente después de tomarla
+async function persistirFoto(cctId, idx, dataUrl){
   try{
-    const raw=localStorage.getItem(LS); if(!raw) return;
-    const data=JSON.parse(raw);
-    CCT_DATA.forEach(c=>{
-      if(!data[c.id]) return;
-      // Restaurar fotos (array ya tiene la longitud correcta)
-      const savedFotos = data[c.id].fotos || [];
-      savedFotos.forEach((f,i)=>{ if(f && i < estado[c.id].fotos.length) estado[c.id].fotos[i]=f; });
-      estado[c.id].video    = data[c.id].video    || false;
-      estado[c.id].videoUrl = data[c.id].videoUrl || null;
-    });
+    await idbPut(`foto_${cctId}_${idx}`, dataUrl);
+  }catch(e){ console.warn('IDB foto error',e); }
+}
+
+// Guarda video (Blob) inmediatamente después de grabarlo
+async function persistirVideo(cctId, blob, flag){
+  try{
+    await idbPut(`video_flag_${cctId}`, flag);
+    if(blob) await idbPut(`video_blob_${cctId}`, blob);
+  }catch(e){ console.warn('IDB video error',e); }
+}
+
+// Carga todo el estado desde IndexedDB al iniciar
+async function cargarEstadoIDB(){
+  try{
+    await abrirIDB();
+    for(const c of CCT_DATA){
+      const req = fotosReq(c);
+      for(let i=0;i<req;i++){
+        const f = await idbGet(`foto_${c.id}_${i}`);
+        if(f) estado[c.id].fotos[i] = f;
+      }
+      const vFlag = await idbGet(`video_flag_${c.id}`);
+      const vBlob = await idbGet(`video_blob_${c.id}`);
+      if(vFlag){
+        estado[c.id].video    = true;
+        estado[c.id].videoBlob= vBlob || null;
+      }
+    }
+  }catch(e){ console.warn('IDB load error',e); }
+}
+
+// ── Compatibilidad: ya no usamos localStorage para fotos ──
+function guardarEstado(){ /* no-op: IDB se escribe por evento */ }
+function cargarEstado()  { /* no-op: ver cargarEstadoIDB()   */ }
+
+// ═══════════════════════════════════════════════════════
+// NOMBRE DE CARPETA SEGÚN USUARIO LOGUEADO
+// Lee la sesión del index.html (misma sessionStorage)
+// ═══════════════════════════════════════════════════════
+function obtenerNombreUsuario(){
+  try{
+    const ses = JSON.parse(sessionStorage.getItem('sare1507_sesion'));
+    if(ses && ses.NOMBRE){
+      // "APELLIDO PATERNO APELLIDO MATERNO NOMBRES" → sin acentos, espacios→_
+      return ses.NOMBRE
+        .normalize('NFD').replace(/[̀-ͯ]/g,'')
+        .replace(/\s+/g,'_')
+        .toUpperCase();
+    }
   }catch(e){}
+  return 'JOSE_ELIAS_CERVANTES_JIMENEZ'; // fallback
 }
 
 // ═══════════════════════════════════════════════════════
 // EXPORTAR A ONEDRIVE
-// Estructura ZIP:
-//   JOSE_ELIAS_CERVANTES_JIMENEZ/
-//     {CCT}/
-//       1-cartel_en_puerta.jpg
-//       2-cartel_y_fachada.jpg
-//       3-servidor_educativo_y_cartel.jpg
-//       4-directivo_servidor_y_cartel.jpg  (solo PRESENCIAL)
-//       cartel_{CCT}.mp4  (si hay video)
+// Estructura ZIP: {NOMBRE_USUARIO}/{CCT}/archivos
 // ═══════════════════════════════════════════════════════
-const MI_NOMBRE = 'JOSE_ELIAS_CERVANTES_JIMENEZ';
 const LS_OD = 'sare1507_onedrive_url';
 
-// Nombres descriptivos por posición de foto (índice 0-3)
 const FOTO_NOMBRES = [
   '1-cartel_en_puerta',
   '2-cartel_y_fachada',
@@ -806,36 +877,40 @@ function abrirOneDrive(){
 
 // Convierte dataURL a Uint8Array para JSZip
 function dataURLtoUint8(dataUrl){
-  const base64 = dataUrl.split(',')[1];
-  const binary  = atob(base64);
-  const arr     = new Uint8Array(binary.length);
+  const b64    = dataUrl.split(',')[1];
+  const binary = atob(b64);
+  const arr    = new Uint8Array(binary.length);
   for(let i=0;i<binary.length;i++) arr[i]=binary.charCodeAt(i);
   return arr;
 }
 
-// Detecta extensión desde dataURL (imagen o video)
-function extFromDataUrl(dataUrl){
-  const m = dataUrl.match(/^data:(image|video)\/(\w+);/);
-  if(!m) return 'bin';
-  const t = m[2].toLowerCase();
+// Detecta extensión desde dataURL o Blob
+function extFromMime(mime){
+  if(!mime) return 'bin';
+  const t = mime.split('/')[1]||'';
   if(t==='jpeg') return 'jpg';
   if(t==='quicktime') return 'mov';
-  return t;
+  return t || 'bin';
+}
+function extFromDataUrl(dataUrl){
+  const m = dataUrl.match(/^data:([\w/]+);/);
+  return m ? extFromMime(m[1]) : 'jpg';
 }
 
 // Agrega fotos y video de un CCT a una carpeta JSZip
-function agregarCCTaZip(dir, c){
+// Devuelve Promise para poder await
+async function agregarCCTaZip(dir, c){
   const st = estado[c.id];
-  // Fotos con nombres descriptivos
+  // Fotos
   st.fotos.forEach((f, i)=>{
     if(!f) return;
     const nombre = FOTO_NOMBRES[i] || `foto_${i+1}`;
     dir.file(`${nombre}.${extFromDataUrl(f)}`, dataURLtoUint8(f));
   });
-  // Video con nombre del CCT
-  if(st.video && st.videoUrl){
-    const ext = extFromDataUrl(st.videoUrl);
-    dir.file(`cartel_${c.cct}.${ext}`, dataURLtoUint8(st.videoUrl));
+  // Video como Blob (sin pasar por base64)
+  if(st.video && st.videoBlob){
+    const ext = extFromMime(st.videoBlob.type);
+    dir.file(`cartel_${c.cct}.${ext}`, st.videoBlob);
   }
 }
 
@@ -844,28 +919,33 @@ async function descargarFotosCCT(id){
   const c  = CCT_DATA.find(x=>x.id===id);
   const st = estado[id];
   const hayFotos = st.fotos.some(f=>f!==null);
-  const hayVideo = st.video && st.videoUrl;
+  const hayVideo = st.video && st.videoBlob;
   if(!hayFotos && !hayVideo){ alert('Aún no hay fotos ni video para '+c.nombre); return; }
 
-  const zip = new JSZip();
-  const dir = zip.folder(MI_NOMBRE).folder(c.cct);
-  agregarCCTaZip(dir, c);
-
-  const blob = await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
-  const link = document.createElement('a');
-  link.href  = URL.createObjectURL(blob);
-  link.download = `${c.cct}.zip`;
-  link.click();
-  URL.revokeObjectURL(link.href);
-
   const btn = document.getElementById('btn-dl-'+id);
-  if(btn){ btn.textContent='✓ Descargado'; btn.classList.add('ok'); }
+  if(btn){ btn.disabled=true; btn.textContent='⏳…'; }
+
+  try{
+    const CARPETA = obtenerNombreUsuario();
+    const zip = new JSZip();
+    await agregarCCTaZip(zip.folder(CARPETA).folder(c.cct), c);
+    const blob = await zip.generateAsync({type:'blob',compression:'STORE'});
+    const link = document.createElement('a');
+    link.href  = URL.createObjectURL(blob);
+    link.download = `${c.cct}.zip`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    if(btn){ btn.textContent='✓ OK'; btn.classList.add('ok'); btn.disabled=false; }
+  }catch(err){
+    if(btn){ btn.textContent='⬇ ZIP'; btn.disabled=false; }
+    alert('Error: '+err.message);
+  }
 }
 
 // Descarga TODAS las fotos+videos en un solo ZIP con subcarpetas por CCT
 async function descargarTodo(){
   const conEvidencia = CCT_DATA.filter(c=>
-    fotosTomadas(c.id)>0 || (estado[c.id].video && estado[c.id].videoUrl)
+    fotosTomadas(c.id)>0 || (estado[c.id].video && estado[c.id].videoBlob)
   );
   if(!conEvidencia.length){ alert('Aún no hay fotos ni videos registrados.'); return; }
 
@@ -874,21 +954,24 @@ async function descargarTodo(){
   btn.textContent = '⏳ Generando ZIP…';
 
   try{
+    const CARPETA = obtenerNombreUsuario();
     const zip  = new JSZip();
-    const raiz = zip.folder(MI_NOMBRE);
-
-    conEvidencia.forEach(c=>{
-      agregarCCTaZip(raiz.folder(c.cct), c);
+    const raiz = zip.folder(CARPETA);
+    for(const c of conEvidencia){
+      await agregarCCTaZip(raiz.folder(c.cct), c);
+    }
+    // Sin compresión: fotos y videos ya están comprimidos
+    const blob = await zip.generateAsync({type:'blob', compression:'STORE',
+      onUpdate: p=>{ btn.textContent=`⏳ ${Math.round(p)}%…`; }
     });
-
-    const blob = await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
     const link = document.createElement('a');
     link.href  = URL.createObjectURL(blob);
-    link.download = `${MI_NOMBRE}_evidencias.zip`;
+    link.download = `${CARPETA}_evidencias.zip`;
     link.click();
     URL.revokeObjectURL(link.href);
     btn.textContent = '✓ Descargado correctamente';
     btn.style.background = 'var(--verde)';
+    btn.disabled = false;
   }catch(err){
     btn.disabled = false;
     btn.textContent = '⬇ Descargar todas las fotos (ZIP)';
@@ -901,17 +984,22 @@ function renderExportLista(){
   const cont  = document.getElementById('export-lista');
   const titulo= document.getElementById('export-titulo');
   const conEvidencia = CCT_DATA.filter(c=>
-    fotosTomadas(c.id)>0 || (estado[c.id].video && estado[c.id].videoUrl)
+    fotosTomadas(c.id)>0 || (estado[c.id].video && estado[c.id].videoBlob)
   );
   const totalF   = conEvidencia.reduce((s,c)=>s+fotosTomadas(c.id),0);
-  const totalVid = conEvidencia.filter(c=>estado[c.id].video && estado[c.id].videoUrl).length;
+  const totalVid = conEvidencia.filter(c=>estado[c.id].video).length;
 
+  const CARPETA = obtenerNombreUsuario().replace(/_/g,' ');
   titulo.textContent = conEvidencia.length
     ? `Evidencias · ${conEvidencia.length} CCTs · ${totalF} fotos · ${totalVid} videos`
-    : 'Fotos por CCT';
+    : 'Aún no hay evidencias registradas';
+
+  // Mostrar nombre de carpeta ZIP
+  const subtitulo = document.getElementById('export-carpeta');
+  if(subtitulo) subtitulo.textContent = '📁 Carpeta: '+CARPETA;
 
   if(!conEvidencia.length){
-    cont.innerHTML='<p style="font-size:.75rem;color:#aaa;text-align:center;padding:12px 0">Aún no hay fotos ni videos registrados.<br>Regresa a la ruta y toma las fotos primero.</p>';
+    cont.innerHTML='<p style="font-size:.75rem;color:#aaa;text-align:center;padding:12px 0">Regresa a la ruta y toma las fotos primero.</p>';
     document.getElementById('btn-dl-todo').disabled = true;
     return;
   }
@@ -922,13 +1010,13 @@ function renderExportLista(){
     const tom = fotosTomadas(c.id);
     const req = fotosReq(c);
     const ok  = fotosOk(c.id);
-    const vid = estado[c.id].video && estado[c.id].videoUrl;
+    const vid = estado[c.id].video && estado[c.id].videoBlob;
     return `
       <div class="export-cct-row">
         <div class="export-cct-info">
           <div class="export-cct-nombre">${c.nombre}</div>
           <div class="export-cct-codigo">${c.cct}</div>
-          <div class="export-cct-fotos">📷 ${tom}/${req}${ok?' ✅':' ⏳'}${vid?' · 🎬 Video':''}
+          <div class="export-cct-fotos">📷 ${tom}/${req}${ok?' ✅':' ⏳'}${vid?' · 🎬':''}
           </div>
         </div>
         <button class="btn-dl" id="btn-dl-${c.id}" onclick="descargarFotosCCT(${c.id})">⬇ ZIP</button>
@@ -938,13 +1026,11 @@ function renderExportLista(){
 
 // Navegar a pantalla exportar
 function abrirExportar(){
-  // Restaurar botón global si ya se descargó antes
   const btn = document.getElementById('btn-dl-todo');
   btn.disabled = false;
   btn.textContent = '⬇ Descargar todas las fotos (ZIP)';
   btn.style.background = '';
 
-  // Restaurar URL guardada
   const savedUrl = localStorage.getItem(LS_OD)||'';
   const inp = document.getElementById('onedrive-url');
   if(inp && savedUrl) inp.value = savedUrl;
@@ -962,10 +1048,22 @@ function actualizarFecha(){
 }
 
 // ── INIT ──
-cargarEstado();
 actualizarFecha();
 setInterval(actualizarFecha,60000);
-renderLista();
+
+// Mostrar nombre de usuario en footer
+(function(){
+  try{
+    const ses=JSON.parse(sessionStorage.getItem('sare1507_sesion'));
+    if(ses && ses.NOMBRE){
+      const f=document.getElementById('footer-usuario');
+      if(f) f.innerHTML=`✏️ <strong>${ses.NOMBRE}</strong> — SARE 1507`;
+    }
+  }catch(e){}
+})();
+
+// Cargar estado desde IndexedDB y luego renderizar
+cargarEstadoIDB().then(()=>{ renderLista(); }).catch(()=>{ renderLista(); });
 </script>
 </body>
 </html>
