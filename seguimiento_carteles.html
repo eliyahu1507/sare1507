@@ -121,7 +121,7 @@ body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--te
   align-items:center;justify-content:center;cursor:pointer}
 .foto-slot.tomada{border:2px solid var(--verde)}
 .foto-slot:active{opacity:.8}
-.foto-slot input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.foto-slot input[type="file"]{display:none}
 .foto-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .foto-placeholder{text-align:center;pointer-events:none;padding:8px}
 .foto-placeholder .icono{font-size:1.6rem;margin-bottom:4px}
@@ -131,13 +131,19 @@ body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--te
   border-radius:50%;display:none;align-items:center;justify-content:center;
   color:#fff;font-size:.75rem;font-weight:900;z-index:2}
 .foto-slot.tomada .foto-check{display:flex}
+/* Botón retomar foto/video */
+.btn-retomar{position:absolute;bottom:5px;right:5px;background:rgba(0,0,0,.62);
+  color:#fff;border:none;border-radius:20px;font-size:.6rem;padding:3px 8px;
+  cursor:pointer;z-index:3;font-weight:700;letter-spacing:.3px;
+  backdrop-filter:blur(4px);line-height:1.6}
+.btn-retomar:active{background:var(--guinda)}
 
 /* VIDEO */
 .video-slot{border-radius:10px;background:#111;border:2px dashed var(--gris-d);
   padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;
   position:relative;transition:border-color .2s}
 .video-slot.tomado{border:2px solid #FF6D00}
-.video-slot input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.video-slot input[type="file"]{display:none}
 .video-icono{font-size:2rem}
 .video-info{flex:1}
 .video-info .lbl{font-size:.72rem;font-weight:700;color:#fff;font-family:'Montserrat',sans-serif}
@@ -608,11 +614,17 @@ function abrirDetalle(id){
     const ok = st.fotos[i]!==null;
     fotosHtml += `
       <div class="foto-slot ${ok?'tomada':''}" id="slot-${id}-${i}">
-        <input type="file" accept="image/*" capture="environment" onchange="tomarFoto(${id},${i},this)">
-        ${ok
-          ? `<img src="${st.fotos[i]}" id="img-${id}-${i}">`
-          : `<div class="foto-placeholder"><div class="icono">📷</div><div class="lbl">${LABELS[i]}</div></div>`}
-        <div class="foto-check">✓</div>
+        <input type="file" accept="image/*" capture="environment" id="input-foto-${id}-${i}" onchange="tomarFoto(${id},${i},this)" style="display:none">
+        ${ok ? `
+          <img src="${st.fotos[i]}" id="img-${id}-${i}" onclick="verFotoOpciones(${id},${i})" style="cursor:pointer">
+          <div class="foto-check">✓</div>
+          <button class="btn-retomar" onclick="retomar(${id},${i})" title="Retomar foto">🔄</button>
+        ` : `
+          <label for="input-foto-${id}-${i}" style="display:contents;cursor:pointer">
+            <div class="foto-placeholder"><div class="icono">📷</div><div class="lbl">${LABELS[i]}</div></div>
+          </label>
+          <div class="foto-check">✓</div>
+        `}
       </div>`;
   }
   fotosHtml += '</div>';
@@ -623,13 +635,16 @@ function abrirDetalle(id){
   const videoHtml = `
     <div class="video-slot ${vid?'tomado':''}" id="video-slot-${id}"
       ${!puedeVideo?'style="opacity:.4;pointer-events:none"':''}>
-      <input type="file" accept="video/*" capture="environment" onchange="tomarVideo(${id},this)">
-      <div class="video-icono">🎬</div>
-      <div class="video-info">
-        <div class="lbl">${!puedeVideo?'Video (límite de 5 alcanzado)':'Video del cartel'}</div>
-        <div class="sub">15 seg · alejarse de la puerta · Opcional — ${5-videosUsados-(vid?0:0)} disponibles</div>
-      </div>
-      <div class="video-check">${vid?'✅ Grabado':''}</div>
+      <input type="file" accept="video/*" capture="environment" id="input-video-${id}" onchange="tomarVideo(${id},this)" style="display:none">
+      <label for="input-video-${id}" style="display:contents;cursor:pointer">
+        <div class="video-icono">🎬</div>
+        <div class="video-info">
+          <div class="lbl">${!puedeVideo?'Video (límite de 5 alcanzado)':'Video del cartel'}</div>
+          <div class="sub">15 seg · alejarse de la puerta · Opcional — ${5-videosUsados-(vid?0:0)} disponibles</div>
+        </div>
+      </label>
+      <div class="video-check" id="vcheck-${id}">${vid?'✅ Grabado':''}</div>
+      ${vid?`<button class="btn-retomar" onclick="retomar(${id},'video')" title="Retomar video">🔄</button>`:''}
     </div>`;
 
   document.getElementById('detalle-content').innerHTML = `
@@ -668,6 +683,18 @@ function mostrarToast(msg, color){
   t.style.opacity='1';
   clearTimeout(window._toastTimer);
   window._toastTimer=setTimeout(()=>{ t.style.opacity='0'; },2000);
+}
+
+// ── RETOMAR FOTO O VIDEO ──
+// Abre el input de cámara correspondiente sin borrar lo anterior todavía
+function retomar(id, idxOvideo){
+  if(idxOvideo === 'video'){
+    const inp = document.getElementById(`input-video-${id}`);
+    if(inp){ inp.value=''; inp.click(); }
+  } else {
+    const inp = document.getElementById(`input-foto-${id}-${idxOvideo}`);
+    if(inp){ inp.value=''; inp.click(); }
+  }
 }
 
 // ── TOMAR FOTO ──
