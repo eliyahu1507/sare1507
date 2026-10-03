@@ -742,7 +742,12 @@ function nuevaSesion() {
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
   numerosSet = new Set(); dupCount = 0;
-  document.getElementById('inp-operador').value = '';
+  // Restaurar nombre desde sesión (no borrarlo si viene del index)
+  const inp = document.getElementById('inp-operador');
+  try{
+    const ses = JSON.parse(sessionStorage.getItem('sare1507_sesion'));
+    if(inp) inp.value = (ses && ses.NOMBRE) ? ses.NOMBRE : '';
+  }catch(e){ if(inp) inp.value = ''; }
   document.getElementById('inp-caja').value = '';
   mostrarPantalla('screen-login');
 }
@@ -766,6 +771,37 @@ document.getElementById('modal-bg').addEventListener('click', function(e) {
 
 // Actualizar fecha cada minuto
 setInterval(actualizarFechaHero, 60000);
+
+// ══════════════════════════════════════════
+// PRELLENAR DATOS DESDE SESIÓN DEL INDEX
+// ══════════════════════════════════════════
+(function(){
+  try{
+    const ses = JSON.parse(sessionStorage.getItem('sare1507_sesion'));
+    if(ses && ses.NOMBRE){
+      // Prellenar campo de nombre
+      const inp = document.getElementById('inp-operador');
+      if(inp) inp.value = ses.NOMBRE;
+      // Marcar campo como bloqueado (viene de sesión, no debe editarse)
+      if(inp){
+        inp.readOnly = true;
+        inp.style.background = 'rgba(107,28,62,.08)';
+        inp.style.color = 'var(--guinda)';
+        inp.style.fontWeight = '700';
+        inp.title = 'Nombre cargado desde tu sesión';
+      }
+      // Mostrar badge de sesión junto al label
+      const lbl = inp ? inp.previousElementSibling : null;
+      if(lbl) lbl.insertAdjacentHTML('beforeend',
+        ' <span style="font-size:.6rem;background:var(--guinda);color:#fff;'
+        +'border-radius:10px;padding:1px 7px;font-weight:700">✓ Sesión activa</span>');
+      // Actualizar footers con nombre real
+      document.querySelectorAll('footer').forEach(f=>{
+        f.innerHTML = `✏️ <strong>${ses.NOMBRE}</strong> — SARE 1507`;
+      });
+    }
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
