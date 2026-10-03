@@ -459,12 +459,123 @@ footer strong { color: var(--dorado-l); }
 let operador = '';
 let cajaActual = 1;
 let cajasUsadas = new Set();
-let registros = []; // { num, caja, ts }
-let numerosSet = new Set(); // para detección de duplicados
+let registros = []; // { num, caja, ts, dup }
+let numerosSet = new Set();
 let dupCount = 0;
 let zxingReader = null;
 let scanActivo = false;
 let feedbackTimer = null;
+
+// ══════════════════════════════════════════
+// AUDIO — Web Audio API (sin archivos externos)
+// ══════════════════════════════════════════
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  // Reanudar si el navegador lo suspendió
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function beepOK(){
+  // Sonido único: dos tonos ascendentes rápidos (como pistola de bodega)
+  try{
+    const ctx = getAudioCtx();
+    [880, 1320].forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.18, ctx.currentTime + i*0.07);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.07 + 0.08);
+      osc.start(ctx.currentTime + i*0.07);
+      osc.stop(ctx.currentTime + i*0.07 + 0.09);
+    });
+  }catch(e){}
+}
+
+function beepDUP(){
+  // Sonido de alerta: tono grave oscilante (muy diferente al OK)
+  try{
+    const ctx = getAudioCtx();
+    [400, 320, 400].forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.22, ctx.currentTime + i*0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.1 + 0.09);
+      osc.start(ctx.currentTime + i*0.1);
+      osc.stop(ctx.currentTime + i*0.1 + 0.1);
+    });
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════
+// PERSISTENCIA — IndexedDB
+// ══════════════════════════════════════════
+const IDB_SCAN = 'sare1507_escaneo';
+let idbScan = null;
+
+function abrirIDBScan(){
+  return new Promise((res,rej)=>{
+    const req = indexedDB.open(IDB_SCAN, 1);
+    req.onupgradeneeded = e => {
+      e.target.result.createObjectStore('sesion', {keyPath:'key'});
+    };
+    req.onsuccess = e => { idbScan = e.target.result; res(); };
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+function idbScanPut(key, value){
+  if(!idbScan) return;
+  const tx = idbScan.transaction('sesion','readwrite');
+  tx.objectStore('sesion').put({key, value});
+}
+
+function idbScanGet(key){
+  return new Promise((res,rej)=>{
+    if(!idbScan){ res(null); return; }
+    const tx  = idbScan.transaction('sesion','readonly');
+    const req = tx.objectStore('sesion').get(key);
+    req.onsuccess = e => res(e.target.result ? e.target.result.value : null);
+    req.onerror   = ()=>res(null);
+  });
+}
+
+function persistirSesion(){
+  idbScanPut('operador',   operador);
+  idbScanPut('cajaActual', cajaActual);
+  idbScanPut('cajasUsadas',[...cajasUsadas]);
+  idbScanPut('registros',  registros);
+  idbScanPut('dupCount',   dupCount);
+  idbScanPut('activa',     true);
+}
+
+async function restaurarSesion(){
+  await abrirIDBScan();
+  const activa = await idbScanGet('activa');
+  if(!activa) return false;
+  operador    = (await idbScanGet('operador'))   || '';
+  cajaActual  = (await idbScanGet('cajaActual')) || 1;
+  const cajas = (await idbScanGet('cajasUsadas'))|| [];
+  cajasUsadas = new Set(cajas);
+  registros   = (await idbScanGet('registros'))  || [];
+  dupCount    = (await idbScanGet('dupCount'))   || 0;
+  numerosSet  = new Set(registros.filter(r=>!r.dup).map(r=>r.num));
+  // reconstruir numerosSet considerando todos (para detección de dup)
+  const todos = new Set();
+  registros.forEach(r=>{ if(!r.dup) todos.add(r.num); });
+  numerosSet = todos;
+  return operador.length > 0;
+}
+
+function limpiarSesionIDB(){
+  idbScanPut('activa', false);
+}
 
 // ══════════════════════════════════════════
 // NAVEGACIÓN ENTRE PANTALLAS
