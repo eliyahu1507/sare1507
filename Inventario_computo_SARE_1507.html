@@ -1687,8 +1687,13 @@ function sesionActiva(){
     const s = sessionStorage.getItem(SESION_KEY);
     if(!s) return null;
     const data = JSON.parse(s);
-    // Sesión válida por 8 horas
+    // Compatibilidad con sesión guardada desde index.html (campo NOMBRE en mayúsculas)
+    if(data.NOMBRE && !data.nombre) data.nombre = data.NOMBRE;
+    // Sesión válida por 8 horas (requiere ts)
+    if(!data.ts){ sessionStorage.removeItem(SESION_KEY); return null; }
     if(Date.now() - data.ts > 8*60*60*1000){ sessionStorage.removeItem(SESION_KEY); return null; }
+    // Requiere id JEC o JEN
+    if(data.id !== 'JEC' && data.id !== 'JEN'){ sessionStorage.removeItem(SESION_KEY); return null; }
     return data;
   } catch(e){ return null; }
 }
@@ -1749,8 +1754,10 @@ function doLogout(){
 // ── Mostrar usuario en topbar ──
 function mostrarUsuarioTopbar(sesion){
   const el = document.getElementById('top-user');
-  const iniciales = sesion.nombre.split(' ').slice(0,2).map(w=>w[0]).join('');
-  document.getElementById('top-user-nombre').textContent = iniciales + (sesion.rol==='admin'?' · Admin':' · Soporte');
+  const nombreDisplay = sesion.nombre || sesion.NOMBRE || sesion.id || '?';
+  const iniciales = nombreDisplay.split(' ').slice(0,2).map(w=>w[0]).join('');
+  const rolLabel = (sesion.rol==='admin'||sesion.id==='JEC'||sesion.id==='JEN') ? ' · Admin' : ' · Soporte';
+  document.getElementById('top-user-nombre').textContent = iniciales + rolLabel;
   el.style.display='flex';
 }
 
@@ -2400,7 +2407,9 @@ async function initAdm(){
     document.getElementById('login-overlay').classList.add('oculto');
     mostrarUsuarioTopbar(sesion);
     // Ocultar tab Usuarios si no es admin
-    if(sesion.rol!=='admin'){
+    // JEC y JEN siempre son admin aunque la sesión venga del index
+    const esAdmin = sesion.rol==='admin' || sesion.id==='JEC' || sesion.id==='JEN';
+    if(!esAdmin){
       document.getElementById('atab-usr').style.display='none';
     }
   }
