@@ -194,9 +194,97 @@ body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--te
 footer{background:var(--guinda-o);color:rgba(255,255,255,.55);font-size:.62rem;
   text-align:center;padding:9px;letter-spacing:.3px;flex-shrink:0}
 footer strong{color:var(--dorado-l)}
+
+/* ── AUTH OVERLAY ──────────────────────────────── */
+#auth-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(160deg,var(--guinda-o) 0%,var(--guinda) 55%,var(--guinda-d) 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px 20px;
+}
+.auth-logo{font-family:'Montserrat',sans-serif;text-align:center;margin-bottom:28px}
+.auth-logo .lbl{font-size:.65rem;color:rgba(255,255,255,.6);letter-spacing:.5px;text-transform:uppercase}
+.auth-logo .app{font-size:1.3rem;font-weight:900;color:var(--dorado-l);margin-top:4px;line-height:1.2}
+.auth-logo .sub{font-size:.72rem;color:rgba(255,255,255,.55);margin-top:4px}
+.auth-box{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
+  border-radius:18px;padding:26px 22px;width:100%;max-width:360px;backdrop-filter:blur(6px);
+}
+.auth-who{
+  display:flex;gap:10px;margin-bottom:18px;
+}
+.auth-who-btn{
+  flex:1;padding:11px 6px;border-radius:10px;border:2px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.07);color:rgba(255,255,255,.7);cursor:pointer;
+  font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:800;text-align:center;
+  transition:all .18s;line-height:1.35;
+}
+.auth-who-btn.sel{
+  background:var(--dorado);border-color:var(--dorado-l);color:var(--guinda-o);
+}
+.auth-lbl{font-size:.68rem;color:rgba(255,255,255,.55);margin-bottom:6px;
+  font-family:'Montserrat',sans-serif;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.auth-pin-wrap{position:relative;margin-bottom:16px}
+.auth-pin{
+  width:100%;padding:13px 44px 13px 14px;border-radius:10px;
+  border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);
+  color:#fff;font-size:1.1rem;letter-spacing:4px;font-family:'Montserrat',sans-serif;
+  font-weight:700;outline:none;
+}
+.auth-pin::placeholder{letter-spacing:1px;font-size:.8rem;color:rgba(255,255,255,.35);font-weight:400}
+.auth-pin:focus{border-color:var(--dorado-l);background:rgba(255,255,255,.15)}
+.auth-eye{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:1rem;opacity:.6;
+  color:#fff;padding:4px;
+}
+.auth-btn{
+  width:100%;padding:14px;border-radius:10px;border:none;
+  background:var(--dorado);color:var(--guinda-o);
+  font-family:'Montserrat',sans-serif;font-size:.95rem;font-weight:900;
+  cursor:pointer;transition:all .18s;letter-spacing:.3px;
+}
+.auth-btn:active{background:var(--dorado-l);transform:scale(.98)}
+.auth-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.auth-err{
+  margin-top:12px;padding:9px 12px;border-radius:8px;
+  background:rgba(255,80,80,.18);border:1px solid rgba(255,80,80,.35);
+  color:#FFB3B3;font-size:.73rem;text-align:center;display:none;
+}
 </style>
 </head>
 <body>
+
+<!-- ── AUTH OVERLAY ───────────────────────────── -->
+<div id="auth-overlay">
+  <div class="auth-logo">
+    <div class="lbl">SARE 1507 · Becas Bienestar</div>
+    <div class="app">📋 Pega de Carteles</div>
+    <div class="sub">Acceso restringido — personal autorizado</div>
+  </div>
+  <div class="auth-box">
+    <div class="auth-lbl">¿Quién eres?</div>
+    <div class="auth-who">
+      <button class="auth-who-btn sel" id="who-JEC" onclick="selUsuario('JEC')">
+        ELÍAS<br><span style="font-size:.62rem;font-weight:600;opacity:.7">Cervantes</span>
+      </button>
+      <button class="auth-who-btn" id="who-JEN" onclick="selUsuario('JEN')">
+        EDUARDO<br><span style="font-size:.62rem;font-weight:600;opacity:.7">Noh Cruz</span>
+      </button>
+    </div>
+    <div class="auth-lbl">NIP</div>
+    <div class="auth-pin-wrap">
+      <input class="auth-pin" type="password" id="auth-pin-input"
+        placeholder="Ingresa tu NIP" maxlength="20"
+        onkeydown="if(event.key==='Enter')intentarAcceso()">
+      <button class="auth-eye" id="auth-eye-btn" onclick="toggleVerPin()">👁</button>
+    </div>
+    <button class="auth-btn" id="auth-btn-ok" onclick="intentarAcceso()">
+      Entrar →
+    </button>
+    <div class="auth-err" id="auth-err">NIP incorrecto. Intenta de nuevo.</div>
+  </div>
+</div>
 
 <!-- PANTALLA 1: LISTA -->
 <div class="screen active" id="screen-lista">
@@ -327,6 +415,109 @@ footer strong{color:var(--dorado-l)}
 
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
+// ═══════════════════════════════════════════════════════
+// AUTH — protección de acceso (solo JEC y JEN)
+// Reutiliza la misma sessionStorage que el inventario.
+// Si ya hay sesión válida de admin → pasa directo.
+// ═══════════════════════════════════════════════════════
+const SESION_KEY = 'sare1507_sesion';
+const TTL_MS     = 8 * 60 * 60 * 1000; // 8 horas
+
+const USUARIOS_AUTH = {
+  JEC: { nombre:'JOSE ELIAS CERVANTES JIMENEZ',  pin:'EC1507' },
+  JEN: { nombre:'JOSE EDUARDO NOH CRUZ',          pin:'EN1507' },
+};
+
+let authUsuarioSel = 'JEC';
+let authDesbloqueado = false;
+
+async function hashPin(pin){
+  const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function sesionValida(){
+  try{
+    const s = JSON.parse(sessionStorage.getItem(SESION_KEY));
+    if(!s || !s.id || !s.ts) return null;
+    if(Date.now()-s.ts > TTL_MS) return null;
+    if(s.id !== 'JEC' && s.id !== 'JEN') return null;
+    return s;
+  }catch(e){ return null; }
+}
+
+function guardarSesion(id){
+  const u = USUARIOS_AUTH[id];
+  const obj = { id, NOMBRE: u.nombre, CUPO: id, rol:'admin', ts: Date.now() };
+  sessionStorage.setItem(SESION_KEY, JSON.stringify(obj));
+  return obj;
+}
+
+function selUsuario(id){
+  authUsuarioSel = id;
+  document.querySelectorAll('.auth-who-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('who-'+id).classList.add('sel');
+  document.getElementById('auth-pin-input').focus();
+}
+
+function toggleVerPin(){
+  const inp = document.getElementById('auth-pin-input');
+  const ojo = document.getElementById('auth-eye-btn');
+  if(inp.type==='password'){ inp.type='text';  ojo.textContent='🔒'; }
+  else                      { inp.type='password'; ojo.textContent='👁'; }
+}
+
+async function intentarAcceso(){
+  const pin = document.getElementById('auth-pin-input').value.trim();
+  const err = document.getElementById('auth-err');
+  const btn = document.getElementById('auth-btn-ok');
+  if(!pin) return;
+  btn.disabled = true;
+  btn.textContent = '…';
+  err.style.display = 'none';
+
+  const h     = await hashPin(pin);
+  const hReal = await hashPin(USUARIOS_AUTH[authUsuarioSel].pin);
+  if(h === hReal){
+    const ses = guardarSesion(authUsuarioSel);
+    document.getElementById('auth-overlay').style.display = 'none';
+    authDesbloqueado = true;
+    aplicarSesionUI(ses);
+  } else {
+    err.style.display = 'block';
+    document.getElementById('auth-pin-input').value = '';
+    document.getElementById('auth-pin-input').focus();
+    btn.disabled = false;
+    btn.textContent = 'Entrar →';
+  }
+}
+
+function aplicarSesionUI(ses){
+  if(!ses) return;
+  const f = document.getElementById('footer-usuario');
+  if(f) f.innerHTML=`✏️ <strong>${ses.NOMBRE}</strong> — SARE 1507`;
+  const heroBox  = document.getElementById('hero-usuario');
+  const heroNom  = document.getElementById('hero-nombre');
+  const heroCupo = document.getElementById('hero-cupo');
+  if(heroBox && heroNom && heroCupo){
+    heroNom.textContent  = ses.NOMBRE;
+    heroCupo.textContent = ses.CUPO || ses.id;
+    heroBox.style.display = 'block';
+  }
+}
+
+// ── VERIFICACIÓN AL CARGAR ──────────────────────
+(function verificarAcceso(){
+  const ses = sesionValida();
+  if(ses){
+    // Ya tiene sesión válida — ocultar overlay y continuar
+    document.getElementById('auth-overlay').style.display = 'none';
+    authDesbloqueado = true;
+    aplicarSesionUI(ses);
+  }
+  // Si no hay sesión → el overlay permanece visible (display:flex por default)
+})();
+
 // ═══════════════════════════════════════════════════════
 // DATOS — exactamente del Excel, nombres sin modificar
 // compartido:true = mismo inmueble físico (misma dirección)
@@ -1083,28 +1274,8 @@ function actualizarFecha(){
 actualizarFecha();
 setInterval(actualizarFecha,60000);
 
-// Mostrar nombre de usuario en hero + footer
-(function(){
-  try{
-    const ses=JSON.parse(sessionStorage.getItem('sare1507_sesion'));
-    if(ses && ses.NOMBRE){
-      // Footer
-      const f=document.getElementById('footer-usuario');
-      if(f) f.innerHTML=`✏️ <strong>${ses.NOMBRE}</strong> — SARE 1507`;
-      // Hero badge
-      const heroBox  = document.getElementById('hero-usuario');
-      const heroNom  = document.getElementById('hero-nombre');
-      const heroCupo = document.getElementById('hero-cupo');
-      if(heroBox && heroNom && heroCupo){
-        heroNom.textContent  = ses.NOMBRE;
-        heroCupo.textContent = ses.CUPO || '—';
-        heroBox.style.display = 'block';
-      }
-    }
-  }catch(e){}
-})();
-
 // Cargar estado desde IndexedDB y luego renderizar
+// (la UI de sesión ya fue aplicada por verificarAcceso() al inicio)
 cargarEstadoIDB().then(()=>{ renderLista(); }).catch(()=>{ renderLista(); });
 </script>
 </body>
