@@ -303,21 +303,58 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
 }
 
 /* ══ LOGIN OVERLAY ══ */
-#login-overlay{position:fixed;inset:0;background:var(--guinda);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px}
+#login-overlay{
+  position:fixed;inset:0;z-index:999;
+  background:linear-gradient(160deg,var(--guinda-dk) 0%,var(--guinda) 55%,var(--guinda-lt) 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;
+}
 #login-overlay.oculto{display:none}
-.login-box{background:#fff;border-radius:18px;width:100%;max-width:380px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.4)}
-.login-head{background:var(--guinda);padding:28px 24px 22px;text-align:center;color:#fff}
-.login-head .login-logo{font-size:2.2rem;margin-bottom:6px}
-.login-head h2{font-size:1.05rem;font-weight:800;margin:0;letter-spacing:.5px}
-.login-head p{font-size:.72rem;margin:4px 0 0;opacity:.82}
-.login-body{padding:24px}
-.login-body label{font-size:.75rem;font-weight:700;color:var(--txt2);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
-.login-body select,.login-body input[type=password]{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.92rem;margin-bottom:14px;box-sizing:border-box;transition:border-color .2s}
-.login-body select:focus,.login-body input[type=password]:focus{outline:none;border-color:var(--guinda)}
-#login-error{color:#c62828;font-size:.78rem;text-align:center;min-height:18px;margin:-6px 0 10px;font-weight:600}
-.btn-login{width:100%;padding:12px;background:var(--guinda);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:800;cursor:pointer;letter-spacing:.5px;transition:opacity .2s}
-.btn-login:hover{opacity:.88}
-.login-footer{font-size:.65rem;color:var(--txt3);text-align:center;margin-top:14px}
+.login-logo-wrap{font-family:'Segoe UI',Arial,sans-serif;text-align:center;margin-bottom:28px}
+.login-logo-wrap .lbl{font-size:.65rem;color:rgba(255,255,255,.6);letter-spacing:.5px;text-transform:uppercase}
+.login-logo-wrap .app{font-size:1.25rem;font-weight:900;color:#E8B84B;margin-top:4px;line-height:1.2;letter-spacing:.3px}
+.login-logo-wrap .sub{font-size:.7rem;color:rgba(255,255,255,.55);margin-top:4px}
+.login-box{
+  background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);
+  border-radius:18px;padding:26px 22px;width:100%;max-width:360px;backdrop-filter:blur(6px);
+}
+.login-who{display:flex;gap:10px;margin-bottom:18px}
+.login-who-btn{
+  flex:1;padding:11px 6px;border-radius:10px;border:2px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.07);color:rgba(255,255,255,.7);cursor:pointer;
+  font-family:'Segoe UI',Arial,sans-serif;font-size:.72rem;font-weight:800;text-align:center;
+  transition:all .18s;line-height:1.35;
+}
+.login-who-btn.sel{background:#C8962A;border-color:#E8B84B;color:#4A0E29}
+.login-lbl{font-size:.68rem;color:rgba(255,255,255,.55);margin-bottom:6px;
+  font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.login-pin-wrap{position:relative;margin-bottom:16px}
+.login-body input[type=password],.login-body input[type=text]{
+  width:100%;padding:13px 44px 13px 14px;border-radius:10px;
+  border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);
+  color:#fff;font-size:1.1rem;letter-spacing:4px;font-weight:700;outline:none;
+  transition:border-color .2s;box-sizing:border-box;
+}
+.login-body input::placeholder{letter-spacing:1px;font-size:.8rem;color:rgba(255,255,255,.35);font-weight:400}
+.login-body input:focus{border-color:#E8B84B;background:rgba(255,255,255,.15)}
+.login-eye{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:1rem;opacity:.6;color:#fff;padding:4px;
+}
+#login-error{
+  background:rgba(255,80,80,.18);border:1px solid rgba(255,80,80,.35);
+  color:#FFB3B3;font-size:.73rem;text-align:center;border-radius:8px;
+  padding:8px 12px;margin-bottom:12px;display:none;
+}
+.btn-login{
+  width:100%;padding:14px;border-radius:10px;border:none;
+  background:#C8962A;color:#4A0E29;
+  font-family:'Segoe UI',Arial,sans-serif;font-size:.95rem;font-weight:900;
+  cursor:pointer;transition:all .18s;letter-spacing:.3px;
+}
+.btn-login:hover{background:#E8B84B}
+.btn-login:active{transform:scale(.98)}
+.btn-login:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.login-footer{font-size:.65rem;color:rgba(255,255,255,.4);text-align:center;margin-top:14px;letter-spacing:.3px}
 
 /* ── Topbar usuario ── */
 #top-user{font-size:.72rem;color:#fff;background:rgba(255,255,255,.15);border-radius:20px;padding:4px 10px;cursor:default;white-space:nowrap;display:flex;align-items:center;gap:6px}
@@ -357,22 +394,31 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
 
 <!-- ══ LOGIN OVERLAY ══ -->
 <div id="login-overlay">
+  <div class="login-logo-wrap">
+    <div class="lbl">SARE 1507 · Becas Bienestar · SEP</div>
+    <div class="app">INVENTARIO CÓMPUTO</div>
+    <div class="sub">SARE 1507 Ecatepec / CABB Coacalco</div>
+  </div>
   <div class="login-box">
-    <div class="login-head">
-      <div class="login-logo">🖥️</div>
-      <h2>INVENTARIO CÓMPUTO</h2>
-      <p>SARE 1507 Ecatepec · CABB Coacalco · SEP</p>
+    <div class="login-lbl">¿Quién eres?</div>
+    <div class="login-who">
+      <button class="login-who-btn sel" id="lwho-JEC" onclick="selLoginUsuario('JEC')">
+        ELÍAS<br><span style="font-size:.62rem;font-weight:600;opacity:.75">Cervantes</span>
+      </button>
+      <button class="login-who-btn" id="lwho-JEN" onclick="selLoginUsuario('JEN')">
+        EDUARDO<br><span style="font-size:.62rem;font-weight:600;opacity:.75">Noh Cruz</span>
+      </button>
     </div>
+    <div class="login-lbl">NIP</div>
     <div class="login-body">
-      <label for="login-usuario">Usuario</label>
-      <select id="login-usuario">
-        <option value="">— Selecciona tu nombre —</option>
-      </select>
-      <label for="login-pin">NIP de acceso</label>
-      <input type="password" id="login-pin" placeholder="••••••" autocomplete="off"
-        onkeydown="if(event.key==='Enter') doLogin()">
+      <div class="login-pin-wrap">
+        <input type="password" id="login-pin" placeholder="Ingresa tu NIP"
+          autocomplete="off" maxlength="20"
+          onkeydown="if(event.key==='Enter') doLogin()">
+        <button class="login-eye" id="login-eye-btn" onclick="toggleVerPinLogin()">👁</button>
+      </div>
       <div id="login-error"></div>
-      <button class="btn-login" onclick="doLogin()">INGRESAR</button>
+      <button class="btn-login" id="btn-login-ok" onclick="doLogin()">Entrar →</button>
       <div class="login-footer">Acceso restringido · Solo personal autorizado SARE 1507</div>
     </div>
   </div>
@@ -1611,13 +1657,28 @@ async function seedUsuarios(){
   }
 }
 
-// ── Poblar select del login ──
+// ── Selección de usuario por botón ──
+let _loginUsuarioSel = 'JEC'; // defecto: primer botón ya marcado como sel
+
+function selLoginUsuario(id){
+  _loginUsuarioSel = id;
+  document.querySelectorAll('.login-who-btn').forEach(b=>b.classList.remove('sel'));
+  const btn = document.getElementById('lwho-'+id);
+  if(btn) btn.classList.add('sel');
+  document.getElementById('login-pin').focus();
+}
+
+function toggleVerPinLogin(){
+  const inp = document.getElementById('login-pin');
+  const ojo = document.getElementById('login-eye-btn');
+  if(inp.type==='password'){ inp.type='text';  ojo.textContent='🔒'; }
+  else                      { inp.type='password'; ojo.textContent='👁'; }
+}
+
+// ── Poblar botones del login (mantiene compatibilidad con admin panel) ──
 async function poblarLoginSelect(){
-  const usuarios = await dbUsrGetAll();
-  const activos = usuarios.filter(u=>u.activo);
-  const sel = document.getElementById('login-usuario');
-  sel.innerHTML = '<option value="">— Selecciona tu nombre —</option>'
-    + activos.map(u=>`<option value="${u.id}">${u.nombre}</option>`).join('');
+  // Con el nuevo diseño de botones fijos, no se necesita poblar un <select>.
+  // Esta función se conserva porque initAdm() puede llamarla; no hace nada.
 }
 
 // ── Verificar sesión activa ──
@@ -1635,25 +1696,37 @@ function sesionActiva(){
 // ── Login ──
 async function doLogin(){
   const errEl = document.getElementById('login-error');
-  const usrId = document.getElementById('login-usuario').value;
-  const pin   = document.getElementById('login-pin').value;
-  errEl.textContent = '';
+  const btn   = document.getElementById('btn-login-ok');
+  const pin   = document.getElementById('login-pin').value.trim();
+  errEl.style.display = 'none';
 
-  if(!usrId){ errEl.textContent='Selecciona tu nombre'; return; }
-  if(!pin)  { errEl.textContent='Ingresa tu NIP'; return; }
+  if(!pin){ errEl.textContent='Ingresa tu NIP'; errEl.style.display='block'; return; }
+
+  if(btn){ btn.disabled=true; btn.textContent='…'; }
 
   const usuarios = await dbUsrGetAll();
-  const usr = usuarios.find(u=>u.id===usrId);
-  if(!usr||!usr.activo){ errEl.textContent='Usuario no disponible'; return; }
+  const usr = usuarios.find(u=>u.id===_loginUsuarioSel);
+  if(!usr||!usr.activo){
+    errEl.textContent='Usuario no disponible'; errEl.style.display='block';
+    if(btn){ btn.disabled=false; btn.textContent='Entrar →'; }
+    return;
+  }
 
   const pinHash = await hashPin(pin);
-  if(pinHash !== usr.pin){ errEl.textContent='NIP incorrecto'; return; }
+  if(pinHash !== usr.pin){
+    errEl.textContent='NIP incorrecto. Intenta de nuevo.'; errEl.style.display='block';
+    document.getElementById('login-pin').value='';
+    document.getElementById('login-pin').focus();
+    if(btn){ btn.disabled=false; btn.textContent='Entrar →'; }
+    return;
+  }
 
   // Sesión válida
   const sesion = { id:usr.id, nombre:usr.nombre, rol:usr.rol, ts:Date.now() };
   sessionStorage.setItem(SESION_KEY, JSON.stringify(sesion));
   document.getElementById('login-overlay').classList.add('oculto');
   document.getElementById('login-pin').value='';
+  if(btn){ btn.disabled=false; btn.textContent='Entrar →'; }
   mostrarUsuarioTopbar(sesion);
 
   // Ocultar tab Usuarios si no es admin
