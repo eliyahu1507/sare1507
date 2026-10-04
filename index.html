@@ -3,10 +3,9 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>SARE 1507 Panel de Herramientas - Inicio</title>
 <!-- Google Fonts: Montserrat for Headlines, Inter for Body -->
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <!-- Material Symbols -->
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script id="tailwind-config">
         tailwind.config = {
@@ -172,7 +171,6 @@
 <div class="flex justify-center mb-md">
 <div class="container">
         <img class="logo-institucional" src="https://framework-gb.cdn.gob.mx/landing/img/logoheader.svg" alt="Gobierno de México">
-
 </div>
 <h1 class="font-headline-lg text-headline-lg text-primary mb-xs">José Elías Cervantes Jiménez</h1>
 <p class="font-headline-sm text-headline-sm text-secondary mb-md">Enlace informático — SARE 1507 ECATEPEC</p>
@@ -273,7 +271,7 @@
 </div>
 </a>
 <!-- Card 9: Inventario Cómputo -->
-<a href="Inventario_computo_SARE_1507" class="action-card group flex flex-col items-start p-gutter rounded-xl shadow-sm text-left border" style="background-color:#F3EEF7; border-color:#B39CC8;">
+<a href="Inventario_computo_SARE_1507.html" class="action-card group flex flex-col items-start p-gutter rounded-xl shadow-sm text-left border" style="background-color:#F3EEF7; border-color:#B39CC8;">
 <div class="p-sm rounded-lg mb-md transition-colors" style="background-color:#4A235A;">
 <span class="material-symbols-outlined text-4xl text-white" style="font-variation-settings: 'FILL' 1;">computer</span>
 </div>
@@ -288,7 +286,7 @@
 <div class="mt-xl p-md bg-surface-container-low border border-outline-variant rounded-lg flex items-center gap-md">
 <span class="material-symbols-outlined text-secondary">info</span>
 <p class="font-body-sm text-body-sm text-on-surface-variant">
-                Sus credenciales de acceso están activas. El sistema cerrará sesión automáticamente tras 20 minutos de inactividad por seguridad institucional.
+                Sus credenciales de acceso están activas. El sistema cerrará sesión automáticamente tras 8 horas de inactividad por seguridad institucional.
             </p>
 </div>
 </main>
@@ -311,25 +309,122 @@
 <!-- ════════ LÓGICA DE AUTENTICACIÓN ════════ -->
 <script>
 (function(){
-  // Lista de personal autorizado (Nombre completo + CUPO/núm. de empleado)
-  const USUARIOS_AUTORIZADOS = [{"NOMBRE": "CERVANTES JIMENEZ JOSE ELIAS", "CUPO": "159415"}, {"NOMBRE": "NOH CRUZ JOSE EDUARDO", "CUPO": "1500585"}, {"NOMBRE": "ESCARCEGA DIAZ MARIA GUADALUPE", "CUPO": "1500678"}, {"NOMBRE": "BARRERA MARTINEZ GUSTAVO", "CUPO": "1500723"}, {"NOMBRE": "CARRASCO GALLARDO STEFANY", "CUPO": "1501080"}, {"NOMBRE": "HERNANDEZ GUEVARA ANDREA", "CUPO": "1501112"}, {"NOMBRE": "MARTINEZ MOISES CELINA", "CUPO": "1501166"}, {"NOMBRE": "GALVEZ GARCIA NESTOR ENRIQUE", "CUPO": "1501193"}, {"NOMBRE": "ORDAZ VERA OSCAR URIEL", "CUPO": "1501604"}, {"NOMBRE": "ORDAZ HERNANDEZ MARIA DEL ROCIO", "CUPO": "1501620"}, {"NOMBRE": "HERNANDEZ HERNANDEZ CLAUDIA LIZET", "CUPO": "1501623"}, {"NOMBRE": "CEDILLO GARCIA MIGUEL", "CUPO": "1501626"}, {"NOMBRE": "MARTINEZ ARELLANO ROSA CARMINA", "CUPO": "1501640"}, {"NOMBRE": "PUENTE MAGAÑA JESUS ALBERTO", "CUPO": "1501644"}, {"NOMBRE": "SANCHEZ BERNABE MARIA GUADALUPE BRENDA", "CUPO": "1501974"}, {"NOMBRE": "CUEVAS SANCHEZ EMMELY DANIELA", "CUPO": "1501975"}, {"NOMBRE": "ORNELAS HURTADO DANA KARLA", "CUPO": "1501976"}, {"NOMBRE": "POMPA VALDEZ ABRAHAM LEVI", "CUPO": "1501977"}, {"NOMBRE": "QUINTOS HERNANDEZ ELDA BERENICE", "CUPO": "1501981"}, {"NOMBRE": "OLVERA SANCHEZ ANA LAURA", "CUPO": "1501982"}, {"NOMBRE": "MAGAÑA ABURTO MARIA ANGELICA", "CUPO": "1501983"}, {"NOMBRE": "GONZALEZ AVILA BERSAIN", "CUPO": "1501985"}, {"NOMBRE": "SANCHEZ BELTRAN MAYRA SUET", "CUPO": "1501986"}, {"NOMBRE": "LUNA VELAZQUEZ LUCIA", "CUPO": "1501987"}, {"NOMBRE": "RIVERA GONZALEZ ANDREA PATRICIA", "CUPO": "1501989"}, {"NOMBRE": "GONZALEZ LINDA NOHEMI JAZMIN", "CUPO": "1501991"}, {"NOMBRE": "RAMIREZ CRUZ ERICKA YESSENIA", "CUPO": "1502176"}, {"NOMBRE": "MARTINEZ SOSA MICHELLE", "CUPO": "1502177"}, {"NOMBRE": "SILVETI PEREZ ROCIO", "CUPO": "1502178"}, {"NOMBRE": "RAMIREZ CRUZ RUTH PAOLA", "CUPO": "1502179"}, {"NOMBRE": "PACHECO RAMIREZ DULCE JOCABET", "CUPO": "1502180"}, {"NOMBRE": "ESCOBAR NABOR EMMA NAZARAHI", "CUPO": "1502210"}, {"NOMBRE": "LIRA ESPINOZA PATRICIA ALEJANDRA", "CUPO": "1502220"}, {"NOMBRE": "MORALES ESCOBAR JANETH JOSELYN", "CUPO": "1502229"}, {"NOMBRE": "GONZALEZ CLEMENTE LAURA ANDREA", "CUPO": "1502290"}, {"NOMBRE": "GONZALEZ VARGAS GABRIEL YOSEF ARNALDO", "CUPO": "1502291"}, {"NOMBRE": "MARTINEZ SANDOVAL JUAN CARLOS", "CUPO": "1502292"}, {"NOMBRE": "MENDOZA ALVARADO DIANA ARELI", "CUPO": "1502293"}, {"NOMBRE": "PONCE NIEVES BRYAN", "CUPO": "1502294"}, {"NOMBRE": "REYES VAZQUEZ NORMA ANGELICA", "CUPO": "1502295"}, {"NOMBRE": "RUBIO VALADEZ FERNANDA ESTEFANIA", "CUPO": "1502296"}, {"NOMBRE": "SALAZAR MARTINEZ GUADALUPE ABIGAIL", "CUPO": "1502297"}];
+  /*
+   * MAPA DE CUPOS AUTORIZADOS → id de sesión compartida
+   * JEC y JEN necesitan sesión compatible con seguimiento_carteles e inventario.
+   * El resto del personal (CUPO numérico) entra al index normalmente
+   * pero sin acceso a carteles/inventario (que requieren NIP propio).
+   */
+  const ID_POR_CUPO = {
+    '159415':  { id:'JEC', nombre:'JOSE ELIAS CERVANTES JIMENEZ'   },
+    '1500585': { id:'JEN', nombre:'JOSE EDUARDO NOH CRUZ'          }
+  };
+
+  // Todos los usuarios autorizados para el index (nombre + CUPO)
+  const USUARIOS_AUTORIZADOS = [
+    {"NOMBRE":"CERVANTES JIMENEZ JOSE ELIAS","CUPO":"159415"},
+    {"NOMBRE":"NOH CRUZ JOSE EDUARDO","CUPO":"1500585"},
+    {"NOMBRE":"ESCARCEGA DIAZ MARIA GUADALUPE","CUPO":"1500678"},
+    {"NOMBRE":"BARRERA MARTINEZ GUSTAVO","CUPO":"1500723"},
+    {"NOMBRE":"CARRASCO GALLARDO STEFANY","CUPO":"1501080"},
+    {"NOMBRE":"HERNANDEZ GUEVARA ANDREA","CUPO":"1501112"},
+    {"NOMBRE":"MARTINEZ MOISES CELINA","CUPO":"1501166"},
+    {"NOMBRE":"GALVEZ GARCIA NESTOR ENRIQUE","CUPO":"1501193"},
+    {"NOMBRE":"ORDAZ VERA OSCAR URIEL","CUPO":"1501604"},
+    {"NOMBRE":"ORDAZ HERNANDEZ MARIA DEL ROCIO","CUPO":"1501620"},
+    {"NOMBRE":"HERNANDEZ HERNANDEZ CLAUDIA LIZET","CUPO":"1501623"},
+    {"NOMBRE":"CEDILLO GARCIA MIGUEL","CUPO":"1501626"},
+    {"NOMBRE":"MARTINEZ ARELLANO ROSA CARMINA","CUPO":"1501640"},
+    {"NOMBRE":"PUENTE MAGAÑA JESUS ALBERTO","CUPO":"1501644"},
+    {"NOMBRE":"SANCHEZ BERNABE MARIA GUADALUPE BRENDA","CUPO":"1501974"},
+    {"NOMBRE":"CUEVAS SANCHEZ EMMELY DANIELA","CUPO":"1501975"},
+    {"NOMBRE":"ORNELAS HURTADO DANA KARLA","CUPO":"1501976"},
+    {"NOMBRE":"POMPA VALDEZ ABRAHAM LEVI","CUPO":"1501977"},
+    {"NOMBRE":"QUINTOS HERNANDEZ ELDA BERENICE","CUPO":"1501981"},
+    {"NOMBRE":"OLVERA SANCHEZ ANA LAURA","CUPO":"1501982"},
+    {"NOMBRE":"MAGAÑA ABURTO MARIA ANGELICA","CUPO":"1501983"},
+    {"NOMBRE":"GONZALEZ AVILA BERSAIN","CUPO":"1501985"},
+    {"NOMBRE":"SANCHEZ BELTRAN MAYRA SUET","CUPO":"1501986"},
+    {"NOMBRE":"LUNA VELAZQUEZ LUCIA","CUPO":"1501987"},
+    {"NOMBRE":"RIVERA GONZALEZ ANDREA PATRICIA","CUPO":"1501989"},
+    {"NOMBRE":"GONZALEZ LINDA NOHEMI JAZMIN","CUPO":"1501991"},
+    {"NOMBRE":"RAMIREZ CRUZ ERICKA YESSENIA","CUPO":"1502176"},
+    {"NOMBRE":"MARTINEZ SOSA MICHELLE","CUPO":"1502177"},
+    {"NOMBRE":"SILVETI PEREZ ROCIO","CUPO":"1502178"},
+    {"NOMBRE":"RAMIREZ CRUZ RUTH PAOLA","CUPO":"1502179"},
+    {"NOMBRE":"PACHECO RAMIREZ DULCE JOCABET","CUPO":"1502180"},
+    {"NOMBRE":"ESCOBAR NABOR EMMA NAZARAHI","CUPO":"1502210"},
+    {"NOMBRE":"LIRA ESPINOZA PATRICIA ALEJANDRA","CUPO":"1502220"},
+    {"NOMBRE":"MORALES ESCOBAR JANETH JOSELYN","CUPO":"1502229"},
+    {"NOMBRE":"GONZALEZ CLEMENTE LAURA ANDREA","CUPO":"1502290"},
+    {"NOMBRE":"GONZALEZ VARGAS GABRIEL YOSEF ARNALDO","CUPO":"1502291"},
+    {"NOMBRE":"MARTINEZ SANDOVAL JUAN CARLOS","CUPO":"1502292"},
+    {"NOMBRE":"MENDOZA ALVARADO DIANA ARELI","CUPO":"1502293"},
+    {"NOMBRE":"PONCE NIEVES BRYAN","CUPO":"1502294"},
+    {"NOMBRE":"REYES VAZQUEZ NORMA ANGELICA","CUPO":"1502295"},
+    {"NOMBRE":"RUBIO VALADEZ FERNANDA ESTEFANIA","CUPO":"1502296"},
+    {"NOMBRE":"SALAZAR MARTINEZ GUADALUPE ABIGAIL","CUPO":"1502297"}
+  ];
 
   function normalizar(txt){
     return (txt||'').toUpperCase().trim().replace(/\s+/g,' ')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g,''); // quita acentos
+      .normalize('NFD').replace(/[̀-ͯ]/g,'');
   }
 
   const SESSION_KEY = 'sare1507_sesion';
+  const TTL_MS = 8 * 60 * 60 * 1000; // 8 horas
 
+  /*
+   * getSesion: acepta AMBOS formatos de sesión
+   *   - Formato nuevo (carteles/inventario): { id, NOMBRE, CUPO, rol, ts }
+   *   - Formato legado (index anterior):     { NOMBRE, CUPO } sin ts
+   * Devuelve objeto con { NOMBRE, CUPO, id? } o null si inválida.
+   */
   function getSesion(){
-    try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch(e){ return null; }
+    try {
+      var s = JSON.parse(sessionStorage.getItem(SESSION_KEY));
+      if(!s) return null;
+      // Formato nuevo: verificar TTL
+      if(s.ts){
+        if(Date.now() - s.ts > TTL_MS){ sessionStorage.removeItem(SESSION_KEY); return null; }
+        return s;
+      }
+      // Formato legado (sin ts): aceptar sin TTL como antes
+      if(s.NOMBRE && s.CUPO) return s;
+      return null;
+    } catch(e){ return null; }
+  }
+
+  /*
+   * guardarSesion: guarda en formato NUEVO (compatible con carteles e inventario)
+   * para JEC y JEN; formato legado para el resto del personal.
+   */
+  function guardarSesion(usuario){
+    var cupo = String(usuario.CUPO).trim();
+    var mapa = ID_POR_CUPO[cupo];
+    if(mapa){
+      // Formato completo: {id, NOMBRE, CUPO, rol, ts} — el mismo que usan carteles e inventario
+      var obj = {
+        id:     mapa.id,
+        NOMBRE: mapa.nombre,
+        CUPO:   cupo,
+        rol:    'admin',
+        ts:     Date.now()
+      };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(obj));
+      return obj;
+    } else {
+      // Formato legado para el resto del personal
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(usuario));
+      return usuario;
+    }
   }
 
   function mostrarApp(usuario){
     document.getElementById('login-overlay').style.display = 'none';
     document.getElementById('app-content').style.display = '';
     var lbl = document.getElementById('usuario-conectado');
-    if(lbl && usuario) lbl.textContent = usuario.NOMBRE;
+    if(lbl && usuario) lbl.textContent = usuario.NOMBRE || usuario.nombre || '';
   }
 
   function mostrarLogin(){
@@ -337,7 +432,7 @@
     document.getElementById('app-content').style.display = 'none';
   }
 
-  // Al cargar: si ya hay sesión activa en este navegador, entrar directo
+  // Al cargar: si ya hay sesión activa (cualquier formato), entrar directo
   var sesionActiva = getSesion();
   if(sesionActiva){
     mostrarApp(sesionActiva);
@@ -346,8 +441,8 @@
   document.getElementById('login-form').addEventListener('submit', function(e){
     e.preventDefault();
     var nombreInput = normalizar(document.getElementById('login-nombre').value);
-    var cupoInput = (document.getElementById('login-cupo').value||'').trim();
-    var errorBox = document.getElementById('login-error');
+    var cupoInput   = (document.getElementById('login-cupo').value||'').trim();
+    var errorBox    = document.getElementById('login-error');
 
     var encontrado = USUARIOS_AUTORIZADOS.find(function(u){
       return normalizar(u.NOMBRE) === nombreInput && String(u.CUPO).trim() === cupoInput;
@@ -355,8 +450,8 @@
 
     if(encontrado){
       errorBox.style.display = 'none';
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(encontrado));
-      mostrarApp(encontrado);
+      var sesion = guardarSesion(encontrado);
+      mostrarApp(sesion);
     } else {
       errorBox.style.display = 'block';
     }
@@ -376,7 +471,7 @@
             card.addEventListener('click', function(e) {
                 let x = e.clientX - e.target.getBoundingClientRect().left;
                 let y = e.clientY - e.target.getBoundingClientRect().top;
-                
+
                 let ripples = document.createElement('span');
                 ripples.style.left = x + 'px';
                 ripples.style.top = y + 'px';
@@ -387,20 +482,19 @@
                 ripples.style.borderRadius = '50%';
                 ripples.style.transform = 'translate(-50%, -50%)';
                 ripples.style.transition = 'width 0.5s, height 0.5s';
-                
+
                 this.appendChild(ripples);
-                
+
                 setTimeout(() => {
                     ripples.style.width = '500px';
                     ripples.style.height = '500px';
                 }, 10);
-                
+
                 setTimeout(() => {
                     ripples.remove();
                 }, 1000);
             });
         });
     </script>
-
 
 </body></html>
