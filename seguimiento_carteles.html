@@ -301,7 +301,7 @@ footer strong{color:var(--dorado-l)}
     </div>
     <div class="hero-title">
       <h1>RUTA DE <span>CARTELES</span></h1>
-      <p>Educación Básica — Ecatepec Centro · Lunes 6 Oct 2026</p>
+      <p>Educación Básica — Ecatepec Centro · <span id="lbl-fecha-hero"></span></p>
       <div id="hero-usuario" style="display:none;margin-top:6px;background:rgba(255,255,255,.12);
         border-radius:8px;padding:5px 12px;font-size:.68rem;color:rgba(255,255,255,.9);
         font-family:'Montserrat',sans-serif;letter-spacing:.4px">
@@ -326,6 +326,16 @@ footer strong{color:var(--dorado-l)}
     <div id="lista-ccts"></div>
     <button class="btn btn-primary" onclick="mostrarResumen()">📊 Ver resumen del día</button>
     <button class="btn" style="background:var(--azul);color:#fff" onclick="abrirExportar()">📤 Exportar fotos a OneDrive</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+      <button class="btn" style="background:var(--verde);color:#fff;font-size:.72rem" onclick="exportarProgresoJSON()">💾 Guardar progreso</button>
+      <label class="btn" style="background:var(--morado);color:#fff;font-size:.72rem;cursor:pointer;text-align:center;line-height:1.9">
+        📂 Cargar progreso
+        <input type="file" accept=".json" id="input-importar-json" onchange="importarProgresoJSON(this)" style="display:none">
+      </label>
+    </div>
+    <div style="font-size:.62rem;color:#888;text-align:center;margin-top:-4px;padding:0 4px">
+      Usa "Guardar progreso" en un dispositivo y "Cargar progreso" en el otro para sincronizar
+    </div>
   </div>
   <footer id="footer-usuario">✏️ <strong>SARE 1507</strong></footer>
 </div>
@@ -1355,12 +1365,100 @@ function abrirExportar(){
   mostrarPantalla('screen-exportar');
 }
 
+// ═══════════════════════════════════════════════════════
+// EXPORTAR / IMPORTAR PROGRESO (JSON) — sincronización entre dispositivos
+// Las fotos se guardan como dataURL (base64), los videos solo como flag
+// (los Blobs no son serializables en JSON; se indica que hay video pero
+//  el archivo de video tendrá que retomarse en el dispositivo destino)
+// ═══════════════════════════════════════════════════════
+async function exportarProgresoJSON(){
+  const btn = event.target;
+  btn.textContent = '⏳ Preparando…';
+  btn.disabled = true;
+  try{
+    const snapshot = {
+      version: 1,
+      ts: Date.now(),
+      dispositivo: navigator.userAgent.substring(0,60),
+      ccts: []
+    };
+    for(const c of CCT_DATA){
+      const req = fotosReq(c);
+      const fotos = [];
+      for(let i=0;i<req;i++){
+        // Leer directamente de IDB para asegurar datos persistidos
+        const f = await idbGet(`foto_${c.id}_${i}`);
+        fotos.push(f || null);
+      }
+      const vFlag = await idbGet(`video_flag_${c.id}`);
+      snapshot.ccts.push({ id: c.id, cct: c.cct, fotos, videoFlag: !!vFlag });
+    }
+    const json = JSON.stringify(snapshot);
+    const blob = new Blob([json], {type:'application/json'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const fecha= new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'2-digit'}).replace(/\//g,'-');
+    a.href = url; a.download = `progreso_carteles_${fecha}.json`; a.click();
+    URL.revokeObjectURL(url);
+    mostrarToast('💾 Progreso guardado — comparte el archivo al otro dispositivo');
+  }catch(e){
+    mostrarToast('❌ Error al exportar: '+e.message,'#c62828');
+    console.error(e);
+  } finally {
+    btn.textContent = '💾 Guardar progreso'; btn.disabled = false;
+  }
+}
+
+async function importarProgresoJSON(input){
+  if(!input.files[0]) return;
+  const file = input.files[0];
+  const texto = await file.text();
+  let data;
+  try{ data = JSON.parse(texto); }
+  catch(e){ mostrarToast('❌ Archivo JSON inválido','#c62828'); return; }
+  if(!data.version || !Array.isArray(data.ccts)){
+    mostrarToast('❌ Formato de archivo no reconocido','#c62828'); return;
+  }
+  const fecha = new Date(data.ts).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  if(!confirm(`¿Cargar progreso guardado el ${fecha}?\n\nEsto REEMPLAZA las fotos que hay en este dispositivo.`)){
+    input.value=''; return;
+  }
+  mostrarToast('⏳ Importando…','var(--azul)');
+  try{
+    for(const item of data.ccts){
+      const c = CCT_DATA.find(x=>x.id===item.id);
+      if(!c) continue;
+      const req = fotosReq(c);
+      for(let i=0;i<req;i++){
+        const f = (item.fotos && item.fotos[i]) || null;
+        if(f){
+          estado[c.id].fotos[i] = f;
+          await idbPut(`foto_${c.id}_${i}`, f);
+        }
+      }
+      if(item.videoFlag){
+        estado[c.id].video = true;
+        await idbPut(`video_flag_${c.id}`, true);
+        // El blob de video NO se transfiere — solo el flag
+      }
+    }
+    renderLista();
+    mostrarToast('✅ Progreso importado correctamente');
+  }catch(e){
+    mostrarToast('❌ Error al importar: '+e.message,'#c62828');
+    console.error(e);
+  }
+  input.value='';
+}
+
 // ── FECHA ──
 function actualizarFecha(){
   const n=new Date();
   const f=n.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
   const h=n.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
   document.getElementById('lbl-fecha').innerHTML=f+'<br>'+h;
+  const hero=document.getElementById('lbl-fecha-hero');
+  if(hero) hero.textContent=n.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'short',year:'numeric'});
 }
 
 // ── INIT ──
