@@ -120,13 +120,19 @@ body{font-family:'Open Sans',sans-serif;background:var(--gris-bg);color:var(--te
   border:2px dashed var(--gris-d);aspect-ratio:4/3;display:flex;flex-direction:column;
   align-items:center;justify-content:center;cursor:pointer}
 .foto-slot.tomada{border:2px solid var(--verde)}
-.foto-slot:active{opacity:.8}
 .foto-slot input[type="file"]{display:none}
 .foto-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.foto-placeholder{text-align:center;pointer-events:none;padding:8px}
-.foto-placeholder .icono{font-size:1.6rem;margin-bottom:4px}
-.foto-placeholder .lbl{font-size:.6rem;font-weight:700;color:#aaa;font-family:'Montserrat',sans-serif;
+.foto-placeholder{text-align:center;pointer-events:none;padding:6px}
+.foto-placeholder .icono{font-size:1.5rem;margin-bottom:3px}
+.foto-placeholder .lbl{font-size:.58rem;font-weight:700;color:#aaa;font-family:'Montserrat',sans-serif;
   text-transform:uppercase;line-height:1.3}
+/* Botones cámara / galería en slot vacío */
+.foto-src-btns{display:flex;gap:5px;margin-top:6px;pointer-events:auto}
+.foto-src-btn{flex:1;padding:5px 4px;border:none;border-radius:7px;font-size:.6rem;font-weight:800;
+  cursor:pointer;letter-spacing:.2px;line-height:1.3;transition:opacity .15s}
+.foto-src-btn:active{opacity:.7}
+.foto-src-btn.cam{background:var(--guinda);color:#fff}
+.foto-src-btn.gal{background:rgba(255,255,255,.18);color:var(--guinda);border:1.5px solid var(--guinda)}
 .foto-check{position:absolute;top:5px;right:5px;width:22px;height:22px;background:var(--verde);
   border-radius:50%;display:none;align-items:center;justify-content:center;
   color:#fff;font-size:.75rem;font-weight:900;z-index:2}
@@ -552,7 +558,7 @@ const CCT_DATA = [
   },
   {
     id:5, parada:4, zona:'CENTRO',
-    cct:'15EPR0154Z', nombre:'Primaria Oficial Emiliano Zapata',
+    cct:'15EPR1803U', nombre:'Primaria Oficial Emiliano Zapata (B)',
     tipo:'VIRTUAL', compartido:true,
     compañero:'15EPR0153B',
     ubicacion:'San Cristobal Centro, Av. Revolución, cerca de la estación del Mexibus El Carmen'
@@ -810,15 +816,21 @@ function abrirDetalle(id){
     const ok = st.fotos[i]!==null;
     fotosHtml += `
       <div class="foto-slot ${ok?'tomada':''}" id="slot-${id}-${i}">
-        <input type="file" accept="image/*" capture="environment" id="input-foto-${id}-${i}" onchange="tomarFoto(${id},${i},this)" style="display:none">
+        <input type="file" accept="image/*" capture="environment" id="input-foto-cam-${id}-${i}" onchange="tomarFoto(${id},${i},this)" style="display:none">
+        <input type="file" accept="image/*" id="input-foto-gal-${id}-${i}" onchange="tomarFoto(${id},${i},this)" style="display:none">
         ${ok ? `
           <img src="${st.fotos[i]}" id="img-${id}-${i}" onclick="verFotoOpciones(${id},${i})" style="cursor:pointer">
           <div class="foto-check">✓</div>
-          <button class="btn-retomar" onclick="retomar(${id},${i})" title="Retomar foto">🔄</button>
+          <button class="btn-retomar" onclick="retomarOpciones(${id},${i})" title="Retomar foto">🔄</button>
         ` : `
-          <label for="input-foto-${id}-${i}" style="display:contents;cursor:pointer">
-            <div class="foto-placeholder"><div class="icono">📷</div><div class="lbl">${LABELS[i]}</div></div>
-          </label>
+          <div class="foto-placeholder">
+            <div class="icono">📷</div>
+            <div class="lbl">${LABELS[i]}</div>
+            <div class="foto-src-btns">
+              <button class="foto-src-btn cam" onclick="event.stopPropagation();document.getElementById('input-foto-cam-${id}-${i}').click()">📷 Cámara</button>
+              <button class="foto-src-btn gal" onclick="event.stopPropagation();document.getElementById('input-foto-gal-${id}-${i}').click()">🖼️ Galería</button>
+            </div>
+          </div>
           <div class="foto-check">✓</div>
         `}
       </div>`;
@@ -831,16 +843,19 @@ function abrirDetalle(id){
   const videoHtml = `
     <div class="video-slot ${vid?'tomado':''}" id="video-slot-${id}"
       ${!puedeVideo?'style="opacity:.4;pointer-events:none"':''}>
-      <input type="file" accept="video/*" capture="environment" id="input-video-${id}" onchange="tomarVideo(${id},this)" style="display:none">
-      <label for="input-video-${id}" style="display:contents;cursor:pointer">
-        <div class="video-icono">🎬</div>
-        <div class="video-info">
-          <div class="lbl">${!puedeVideo?'Video (límite de 5 alcanzado)':'Video del cartel'}</div>
-          <div class="sub">15 seg · alejarse de la puerta · Opcional — ${5-videosUsados-(vid?0:0)} disponibles</div>
-        </div>
-      </label>
+      <input type="file" accept="video/*" capture="environment" id="input-video-cam-${id}" onchange="tomarVideo(${id},this)" style="display:none">
+      <input type="file" accept="video/*" id="input-video-gal-${id}" onchange="tomarVideo(${id},this)" style="display:none">
+      <div class="video-icono">🎬</div>
+      <div class="video-info">
+        <div class="lbl">${!puedeVideo?'Video (límite de 5 alcanzado)':'Video del cartel'}</div>
+        <div class="sub">15 seg · alejarse de la puerta · Opcional — ${5-videosUsados} disponibles</div>
+        ${!vid && puedeVideo ? `<div class="foto-src-btns" style="margin-top:6px">
+          <button class="foto-src-btn cam" onclick="event.stopPropagation();document.getElementById('input-video-cam-${id}').click()">🎬 Grabar</button>
+          <button class="foto-src-btn gal" onclick="event.stopPropagation();document.getElementById('input-video-gal-${id}').click()">📁 Archivo</button>
+        </div>` : ''}
+      </div>
       <div class="video-check" id="vcheck-${id}">${vid?'✅ Grabado':''}</div>
-      ${vid?`<button class="btn-retomar" onclick="retomar(${id},'video')" title="Retomar video">🔄</button>`:''}
+      ${vid?`<button class="btn-retomar" onclick="retomarVideoOpciones(${id})" title="Retomar video">🔄</button>`:''}
     </div>`;
 
   document.getElementById('detalle-content').innerHTML = `
@@ -881,14 +896,68 @@ function mostrarToast(msg, color){
   window._toastTimer=setTimeout(()=>{ t.style.opacity='0'; },2000);
 }
 
-// ── RETOMAR FOTO O VIDEO ──
-// Abre el input de cámara correspondiente sin borrar lo anterior todavía
-function retomar(id, idxOvideo){
+// ── RETOMAR FOTO — muestra botones cámara / galería ──
+function retomarOpciones(id, idx){
+  // Mostrar mini-modal con dos opciones
+  const existing = document.getElementById('retomar-modal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'retomar-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9000;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML=`
+    <div style="background:#1a0a0f;border-radius:16px;padding:22px 24px;min-width:240px;text-align:center;border:1.5px solid var(--guinda)">
+      <div style="font-size:.9rem;font-weight:700;color:var(--dorado-l);margin-bottom:14px">🔄 Retomar foto</div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button onclick="retomar(${id},${idx},'cam');document.getElementById('retomar-modal').remove()"
+          style="flex:1;padding:10px 8px;background:var(--guinda);color:#fff;border:none;border-radius:9px;font-size:.78rem;font-weight:800;cursor:pointer">
+          📷 Cámara
+        </button>
+        <button onclick="retomar(${id},${idx},'gal');document.getElementById('retomar-modal').remove()"
+          style="flex:1;padding:10px 8px;background:rgba(255,255,255,.12);color:var(--dorado-l);border:1.5px solid var(--guinda);border-radius:9px;font-size:.78rem;font-weight:800;cursor:pointer">
+          🖼️ Galería
+        </button>
+      </div>
+      <button onclick="document.getElementById('retomar-modal').remove()"
+        style="margin-top:12px;background:transparent;border:none;color:#888;font-size:.75rem;cursor:pointer">Cancelar</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+// ── RETOMAR VIDEO — muestra botones grabar / archivo ──
+function retomarVideoOpciones(id){
+  const existing = document.getElementById('retomar-modal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'retomar-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9000;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML=`
+    <div style="background:#1a0a0f;border-radius:16px;padding:22px 24px;min-width:240px;text-align:center;border:1.5px solid var(--guinda)">
+      <div style="font-size:.9rem;font-weight:700;color:var(--dorado-l);margin-bottom:14px">🔄 Retomar video</div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button onclick="retomar(${id},'video','cam');document.getElementById('retomar-modal').remove()"
+          style="flex:1;padding:10px 8px;background:var(--guinda);color:#fff;border:none;border-radius:9px;font-size:.78rem;font-weight:800;cursor:pointer">
+          🎬 Grabar
+        </button>
+        <button onclick="retomar(${id},'video','gal');document.getElementById('retomar-modal').remove()"
+          style="flex:1;padding:10px 8px;background:rgba(255,255,255,.12);color:var(--dorado-l);border:1.5px solid var(--guinda);border-radius:9px;font-size:.78rem;font-weight:800;cursor:pointer">
+          📁 Archivo
+        </button>
+      </div>
+      <button onclick="document.getElementById('retomar-modal').remove()"
+        style="margin-top:12px;background:transparent;border:none;color:#888;font-size:.75rem;cursor:pointer">Cancelar</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+// ── RETOMAR FOTO O VIDEO — ejecuta la selección ──
+function retomar(id, idxOvideo, fuente){
   if(idxOvideo === 'video'){
-    const inp = document.getElementById(`input-video-${id}`);
+    const sufijo = fuente === 'gal' ? 'gal' : 'cam';
+    const inp = document.getElementById(`input-video-${sufijo}-${id}`);
     if(inp){ inp.value=''; inp.click(); }
   } else {
-    const inp = document.getElementById(`input-foto-${id}-${idxOvideo}`);
+    const sufijo = fuente === 'gal' ? 'gal' : 'cam';
+    const inp = document.getElementById(`input-foto-${sufijo}-${id}-${idxOvideo}`);
     if(inp){ inp.value=''; inp.click(); }
   }
 }
@@ -908,10 +977,27 @@ function tomarFoto(id, idx, input){
     if(slot){
       slot.classList.add('tomada');
       let img = document.getElementById(`img-${id}-${idx}`);
-      if(!img){ img=document.createElement('img'); img.id=`img-${id}-${idx}`; slot.appendChild(img); }
+      const esNueva = !img;
+      if(!img){
+        img=document.createElement('img');
+        img.id=`img-${id}-${idx}`;
+        img.onclick=()=>verFotoOpciones(id,idx);
+        img.style.cursor='pointer';
+        slot.appendChild(img);
+      }
       img.src = dataUrl;
       const ph=slot.querySelector('.foto-placeholder');
       if(ph) ph.style.display='none';
+      // Añadir check y botón retomar la primera vez
+      if(esNueva){
+        if(!slot.querySelector('.foto-check')){
+          const chk=document.createElement('div'); chk.className='foto-check'; chk.textContent='✓'; slot.appendChild(chk);
+        }
+        if(!slot.querySelector('.btn-retomar')){
+          const br=document.createElement('button'); br.className='btn-retomar'; br.title='Retomar foto'; br.textContent='🔄';
+          br.onclick=()=>retomarOpciones(id,idx); slot.appendChild(br);
+        }
+      }
     }
     const btn=document.getElementById('btn-listo');
     if(btn) btn.disabled=!fotosOk(id);
@@ -937,6 +1023,13 @@ async function tomarVideo(id, input){
     const sub=slot.querySelector('.sub');
     const kb=Math.round(file.size/1024);
     if(sub) sub.textContent=`Video guardado · ${kb<1024?kb+'KB':Math.round(kb/1024)+'MB'}`;
+    // Ocultar botones de fuente y mostrar botón retomar
+    const srcBtns=slot.querySelector('.foto-src-btns');
+    if(srcBtns) srcBtns.style.display='none';
+    if(!slot.querySelector('.btn-retomar')){
+      const br=document.createElement('button'); br.className='btn-retomar'; br.title='Retomar video'; br.textContent='🔄';
+      br.onclick=()=>retomarVideoOpciones(id); slot.appendChild(br);
+    }
   }
 }
 
