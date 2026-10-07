@@ -1056,7 +1056,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
     <div class="modal-body">
       <div class="modal-equip-info" id="modal-info"></div>
 
-      <div class="foto-tabs">
+      <div class="foto-tabs" id="foto-tabs-row">
         <div class="foto-tab active" id="tab-general" onclick="setFotoTipo('general')">📷 Vista general</div>
         <div class="foto-tab" id="tab-tag" onclick="setFotoTipo('tag')">🏷️ Etiqueta TAG</div>
         <div class="foto-tab" id="tab-serie" onclick="setFotoTipo('serie')">🔢 No. de serie</div>
@@ -1073,6 +1073,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
         <button class="btn-retake" id="btn-rehacer" onclick="rehacerFoto()" style="display:none">🔄 Rehacer</button>
       </div>
       <button class="btn-save-foto" id="btn-guardar-foto" onclick="guardarFotoActual()" disabled>💾 Guardar esta foto</button>
+      <button id="btn-serie-no-visible" onclick="marcarSerieNoVisible()"
+        style="display:none;width:100%;margin-top:6px;padding:9px;border:1.5px dashed #e65100;background:#fff8f5;color:#e65100;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer">
+        🚫 Etiqueta no visible / ilegible
+      </button>
 
       <div class="modal-fotos-guardadas">
         <h4>Fotos guardadas para este equipo:</h4>
@@ -1380,7 +1384,12 @@ function dbDel(id){ return new Promise((res,rej)=>{
 });}
 async function getFotosCount(key){
   const rec=await dbGet(key);
+  // Contar fotos reales + marcadores "no visible" (ambos cuentan como completados)
   return rec ? (rec.fotos||[]).length : 0;
+}
+// Total de fotos esperadas según tipo de equipo
+function fotosTotalesEsperadas(tipoEq){
+  return tabsParaTipo(tipoEq).length;
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1461,7 +1470,7 @@ async function renderInv(lista){
         <button class="btn-foto${nf>0?' has-foto':''}" onclick='abrirModal(${JSON.stringify(eq)})'>
           ${nf>0?`✅ ${nf} foto${nf!==1?'s':''}`:'📷 Fotografiar'}
         </button>
-        ${nf>0?`<span class="foto-count">${nf}/3</span>`:''}
+        ${nf>0?`<span class="foto-count">${nf}/${fotosTotalesEsperadas(tipo)}</span>`:''}
       </div>
     </div>`;
   }).join('');
@@ -2181,15 +2190,33 @@ async function renderEstadisticas(){
 // ══════════════════════════════════════════════════════════════════════
 let modalEq=null, fotoTipoActivo='general', streamActivo=null, fotoCapturada=null;
 
+// Configuración de tabs por tipo de equipo:
+// CPU         → general + tag + serie
+// MONITOR, NO BREAK, MULTIFUNCIONAL, COMUNICACIONES, PERIFÉRICO → general + serie
+// MOUSE, TECLADO  → solo general
+function tabsParaTipo(tipoEq){
+  const t=(tipoEq||'').toUpperCase();
+  if(['MOUSE','TECLADO'].includes(t))        return ['general'];
+  if(t==='CPU')                               return ['general','tag','serie'];
+  return ['general','serie']; // MONITOR, NO BREAK, MULTIFUNCIONAL, etc.
+}
+
 async function abrirModal(eq, tipoInicial='general'){
   modalEq=eq;
-  fotoTipoActivo=tipoInicial;
   fotoCapturada=null;
 
   document.getElementById('modal-titulo').textContent=`Fotografiar — ${eq[8]}`;
   document.getElementById('modal-info').innerHTML=
-    `<b>${eq[1]}</b><br>TAG: ${eq[3]} · Serie: ${eq[4]}<br>Tipo: ${eq[8]} | ${eq[9]} | ${ubicacion(eq[0])}`;
+    `<b>${eq[1]}</b><br>${eq[8]==='CPU'?'TAG: '+eq[3]+' · ':''} Serie: ${eq[4]}<br>Tipo: ${eq[8]} | ${eq[9]} | ${ubicacion(eq[0])}`;
 
+  // Mostrar/ocultar tabs según tipo de equipo
+  const tabsPermitidas=tabsParaTipo(eq[8]);
+  ['general','tag','serie'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    el.style.display=tabsPermitidas.includes(t)?'':'none';
+  });
+  // Si el tipoInicial no aplica para este equipo, usar el primero disponible
+  fotoTipoActivo=tabsPermitidas.includes(tipoInicial)?tipoInicial:tabsPermitidas[0];
   setFotoTab(fotoTipoActivo);
   document.getElementById('foto-preview-img').style.display='none';
   document.getElementById('video-stream').style.display='block';
@@ -2205,10 +2232,19 @@ async function abrirModal(eq, tipoInicial='general'){
 function setFotoTab(tipo){
   fotoTipoActivo=tipo;
   ['general','tag','serie'].forEach(t=>{
-    document.getElementById('tab-'+t).className='foto-tab'+(t===tipo?' active':'');
+    const el=document.getElementById('tab-'+t);
+    // Mantener visibilidad actual, solo toggle active
+    const base=el.className.replace(' active','').replace('active','').trim();
+    el.className=base+(t===tipo?' active':'');
   });
   const labels={general:'Vista general',tag:'Etiqueta TAG',serie:'No. de serie'};
   document.getElementById('foto-label-overlay').textContent=labels[tipo]||tipo;
+  // Mostrar botón "No visible" solo en tab serie y para tipos con serie (no MOUSE/TECLADO)
+  const btnNoVis=document.getElementById('btn-serie-no-visible');
+  if(btnNoVis){
+    const tipoEq=modalEq?(modalEq[8]||'').toUpperCase():'';
+    btnNoVis.style.display=(tipo==='serie'&&!['MOUSE','TECLADO'].includes(tipoEq))?'':'none';
+  }
 }
 
 async function setFotoTipo(tipo){
@@ -2222,26 +2258,21 @@ async function setFotoTipo(tipo){
   // Limpiar badge OCR al cambiar de tab
   const prevBadge=document.getElementById('ocr-result-badge');
   if(prevBadge) prevBadge.remove();
-  // Mostrar hint de serie esperada cuando se activa tab serie
+  // Limpiar hint anterior
   const hintEl=document.getElementById('serie-hint');
   if(hintEl) hintEl.remove();
   if(tipo==='serie'&&modalEq){
     const hint=document.createElement('div');
     hint.id='serie-hint';
     const tipoEq=(modalEq[8]||'').toUpperCase();
-    const sinOCR=['MOUSE','TECLADO','PERIFÉRICO'];
-    if(sinOCR.includes(tipoEq)){
-      // Mouse/teclado: sin verificación OCR, solo nota informativa
-      hint.style.cssText='background:#f3f3f3;border:1px solid #ccc;border-radius:7px;padding:7px 11px;font-size:.78rem;margin-top:8px;color:#555';
-      hint.innerHTML=`ℹ️ <strong>${tipoEq}</strong> — no se realiza verificación de serie para este tipo de componente.`;
-    } else if(modalEq[4]){
-      // Equipos con serie verificable
+    if(modalEq[4]){
       hint.style.cssText='background:#e3f2fd;border:1px solid #90caf9;border-radius:7px;padding:7px 11px;font-size:.78rem;margin-top:8px;color:#0d47a1';
       hint.innerHTML=`📋 <strong>Serie del fabricante registrada:</strong> <span style="font-family:monospace;font-size:.88rem;letter-spacing:1px">${modalEq[4]}</span><br>
-        <span style="font-size:.72rem;color:#555">Enfoca la etiqueta física del fabricante (no la etiqueta CNBBBJ). Al guardar se verificará automáticamente.</span>`;
+        <span style="font-size:.72rem;color:#555">Enfoca la etiqueta física del fabricante. Al guardar se verificará automáticamente.</span>`;
     }
     document.querySelector('#modal-foto .modal-body').appendChild(hint);
   }
+  iniciarCamera();
 }
 
 function iniciarCamera(){
@@ -2310,6 +2341,31 @@ async function guardarFotoActual(){
   document.getElementById('tab-'+fotoTipoActivo).classList.add('done');
   await cargarFotosGuardadas();
   // Refrescar inventario para actualizar botón
+  filtrarInv();
+  if(MONITORES_DANADOS.has(modalEq[0])&&modalEq[8]==='MONITOR') renderInc();
+}
+
+// ── SERIE NO VISIBLE ──
+async function marcarSerieNoVisible(){
+  if(!modalEq) return;
+  const k=eqKey(modalEq);
+  let rec=await dbGet(k)||{id:k,fotos:[]};
+  // Guardar un marcador especial (sin data de imagen)
+  rec.fotos=rec.fotos.filter(f=>f.tipo!=='serie');
+  rec.fotos.push({tipo:'serie',data:null,noVisible:true,ts:Date.now()});
+  await dbPut(rec);
+  // Marcar tab serie como done con estilo naranja
+  const tabSerie=document.getElementById('tab-serie');
+  if(tabSerie){
+    tabSerie.classList.remove('active');
+    tabSerie.classList.add('done');
+    tabSerie.style.borderColor='#e65100';
+    tabSerie.style.color='#e65100';
+    tabSerie.style.background='#fff8f5';
+    tabSerie.textContent='🚫 N/A visible';
+  }
+  document.getElementById('btn-serie-no-visible').style.display='none';
+  await cargarFotosGuardadas();
   filtrarInv();
   if(MONITORES_DANADOS.has(modalEq[0])&&modalEq[8]==='MONITOR') renderInc();
 }
@@ -2418,24 +2474,60 @@ async function cargarFotosGuardadas(){
   const fotos=rec?rec.fotos||[]:[];
   const tiposLabel={general:'Vista gral.',tag:'Etiqueta TAG',serie:'No. serie'};
   const grid=document.getElementById('fotos-guardadas-grid');
+  const tabsPermitidas=tabsParaTipo(modalEq[8]);
+
   if(!fotos.length){
     grid.innerHTML='<span style="font-size:.75rem;color:#aaa">Sin fotos guardadas aún</span>';
-    // actualizar tabs
-    ['general','tag','serie'].forEach(t=>document.getElementById('tab-'+t).classList.remove('done'));
+    tabsPermitidas.forEach(t=>{
+      const el=document.getElementById('tab-'+t);
+      el.classList.remove('done');
+      el.style.borderColor=''; el.style.color=''; el.style.background='';
+      const labels={general:'📷 Vista general',tag:'🏷️ Etiqueta TAG',serie:'🔢 No. de serie'};
+      el.textContent=labels[t]||t;
+    });
     return;
   }
-  // Marcar tabs con foto
-  ['general','tag','serie'].forEach(t=>{
-    const tiene=fotos.some(f=>f.tipo===t);
+  // Marcar tabs: done (foto real), done naranja (no visible), ni done (sin foto)
+  tabsPermitidas.forEach(t=>{
+    const f=fotos.find(x=>x.tipo===t);
     const el=document.getElementById('tab-'+t);
-    if(tiene) el.classList.add('done'); else el.classList.remove('done');
+    const labels={general:'📷 Vista general',tag:'🏷️ Etiqueta TAG',serie:'🔢 No. de serie'};
+    if(f&&f.noVisible){
+      el.classList.add('done');
+      el.style.borderColor='#e65100'; el.style.color='#e65100'; el.style.background='#fff8f5';
+      el.textContent='🚫 N/A visible';
+    } else if(f){
+      el.classList.add('done');
+      el.style.borderColor=''; el.style.color=''; el.style.background='';
+      el.textContent=labels[t]||t;
+    } else {
+      el.classList.remove('done');
+      el.style.borderColor=''; el.style.color=''; el.style.background='';
+      el.textContent=labels[t]||t;
+    }
   });
-  grid.innerHTML=fotos.map(f=>`
-    <div class="foto-saved-thumb">
-      <img src="${f.data}" onclick="verImagen('${f.data}')">
-      <button class="del-foto" onclick="eliminarFoto('${k}','${f.tipo}')" title="Eliminar">✕</button>
-      <div class="foto-tipo-label">${tiposLabel[f.tipo]||f.tipo}</div>
-    </div>`).join('');
+  // Renderizar grid (solo fotos con imagen real)
+  const fotosConImg=fotos.filter(f=>f.data);
+  if(!fotosConImg.length){
+    grid.innerHTML='<span style="font-size:.75rem;color:#aaa">Sin fotos guardadas aún</span>';
+  } else {
+    grid.innerHTML=fotosConImg.map(f=>`
+      <div class="foto-saved-thumb">
+        <img src="${f.data}" onclick="verImagen('${f.data}')">
+        <button class="del-foto" onclick="eliminarFoto('${k}','${f.tipo}')" title="Eliminar">✕</button>
+        <div class="foto-tipo-label">${tiposLabel[f.tipo]||f.tipo}</div>
+      </div>`).join('');
+  }
+  // Mostrar marcadores "no visible" en grid
+  const noVisibles=fotos.filter(f=>f.noVisible);
+  if(noVisibles.length){
+    grid.innerHTML+= noVisibles.map(f=>`
+      <div class="foto-saved-thumb" style="opacity:.7">
+        <div style="width:80px;height:60px;border-radius:6px;border:2px dashed #e65100;background:#fff8f5;display:flex;align-items:center;justify-content:center;font-size:1.2rem">🚫</div>
+        <button class="del-foto" style="background:#e65100" onclick="eliminarFoto('${k}','${f.tipo}')" title="Eliminar">✕</button>
+        <div class="foto-tipo-label" style="color:#e65100">No visible</div>
+      </div>`).join('');
+  }
 }
 
 async function eliminarFoto(k,tipo){
