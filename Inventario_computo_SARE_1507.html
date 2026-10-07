@@ -604,6 +604,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
       <div class="adm-tab" id="atab-nota" onclick="setAdmTab('nota')">⚠️ Notas / Discrepancias</div>
       <div class="adm-tab" id="atab-log" onclick="setAdmTab('log')">📋 Historial <span id="badge-log-tab" style="font-size:.7rem;color:var(--guinda)"></span></div>
       <div class="adm-tab" id="atab-usr" onclick="setAdmTab('usr')">👥 Usuarios</div>
+      <div class="adm-tab" id="atab-bajas" onclick="setAdmTab('bajas')">📤 Bajas</div>
     </div>
 
     <!-- PANEL: REASIGNACIÓN -->
@@ -797,6 +798,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
             <option value="nota">⚠️ Nota</option>
             <option value="INCIDENCIA">⚠️ Incidencia</option>
             <option value="BAJA">📤 Baja de equipo</option>
+            <option value="INCIDENCIA_LEGACY_RESUELTA">✅ Inc. legacy resuelta</option>
           </select>
           <select id="log-filtro-estado" onchange="renderLog()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:.8rem">
             <option value="">Todos los estados</option>
@@ -873,6 +875,64 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
         <div class="form-actions">
           <button class="btn-adm-primary" onclick="cambiarMiPin()">Cambiar NIP</button>
         </div>
+      </div>
+    </div>
+
+    <!-- PANEL: BAJAS DE EQUIPOS -->
+    <div class="adm-panel" id="apanel-bajas">
+      <p style="font-size:.8rem;color:var(--txt2);margin-bottom:16px">
+        Registra la <strong>baja de equipos</strong>: devolución de préstamos, sustitución por arrendamiento nuevo, obsolescencia o cualquier otro motivo. El equipo desaparecerá del inventario activo.
+      </p>
+
+      <div class="adm-form">
+        <!-- Buscar resguardante -->
+        <div class="form-group" style="margin-bottom:14px">
+          <label>Buscar resguardante</label>
+          <input type="text" id="admbaja-rsg-search" placeholder="Nombre o cupo…"
+            oninput="buscarRsgAdmBaja(this.value)"
+            style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.85rem">
+          <div id="admbaja-rsg-sel" style="margin-top:8px"></div>
+        </div>
+
+        <!-- Equipos del resguardante -->
+        <div id="admbaja-equipo-wrap" style="display:none;margin-bottom:14px">
+          <label style="font-size:.78rem;color:var(--txt2);font-weight:700">Equipo a dar de baja</label>
+          <select id="admbaja-equipo-sel"
+            style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;margin-top:4px">
+            <option value="">— Seleccionar —</option>
+          </select>
+        </div>
+
+        <!-- Motivo -->
+        <div id="admbaja-motivo-wrap" style="display:none;margin-bottom:14px">
+          <label style="font-size:.78rem;color:var(--txt2);font-weight:700">Motivo de baja</label>
+          <select id="admbaja-motivo"
+            style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;margin-top:4px">
+            <option value="devolucion_prestamo">📦 Devolución de préstamo</option>
+            <option value="fin_arrendamiento">🔄 Fin de arrendamiento / equipo nuevo</option>
+            <option value="obsolescencia">🗑 Obsolescencia</option>
+            <option value="robo_extravío">🚨 Robo o extravío</option>
+            <option value="danio_irreparable">💥 Daño irreparable</option>
+            <option value="otro">📝 Otro</option>
+          </select>
+          <div class="form-group" style="margin-top:10px">
+            <label>Observaciones (opcional)</label>
+            <textarea id="admbaja-obs" rows="2"
+              style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;resize:vertical"
+              placeholder="Folio, nombre del equipo sustituto, número de ticket, etc."></textarea>
+          </div>
+          <div class="form-actions" style="margin-top:12px">
+            <button class="btn-adm-primary" onclick="guardarBajaAdm()"
+              style="background:var(--guinda)">📤 Confirmar baja</button>
+          </div>
+        </div>
+        <div id="admbaja-msg" style="margin-top:8px;font-size:.82rem"></div>
+      </div>
+
+      <!-- Lista de bajas registradas -->
+      <div style="margin-top:24px">
+        <div style="font-size:.8rem;font-weight:700;color:var(--txt2);margin-bottom:10px">BAJAS REGISTRADAS</div>
+        <div id="admbaja-lista" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
     </div>
 
@@ -1459,24 +1519,53 @@ async function renderInc(){
   const tipoLabels=['Vista general','Etiqueta TAG','No. de serie'];
   const tiposKey=['general','tag','serie'];
 
-  // Renderizar legacy
-  const htmlLegacy=await Promise.all(incLegacy.map(async eq=>{
+  // Leer resoluciones de incidencias legacy guardadas en IDB
+  const todasCambios=await dbCambiosGetAll().catch(()=>[]);
+  const resolucionesLegacy=new Map(
+    todasCambios.filter(c=>c.tipo==='INCIDENCIA_LEGACY_RESUELTA').map(c=>[c.cupo, c])
+  );
+
+  // Renderizar legacy (filtrar eliminadas)
+  const incLegacyVisibles=incLegacy.filter(eq=>{
+    const res=resolucionesLegacy.get(eq[0]);
+    return !res||!res.eliminada;
+  });
+  const htmlLegacy=await Promise.all(incLegacyVisibles.map(async eq=>{
     const k=eqKey(eq);
     const rec=await dbGet(k);
     const fotos=rec?rec.fotos||[]:[];
+    const resolucion=resolucionesLegacy.get(eq[0]);
+    const resueltaLeg=!!resolucion;
+
     const thumbsHtml=tipoLabels.map((lbl,i)=>{
       const f=fotos.find(x=>x.tipo===tiposKey[i]);
       if(f) return `<div style="text-align:center">
         <img class="foto-thumb" src="${f.data}" onclick="verImagen('${f.data}')" title="${lbl}">
         <div style="font-size:.62rem;color:#888;margin-top:2px">${lbl}</div>
       </div>`;
+      if(resueltaLeg) return '';
       return `<div class="foto-thumb-empty" onclick='abrirModal(${JSON.stringify(eq)},"${tiposKey[i]}")'>
         + ${lbl}</div>`;
     }).join('');
-    return `<div class="inc-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <h3>⚠️ ${eq[1]}</h3>
-        <span class="badge-inc-tipo">Mudanza mayo 2025</span>
+
+    const cardStyle=resueltaLeg?'opacity:.6;border-left:4px solid #4caf50':'';
+    const badgeHeader=resueltaLeg
+      ?`<span class="badge-inc-tipo" style="background:#e8f5e9;color:#2e7d32">✅ Resuelta</span>`
+      :`<span class="badge-inc-tipo">Mudanza mayo 2025</span>`;
+    const motResolucion=resueltaLeg&&resolucion.motivo
+      ?`<div style="font-size:.78rem;color:#2e7d32;margin-top:4px;padding:4px 8px;background:#e8f5e9;border-radius:5px">✅ ${resolucion.motivo}</div>`:''
+    const elimLegBtn=`<button class="btn" style="font-size:.72rem;padding:4px 10px;background:#c62828;color:#fff;border-radius:6px"
+        onclick="eliminarIncLegacy('${eq[0]}','${eq[1].replace(/'/g,"\\'")}')">🗑 Eliminar</button>`;
+    const botonesLeg=resueltaLeg
+      ?`<button class="btn" style="font-size:.72rem;padding:4px 10px;background:#eee;color:#555;border-radius:6px;margin-right:6px"
+          onclick="reabrirIncLegacy('${eq[0]}')">↩ Reabrir</button>${elimLegBtn}`
+      :`<button class="btn" style="font-size:.72rem;padding:4px 10px;background:#2e7d32;color:#fff;border-radius:6px;margin-right:6px"
+          onclick="resolverIncLegacy('${eq[0]}','${eq[1].replace(/'/g,"\\'")}')">✅ Resolver</button>${elimLegBtn}`;
+
+    return `<div class="inc-card" style="${cardStyle}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:4px">
+        <h3>${resueltaLeg?'✅':'⚠️'} ${eq[1]}</h3>
+        ${badgeHeader}
       </div>
       <div class="inc-fields">
         <span class="lbl">CUPO</span><span class="val">${eq[0]}</span>
@@ -1487,7 +1576,9 @@ async function renderInc(){
         <span class="lbl">OFICINA</span><span class="val">${ubicacion(eq[0])}</span>
       </div>
       <div class="inc-obs">${eq[10]}</div>
+      ${motResolucion}
       <div class="inc-fotos">${thumbsHtml}</div>
+      <div style="text-align:right;margin-top:8px">${botonesLeg}</div>
     </div>`;
   }));
 
@@ -1559,6 +1650,57 @@ async function resolverIncDyn(id){
   item.motivoResolucion=motivo||'Resuelto';
   item.fechaResolucion=new Date().toISOString();
   await dbCambiosPut(item);
+  await renderInc();
+  await renderEstadisticas();
+}
+
+// ── RESOLVER / REABRIR INCIDENCIA LEGACY ──
+async function resolverIncLegacy(cupo, nombre){
+  const motivo=prompt(`¿Motivo de resolución para "${nombre}"?\n(ej: equipo dado de baja, reparado, reemplazado...)`);
+  if(motivo===null) return;
+  const sesion=sesionActiva();
+  await dbCambiosPut({
+    tipo:'INCIDENCIA_LEGACY_RESUELTA',
+    cupo,
+    nombre,
+    motivo:motivo||'Resuelto',
+    ts:new Date().toISOString(),
+    registradoPor:sesion?sesion.nombre:'—',
+    estado:'resuelta'
+  });
+  await renderInc();
+  await renderEstadisticas();
+}
+
+async function reabrirIncLegacy(cupo){
+  if(!confirm('¿Reabrir esta incidencia?')) return;
+  const todos=await dbCambiosGetAll();
+  const rec=todos.find(c=>c.tipo==='INCIDENCIA_LEGACY_RESUELTA'&&c.cupo===cupo);
+  if(!rec) return;
+  await dbCambiosDel(rec.id);
+  await renderInc();
+  await renderEstadisticas();
+}
+
+async function eliminarIncLegacy(cupo, nombre){
+  if(!confirm(`¿Eliminar la incidencia de "${nombre}"?\nEsto la ocultará permanentemente de la lista.`)) return;
+  // Guardar un registro de "eliminada" para que no vuelva a aparecer
+  const sesion=sesionActiva();
+  const todos=await dbCambiosGetAll();
+  // Primero remover cualquier resolución previa
+  const prev=todos.find(c=>c.tipo==='INCIDENCIA_LEGACY_RESUELTA'&&c.cupo===cupo);
+  if(prev) await dbCambiosDel(prev.id);
+  // Guardar como eliminada
+  await dbCambiosPut({
+    tipo:'INCIDENCIA_LEGACY_RESUELTA',
+    cupo,
+    nombre,
+    motivo:'[ELIMINADA]',
+    eliminada:true,
+    ts:new Date().toISOString(),
+    registradoPor:sesion?sesion.nombre:'—',
+    estado:'eliminada'
+  });
   await renderInc();
   await renderEstadisticas();
 }
@@ -1657,6 +1799,140 @@ async function guardarBaja(){
   await renderEstadisticas();
   const btn=document.querySelector('.inc-nueva-btn');
   if(btn){ const o=btn.textContent; btn.textContent=`✅ ${equiposABajar.length} equipo${equiposABajar.length!==1?'s':''} dado${equiposABajar.length!==1?'s':''} de baja`; setTimeout(()=>btn.textContent=o,3000); }
+}
+
+// ── BAJAS EN PANEL DE ADMINISTRACIÓN ──
+let _admBajaRsgSeleccionado=null;
+
+function buscarRsgAdmBaja(q){
+  q=q.trim().toLowerCase();
+  const sel=document.getElementById('admbaja-rsg-sel');
+  if(q.length<2){
+    sel.innerHTML='';
+    _admBajaRsgSeleccionado=null;
+    document.getElementById('admbaja-equipo-wrap').style.display='none';
+    document.getElementById('admbaja-motivo-wrap').style.display='none';
+    return;
+  }
+  const resultados=[...RSG_MAP.values()].filter(r=>
+    r.nombre.toLowerCase().includes(q)||r.cupo.includes(q)
+  ).slice(0,10);
+  if(!resultados.length){ sel.innerHTML='<div style="font-size:.78rem;color:var(--txt2);padding:4px 0">Sin resultados</div>'; return; }
+  sel.innerHTML=resultados.map(r=>`
+    <div onclick="selRsgAdmBaja('${r.cupo}')"
+      style="padding:7px 10px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:#fafafa;margin-bottom:4px;font-size:.82rem">
+      <strong>${r.nombre}</strong> <span style="color:var(--txt2)">(${r.cupo})</span>
+    </div>`).join('');
+}
+
+function selRsgAdmBaja(cupo){
+  const r=RSG_MAP.get(cupo);
+  if(!r) return;
+  _admBajaRsgSeleccionado=r;
+  document.getElementById('admbaja-rsg-search').value=r.nombre;
+  document.getElementById('admbaja-rsg-sel').innerHTML=
+    `<div style="padding:6px 10px;background:#e8f5e9;border-radius:7px;font-size:.82rem;color:#1b5e20">
+      ✅ <strong>${r.nombre}</strong> — cupo ${r.cupo} — ${r.items.length} equipo${r.items.length!==1?'s':''}
+    </div>`;
+  // Llenar selector de equipos
+  const eqSel=document.getElementById('admbaja-equipo-sel');
+  eqSel.innerHTML='<option value="">— Seleccionar —</option>'
+    + r.items.map((eq,i)=>`<option value="${i}">${eq[8]} ${eq[5]} ${eq[6]} (TAG ${eq[3]})</option>`).join('')
+    + (r.items.length>1?'<option value="TODOS">⚠️ Todos los equipos</option>':'');
+  document.getElementById('admbaja-equipo-wrap').style.display='block';
+  document.getElementById('admbaja-motivo-wrap').style.display='block';
+  document.getElementById('admbaja-msg').textContent='';
+}
+
+async function guardarBajaAdm(){
+  if(!_admBajaRsgSeleccionado){
+    document.getElementById('admbaja-msg').innerHTML='<span style="color:#c62828">⚠️ Selecciona un resguardante</span>';
+    return;
+  }
+  const eqSel=document.getElementById('admbaja-equipo-sel');
+  const val=eqSel.value;
+  if(!val){
+    document.getElementById('admbaja-msg').innerHTML='<span style="color:#c62828">⚠️ Selecciona el equipo a dar de baja</span>';
+    return;
+  }
+  const motivo=document.getElementById('admbaja-motivo').value;
+  const obs=document.getElementById('admbaja-obs').value.trim();
+  const sesion=sesionActiva();
+  const ts=new Date().toISOString();
+
+  const motiLabels={
+    devolucion_prestamo:'Devolución de préstamo',
+    fin_arrendamiento:'Fin de arrendamiento / equipo nuevo',
+    obsolescencia:'Obsolescencia',
+    'robo_extravío':'Robo o extravío',
+    danio_irreparable:'Daño irreparable',
+    otro:'Otro motivo'
+  };
+
+  let equiposABajar=[];
+  if(val==='TODOS'){
+    equiposABajar=_admBajaRsgSeleccionado.items.map(eq=>({eq,key:eqKey(eq)}));
+  } else {
+    const idx=parseInt(val);
+    if(isNaN(idx)||idx<0){ document.getElementById('admbaja-msg').innerHTML='<span style="color:#c62828">⚠️ Selección inválida</span>'; return; }
+    const eq=_admBajaRsgSeleccionado.items[idx];
+    equiposABajar=[{eq,key:eqKey(eq)}];
+  }
+
+  for(const {eq,key} of equiposABajar){
+    await dbCambiosPut({
+      tipo:'BAJA',
+      eqKey:key,
+      cupo:_admBajaRsgSeleccionado.cupo,
+      nombreRsg:_admBajaRsgSeleccionado.nombre,
+      tipoEquipo:eq[8], tag:eq[3], serie:eq[4], marca:eq[5], modelo:eq[6],
+      modalidad:eq[9], motivo, motiLabel:motiLabels[motivo]||motivo, obs,
+      ts, registradoPor:sesion?sesion.nombre:'—', estado:'registrada', fecha:ts
+    });
+    _BAJAS_SET.add(key);
+  }
+
+  filtrarInv();
+  filtrarRsg();
+  await renderEstadisticas();
+
+  // Reset form
+  _admBajaRsgSeleccionado=null;
+  document.getElementById('admbaja-rsg-search').value='';
+  document.getElementById('admbaja-rsg-sel').innerHTML='';
+  document.getElementById('admbaja-equipo-wrap').style.display='none';
+  document.getElementById('admbaja-motivo-wrap').style.display='none';
+  document.getElementById('admbaja-obs').value='';
+  document.getElementById('admbaja-msg').innerHTML=
+    `<span style="color:#2e7d32">✅ ${equiposABajar.length} equipo${equiposABajar.length!==1?'s':''} dado${equiposABajar.length!==1?'s':''} de baja correctamente.</span>`;
+
+  // Refrescar lista de bajas en el panel
+  await renderListaBajasAdm();
+}
+
+async function renderListaBajasAdm(){
+  const cont=document.getElementById('admbaja-lista');
+  if(!cont) return;
+  let bajas=[];
+  try{ bajas=(await dbCambiosGetAll()).filter(c=>c.tipo==='BAJA'); }catch(e){}
+  if(!bajas.length){
+    cont.innerHTML='<div style="font-size:.8rem;color:var(--txt2);text-align:center;padding:20px">No hay bajas registradas</div>';
+    return;
+  }
+  bajas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  cont.innerHTML=bajas.map(b=>{
+    const fecha=new Date(b.fecha).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+    return `<div style="background:#fafafa;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:.8rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">
+        <strong>${b.tipoEquipo||''} ${b.marca||''} ${b.modelo||''}</strong>
+        <span style="font-size:.72rem;color:#888">${fecha}</span>
+      </div>
+      <div style="color:var(--txt2)"><span style="font-weight:600">Resguardante:</span> ${b.nombreRsg||'—'} (${b.cupo||'—'})</div>
+      <div style="color:var(--txt2)"><span style="font-weight:600">Motivo:</span> ${b.motiLabel||b.motivo||'—'}</div>
+      ${b.obs?`<div style="color:var(--txt2);font-style:italic">Obs: ${b.obs}</div>`:''}
+      <div style="color:#aaa;font-size:.7rem;margin-top:3px">TAG: ${b.tag||'—'} · Serie: ${b.serie||'—'} · Por: ${b.registradoPor||'—'}</div>
+    </div>`;
+  }).join('');
 }
 
 // ── MODAL NUEVA INCIDENCIA ──
@@ -1847,9 +2123,16 @@ async function renderEstadisticas(){
   const tot=EQUIPOS.filter(e=>!_BAJAS_SET.has(eqKey(e))).length;
   const arr=EQUIPOS.filter(e=>e[9]==='ARRENDAMIENTO'&&!_BAJAS_SET.has(eqKey(e))).length;
   const pre=EQUIPOS.filter(e=>e[9]==='PRÉSTAMO'&&!_BAJAS_SET.has(eqKey(e))).length;
-  const legacyInc=EQUIPOS.filter(e=>MONITORES_DANADOS.has(e[0])&&e[8]==='MONITOR'&&e[10]).length;
+  let legacyInc=EQUIPOS.filter(e=>MONITORES_DANADOS.has(e[0])&&e[8]==='MONITOR'&&e[10]).length;
   let dynInc=0;
-  try{ dynInc=(await dbCambiosGetAll()).filter(c=>c.tipo==='INCIDENCIA'&&c.estado!=='resuelta').length; }catch(e){}
+  try{
+    const allCambios=await dbCambiosGetAll();
+    dynInc=allCambios.filter(c=>c.tipo==='INCIDENCIA'&&c.estado!=='resuelta').length;
+    // Descontar legacy ya resueltas
+    // Descontar legacy resueltas o eliminadas
+    const legacyResueltas=new Set(allCambios.filter(c=>c.tipo==='INCIDENCIA_LEGACY_RESUELTA').map(c=>c.cupo));
+    legacyInc=Math.max(0,legacyInc-legacyResueltas.size);
+  }catch(e){}
   const totalInc=legacyInc+dynInc;
   const ec=EQUIPOS.filter(e=>!CABB_CUPOS.has(e[0])&&!_BAJAS_SET.has(eqKey(e)));
   const cb=EQUIPOS.filter(e=>CABB_CUPOS.has(e[0])&&!_BAJAS_SET.has(eqKey(e)));
@@ -2465,15 +2748,16 @@ function dbCambiosDel(id){
 
 // ── Tabs de administración ──
 function setAdmTab(tab){
-  ['reasig','sust','nota','log','usr'].forEach(t=>{
+  ['reasig','sust','nota','log','usr','bajas'].forEach(t=>{
     const tabEl=document.getElementById('atab-'+t);
     const panEl=document.getElementById('apanel-'+t);
     if(tabEl) tabEl.classList.toggle('active', t===tab);
     if(panEl) panEl.classList.toggle('active', t===tab);
   });
-  if(tab==='log')  renderLog();
-  if(tab==='nota') renderNotasActivas();
-  if(tab==='usr')  renderUsuarios();
+  if(tab==='log')   renderLog();
+  if(tab==='nota')  renderNotasActivas();
+  if(tab==='usr')   renderUsuarios();
+  if(tab==='bajas') renderListaBajasAdm();
 }
 
 // ── Poblar selects de resguardantes ──
@@ -2749,8 +3033,8 @@ async function renderLog(){
 
   const estadoLabels={pendiente:'⏳ Pendiente',confirmado:'✅ Confirmado',corregido:'🔵 Corregido',completado:'✔ Completado',registrada:'📋 Registrada',resuelta:'✅ Resuelta'};
   const estadoClases={pendiente:'estado-pendiente',confirmado:'estado-confirmado',corregido:'estado-corregido',completado:'estado-confirmado'};
-  const tipoLabels={reasignacion:'🔄 Reasignación',sustitucion:'🔧 Sustitución',nota:'⚠️ Nota',INCIDENCIA:'⚠️ Incidencia',BAJA:'📤 Baja de equipo'};
-  const tipoBadge={reasignacion:'badge-reasignacion',sustitucion:'badge-sustitucion',nota:'badge-nota',INCIDENCIA:'badge-INCIDENCIA',BAJA:'badge-BAJA'};
+  const tipoLabels={reasignacion:'🔄 Reasignación',sustitucion:'🔧 Sustitución',nota:'⚠️ Nota',INCIDENCIA:'⚠️ Incidencia',BAJA:'📤 Baja de equipo',INCIDENCIA_LEGACY_RESUELTA:'✅ Inc. legacy resuelta'};
+  const tipoBadge={reasignacion:'badge-reasignacion',sustitucion:'badge-sustitucion',nota:'badge-nota',INCIDENCIA:'badge-INCIDENCIA',BAJA:'badge-BAJA',INCIDENCIA_LEGACY_RESUELTA:'badge-INCIDENCIA'};
 
   logEl.innerHTML=lista.map(c=>{
     const fecha=new Date(c.fecha).toLocaleString('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
