@@ -160,6 +160,34 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
 .foto-thumb-empty{width:80px;height:60px;border:2px dashed #ccc;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#aaa;text-align:center;cursor:pointer;background:#fafafa;transition:border-color .15s}
 .foto-thumb-empty:hover{border-color:var(--guinda)}
 
+/* ── NUEVA INCIDENCIA ── */
+.inc-nueva-btn{display:flex;align-items:center;gap:7px;background:var(--guinda);color:#fff;border:none;
+  border-radius:8px;padding:8px 16px;font-size:.82rem;font-weight:700;cursor:pointer;margin-bottom:14px}
+.inc-nueva-btn:active{opacity:.8}
+#modal-inc{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;
+  align-items:center;justify-content:center;padding:16px}
+#modal-inc.open{display:flex}
+.modal-inc-box{background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.modal-inc-head{background:var(--guinda);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px}
+.modal-inc-head h3{flex:1;font-size:.95rem}
+.modal-inc-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+.modal-inc-body label{font-size:.78rem;font-weight:700;color:var(--txt2);display:block;margin-bottom:3px}
+.modal-inc-body input,.modal-inc-body select,.modal-inc-body textarea{
+  width:100%;border:1.5px solid var(--border);border-radius:7px;padding:8px 10px;font-size:.85rem;
+  font-family:inherit;background:#fff}
+.modal-inc-body textarea{height:72px;resize:vertical}
+.modal-inc-body input:focus,.modal-inc-body select:focus,.modal-inc-body textarea:focus{
+  border-color:var(--guinda);outline:none}
+/* ── BADGE INCIDENCIA ── */
+.badge-inc-tipo{font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:10px;
+  background:#f5dde6;color:var(--guinda);white-space:nowrap}
+.badge-inc-tipo.nuevo{background:#fff3e0;color:#e65100}
+/* ── VERIFICACIÓN OCR ── */
+.ocr-badge{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:700;
+  padding:3px 10px;border-radius:12px;margin-top:6px}
+.ocr-ok{background:#e8f5e9;color:#2e7d32}
+.ocr-warn{background:#fff8e1;color:#f57f17}
+.ocr-err{background:#fce4ec;color:#c62828}
 /* ── EMPRESAS ── */
 .emp-card{background:var(--card);border-radius:10px;box-shadow:var(--shadow);border:1px solid var(--border);padding:16px;margin-bottom:12px}
 .emp-nombre{font-size:1rem;font-weight:700;color:var(--guinda);margin-bottom:6px}
@@ -506,8 +534,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
   <section class="section" id="sec-inc">
     <div class="sec-header">
       <h2>⚠️ Incidencias</h2>
-      <div class="counts">Monitores dañados en mudanza — mayo 2025</div>
+      <div class="counts" id="inc-count">Monitores dañados en mudanza — mayo 2025</div>
     </div>
+    <button class="inc-nueva-btn" onclick="abrirModalNuevaInc()">➕ Nueva incidencia</button>
     <div id="inc-list"></div>
   </section>
 
@@ -941,6 +970,48 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
   <img id="modal-img-el" src="" alt="">
 </div>
 
+<!-- ══ MODAL NUEVA INCIDENCIA ══ -->
+<div id="modal-inc" onclick="cerrarModalInc()">
+  <div class="modal-inc-box" onclick="event.stopPropagation()">
+    <div class="modal-inc-head">
+      <h3>⚠️ Nueva Incidencia</h3>
+      <button onclick="cerrarModalInc()" style="background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer">✕</button>
+    </div>
+    <div class="modal-inc-body">
+      <div>
+        <label for="inc-rsg-search">Resguardante</label>
+        <input type="text" id="inc-rsg-search" placeholder="Buscar por nombre o cupo…" oninput="filtrarIncRsg()" autocomplete="off">
+        <select id="inc-rsg-sel" size="4" style="margin-top:5px;height:auto;display:none" onchange="seleccionarIncRsg()"></select>
+      </div>
+      <div id="inc-rsg-equipo-wrap" style="display:none">
+        <label for="inc-equipo-sel">Equipo</label>
+        <select id="inc-equipo-sel" style="height:auto">
+          <option value="">— Selecciona equipo —</option>
+        </select>
+      </div>
+      <div>
+        <label for="inc-tipo-danio">Tipo de daño</label>
+        <select id="inc-tipo-danio">
+          <option value="daño_fisico">Daño físico</option>
+          <option value="falla_electronica">Falla electrónica</option>
+          <option value="pantalla_rota">Pantalla rota</option>
+          <option value="robo_extravío">Robo / Extravío</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div>
+        <label for="inc-desc">Descripción</label>
+        <textarea id="inc-desc" placeholder="Describe el daño o la incidencia…"></textarea>
+      </div>
+      <div id="inc-rsg-seleccionado" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:8px 10px;font-size:.8rem"></div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="btn" style="flex:1;background:#ddd;color:#333" onclick="cerrarModalInc()">Cancelar</button>
+        <button class="btn" style="flex:1;background:var(--guinda);color:#fff;font-weight:700" onclick="guardarNuevaInc()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <canvas id="canvas-foto" style="display:none"></canvas>
 
 <script>
@@ -953,7 +1024,7 @@ const MONITORES_DANADOS = new Set(["1501986","1502176","1502177"]);
 function ubicacion(cupo){ return CABB_CUPOS.has(cupo) ? "CABB COACALCO" : "SARE ECATEPEC"; }
 function arrendadora(tipo){
   if(tipo==="MULTIFUNCIONAL") return "BLACK ECO, S.A. de C.V.";
-  if(tipo==="NO BREAK")       return "Por confirmar";
+  if(tipo==="NO BREAK")       return "Business Support, S.A. de C.V.";
   return "Soluciones Tecnológicas Especializadas, S.A. de C.V.";
 }
 
@@ -1033,7 +1104,7 @@ const EQUIPOS = [
 ["1501620","ORDAZ HERNANDEZ MARIA DEL ROCIO","SERVIDOR EDUCATIVO","CNBBBJ-030","BEXJL0BV49D50","HP","KU-1136","TECLADO","TECLADO","PRÉSTAMO",""],
 ["1501620","ORDAZ HERNANDEZ MARIA DEL ROCIO","SERVIDOR EDUCATIVO","CNBBBJ-030","FCMHH0C9Z48ELU","HP","QY77A","MOUSE","MOUSE","PRÉSTAMO",""],
 ["1501623","HERNANDEZ HERNANDEZ CLAUDIA LIZET","SERVIDOR EDUCATIVO","21ZY314227","21ZY314227","COMPLET","ERI-9-002","NO BREAK TIPO II","NO BREAK","ARRENDAMIENTO",""],
-["1501623","HERNANDEZ HERNANDEZ CLAUDIA LIZET","SERVIDOR EDUCATIVO","CNBBBJ-01-2587","MXL139248R","HP","PRODESK 400 G7 SFF","CPU","CPU","ARRENDAMIENTO",""],
+["1501623","HERNANDEZ HERNANDEZ CLAUDIA LIZET","SERVIDOR EDUCATIVO","CNBBBJ-01-2587","MXL13925R8","HP","PRODESK 400 G7 SFF","CPU","CPU","ARRENDAMIENTO",""],
 ["1501623","HERNANDEZ HERNANDEZ CLAUDIA LIZET","SERVIDOR EDUCATIVO","CNBBBJ-01-2587","CN41241T1K","HP","P22VA G4","MONITOR","MONITOR","ARRENDAMIENTO",""],
 ["1501623","HERNANDEZ HERNANDEZ CLAUDIA LIZET","SERVIDOR EDUCATIVO","CNBBBJ-01-2587","9CT11805XF","HP","HSA-D005K","TECLADO","TECLADO","ARRENDAMIENTO",""],
 ["1501623","HERNANDEZ HERNANDEZ CLAUDIA LIZET","SERVIDOR EDUCATIVO","CNBBBJ-01-2587","9CP122XMK1","HP","HSA-P009M","MOUSE","MOUSE","ARRENDAMIENTO",""],
@@ -1264,25 +1335,41 @@ function limpiarInv(){
 // ══════════════════════════════════════════════════════════════════════
 //  INCIDENCIAS
 // ══════════════════════════════════════════════════════════════════════
+const TIPO_DANIO_LABELS = {
+  daño_fisico:'Daño físico',falla_electronica:'Falla electrónica',
+  pantalla_rota:'Pantalla rota','robo_extravío':'Robo / Extravío',otro:'Otro'
+};
+
 async function renderInc(){
-  const inc=EQUIPOS.filter(eq=>MONITORES_DANADOS.has(eq[0])&&eq[8]==='MONITOR'&&eq[10]);
   const list=document.getElementById('inc-list');
-  const html=await Promise.all(inc.map(async eq=>{
+  // 1. Incidencias legacy (MONITORES_DANADOS)
+  const incLegacy=EQUIPOS.filter(eq=>MONITORES_DANADOS.has(eq[0])&&eq[8]==='MONITOR'&&eq[10]);
+  // 2. Incidencias dinámicas guardadas en IDB cambios
+  let incDinamicas=[];
+  try{ incDinamicas=(await dbCambiosGetAll()).filter(c=>c.tipo==='INCIDENCIA'); }catch(e){}
+
+  const tipoLabels=['Vista general','Etiqueta TAG','No. de serie'];
+  const tiposKey=['general','tag','serie'];
+
+  // Renderizar legacy
+  const htmlLegacy=await Promise.all(incLegacy.map(async eq=>{
     const k=eqKey(eq);
     const rec=await dbGet(k);
     const fotos=rec?rec.fotos||[]:[];
-    const tipoLabels=['Vista general','Etiqueta TAG','No. de serie'];
     const thumbsHtml=tipoLabels.map((lbl,i)=>{
-      const f=fotos.find(x=>x.tipo===(['general','tag','serie'][i]));
+      const f=fotos.find(x=>x.tipo===tiposKey[i]);
       if(f) return `<div style="text-align:center">
         <img class="foto-thumb" src="${f.data}" onclick="verImagen('${f.data}')" title="${lbl}">
         <div style="font-size:.62rem;color:#888;margin-top:2px">${lbl}</div>
       </div>`;
-      return `<div class="foto-thumb-empty" onclick='abrirModal(${JSON.stringify(eq)},"${['general','tag','serie'][i]}")'>
+      return `<div class="foto-thumb-empty" onclick='abrirModal(${JSON.stringify(eq)},"${tiposKey[i]}")'>
         + ${lbl}</div>`;
     }).join('');
     return `<div class="inc-card">
-      <h3>⚠️ ${eq[1]}</h3>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <h3>⚠️ ${eq[1]}</h3>
+        <span class="badge-inc-tipo">Mudanza mayo 2025</span>
+      </div>
       <div class="inc-fields">
         <span class="lbl">CUPO</span><span class="val">${eq[0]}</span>
         <span class="lbl">TIPO</span><span class="val">${eq[8]}</span>
@@ -1295,7 +1382,130 @@ async function renderInc(){
       <div class="inc-fotos">${thumbsHtml}</div>
     </div>`;
   }));
-  list.innerHTML=html.join('');
+
+  // Renderizar dinámicas
+  const htmlDinamicas=incDinamicas.slice().reverse().map(inc=>{
+    const eq=inc.eq||null;
+    const fecha=new Date(inc.ts).toLocaleString('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const thumbsHtml = eq ? tipoLabels.map((lbl,i)=>{
+      return `<div class="foto-thumb-empty" onclick='abrirModal(${JSON.stringify(eq)},"${tiposKey[i]}")'>+ ${lbl}</div>`;
+    }).join('') : '';
+    return `<div class="inc-card" id="inc-dyn-${inc.id}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <h3>⚠️ ${inc.nombreRsg||'Sin resguardante'}</h3>
+        <span class="badge-inc-tipo nuevo">${TIPO_DANIO_LABELS[inc.tipoDanio]||inc.tipoDanio||'Daño'}</span>
+      </div>
+      <div class="inc-fields">
+        <span class="lbl">CUPO</span><span class="val">${inc.cupo||'—'}</span>
+        <span class="lbl">TIPO EQUIPO</span><span class="val">${inc.tipoEquipo||'—'}</span>
+        ${inc.serie?`<span class="lbl">SERIE</span><span class="val">${inc.serie}</span>`:''}
+        ${inc.tag?`<span class="lbl">TAG</span><span class="val">${inc.tag}</span>`:''}
+        <span class="lbl">FECHA</span><span class="val">${fecha}</span>
+        <span class="lbl">REGISTRADO POR</span><span class="val">${inc.registradoPor||'—'}</span>
+      </div>
+      <div class="inc-obs">${inc.desc||''}</div>
+      ${thumbsHtml?`<div class="inc-fotos">${thumbsHtml}</div>`:''}
+      <div style="text-align:right;margin-top:8px">
+        <button class="btn" style="font-size:.72rem;padding:4px 10px;background:#c62828;color:#fff;border-radius:6px"
+          onclick="eliminarIncDyn(${inc.id})">🗑 Eliminar</button>
+      </div>
+    </div>`;
+  });
+
+  const total=incLegacy.length+incDinamicas.length;
+  const cntEl=document.getElementById('inc-count');
+  if(cntEl) cntEl.textContent=`${total} incidencia${total!==1?'s':''}`;
+  list.innerHTML=htmlDinamicas.join('')+htmlLegacy.join('');
+}
+
+async function eliminarIncDyn(id){
+  if(!confirm('¿Eliminar esta incidencia?')) return;
+  await dbCambiosDel(id);
+  renderInc();
+}
+
+// ── MODAL NUEVA INCIDENCIA ──
+let _incRsgSeleccionado=null;
+
+function abrirModalNuevaInc(){
+  _incRsgSeleccionado=null;
+  document.getElementById('inc-rsg-search').value='';
+  document.getElementById('inc-rsg-sel').innerHTML='';
+  document.getElementById('inc-rsg-sel').style.display='none';
+  document.getElementById('inc-rsg-equipo-wrap').style.display='none';
+  document.getElementById('inc-rsg-seleccionado').style.display='none';
+  document.getElementById('inc-desc').value='';
+  document.getElementById('inc-tipo-danio').value='daño_fisico';
+  document.getElementById('modal-inc').classList.add('open');
+}
+
+function cerrarModalInc(){
+  document.getElementById('modal-inc').classList.remove('open');
+}
+
+function filtrarIncRsg(){
+  const q=document.getElementById('inc-rsg-search').value.trim().toLowerCase();
+  const sel=document.getElementById('inc-rsg-sel');
+  if(q.length<2){ sel.style.display='none'; return; }
+  const resultados=[...RSG_MAP.values()].filter(r=>
+    r.nombre.toLowerCase().includes(q)||r.cupo.includes(q)
+  ).slice(0,10);
+  if(!resultados.length){ sel.style.display='none'; return; }
+  sel.innerHTML=resultados.map(r=>`<option value="${r.cupo}">${r.nombre} (${r.cupo})</option>`).join('');
+  sel.style.display='block';
+}
+
+function seleccionarIncRsg(){
+  const sel=document.getElementById('inc-rsg-sel');
+  const cupo=sel.value;
+  if(!cupo) return;
+  const rsg=RSG_MAP.get(cupo);
+  if(!rsg) return;
+  _incRsgSeleccionado=rsg;
+  document.getElementById('inc-rsg-search').value=`${rsg.nombre} (${rsg.cupo})`;
+  sel.style.display='none';
+  // Poblar selector de equipos
+  const eqSel=document.getElementById('inc-equipo-sel');
+  eqSel.innerHTML='<option value="">— Selecciona equipo —</option>'+
+    rsg.items.map((eq,i)=>`<option value="${i}">${eq[8]} — ${eq[5]} ${eq[6]} | Serie: ${eq[4]} | TAG: ${eq[3]}</option>`).join('');
+  document.getElementById('inc-rsg-equipo-wrap').style.display='block';
+  document.getElementById('inc-rsg-seleccionado').style.display='block';
+  document.getElementById('inc-rsg-seleccionado').textContent=`✅ ${rsg.nombre} · ${rsg.cupo} · ${rsg.items.length} equipo${rsg.items.length!==1?'s':''}`;
+}
+
+async function guardarNuevaInc(){
+  if(!_incRsgSeleccionado){ alert('Selecciona un resguardante'); return; }
+  const eqSel=document.getElementById('inc-equipo-sel');
+  const eqIdx=parseInt(eqSel.value);
+  const eq=(!isNaN(eqIdx)&&eqIdx>=0) ? _incRsgSeleccionado.items[eqIdx] : null;
+  const desc=document.getElementById('inc-desc').value.trim();
+  if(!desc){ alert('Escribe una descripción de la incidencia'); return; }
+  const tipoDanio=document.getElementById('inc-tipo-danio').value;
+  const sesion=sesionActiva();
+  const inc={
+    tipo:'INCIDENCIA',
+    cupo:_incRsgSeleccionado.cupo,
+    nombreRsg:_incRsgSeleccionado.nombre,
+    tipoEquipo:eq?eq[8]:'—',
+    serie:eq?eq[4]:'',
+    tag:eq?eq[3]:'',
+    eq:eq||null,
+    tipoDanio,
+    desc,
+    ts:new Date().toISOString(),
+    registradoPor:sesion?sesion.nombre:'—',
+    estado:'pendiente',
+    fecha:new Date().toISOString()
+  };
+  await dbCambiosPut(inc);
+  document.getElementById('modal-inc').classList.remove('open');
+  await renderInc();
+  // Navegar a sección incidencias si no está visible
+  const secInc=document.getElementById('sec-inc');
+  if(secInc) secInc.scrollIntoView({behavior:'smooth',block:'start'});
+  // Feedback
+  const btn=document.querySelector('.inc-nueva-btn');
+  if(btn){ const orig=btn.textContent; btn.textContent='✅ Incidencia guardada'; setTimeout(()=>btn.textContent=orig,2500); }
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1378,12 +1588,11 @@ function renderEmpresas(){
      equips:"Multifuncional, papel y tóner",
      oficinas:"SARE Ecatepec / CABB Coacalco",
      nota:"", pendiente:false},
-    {nombre:"Por confirmar",
-     contrato:"—",
+    {nombre:"Business Support, S.A. de C.V.",
+     contrato:"Arrendamiento",
      equips:"NO BREAK",
      oficinas:"SARE Ecatepec / CABB Coacalco",
-     nota:"⏳ Pendiente de confirmar la arrendadora de los equipos NO BREAK",
-     pendiente:true},
+     nota:"", pendiente:false},
   ];
   document.getElementById('emp-list').innerHTML=empresas.map(e=>`
     <div class="emp-card">
@@ -1483,6 +1692,29 @@ async function setFotoTipo(tipo){
   document.getElementById('btn-capturar').style.display='';
   document.getElementById('btn-rehacer').style.display='none';
   document.getElementById('btn-guardar-foto').disabled=true;
+  // Limpiar badge OCR al cambiar de tab
+  const prevBadge=document.getElementById('ocr-result-badge');
+  if(prevBadge) prevBadge.remove();
+  // Mostrar hint de serie esperada cuando se activa tab serie
+  const hintEl=document.getElementById('serie-hint');
+  if(hintEl) hintEl.remove();
+  if(tipo==='serie'&&modalEq){
+    const hint=document.createElement('div');
+    hint.id='serie-hint';
+    const tipoEq=(modalEq[8]||'').toUpperCase();
+    const sinOCR=['MOUSE','TECLADO','PERIFÉRICO'];
+    if(sinOCR.includes(tipoEq)){
+      // Mouse/teclado: sin verificación OCR, solo nota informativa
+      hint.style.cssText='background:#f3f3f3;border:1px solid #ccc;border-radius:7px;padding:7px 11px;font-size:.78rem;margin-top:8px;color:#555';
+      hint.innerHTML=`ℹ️ <strong>${tipoEq}</strong> — no se realiza verificación de serie para este tipo de componente.`;
+    } else if(modalEq[4]){
+      // Equipos con serie verificable
+      hint.style.cssText='background:#e3f2fd;border:1px solid #90caf9;border-radius:7px;padding:7px 11px;font-size:.78rem;margin-top:8px;color:#0d47a1';
+      hint.innerHTML=`📋 <strong>Serie del fabricante registrada:</strong> <span style="font-family:monospace;font-size:.88rem;letter-spacing:1px">${modalEq[4]}</span><br>
+        <span style="font-size:.72rem;color:#555">Enfoca la etiqueta física del fabricante (no la etiqueta CNBBBJ). Al guardar se verificará automáticamente.</span>`;
+    }
+    document.querySelector('#modal-foto .modal-body').appendChild(hint);
+  }
 }
 
 function iniciarCamera(){
@@ -1533,6 +1765,12 @@ function rehacerFoto(){
 
 async function guardarFotoActual(){
   if(!fotoCapturada||!modalEq) return;
+  // ── Verificación OCR para foto de serie (excluye MOUSE y TECLADO) ──
+  const _tipoEq=(modalEq[8]||'').toUpperCase();
+  const _sinOCR=['MOUSE','TECLADO','PERIFÉRICO'];
+  if(fotoTipoActivo==='serie' && !_sinOCR.includes(_tipoEq)){
+    await verificarSerieOCR(fotoCapturada, modalEq[4]);
+  }
   const k=eqKey(modalEq);
   let rec=await dbGet(k)||{id:k,fotos:[]};
   // Reemplazar si ya existe del mismo tipo
@@ -1547,6 +1785,103 @@ async function guardarFotoActual(){
   // Refrescar inventario para actualizar botón
   filtrarInv();
   if(MONITORES_DANADOS.has(modalEq[0])&&modalEq[8]==='MONITOR') renderInc();
+}
+
+// ── VERIFICACIÓN OCR ──
+let _tesseractWorker=null;
+async function getTesseractWorker(){
+  if(_tesseractWorker) return _tesseractWorker;
+  if(!window.Tesseract){
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      s.onload=res; s.onerror=rej;
+      document.head.appendChild(s);
+    });
+  }
+  const w=await Tesseract.createWorker('eng',1,{logger:()=>{}});
+  await w.setParameters({'tessedit_char_whitelist':'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-/'});
+  _tesseractWorker=w;
+  return w;
+}
+
+// Distancia de Levenshtein — tolerancia a 1-2 caracteres erróneos por OCR
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+// Extraer tokens alfanuméricos del texto OCR y buscar el que más se parezca a la serie
+function mejorCandidato(texto, serieRef){
+  // Dividir en palabras limpias de ≥5 chars (series suelen tener 8-12 chars)
+  const tokens=texto.toUpperCase().split(/[\s\n\r,;:]+/)
+    .map(t=>t.replace(/[^A-Z0-9\-]/g,''))
+    .filter(t=>t.length>=5);
+  if(!tokens.length) return {token:'',dist:999};
+  // Elegir el token con menor distancia Levenshtein a la serie registrada
+  let mejor={token:'',dist:999};
+  for(const t of tokens){
+    const d=levenshtein(t,serieRef);
+    if(d<mejor.dist) mejor={token:t,dist:d};
+  }
+  return mejor;
+}
+
+async function verificarSerieOCR(dataUrl, serieRegistrada){
+  if(!serieRegistrada) return;
+  const btn=document.getElementById('btn-guardar-foto');
+  const origTxt=btn.textContent;
+  btn.textContent='🔍 Verificando serie…';
+  btn.disabled=true;
+
+  // Quitar badge y hint anterior
+  ['ocr-result-badge','serie-hint'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.remove();
+  });
+
+  const badge=document.createElement('div');
+  badge.id='ocr-result-badge';
+  badge.style.margin='8px 0 0';
+
+  try{
+    const worker=await getTesseractWorker();
+    const {data:{text}}=await worker.recognize(dataUrl);
+    const serieRef=serieRegistrada.replace(/[^A-Z0-9\-]/g,'').toUpperCase();
+    const {token,dist}=mejorCandidato(text,serieRef);
+
+    if(dist===0){
+      // Coincidencia exacta
+      badge.innerHTML=`<span class="ocr-badge ocr-ok">✅ Serie del fabricante verificada: <strong>${serieRef}</strong></span>`;
+    } else if(dist<=2&&token.length>=5){
+      // Muy probable — 1-2 caracteres diferentes (error tipográfico de OCR)
+      badge.innerHTML=`<span class="ocr-badge ocr-ok" style="background:#e8f5e9">
+        ✅ Serie probablemente correcta (${dist} dif.): registrada <strong>${serieRef}</strong> · leído <strong>${token}</strong>
+      </span>`;
+    } else if(token.length>=5){
+      // Leído pero no coincide
+      badge.innerHTML=`<span class="ocr-badge ocr-warn">
+        ⚠️ No coincide — Registrada (fabricante): <strong>${serieRef}</strong><br>
+        Leído en foto: <strong>${token}</strong><br>
+        <span style="font-size:.72rem">Verifica que la foto muestre la etiqueta del fabricante, no la etiqueta CNBBBJ.</span>
+      </span>`;
+    } else {
+      badge.innerHTML=`<span class="ocr-badge ocr-warn">
+        ⚠️ No se pudo leer texto. Asegúrate de que la etiqueta del fabricante esté enfocada y bien iluminada.<br>
+        <span style="font-size:.72rem">Serie registrada: <strong>${serieRef}</strong></span>
+      </span>`;
+    }
+  }catch(e){
+    console.warn('OCR error:',e);
+    badge.innerHTML=`<span class="ocr-badge ocr-err">⚠️ Verificación no disponible — la foto se guardará sin verificar.</span>`;
+  }finally{
+    const ref=document.querySelector('#modal-foto .btn-save-foto')||document.querySelector('.camera-controls');
+    if(ref) ref.after(badge); else document.querySelector('#modal-foto .modal-body').appendChild(badge);
+    btn.textContent=origTxt;
+    btn.disabled=false;
+  }
 }
 
 async function cargarFotosGuardadas(){
@@ -1590,6 +1925,8 @@ function cerrarModal(){
   detenerCamera();
   document.getElementById('modal-foto').classList.remove('open');
   modalEq=null; fotoCapturada=null;
+  // Limpiar elementos OCR
+  ['ocr-result-badge','serie-hint'].forEach(id=>{ const el=document.getElementById(id); if(el) el.remove(); });
 }
 
 function verImagen(src){
