@@ -296,11 +296,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
 .log-item.tipo-reasignacion{border-left:4px solid var(--azul-cabb)}
 .log-item.tipo-sustitucion{border-left:4px solid var(--naranja)}
 .log-item.tipo-nota{border-left:4px solid #9c27b0}
+.log-item.tipo-INCIDENCIA{border-left:4px solid #e65100}
+.log-item.tipo-BAJA{border-left:4px solid #546E7A}
 .log-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
 .log-tipo-badge{font-size:.65rem;font-weight:800;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.05em}
 .badge-reasignacion{background:#e3f2fd;color:var(--azul-cabb)}
 .badge-sustitucion{background:#fff3e0;color:var(--naranja)}
 .badge-nota{background:#f3e5f5;color:#6a1b9a}
+.badge-INCIDENCIA{background:#fff3e0;color:#e65100}
+.badge-BAJA{background:#eceff1;color:#546E7A}
 .log-fecha{font-size:.7rem;color:var(--txt3);margin-left:auto}
 .log-body{font-size:.78rem;color:var(--txt);line-height:1.7}
 .log-body .campo{color:var(--txt3);font-weight:600;font-size:.72rem}
@@ -475,7 +479,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
   </div>
   <div class="nav-item" onclick="showSection('inc')" id="nav-inc">
     <span class="ic">⚠️</span> Incidencias
-    <span class="nav-badge red">3</span>
+    <span class="nav-badge red" id="badge-inc">3</span>
   </div>
   <div class="nav-section">Por Persona</div>
   <div class="nav-item" onclick="showSection('rsg')" id="nav-rsg">
@@ -498,6 +502,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
   </div>
   <div class="nav-item" onclick="showSection('rep')" id="nav-rep">
     <span class="ic">📄</span> Reportes
+  </div>
+  <div class="nav-item" onclick="showSection('sync')" id="nav-sync">
+    <span class="ic">🔄</span> Sincronizar
   </div>
 </nav>
 
@@ -536,7 +543,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
       <h2>⚠️ Incidencias</h2>
       <div class="counts" id="inc-count">Monitores dañados en mudanza — mayo 2025</div>
     </div>
-    <button class="inc-nueva-btn" onclick="abrirModalNuevaInc()">➕ Nueva incidencia</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="inc-nueva-btn" style="margin-bottom:0" onclick="abrirModalNuevaInc()">➕ Nueva incidencia</button>
+      <button class="inc-nueva-btn" style="margin-bottom:0;background:#546E7A" onclick="abrirModalBaja()">📤 Dar de baja equipo</button>
+    </div>
     <div id="inc-list"></div>
   </section>
 
@@ -785,6 +795,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
             <option value="reasignacion">🔄 Reasignación</option>
             <option value="sustitucion">🔧 Sustitución</option>
             <option value="nota">⚠️ Nota</option>
+            <option value="INCIDENCIA">⚠️ Incidencia</option>
+            <option value="BAJA">📤 Baja de equipo</option>
           </select>
           <select id="log-filtro-estado" onchange="renderLog()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:.8rem">
             <option value="">Todos los estados</option>
@@ -912,6 +924,51 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
     </div>
   </section>
 
+  <!-- ══ SECCIÓN: SINCRONIZAR ══ -->
+  <section class="section" id="sec-sync">
+    <div class="sec-header">
+      <h2>🔄 Sincronizar entre dispositivos</h2>
+    </div>
+    <div style="max-width:600px;display:flex;flex-direction:column;gap:16px">
+      <div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:10px;padding:14px 16px;font-size:.85rem;color:#1565C0;line-height:1.6">
+        <strong>📱💻 Cómo sincronizar PC y celular</strong><br>
+        Los datos (incidencias, cambios, notas) se guardan localmente en cada dispositivo. Para sincronizar:<br>
+        1. En el dispositivo origen: <strong>Exportar datos</strong> → descarga un archivo <code>.json</code><br>
+        2. Envíate el archivo (WhatsApp, correo, Drive, etc.)<br>
+        3. En el dispositivo destino: <strong>Importar datos</strong> → selecciona el archivo<br>
+        <br>⚠️ La importación <em>agrega</em> los registros que no existan; no duplica ni borra los que ya tienes.
+      </div>
+
+      <!-- Exportar -->
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
+        <h3 style="font-size:.9rem;margin-bottom:10px;color:var(--guinda)">📤 Exportar datos de este dispositivo</h3>
+        <p style="font-size:.82rem;color:var(--txt2);margin-bottom:12px">Genera un archivo JSON con todos los cambios, incidencias y notas guardados aquí (no incluye fotografías para evitar archivos muy pesados).</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" style="background:var(--guinda);color:#fff" onclick="exportarDatos()">⬇️ Exportar datos (.json)</button>
+          <button class="btn" style="background:#1565C0;color:#fff" onclick="exportarTodoConFotos()">⬇️ Exportar con fotos (.json)</button>
+        </div>
+        <div id="sync-export-status" style="font-size:.78rem;color:var(--txt2);margin-top:8px"></div>
+      </div>
+
+      <!-- Importar -->
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
+        <h3 style="font-size:.9rem;margin-bottom:10px;color:var(--guinda)">📥 Importar datos desde otro dispositivo</h3>
+        <p style="font-size:.82rem;color:var(--txt2);margin-bottom:12px">Selecciona el archivo <code>.json</code> exportado desde otro dispositivo. Solo se agregarán registros que no existan aquí.</p>
+        <label style="display:inline-block;background:#f5f5f5;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:.82rem;cursor:pointer">
+          📂 Seleccionar archivo JSON
+          <input type="file" accept=".json" onchange="importarDatos(event)" style="display:none">
+        </label>
+        <div id="sync-import-status" style="font-size:.82rem;margin-top:10px;padding:8px;border-radius:6px;display:none"></div>
+      </div>
+
+      <!-- Estado actual -->
+      <div style="background:#f9f9f9;border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+        <h3 style="font-size:.9rem;margin-bottom:8px">📋 Datos en este dispositivo</h3>
+        <div id="sync-resumen" style="font-size:.82rem;color:var(--txt2)">Calculando…</div>
+      </div>
+    </div>
+  </section>
+
 </main>
 </div>
 
@@ -1012,6 +1069,49 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
   </div>
 </div>
 
+<!-- ══ MODAL: DAR DE BAJA ══ -->
+<div id="modal-baja" onclick="cerrarModalBaja()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center;padding:16px">
+  <div class="modal-inc-box" onclick="event.stopPropagation()" style="max-width:500px">
+    <div class="modal-inc-head" style="background:#546E7A">
+      <h3>📤 Dar de Baja Equipo</h3>
+      <button onclick="cerrarModalBaja()" style="background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer">✕</button>
+    </div>
+    <div class="modal-inc-body">
+      <div style="background:#fff3e0;border:1px solid #ffb300;border-radius:7px;padding:8px 10px;font-size:.8rem;color:#e65100">
+        ⚠️ Esta acción registra que el equipo será devuelto o retirado del inventario activo. No elimina el registro histórico.
+      </div>
+      <div>
+        <label for="baja-rsg-search">Resguardante</label>
+        <input type="text" id="baja-rsg-search" placeholder="Buscar por nombre o cupo…" oninput="filtrarBajaRsg()" autocomplete="off">
+        <select id="baja-rsg-sel" size="4" style="margin-top:5px;height:auto;display:none" onchange="seleccionarBajaRsg()"></select>
+      </div>
+      <div id="baja-equipo-wrap" style="display:none">
+        <label for="baja-equipo-sel">Equipo(s) a dar de baja</label>
+        <select id="baja-equipo-sel" style="height:auto">
+          <option value="">— Selecciona —</option>
+        </select>
+      </div>
+      <div>
+        <label for="baja-motivo">Motivo de baja</label>
+        <select id="baja-motivo">
+          <option value="devolucion">Devolución equipo préstamo</option>
+          <option value="sustitucion">Sustitución por nuevo equipo</option>
+          <option value="baja_fisica">Baja por daño irreparable</option>
+          <option value="otro">Otro motivo</option>
+        </select>
+      </div>
+      <div>
+        <label for="baja-obs">Observaciones (opcional)</label>
+        <textarea id="baja-obs" placeholder="Detalles adicionales…" style="height:60px;resize:vertical;width:100%;border:1px solid var(--border);border-radius:6px;padding:7px;font-size:.84rem"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="btn" style="flex:1;background:#ddd;color:#333" onclick="cerrarModalBaja()">Cancelar</button>
+        <button class="btn" style="flex:1;background:#546E7A;color:#fff;font-weight:700" onclick="guardarBaja()">✅ Confirmar baja</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <canvas id="canvas-foto" style="display:none"></canvas>
 
 <script>
@@ -1020,6 +1120,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
 // ══════════════════════════════════════════════════════════════════════
 const CABB_CUPOS = new Set(["1501166","1501977","1501974"]);
 const MONITORES_DANADOS = new Set(["1501986","1502176","1502177"]);
+// Set de claves de equipos dados de baja — se puebla desde IDB al iniciar
+let _BAJAS_SET = new Set();
 
 function ubicacion(cupo){ return CABB_CUPOS.has(cupo) ? "CABB COACALCO" : "SARE ECATEPEC"; }
 function arrendadora(tipo){
@@ -1235,6 +1337,10 @@ function showSection(id){
   document.getElementById('nav-'+id).classList.add('active');
   // En móvil, cerrar sidebar al navegar
   if(window.innerWidth<720) document.getElementById('sidebar').classList.add('hidden');
+  // Acciones al activar sección
+  if(id==='sync') actualizarResumenSync();
+  if(id==='inc') renderInc();
+  if(id==='est') renderEstadisticas();
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1305,6 +1411,8 @@ function filtrarInv(){
   const q=document.getElementById('inv-search').value.trim().toLowerCase();
   const tipo=document.getElementById('inv-tipo').value;
   let lista=EQUIPOS.filter(eq=>{
+    // Excluir equipos dados de baja
+    if(_BAJAS_SET.has(eqKey(eq))) return false;
     // chip
     if(chipActivo==='arr'&&eq[9]!=='ARRENDAMIENTO') return false;
     if(chipActivo==='pre'&&eq[9]!=='PRÉSTAMO') return false;
@@ -1383,16 +1491,31 @@ async function renderInc(){
     </div>`;
   }));
 
-  // Renderizar dinámicas
-  const htmlDinamicas=incDinamicas.slice().reverse().map(inc=>{
+  // Renderizar dinámicas — activas primero, resueltas al final con estilo diferente
+  const incDynActivas=incDinamicas.filter(c=>c.estado!=='resuelta');
+  const incDynResueltas=incDinamicas.filter(c=>c.estado==='resuelta');
+  const ordenadas=[...incDynActivas.slice().reverse(), ...incDynResueltas.slice().reverse()];
+
+  const htmlDinamicas=ordenadas.map(inc=>{
     const eq=inc.eq||null;
     const fecha=new Date(inc.ts).toLocaleString('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-    const thumbsHtml = eq ? tipoLabels.map((lbl,i)=>{
+    const resuelta=inc.estado==='resuelta';
+    const thumbsHtml = eq && !resuelta ? tipoLabels.map((lbl,i)=>{
       return `<div class="foto-thumb-empty" onclick='abrirModal(${JSON.stringify(eq)},"${tiposKey[i]}")'>+ ${lbl}</div>`;
     }).join('') : '';
-    return `<div class="inc-card" id="inc-dyn-${inc.id}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <h3>⚠️ ${inc.nombreRsg||'Sin resguardante'}</h3>
+    const cardStyle=resuelta?'opacity:.6;border-left:4px solid #4caf50':'';
+    const badgeResuelta=resuelta?`<span style="background:#e8f5e9;color:#2e7d32;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px">✅ Resuelta</span>`:'';
+    const motResolucion=resuelta&&inc.motivoResolucion?`<div style="font-size:.78rem;color:#2e7d32;margin-top:4px;padding:4px 8px;background:#e8f5e9;border-radius:5px">✅ ${inc.motivoResolucion}</div>`:'';
+    const botonesHtml=resuelta
+      ?`<button class="btn" style="font-size:.72rem;padding:4px 10px;background:#eee;color:#555;border-radius:6px"
+          onclick="eliminarIncDyn(${inc.id})">🗑 Eliminar</button>`
+      :`<button class="btn" style="font-size:.72rem;padding:4px 10px;background:#2e7d32;color:#fff;border-radius:6px;margin-right:6px"
+          onclick="resolverIncDyn(${inc.id})">✅ Resolver</button>
+        <button class="btn" style="font-size:.72rem;padding:4px 10px;background:#c62828;color:#fff;border-radius:6px"
+          onclick="eliminarIncDyn(${inc.id})">🗑 Eliminar</button>`;
+    return `<div class="inc-card" id="inc-dyn-${inc.id}" style="${cardStyle}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:4px">
+        <h3>${resuelta?'✅':'⚠️'} ${inc.nombreRsg||'Sin resguardante'}${badgeResuelta}</h3>
         <span class="badge-inc-tipo nuevo">${TIPO_DANIO_LABELS[inc.tipoDanio]||inc.tipoDanio||'Daño'}</span>
       </div>
       <div class="inc-fields">
@@ -1404,17 +1527,18 @@ async function renderInc(){
         <span class="lbl">REGISTRADO POR</span><span class="val">${inc.registradoPor||'—'}</span>
       </div>
       <div class="inc-obs">${inc.desc||''}</div>
+      ${motResolucion}
       ${thumbsHtml?`<div class="inc-fotos">${thumbsHtml}</div>`:''}
-      <div style="text-align:right;margin-top:8px">
-        <button class="btn" style="font-size:.72rem;padding:4px 10px;background:#c62828;color:#fff;border-radius:6px"
-          onclick="eliminarIncDyn(${inc.id})">🗑 Eliminar</button>
-      </div>
+      <div style="text-align:right;margin-top:8px">${botonesHtml}</div>
     </div>`;
   });
 
-  const total=incLegacy.length+incDinamicas.length;
+  const total=incLegacy.length+incDynActivas.length;
   const cntEl=document.getElementById('inc-count');
   if(cntEl) cntEl.textContent=`${total} incidencia${total!==1?'s':''}`;
+  // Actualizar badge menú lateral
+  const badgeInc=document.getElementById('badge-inc');
+  if(badgeInc) badgeInc.textContent=total;
   list.innerHTML=htmlDinamicas.join('')+htmlLegacy.join('');
 }
 
@@ -1422,6 +1546,117 @@ async function eliminarIncDyn(id){
   if(!confirm('¿Eliminar esta incidencia?')) return;
   await dbCambiosDel(id);
   renderInc();
+}
+
+// ── RESOLVER INCIDENCIA DINÁMICA ──
+async function resolverIncDyn(id){
+  const todos=await dbCambiosGetAll();
+  const item=todos.find(c=>c.id===id);
+  if(!item) return;
+  const motivo=prompt('¿Motivo de resolución? (ej: equipo repuesto, reparado, etc.)');
+  if(motivo===null) return; // cancelado
+  item.estado='resuelta';
+  item.motivoResolucion=motivo||'Resuelto';
+  item.fechaResolucion=new Date().toISOString();
+  await dbCambiosPut(item);
+  await renderInc();
+  await renderEstadisticas();
+}
+
+// ── CARGAR BAJAS DESDE IDB ──
+async function cargarBajasIDB(){
+  try{
+    const cambios=await dbCambiosGetAll();
+    _BAJAS_SET=new Set(cambios.filter(c=>c.tipo==='BAJA').map(c=>c.eqKey));
+  }catch(e){ _BAJAS_SET=new Set(); }
+}
+
+// ── DAR DE BAJA EQUIPO ──
+let _bajaRsgSeleccionado=null;
+
+function abrirModalBaja(){
+  _bajaRsgSeleccionado=null;
+  document.getElementById('baja-rsg-search').value='';
+  document.getElementById('baja-rsg-sel').innerHTML='';
+  document.getElementById('baja-rsg-sel').style.display='none';
+  document.getElementById('baja-equipo-wrap').style.display='none';
+  document.getElementById('baja-motivo').value='devolucion';
+  document.getElementById('baja-obs').value='';
+  const m=document.getElementById('modal-baja');
+  m.style.display='flex';
+}
+
+function cerrarModalBaja(){
+  document.getElementById('modal-baja').style.display='none';
+}
+
+function filtrarBajaRsg(){
+  const q=document.getElementById('baja-rsg-search').value.trim().toLowerCase();
+  const sel=document.getElementById('baja-rsg-sel');
+  if(q.length<2){ sel.style.display='none'; return; }
+  const res=[...RSG_MAP.values()].filter(r=>
+    r.nombre.toLowerCase().includes(q)||r.cupo.includes(q)
+  ).slice(0,10);
+  if(!res.length){ sel.style.display='none'; return; }
+  sel.innerHTML=res.map(r=>`<option value="${r.cupo}">${r.nombre} (${r.cupo})</option>`).join('');
+  sel.style.display='block';
+}
+
+function seleccionarBajaRsg(){
+  const cupo=document.getElementById('baja-rsg-sel').value;
+  if(!cupo) return;
+  const rsg=RSG_MAP.get(cupo);
+  if(!rsg) return;
+  _bajaRsgSeleccionado=rsg;
+  document.getElementById('baja-rsg-search').value=`${rsg.nombre} (${rsg.cupo})`;
+  document.getElementById('baja-rsg-sel').style.display='none';
+  // Poblar equipos — solo PRÉSTAMO por defecto marcado, pero se muestran todos
+  const eqSel=document.getElementById('baja-equipo-sel');
+  eqSel.innerHTML='<option value="TODOS">⬛ Todos los equipos (devolución completa)</option>'+
+    '<option value="" disabled>── por equipo ──</option>'+
+    rsg.items.map((eq,i)=>`<option value="${i}">${eq[8]} — ${eq[5]} ${eq[6]} | TAG: ${eq[3]}${eq[9]==='PRÉSTAMO'?' ★PRÉSTAMO':''}</option>`).join('');
+  document.getElementById('baja-equipo-wrap').style.display='block';
+}
+
+async function guardarBaja(){
+  if(!_bajaRsgSeleccionado){ alert('Selecciona un resguardante'); return; }
+  const eqSel=document.getElementById('baja-equipo-sel');
+  const val=eqSel.value;
+  const motivo=document.getElementById('baja-motivo').value;
+  const obs=document.getElementById('baja-obs').value.trim();
+  const sesion=sesionActiva();
+  const ts=new Date().toISOString();
+
+  let equiposABajar=[];
+  if(val==='TODOS'){
+    equiposABajar=_bajaRsgSeleccionado.items.map(eq=>({eq,key:eqKey(eq)}));
+  } else {
+    const idx=parseInt(val);
+    if(isNaN(idx)||idx<0){ alert('Selecciona un equipo'); return; }
+    const eq=_bajaRsgSeleccionado.items[idx];
+    equiposABajar=[{eq,key:eqKey(eq)}];
+  }
+
+  const motiLabel={devolucion:'Devolución equipo préstamo',sustitucion:'Sustitución por nuevo equipo',baja_fisica:'Baja por daño irreparable',otro:'Otro motivo'}[motivo]||motivo;
+
+  for(const {eq,key} of equiposABajar){
+    await dbCambiosPut({
+      tipo:'BAJA',
+      eqKey:key,
+      cupo:_bajaRsgSeleccionado.cupo,
+      nombreRsg:_bajaRsgSeleccionado.nombre,
+      tipoEquipo:eq[8], tag:eq[3], serie:eq[4], marca:eq[5], modelo:eq[6],
+      modalidad:eq[9], motivo, motiLabel, obs,
+      ts, registradoPor:sesion?sesion.nombre:'—', estado:'registrada', fecha:ts
+    });
+    _BAJAS_SET.add(key);
+  }
+
+  cerrarModalBaja();
+  filtrarInv();
+  await renderEstadisticas();
+  const btn=document.querySelector('.inc-nueva-btn');
+  if(btn){ const o=btn.textContent; btn.textContent=`✅ ${equiposABajar.length} equipo${equiposABajar.length!==1?'s':''} dado${equiposABajar.length!==1?'s':''} de baja`; setTimeout(()=>btn.textContent=o,3000); }
 }
 
 // ── MODAL NUEVA INCIDENCIA ──
@@ -1537,7 +1772,8 @@ function filtrarRsg(){
     return;
   }
   grid.innerHTML=lista.map(r=>{
-    const its=r.items;
+    const its=r.items.filter(eq=>!_BAJAS_SET.has(eqKey(eq)));
+    if(!its.length) return ''; // ocultar tarjeta si todos dados de baja
     const cpu=its.find(x=>x[8]==='CPU');
     const mon=its.find(x=>x[8]==='MONITOR');
     const nb=its.find(x=>x[8]==='NO BREAK');
@@ -1607,20 +1843,28 @@ function renderEmpresas(){
 // ══════════════════════════════════════════════════════════════════════
 //  ESTADÍSTICAS
 // ══════════════════════════════════════════════════════════════════════
-function renderEstadisticas(){
-  const tot=EQUIPOS.length;
-  const arr=EQUIPOS.filter(e=>e[9]==='ARRENDAMIENTO').length;
-  const pre=EQUIPOS.filter(e=>e[9]==='PRÉSTAMO').length;
-  const danados=EQUIPOS.filter(e=>MONITORES_DANADOS.has(e[0])&&e[8]==='MONITOR'&&e[10]).length;
-  const ec=EQUIPOS.filter(e=>!CABB_CUPOS.has(e[0]));
-  const cb=EQUIPOS.filter(e=>CABB_CUPOS.has(e[0]));
+async function renderEstadisticas(){
+  const tot=EQUIPOS.filter(e=>!_BAJAS_SET.has(eqKey(e))).length;
+  const arr=EQUIPOS.filter(e=>e[9]==='ARRENDAMIENTO'&&!_BAJAS_SET.has(eqKey(e))).length;
+  const pre=EQUIPOS.filter(e=>e[9]==='PRÉSTAMO'&&!_BAJAS_SET.has(eqKey(e))).length;
+  const legacyInc=EQUIPOS.filter(e=>MONITORES_DANADOS.has(e[0])&&e[8]==='MONITOR'&&e[10]).length;
+  let dynInc=0;
+  try{ dynInc=(await dbCambiosGetAll()).filter(c=>c.tipo==='INCIDENCIA'&&c.estado!=='resuelta').length; }catch(e){}
+  const totalInc=legacyInc+dynInc;
+  const ec=EQUIPOS.filter(e=>!CABB_CUPOS.has(e[0])&&!_BAJAS_SET.has(eqKey(e)));
+  const cb=EQUIPOS.filter(e=>CABB_CUPOS.has(e[0])&&!_BAJAS_SET.has(eqKey(e)));
+
+  // Actualizar badge menú
+  const badgeInc=document.getElementById('badge-inc');
+  if(badgeInc) badgeInc.textContent=totalInc;
 
   document.getElementById('stats-cards').innerHTML=[
-    {n:tot,  lbl:'Equipos totales', cls:''},
-    {n:arr,  lbl:'Arrendamiento',   cls:'verde'},
-    {n:pre,  lbl:'Préstamo',        cls:'naranja'},
-    {n:22,   lbl:'Resguardantes',   cls:''},
-    {n:danados,lbl:'Incidencias',   cls:'rojo'},
+    {n:tot,           lbl:'Equipos activos',  cls:''},
+    {n:arr,           lbl:'Arrendamiento',    cls:'verde'},
+    {n:pre,           lbl:'Préstamo',         cls:'naranja'},
+    {n:RSG_MAP.size,  lbl:'Resguardantes',    cls:''},
+    {n:totalInc,      lbl:'Incidencias',      cls:'rojo'},
+    {n:_BAJAS_SET.size,lbl:'Dados de baja',   cls:'gris'},
   ].map(s=>`<div class="stat-card ${s.cls}">
     <div class="stat-num">${s.n}</div>
     <div class="stat-lbl">${s.lbl}</div>
@@ -2503,10 +2747,10 @@ async function renderLog(){
     return;
   }
 
-  const estadoLabels={pendiente:'⏳ Pendiente',confirmado:'✅ Confirmado',corregido:'🔵 Corregido',completado:'✔ Completado'};
+  const estadoLabels={pendiente:'⏳ Pendiente',confirmado:'✅ Confirmado',corregido:'🔵 Corregido',completado:'✔ Completado',registrada:'📋 Registrada',resuelta:'✅ Resuelta'};
   const estadoClases={pendiente:'estado-pendiente',confirmado:'estado-confirmado',corregido:'estado-corregido',completado:'estado-confirmado'};
-  const tipoLabels={reasignacion:'🔄 Reasignación',sustitucion:'🔧 Sustitución',nota:'⚠️ Nota'};
-  const tipoBadge={reasignacion:'badge-reasignacion',sustitucion:'badge-sustitucion',nota:'badge-nota'};
+  const tipoLabels={reasignacion:'🔄 Reasignación',sustitucion:'🔧 Sustitución',nota:'⚠️ Nota',INCIDENCIA:'⚠️ Incidencia',BAJA:'📤 Baja de equipo'};
+  const tipoBadge={reasignacion:'badge-reasignacion',sustitucion:'badge-sustitucion',nota:'badge-nota',INCIDENCIA:'badge-INCIDENCIA',BAJA:'badge-BAJA'};
 
   logEl.innerHTML=lista.map(c=>{
     const fecha=new Date(c.fecha).toLocaleString('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -2536,6 +2780,19 @@ async function renderLog(){
         ${c.equipoDesc?`<div><span class="campo">EQUIPO:</span> ${c.equipoDesc}</div>`:''}
         ${c.responsable?`<div><span class="campo">RESPONSABLE:</span> ${c.responsable}</div>`:''}
         <div class="nota-txt">${c.desc}</div>`;
+    } else if(c.tipo==='INCIDENCIA'){
+      const TIPO_DANIO_LABELS_LOG={daño_fisico:'Daño físico',falla_electronica:'Falla electrónica',pantalla_rota:'Pantalla rota','robo_extravío':'Robo / Extravío',otro:'Otro'};
+      cuerpo=`<div><span class="campo">RESGUARDANTE:</span> ${c.nombreRsg||'—'} (${c.cupo||'—'})</div>
+        <div><span class="campo">EQUIPO:</span> ${c.tipoEquipo||'—'} ${c.tag?`| TAG: ${c.tag}`:''} ${c.serie?`| Serie: ${c.serie}`:''}</div>
+        <div><span class="campo">TIPO DE DAÑO:</span> ${TIPO_DANIO_LABELS_LOG[c.tipoDanio]||c.tipoDanio||'—'}</div>
+        ${c.desc?`<div class="nota-txt">${c.desc}</div>`:''}
+        ${c.estado==='resuelta'?`<div style="color:#2e7d32;font-size:.78rem">✅ Resuelta: ${c.motivoResolucion||'—'}</div>`:''}`;
+    } else if(c.tipo==='BAJA'){
+      cuerpo=`<div><span class="campo">RESGUARDANTE:</span> ${c.nombreRsg||'—'} (${c.cupo||'—'})</div>
+        <div><span class="campo">EQUIPO:</span> ${c.tipoEquipo||'—'} ${c.tag?`| TAG: ${c.tag}`:''} ${c.marca?`| ${c.marca} ${c.modelo}`:''}</div>
+        <div><span class="campo">MODALIDAD:</span> ${c.modalidad||'—'}</div>
+        <div><span class="campo">MOTIVO:</span> ${c.motiLabel||c.motivo||'—'}</div>
+        ${c.obs?`<div class="nota-txt">${c.obs}</div>`:''}`;
     }
 
     // Próximos estados posibles
@@ -2730,6 +2987,7 @@ async function initAdm(){
   if(window.innerWidth<720) document.getElementById('sidebar').classList.add('hidden');
 
   await initDB();
+  await cargarBajasIDB();
 
   // ── Sembrar usuarios por defecto y verificar sesión ──
   await seedUsuarios();
@@ -2755,10 +3013,162 @@ async function initAdm(){
   await renderInc();
   filtrarRsg();
   renderEmpresas();
-  renderEstadisticas();
+  await renderEstadisticas();
   await initAdm();
   initRep();
 })();
+
+// ══════════════════════════════════════════════════════════════════════
+//  MÓDULO SINCRONIZACIÓN
+// ══════════════════════════════════════════════════════════════════════
+
+async function actualizarResumenSync(){
+  const el=document.getElementById('sync-resumen');
+  if(!el) return;
+  try{
+    const cambios=await dbCambiosGetAll();
+    const fotos=await (()=>{
+      return new Promise((res,rej)=>{
+        const req=indexedDB.open('InvComputo_SARE1507',3);
+        req.onsuccess=e=>{
+          const db=e.target.result;
+          const tx=db.transaction('fotos','readonly');
+          const st=tx.objectStore('fotos');
+          const r=st.getAll();
+          r.onsuccess=()=>res(r.result||[]);
+          r.onerror=()=>res([]);
+        };
+        req.onerror=()=>res([]);
+      });
+    })();
+    const inc=cambios.filter(c=>c.tipo==='INCIDENCIA');
+    const bajas=cambios.filter(c=>c.tipo==='BAJA');
+    const notas=cambios.filter(c=>c.tipo==='nota'||c.tipo==='reasignacion'||c.tipo==='sustitucion');
+    el.innerHTML=`
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:4px">
+        <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:1.4rem;font-weight:700;color:var(--guinda)">${cambios.length}</div>
+          <div style="font-size:.72rem;color:#666">Cambios totales</div>
+        </div>
+        <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:1.4rem;font-weight:700;color:#e65100">${inc.length}</div>
+          <div style="font-size:.72rem;color:#666">Incidencias</div>
+        </div>
+        <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:1.4rem;font-weight:700;color:#546E7A">${bajas.length}</div>
+          <div style="font-size:.72rem;color:#666">Bajas</div>
+        </div>
+        <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:1.4rem;font-weight:700;color:#1565C0">${fotos.length}</div>
+          <div style="font-size:.72rem;color:#666">Equipos con fotos</div>
+        </div>
+      </div>`;
+  }catch(e){ el.textContent='Error al calcular.'; }
+}
+
+async function exportarDatos(conFotos=false){
+  const status=document.getElementById('sync-export-status');
+  if(status) status.textContent='Preparando exportación…';
+  try{
+    const cambios=await dbCambiosGetAll();
+    let fotosData=[];
+    if(conFotos){
+      fotosData=await (()=>{
+        return new Promise((res)=>{
+          const req=indexedDB.open('InvComputo_SARE1507',3);
+          req.onsuccess=e=>{
+            const db=e.target.result;
+            const tx=db.transaction('fotos','readonly');
+            const st=tx.objectStore('fotos');
+            const r=st.getAll();
+            r.onsuccess=()=>res(r.result||[]);
+            r.onerror=()=>res([]);
+          };
+          req.onerror=()=>res([]);
+        });
+      })();
+    }
+    const payload={
+      version:1, exportadoEn:new Date().toISOString(),
+      dispositivo: navigator.userAgent.substring(0,60),
+      cambios, fotos:fotosData
+    };
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const fecha=new Date().toISOString().slice(0,10).replace(/-/g,'');
+    a.href=url; a.download=`SARE1507_sync_${fecha}${conFotos?'_fotos':''}.json`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+    if(status) status.textContent=`✅ Exportados: ${cambios.length} cambios${conFotos?` + ${fotosData.length} fotos`:''}`;
+  }catch(e){
+    if(status) status.textContent='❌ Error al exportar: '+e.message;
+  }
+}
+
+async function exportarTodoConFotos(){ await exportarDatos(true); }
+
+async function importarDatos(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const status=document.getElementById('sync-import-status');
+  status.style.display='block';
+  status.style.background='#e3f2fd';
+  status.style.color='#1565C0';
+  status.textContent='Leyendo archivo…';
+  try{
+    const text=await file.text();
+    const data=JSON.parse(text);
+    if(!data.cambios||!Array.isArray(data.cambios)) throw new Error('Formato inválido');
+    const existentes=await dbCambiosGetAll();
+    const existentesTS=new Set(existentes.map(c=>c.ts+'|'+c.tipo+'|'+(c.cupo||'')));
+    let agregados=0, duplicados=0;
+    for(const c of data.cambios){
+      const key=c.ts+'|'+c.tipo+'|'+(c.cupo||'');
+      if(existentesTS.has(key)){ duplicados++; continue; }
+      const copia={...c}; delete copia.id; // dejar que IDB asigne nuevo id
+      await dbCambiosPut(copia);
+      agregados++;
+    }
+    // Importar fotos si vienen
+    let fotosAgregadas=0;
+    if(data.fotos&&data.fotos.length){
+      for(const fRec of data.fotos){
+        const existing=await dbGet(fRec.id);
+        if(!existing){
+          await dbPut(fRec);
+          fotosAgregadas++;
+        } else {
+          // Merge fotos nuevas
+          const fotosNuevas=fRec.fotos||[];
+          const fotosAct=existing.fotos||[];
+          let changed=false;
+          for(const fn of fotosNuevas){
+            if(!fotosAct.find(f=>f.tipo===fn.tipo)){
+              fotosAct.push(fn); changed=true;
+            }
+          }
+          if(changed){ existing.fotos=fotosAct; await dbPut(existing); fotosAgregadas++; }
+        }
+      }
+    }
+    // Recargar bajas
+    await cargarBajasIDB();
+    await renderInc();
+    await renderEstadisticas();
+    filtrarInv();
+    await actualizarResumenSync();
+    status.style.background='#e8f5e9'; status.style.color='#2e7d32';
+    status.innerHTML=`✅ Importación completada:<br>
+      • Cambios nuevos agregados: <strong>${agregados}</strong><br>
+      • Duplicados omitidos: <strong>${duplicados}</strong><br>
+      ${fotosAgregadas?`• Equipos con fotos actualizados: <strong>${fotosAgregadas}</strong>`:''}`;
+  }catch(e){
+    status.style.background='#fce4ec'; status.style.color='#c62828';
+    status.textContent='❌ Error al importar: '+e.message;
+  }
+  event.target.value=''; // reset input
+}
 
 // ══════════════════════════════════════════════════════════════════════
 //  MÓDULO REPORTES
