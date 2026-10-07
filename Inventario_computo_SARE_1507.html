@@ -218,7 +218,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
 .tipo-num{min-width:28px;text-align:right;font-weight:700;color:var(--txt2);font-size:.78rem}
 
 /* ── MODAL CÁMARA ── */
-#modal-foto{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+#modal-foto{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:250;flex-direction:column;align-items:center;justify-content:center;padding:16px}
 #modal-foto.open{display:flex}
 .modal-box{background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.3)}
 .modal-head{background:var(--guinda);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px}
@@ -2192,13 +2192,11 @@ let modalEq=null, fotoTipoActivo='general', streamActivo=null, fotoCapturada=nul
 
 // Configuración de tabs por tipo de equipo:
 // CPU         → general + tag + serie
-// MONITOR, NO BREAK, MULTIFUNCIONAL, COMUNICACIONES, PERIFÉRICO → general + serie
-// MOUSE, TECLADO  → solo general
+// todos los demás (MONITOR, NO BREAK, MOUSE, TECLADO, etc.) → general + serie
 function tabsParaTipo(tipoEq){
   const t=(tipoEq||'').toUpperCase();
-  if(['MOUSE','TECLADO'].includes(t))        return ['general'];
-  if(t==='CPU')                               return ['general','tag','serie'];
-  return ['general','serie']; // MONITOR, NO BREAK, MULTIFUNCIONAL, etc.
+  if(t==='CPU') return ['general','tag','serie'];
+  return ['general','serie']; // MONITOR, NO BREAK, MOUSE, TECLADO, MULTIFUNCIONAL, etc.
 }
 
 async function abrirModal(eq, tipoInicial='general'){
@@ -2239,11 +2237,10 @@ function setFotoTab(tipo){
   });
   const labels={general:'Vista general',tag:'Etiqueta TAG',serie:'No. de serie'};
   document.getElementById('foto-label-overlay').textContent=labels[tipo]||tipo;
-  // Mostrar botón "No visible" solo en tab serie y para tipos con serie (no MOUSE/TECLADO)
+  // Mostrar botón "No visible" en tab serie para todos los tipos (incluyendo MOUSE/TECLADO)
   const btnNoVis=document.getElementById('btn-serie-no-visible');
   if(btnNoVis){
-    const tipoEq=modalEq?(modalEq[8]||'').toUpperCase():'';
-    btnNoVis.style.display=(tipo==='serie'&&!['MOUSE','TECLADO'].includes(tipoEq))?'':'none';
+    btnNoVis.style.display=(tipo==='serie')?'':'none';
   }
 }
 
@@ -2343,6 +2340,10 @@ async function guardarFotoActual(){
   // Refrescar inventario para actualizar botón
   filtrarInv();
   if(MONITORES_DANADOS.has(modalEq[0])&&modalEq[8]==='MONITOR') renderInc();
+  // Refrescar botones del modal-rsg si está abierto (sin cerrarlo)
+  if(modalEq && document.getElementById('modal-rsg').classList.contains('open')){
+    _refrescarBotonesRsg(modalEq[0]);
+  }
 }
 
 // ── SERIE NO VISIBLE ──
@@ -2368,6 +2369,10 @@ async function marcarSerieNoVisible(){
   await cargarFotosGuardadas();
   filtrarInv();
   if(MONITORES_DANADOS.has(modalEq[0])&&modalEq[8]==='MONITOR') renderInc();
+  // Refrescar botones del modal-rsg si está abierto
+  if(modalEq && document.getElementById('modal-rsg').classList.contains('open')){
+    _refrescarBotonesRsg(modalEq[0]);
+  }
 }
 
 // ── VERIFICACIÓN OCR ──
@@ -2540,12 +2545,40 @@ async function eliminarFoto(k,tipo){
   renderInc();
 }
 
+// Actualiza los botones "📷 Fotografiar" del modal-rsg sin cerrarlo
+async function _refrescarBotonesRsg(cupo){
+  const r=RSG_MAP.get(cupo);
+  if(!r) return;
+  const btns=document.querySelectorAll('#mrsg-body .mrsg-btn-foto');
+  for(const btn of btns){
+    // Extraer el eq del onclick del botón
+    const oc=btn.getAttribute('onclick');
+    if(!oc) continue;
+    const m=oc.match(/abrirModal\((\[.+?\])/);
+    if(!m) continue;
+    try{
+      const eq=JSON.parse(m[1]);
+      const k=eqKey(eq);
+      const rec=await dbGet(k);
+      const nf=rec?(rec.fotos||[]).filter(f=>f.data||f.noVisible).length:0;
+      btn.className='mrsg-btn-foto'+(nf>0?' has-foto':'');
+      btn.textContent=nf>0?`✅ ${nf} foto${nf!==1?'s':''}`:'📷 Fotografiar';
+    }catch(e){ /* ignorar */ }
+  }
+}
+
 function cerrarModal(){
   detenerCamera();
   document.getElementById('modal-foto').classList.remove('open');
+  // Si el modal-rsg está abierto, refrescarlo para actualizar contadores de fotos
+  const cupoRsgActivo=modalEq?modalEq[0]:null;
   modalEq=null; fotoCapturada=null;
   // Limpiar elementos OCR
   ['ocr-result-badge','serie-hint'].forEach(id=>{ const el=document.getElementById(id); if(el) el.remove(); });
+  // Refrescar modal-rsg si está abierto
+  if(cupoRsgActivo && document.getElementById('modal-rsg').classList.contains('open')){
+    abrirModalRsg(cupoRsgActivo);
+  }
 }
 
 function verImagen(src){
@@ -3299,7 +3332,7 @@ async function abrirModalRsg(cupo){
         </div>
         ${eq[7]&&eq[7]!==tipo&&eq[7]!==eq[6]?`<div style="font-size:.71rem;color:var(--txt3);margin-top:4px">${eq[7]}</div>`:''}
         ${danado?`<div class="mrsg-eq-obs">${eq[10]}</div>`:''}
-        <button class="mrsg-btn-foto${nf>0?' has-foto':''}" onclick="event.stopPropagation();cerrarModalRsg();setTimeout(()=>abrirModal(${JSON.stringify(eq).replace(/"/g,'&quot;')}),100)">
+        <button class="mrsg-btn-foto${nf>0?' has-foto':''}" onclick="event.stopPropagation();abrirModal(${JSON.stringify(eq).replace(/"/g,'&quot;')})">
           ${nf>0?`✅ ${nf} foto${nf!==1?'s':''}`:'📷 Fotografiar'}
         </button>
       </div>`;
