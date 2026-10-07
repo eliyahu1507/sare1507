@@ -1336,6 +1336,57 @@ const EQUIPOS = [
 ["1502180","PACHECO RAMIREZ DULCE JOCABET","SERVIDOR EDUCATIVO","CNBBBJ-028","FCMHH0AHD8YNMG","HP","QY77A","MOUSE","MOUSE","PRÉSTAMO",""],
 ];
 
+// ══════════════════════════════════════════════════════════════════════
+//  CATÁLOGO DE PERSONAL (fuente: capturista.xlsx — todos los cupos activos)
+//  Incluye tanto quienes ya tienen equipo como quienes aún no tienen asignación.
+//  Campos: [cupo, nombre, puesto]
+// ══════════════════════════════════════════════════════════════════════
+const PERSONAL = [
+  ["159415",  "CERVANTES JIMENEZ JOSE ELIAS",             "SERVIDOR EDUCATIVO"],
+  ["1500585", "NOH CRUZ JOSE EDUARDO",                    "JEFATURA DE DEPARTAMENTO DE ENLACE DE SARE"],
+  ["1500723", "BARRERA MARTINEZ GUSTAVO",                 "SERVIDOR EDUCATIVO"],
+  ["1501080", "CARRASCO GALLARDO STEFANY",                "SERVIDOR EDUCATIVO"],
+  ["1501112", "HERNANDEZ GUEVARA ANDREA",                 "SERVIDOR EDUCATIVO"],
+  ["1501166", "MARTINEZ MOISES CELINA",                   "SERVIDOR EDUCATIVO"],
+  ["1501193", "GALVEZ GARCIA NESTOR ENRIQUE",             "SERVIDOR EDUCATIVO"],
+  ["1501604", "ORDAZ VERA OSCAR URIEL",                   "SERVIDOR EDUCATIVO"],
+  ["1501620", "ORDAZ HERNANDEZ MARIA DEL ROCIO",          "SERVIDOR EDUCATIVO"],
+  ["1501623", "HERNANDEZ HERNANDEZ CLAUDIA LIZET",        "SERVIDOR EDUCATIVO"],
+  ["1501626", "CEDILLO GARCIA MIGUEL",                    "SERVIDOR EDUCATIVO"],
+  ["1501640", "MARTINEZ ARELLANO ROSA CARMINA",           "SERVIDOR EDUCATIVO"],
+  ["1501644", "PUENTE MAGAÑA JESUS ALBERTO",              "SERVIDOR EDUCATIVO"],
+  ["1501974", "SANCHEZ BERNABE MARIA GUADALUPE BRENDA",   "SERVIDOR EDUCATIVO"],
+  ["1501975", "CUEVAS SANCHEZ EMMELY DANIELA",            "SERVIDOR EDUCATIVO"],
+  ["1501976", "ORNELAS HURTADO DANA KARLA",               "SERVIDOR EDUCATIVO"],
+  ["1501977", "POMPA VALDEZ ABRAHAM LEVI",                "SERVIDOR EDUCATIVO"],
+  ["1501981", "QUINTOS HERNANDEZ ELDA BERENICE",          "SERVIDOR EDUCATIVO"],
+  ["1501982", "OLVERA SANCHEZ ANA LAURA",                 "SERVIDOR EDUCATIVO"],
+  ["1501983", "MAGAÑA ABURTO MARIA ANGELICA",             "SERVIDOR EDUCATIVO"],
+  ["1501985", "GONZALEZ AVILA BERSAIN",                   "SERVIDOR EDUCATIVO"],
+  ["1501986", "SANCHEZ BELTRAN MAYRA SUET",               "SERVIDOR EDUCATIVO"],
+  ["1501987", "LUNA VELAZQUEZ LUCIA",                     "SERVIDOR EDUCATIVO"],
+  ["1501989", "RIVERA GONZALEZ ANDREA PATRICIA",          "SERVIDOR EDUCATIVO"],
+  ["1501991", "GONZALEZ LINDA NOHEMI JAZMIN",             "SERVIDOR EDUCATIVO"],
+  ["1502176", "RAMIREZ CRUZ ERICKA YESSENIA",             "SERVIDOR EDUCATIVO"],
+  ["1502177", "MARTINEZ SOSA MICHELLE",                   "SERVIDOR EDUCATIVO"],
+  ["1502178", "SILVETI PEREZ ROCIO",                      "SERVIDOR EDUCATIVO"],
+  ["1502179", "RAMIREZ CRUZ RUTH PAOLA",                  "SERVIDOR EDUCATIVO"],
+  ["1502180", "PACHECO RAMIREZ DULCE JOCABET",            "SERVIDOR EDUCATIVO"],
+  ["1502210", "ESCOBAR NABOR EMMA NAZARAHI",              "SERVIDOR EDUCATIVO"],
+  ["1502220", "LIRA ESPINOZA PATRICIA ALEJANDRA",         "SERVIDOR EDUCATIVO"],
+  ["1502229", "MORALES ESCOBAR JANETH JOSELYN",           "SERVIDOR EDUCATIVO"],
+  ["1502290", "GONZALEZ CLEMENTE LAURA ANDREA",           "SERVIDOR EDUCATIVO"],
+  ["1502291", "GONZALEZ VARGAS GABRIEL YOSEF ARNALDO",    "SERVIDOR EDUCATIVO"],
+  ["1502292", "MARTINEZ SANDOVAL JUAN CARLOS",            "SERVIDOR EDUCATIVO"],
+  ["1502293", "MENDOZA ALVARADO DIANA ARELI",             "SERVIDOR EDUCATIVO"],
+  ["1502294", "PONCE NIEVES BRYAN",                       "SERVIDOR EDUCATIVO"],
+  ["1502295", "REYES VAZQUEZ NORMA ANGELICA",             "SERVIDOR EDUCATIVO"],
+  ["1502296", "RUBIO VALADEZ FERNANDA ESTEFANIA",         "SERVIDOR EDUCATIVO"],
+  ["1502297", "SALAZAR MARTINEZ GUADALUPE ABIGAIL",       "SERVIDOR EDUCATIVO"],
+];
+// Índice rápido cupo → {cupo, nombre, puesto}
+const PERSONAL_MAP = new Map(PERSONAL.map(p=>[ p[0], {cupo:p[0], nombre:p[1], puesto:p[2]} ]));
+
 // ── Mapeo de tipo a clase CSS badge ──
 const TIPO_BADGE = {
   CPU:'badge-cpu', MONITOR:'badge-monitor', TECLADO:'badge-teclado',
@@ -2031,12 +2082,24 @@ async function guardarNuevaInc(){
 // ══════════════════════════════════════════════════════════════════════
 //  POR RESGUARDANTE
 // ══════════════════════════════════════════════════════════════════════
-// Construir mapa de resguardantes
+// Construir mapa de resguardantes.
+// Incluye a TODO el personal del catálogo (PERSONAL_MAP), con items=[]
+// para quienes aún no tienen equipo asignado.
 const RSG_MAP = (()=>{
   const m=new Map();
+  // 1. Poblar desde catálogo de personal (todos los cupos conocidos)
+  PERSONAL_MAP.forEach((p,cupo)=>{
+    m.set(cupo,{cupo:p.cupo, nombre:p.nombre, puesto:p.puesto, items:[], sinEquipo:true});
+  });
+  // 2. Agregar equipos y marcar como con equipo
   EQUIPOS.forEach(eq=>{
-    if(!m.has(eq[0])) m.set(eq[0],{cupo:eq[0],nombre:eq[1],puesto:eq[2],items:[]});
-    m.get(eq[0]).items.push(eq);
+    if(!m.has(eq[0])){
+      // Persona con equipo pero fuera del catálogo de operadores (ej. personal de apoyo)
+      m.set(eq[0],{cupo:eq[0],nombre:eq[1],puesto:eq[2],items:[],sinEquipo:false,fueraDeCatalogo:true});
+    }
+    const r=m.get(eq[0]);
+    r.items.push(eq);
+    r.sinEquipo=false;
   });
   return m;
 })();
@@ -2044,21 +2107,32 @@ const RSG_MAP = (()=>{
 function filtrarRsg(){
   const q=document.getElementById('rsg-search').value.trim().toLowerCase();
   const ub=document.getElementById('rsg-ub').value;
-  let lista=[...RSG_MAP.values()].filter(r=>{
-    if(ub&&ubicacion(r.cupo)!==ub) return false;
-    if(q&&!`${r.cupo} ${r.nombre}`.toLowerCase().includes(q)) return false;
-    return true;
+  const todos=[...RSG_MAP.values()];
+
+  // Separar: con equipo activo vs sin equipo (o todos dados de baja)
+  const conEquipo=[], sinEquipo=[];
+  todos.forEach(r=>{
+    const match = (!ub||ubicacion(r.cupo)===ub) && (!q||`${r.cupo} ${r.nombre}`.toLowerCase().includes(q));
+    if(!match) return;
+    const itsActivos=r.items.filter(eq=>!_BAJAS_SET.has(eqKey(eq)));
+    if(itsActivos.length>0) conEquipo.push({r,its:itsActivos});
+    else sinEquipo.push(r);
   });
-  document.getElementById('rsg-count').textContent=`${lista.length} resguardante${lista.length!==1?'s':''}`;
-  document.getElementById('badge-rsg').textContent=lista.length;
+
+  // Solo personas del catálogo o con equipo real cuentan para badge
+  const totalConEquipo=conEquipo.length;
+  document.getElementById('rsg-count').textContent=
+    `${totalConEquipo} con equipo · ${sinEquipo.length} sin asignar`;
+  document.getElementById('badge-rsg').textContent=totalConEquipo;
+
   const grid=document.getElementById('rsg-grid');
-  if(!lista.length){
+  if(!conEquipo.length && !sinEquipo.length){
     grid.innerHTML='<div class="empty-state"><div class="ic">🔍</div><p>Sin resultados</p></div>';
     return;
   }
-  grid.innerHTML=lista.map(r=>{
-    const its=r.items.filter(eq=>!_BAJAS_SET.has(eqKey(eq)));
-    if(!its.length) return ''; // ocultar tarjeta si todos dados de baja
+
+  // Cards con equipo
+  const htmlConEquipo=conEquipo.map(({r,its})=>{
     const cpu=its.find(x=>x[8]==='CPU');
     const mon=its.find(x=>x[8]==='MONITOR');
     const nb=its.find(x=>x[8]==='NO BREAK');
@@ -2067,9 +2141,10 @@ function filtrarRsg(){
     const mod=cpu?cpu[9]:'—';
     const danado=MONITORES_DANADOS.has(r.cupo);
     const ub2=ubicacion(r.cupo);
+    const fdc=r.fueraDeCatalogo?'<span style="font-size:.62rem;background:#eeeeee;color:#666;border-radius:4px;padding:1px 5px;margin-left:4px">apoyo</span>':'';
     return `<div class="rsg-card${danado?' danado':''}" onclick="abrirModalRsg('${r.cupo}')">
       <div class="rsg-card-head">
-        <div class="rsg-nombre">${r.nombre}</div>
+        <div class="rsg-nombre">${r.nombre}${fdc}</div>
         <div class="rsg-cupo">CUPO: ${r.cupo} · ${r.puesto}</div>
         <div class="rsg-ub">${ub2==='CABB COACALCO'?'🔵 CABB COACALCO':'📍 SARE ECATEPEC'}</div>
       </div>
@@ -2086,6 +2161,29 @@ function filtrarRsg(){
       </div>
     </div>`;
   }).join('');
+
+  // Panel colapsable "Personal sin equipo asignado"
+  let htmlSinEquipo='';
+  if(sinEquipo.length){
+    const rows=sinEquipo.map(r=>{
+      const ub2=ubicacion(r.cupo);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid #f0e8f5;font-size:.8rem">
+        <span style="min-width:80px;font-family:monospace;color:var(--txt2)">${r.cupo}</span>
+        <span style="flex:1;font-weight:600">${r.nombre}</span>
+        <span style="font-size:.7rem;color:var(--txt3)">${ub2==='CABB COACALCO'?'🔵 CABB':'📍 SARE'}</span>
+      </div>`;
+    }).join('');
+    htmlSinEquipo=`<div style="margin-top:18px;background:#fff;border-radius:10px;border:1px dashed #c9a8d4;overflow:hidden">
+      <div style="background:#f3e5f5;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer"
+           onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+        <span style="font-weight:700;color:var(--guinda);font-size:.85rem">👥 Personal sin equipo asignado (${sinEquipo.length})</span>
+        <span style="font-size:.72rem;color:var(--txt2)">Pendiente de reasignación — toca para expandir ▾</span>
+      </div>
+      <div style="display:none">${rows}</div>
+    </div>`;
+  }
+
+  grid.innerHTML=htmlConEquipo+htmlSinEquipo;
 }
 
 function limpiarRsg(){
@@ -2887,14 +2985,38 @@ function setAdmTab(tab){
 
 // ── Poblar selects de resguardantes ──
 function poblarSelectsRsg(){
-  const lista=[...RSG_MAP.values()].sort((a,b)=>a.nombre.localeCompare(b.nombre));
-  const opts = `<option value="">— Selecciona —</option>`
-    + lista.map(r=>`<option value="${r.cupo}">${r.nombre} (${r.cupo})</option>`).join('');
+  // Saliente / sustitución: solo quienes tienen equipo activo asignado
+  const conEquipo=[...RSG_MAP.values()]
+    .filter(r=>r.items.some(eq=>!_BAJAS_SET.has(eqKey(eq))))
+    .sort((a,b)=>a.nombre.localeCompare(b.nombre));
+
+  // Entrante: todo el catálogo de personal (los 41), más quien tenga equipo pero no esté en catálogo
+  const catalogoEntrante=new Map();
+  PERSONAL_MAP.forEach((p,cupo)=>catalogoEntrante.set(cupo,p));
+  // Incluir también fueraDeCatalogo que aún tienen equipo (ej. ESCARCEGA)
+  RSG_MAP.forEach((r,cupo)=>{
+    if(r.fueraDeCatalogo) catalogoEntrante.set(cupo,r);
+  });
+  const listaEntrante=[...catalogoEntrante.values()].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+
+  const optsSal = `<option value="">— Selecciona —</option>`
+    + conEquipo.map(r=>`<option value="${r.cupo}">${r.nombre} (${r.cupo})</option>`).join('');
+
+  const optsEnt = `<option value="">— Selecciona o escribe abajo —</option>`
+    + listaEntrante.map(r=>{
+        const rsgEntry=RSG_MAP.get(r.cupo);
+        const esApoyo=rsgEntry&&rsgEntry.fueraDeCatalogo;
+        const tieneEquipo=!esApoyo&&rsgEntry&&rsgEntry.items.some(eq=>!_BAJAS_SET.has(eqKey(eq)));
+        const label=esApoyo?' (apoyo)':tieneEquipo?' ⚠️ ya tiene equipo':'';
+        return `<option value="${r.cupo}">${r.nombre} (${r.cupo})${label}</option>`;
+      }).join('');
+
   const optsConGeneral = `<option value="">— General / sin resguardante —</option>`
-    + lista.map(r=>`<option value="${r.cupo}">${r.nombre} (${r.cupo})</option>`).join('');
-  document.getElementById('rsg-saliente').innerHTML = opts;
-  document.getElementById('rsg-entrante').innerHTML = opts;
-  document.getElementById('rsg-sust').innerHTML     = opts;
+    + conEquipo.map(r=>`<option value="${r.cupo}">${r.nombre} (${r.cupo})</option>`).join('');
+
+  document.getElementById('rsg-saliente').innerHTML = optsSal;
+  document.getElementById('rsg-entrante').innerHTML = optsEnt;
+  document.getElementById('rsg-sust').innerHTML     = optsSal;
   document.getElementById('rsg-nota').innerHTML     = optsConGeneral;
   // Fecha hoy para sustitución
   document.getElementById('sust-fecha').value = new Date().toISOString().slice(0,10);
@@ -2988,9 +3110,10 @@ async function guardarReasignacion(){
     eqDesc=`${eq[8]} · ${eq[5]} ${eq[6]} · ${eq[4]}`;
   }
 
-  const rEnt=cupoEnt?RSG_MAP.get(cupoEnt):null;
-  const entranteDesc=rEnt
-    ? `${rEnt.nombre} (${cupoEnt})`
+  // Buscar entrante: primero en PERSONAL_MAP (catálogo completo), luego en RSG_MAP
+  const pEnt=cupoEnt?(PERSONAL_MAP.get(cupoEnt)||RSG_MAP.get(cupoEnt)):null;
+  const entranteDesc=pEnt
+    ? `${pEnt.nombre} (${cupoEnt})`
     : (nuevoNombre||'Sin asignar')+(nuevoCupo?` — Cupo: ${nuevoCupo}`:'');
 
   const cambio={
@@ -3290,7 +3413,8 @@ async function abrirModalRsg(cupo){
   const r=RSG_MAP.get(cupo);
   if(!r) return;
   const ub=ubicacion(cupo);
-  document.getElementById('mrsg-nombre').textContent=r.nombre;
+  const fdcBadge=r.fueraDeCatalogo?' <span style="font-size:.6rem;background:#eeeeee;color:#666;border-radius:4px;padding:1px 5px;vertical-align:middle">apoyo</span>':'';
+  document.getElementById('mrsg-nombre').innerHTML=r.nombre+fdcBadge;
   document.getElementById('mrsg-sub').textContent=
     `CUPO: ${cupo} · ${r.puesto} · ${ub}`;
 
