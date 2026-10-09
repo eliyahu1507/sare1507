@@ -248,7 +248,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
 .fotos-grid{display:flex;gap:8px;flex-wrap:wrap}
 .foto-saved-thumb{position:relative;width:80px}
 .foto-saved-thumb img{width:80px;height:60px;object-fit:cover;border-radius:6px;border:2px solid var(--border);cursor:pointer;display:block}
-.foto-saved-thumb .del-foto{position:absolute;top:-6px;right:-6px;background:#cc0000;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;font-weight:700}
+.foto-thumb-actions{position:absolute;top:-6px;right:-6px;display:flex;gap:3px}
+.foto-saved-thumb .del-foto{background:#cc0000;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;font-weight:700}
+.foto-saved-thumb .retomar-foto{background:#1565c0;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:.6rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
 .foto-saved-thumb .foto-tipo-label{font-size:.6rem;color:var(--txt3);text-align:center;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── MODAL IMAGEN FULL ── */
@@ -605,6 +607,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
       <div class="adm-tab" id="atab-log" onclick="setAdmTab('log')">📋 Historial <span id="badge-log-tab" style="font-size:.7rem;color:var(--guinda)"></span></div>
       <div class="adm-tab" id="atab-usr" onclick="setAdmTab('usr')">👥 Usuarios</div>
       <div class="adm-tab" id="atab-bajas" onclick="setAdmTab('bajas')">📤 Bajas</div>
+      <div class="adm-tab" id="atab-devol" onclick="setAdmTab('devol')">📦 Devolución</div>
     </div>
 
     <!-- PANEL: REASIGNACIÓN -->
@@ -936,6 +939,73 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
       </div>
     </div>
 
+    <!-- PANEL: DEVOLUCIÓN DE EQUIPOS EN PRÉSTAMO -->
+    <div class="adm-panel" id="apanel-devol">
+      <p style="font-size:.8rem;color:var(--txt2);margin-bottom:16px">
+        Registra la <strong>devolución de equipos en préstamo</strong> a la empresa asignada. Solo se muestran equipos con modalidad <strong>PRÉSTAMO</strong>. Al confirmar, el equipo quedará marcado como devuelto y saldrá del inventario activo.
+      </p>
+
+      <div class="adm-form">
+        <!-- Resguardante -->
+        <div class="form-group" style="margin-bottom:14px">
+          <label>Resguardante</label>
+          <select id="devol-rsg"
+            onchange="cargarEquiposDevol()"
+            style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem">
+            <option value="">— Selecciona resguardante —</option>
+          </select>
+        </div>
+
+        <!-- Equipos en préstamo del resguardante -->
+        <div id="devol-equipo-wrap" style="display:none;margin-bottom:14px">
+          <label style="font-size:.78rem;color:var(--txt2);font-weight:700">Equipo a devolver</label>
+          <select id="devol-equipo"
+            style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;margin-top:4px">
+            <option value="">— Seleccionar equipo —</option>
+          </select>
+          <div style="margin-top:6px">
+            <label style="font-size:.75rem;color:var(--txt2)">
+              <input type="checkbox" id="devol-todos" onchange="toggleDevolTodos(this.checked)"
+                style="margin-right:4px">
+              Devolver <strong>todos</strong> los equipos en préstamo de este resguardante
+            </label>
+          </div>
+        </div>
+
+        <!-- Datos de la devolución -->
+        <div id="devol-datos-wrap" style="display:none">
+          <div class="form-group" style="margin-bottom:12px">
+            <label style="font-size:.78rem;color:var(--txt2);font-weight:700">Fecha de devolución</label>
+            <input type="date" id="devol-fecha"
+              style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;margin-top:4px">
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label style="font-size:.78rem;color:var(--txt2);font-weight:700">Empresa / Persona que recibe</label>
+            <input type="text" id="devol-empresa"
+              placeholder="Nombre de la empresa o persona que recibe el equipo"
+              style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;margin-top:4px">
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label style="font-size:.78rem;color:var(--txt2);font-weight:700">Observaciones (opcional)</label>
+            <textarea id="devol-obs" rows="2"
+              placeholder="Folio de devolución, estado del equipo, número de ticket, etc."
+              style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;resize:vertical;margin-top:4px"></textarea>
+          </div>
+          <div class="form-actions" style="margin-top:12px">
+            <button class="btn-adm-primary" onclick="guardarDevolucion()"
+              style="background:#1565c0">📦 Confirmar devolución</button>
+          </div>
+        </div>
+        <div id="devol-msg" style="margin-top:8px;font-size:.82rem"></div>
+      </div>
+
+      <!-- Lista de devoluciones registradas -->
+      <div style="margin-top:24px">
+        <div style="font-size:.8rem;font-weight:700;color:var(--txt2);margin-bottom:10px">DEVOLUCIONES REGISTRADAS</div>
+        <div id="devol-lista" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+
   </section>
 
   <!-- ══ SECCIÓN: REPORTES ══ -->
@@ -1186,6 +1256,8 @@ const CABB_CUPOS = new Set(["1501166","1501977","1501974"]);
 const MONITORES_DANADOS = new Set(["1501986","1502176","1502177"]);
 // Set de claves de equipos dados de baja — se puebla desde IDB al iniciar
 let _BAJAS_SET = new Set();
+// Set de claves de equipos devueltos (PRÉSTAMO) — se puebla desde IDB al iniciar
+let _DEVOL_SET = new Set();
 
 function ubicacion(cupo){ return CABB_CUPOS.has(cupo) ? "CABB COACALCO" : "SARE ECATEPEC"; }
 function arrendadora(tipo){
@@ -1538,8 +1610,9 @@ function filtrarInv(){
   const q=document.getElementById('inv-search').value.trim().toLowerCase();
   const tipo=document.getElementById('inv-tipo').value;
   let lista=EQUIPOS.filter(eq=>{
-    // Excluir equipos dados de baja
+    // Excluir equipos dados de baja o devueltos
     if(_BAJAS_SET.has(eqKey(eq))) return false;
+    if(_DEVOL_SET.has(eqKey(eq))) return false;
     // chip
     if(chipActivo==='arr'&&eq[9]!=='ARRENDAMIENTO') return false;
     if(chipActivo==='pre'&&eq[9]!=='PRÉSTAMO') return false;
@@ -1777,7 +1850,8 @@ async function cargarBajasIDB(){
   try{
     const cambios=await dbCambiosGetAll();
     _BAJAS_SET=new Set(cambios.filter(c=>c.tipo==='BAJA').map(c=>c.eqKey));
-  }catch(e){ _BAJAS_SET=new Set(); }
+    _DEVOL_SET=new Set(cambios.filter(c=>c.tipo==='DEVOLUCION').map(c=>c.eqKey));
+  }catch(e){ _BAJAS_SET=new Set(); _DEVOL_SET=new Set(); }
 }
 
 // ── DAR DE BAJA EQUIPO ──
@@ -2002,6 +2076,140 @@ async function renderListaBajasAdm(){
   }).join('');
 }
 
+// ── DEVOLUCIÓN DE EQUIPOS EN PRÉSTAMO ──
+function poblarSelectDevol(){
+  const sel=document.getElementById('devol-rsg');
+  if(!sel) return;
+  // Solo resguardantes que tengan al menos un equipo PRÉSTAMO activo
+  const conPrestamo=[...RSG_MAP.values()].filter(r=>
+    r.items.some(eq=>eq[9]==='PRÉSTAMO'&&!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq)))
+  ).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+
+  sel.innerHTML=`<option value="">— Selecciona resguardante —</option>`
+    +conPrestamo.map(r=>{
+      const n=r.items.filter(eq=>eq[9]==='PRÉSTAMO'&&!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq))).length;
+      return `<option value="${r.cupo}">${r.nombre} (${r.cupo}) — ${n} equipo${n!==1?'s':''} en préstamo</option>`;
+    }).join('');
+
+  // Resetear resto del formulario
+  document.getElementById('devol-equipo-wrap').style.display='none';
+  document.getElementById('devol-datos-wrap').style.display='none';
+  document.getElementById('devol-msg').innerHTML='';
+  document.getElementById('devol-fecha').value=new Date().toISOString().slice(0,10);
+}
+
+function cargarEquiposDevol(){
+  const cupo=document.getElementById('devol-rsg').value;
+  const equipoWrap=document.getElementById('devol-equipo-wrap');
+  const datosWrap=document.getElementById('devol-datos-wrap');
+  document.getElementById('devol-todos').checked=false;
+
+  if(!cupo){ equipoWrap.style.display='none'; datosWrap.style.display='none'; return; }
+
+  const r=RSG_MAP.get(cupo);
+  if(!r){ equipoWrap.style.display='none'; datosWrap.style.display='none'; return; }
+
+  const prestamos=r.items.filter(eq=>eq[9]==='PRÉSTAMO'&&!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq)));
+  const sel=document.getElementById('devol-equipo');
+  sel.innerHTML=`<option value="">— Seleccionar equipo —</option>`
+    +`<option value="TODOS">★ Todos los equipos en préstamo (${prestamos.length})</option>`
+    +prestamos.map((eq,i)=>`<option value="${i}">${eq[8]||'Equipo'} — ${eq[5]} ${eq[6]} | Serie: ${eq[4]}</option>`).join('');
+
+  equipoWrap.style.display='block';
+  datosWrap.style.display='block';
+}
+
+function toggleDevolTodos(checked){
+  const sel=document.getElementById('devol-equipo');
+  if(checked) sel.value='TODOS';
+  else sel.value='';
+}
+
+async function guardarDevolucion(){
+  const cupo=document.getElementById('devol-rsg').value;
+  const equipoVal=document.getElementById('devol-equipo').value;
+  const fecha=document.getElementById('devol-fecha').value;
+  const empresa=document.getElementById('devol-empresa').value.trim();
+  const obs=document.getElementById('devol-obs').value.trim();
+  const msgEl=document.getElementById('devol-msg');
+
+  if(!cupo){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Selecciona un resguardante</span>'; return; }
+  if(!equipoVal){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Selecciona el equipo a devolver</span>'; return; }
+  if(!fecha){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Indica la fecha de devolución</span>'; return; }
+  if(!empresa){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Indica la empresa o persona que recibe</span>'; return; }
+
+  const r=RSG_MAP.get(cupo);
+  if(!r){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Resguardante no encontrado</span>'; return; }
+
+  const prestamos=r.items.filter(eq=>eq[9]==='PRÉSTAMO'&&!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq)));
+  let equiposADevolver=[];
+  if(equipoVal==='TODOS'){
+    equiposADevolver=prestamos.map(eq=>({eq,key:eqKey(eq)}));
+  } else {
+    const idx=parseInt(equipoVal);
+    if(isNaN(idx)||idx<0||idx>=prestamos.length){
+      msgEl.innerHTML='<span style="color:#c62828">⚠️ Selección inválida</span>'; return;
+    }
+    equiposADevolver=[{eq:prestamos[idx],key:eqKey(prestamos[idx])}];
+  }
+
+  const ts=new Date().toISOString();
+  const sesion=JSON.parse(sessionStorage.getItem('sare_sesion')||'null');
+
+  for(const {eq,key} of equiposADevolver){
+    await dbCambiosPut({
+      tipo:'DEVOLUCION',
+      eqKey:key,
+      cupo:r.cupo,
+      nombreRsg:r.nombre,
+      tipoEquipo:eq[8], tag:eq[3], serie:eq[4], marca:eq[5], modelo:eq[6],
+      modalidad:eq[9], empresa, obs, fecha,
+      ts, registradoPor:sesion?sesion.nombre:'—'
+    });
+    _DEVOL_SET.add(key);
+  }
+
+  filtrarInv();
+  filtrarRsg();
+  await renderEstadisticas();
+
+  // Reset form
+  document.getElementById('devol-empresa').value='';
+  document.getElementById('devol-obs').value='';
+  document.getElementById('devol-todos').checked=false;
+  msgEl.innerHTML=`<span style="color:#2e7d32">✅ ${equiposADevolver.length} equipo${equiposADevolver.length!==1?'s':''} devuelto${equiposADevolver.length!==1?'s':''} correctamente.</span>`;
+
+  // Refrescar selects y lista
+  poblarSelectDevol();
+  await renderListaDevolucionesAdm();
+  poblarSelectsRsg();
+}
+
+async function renderListaDevolucionesAdm(){
+  const cont=document.getElementById('devol-lista');
+  if(!cont) return;
+  let devols=[];
+  try{ devols=(await dbCambiosGetAll()).filter(c=>c.tipo==='DEVOLUCION'); }catch(e){}
+  if(!devols.length){
+    cont.innerHTML='<div style="font-size:.8rem;color:var(--txt2);text-align:center;padding:20px">No hay devoluciones registradas</div>';
+    return;
+  }
+  devols.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  cont.innerHTML=devols.map(d=>{
+    const fecha=new Date(d.fecha).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+    return `<div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:10px 14px;font-size:.8rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">
+        <strong>📦 ${d.tipoEquipo||''} ${d.marca||''} ${d.modelo||''}</strong>
+        <span style="font-size:.72rem;color:#888">${fecha}</span>
+      </div>
+      <div style="color:var(--txt2)"><span style="font-weight:600">Resguardante:</span> ${d.nombreRsg||'—'} (${d.cupo||'—'})</div>
+      <div style="color:var(--txt2)"><span style="font-weight:600">Entregado a:</span> ${d.empresa||'—'}</div>
+      ${d.obs?`<div style="color:var(--txt2);font-style:italic">Obs: ${d.obs}</div>`:''}
+      <div style="color:#aaa;font-size:.7rem;margin-top:3px">TAG: ${d.tag||'—'} · Serie: ${d.serie||'—'} · Por: ${d.registradoPor||'—'}</div>
+    </div>`;
+  }).join('');
+}
+
 // ── MODAL NUEVA INCIDENCIA ──
 let _incRsgSeleccionado=null;
 
@@ -2121,7 +2329,7 @@ function filtrarRsg(){
   todos.forEach(r=>{
     const match = (!ub||ubicacion(r.cupo)===ub) && (!q||`${r.cupo} ${r.nombre}`.toLowerCase().includes(q));
     if(!match) return;
-    const itsActivos=r.items.filter(eq=>!_BAJAS_SET.has(eqKey(eq)));
+    const itsActivos=r.items.filter(eq=>!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq)));
     if(itsActivos.length>0) conEquipo.push({r,its:itsActivos});
     else sinEquipo.push(r);
   });
@@ -2234,9 +2442,9 @@ function renderEmpresas(){
 //  ESTADÍSTICAS
 // ══════════════════════════════════════════════════════════════════════
 async function renderEstadisticas(){
-  const tot=EQUIPOS.filter(e=>!_BAJAS_SET.has(eqKey(e))).length;
-  const arr=EQUIPOS.filter(e=>e[9]==='ARRENDAMIENTO'&&!_BAJAS_SET.has(eqKey(e))).length;
-  const pre=EQUIPOS.filter(e=>e[9]==='PRÉSTAMO'&&!_BAJAS_SET.has(eqKey(e))).length;
+  const tot=EQUIPOS.filter(e=>!_BAJAS_SET.has(eqKey(e))&&!_DEVOL_SET.has(eqKey(e))).length;
+  const arr=EQUIPOS.filter(e=>e[9]==='ARRENDAMIENTO'&&!_BAJAS_SET.has(eqKey(e))&&!_DEVOL_SET.has(eqKey(e))).length;
+  const pre=EQUIPOS.filter(e=>e[9]==='PRÉSTAMO'&&!_BAJAS_SET.has(eqKey(e))&&!_DEVOL_SET.has(eqKey(e))).length;
   let legacyInc=EQUIPOS.filter(e=>MONITORES_DANADOS.has(e[0])&&e[8]==='MONITOR'&&e[10]).length;
   let dynInc=0;
   try{
@@ -2248,8 +2456,8 @@ async function renderEstadisticas(){
     legacyInc=Math.max(0,legacyInc-legacyResueltas.size);
   }catch(e){}
   const totalInc=legacyInc+dynInc;
-  const ec=EQUIPOS.filter(e=>!CABB_CUPOS.has(e[0])&&!_BAJAS_SET.has(eqKey(e)));
-  const cb=EQUIPOS.filter(e=>CABB_CUPOS.has(e[0])&&!_BAJAS_SET.has(eqKey(e)));
+  const ec=EQUIPOS.filter(e=>!CABB_CUPOS.has(e[0])&&!_BAJAS_SET.has(eqKey(e))&&!_DEVOL_SET.has(eqKey(e)));
+  const cb=EQUIPOS.filter(e=>CABB_CUPOS.has(e[0])&&!_BAJAS_SET.has(eqKey(e))&&!_DEVOL_SET.has(eqKey(e)));
 
   // Actualizar badge menú
   const badgeInc=document.getElementById('badge-inc');
@@ -2262,6 +2470,7 @@ async function renderEstadisticas(){
     {n:RSG_MAP.size,  lbl:'Resguardantes',    cls:''},
     {n:totalInc,      lbl:'Incidencias',      cls:'rojo'},
     {n:_BAJAS_SET.size,lbl:'Dados de baja',   cls:'gris'},
+    {n:_DEVOL_SET.size,lbl:'Devueltos',       cls:'gris'},
   ].map(s=>`<div class="stat-card ${s.cls}">
     <div class="stat-num">${s.n}</div>
     <div class="stat-lbl">${s.lbl}</div>
@@ -2624,7 +2833,10 @@ async function cargarFotosGuardadas(){
     grid.innerHTML=fotosConImg.map(f=>`
       <div class="foto-saved-thumb">
         <img src="${f.data}" onclick="verImagen('${f.data}')">
-        <button class="del-foto" onclick="eliminarFoto('${k}','${f.tipo}')" title="Eliminar">✕</button>
+        <div class="foto-thumb-actions">
+          <button class="del-foto" onclick="eliminarFoto('${k}','${f.tipo}')" title="Eliminar">✕</button>
+          <button class="retomar-foto" onclick="retomarFotoTipo('${f.tipo}')" title="Retomar foto">🔄</button>
+        </div>
         <div class="foto-tipo-label">${tiposLabel[f.tipo]||f.tipo}</div>
       </div>`).join('');
   }
@@ -2634,7 +2846,10 @@ async function cargarFotosGuardadas(){
     grid.innerHTML+= noVisibles.map(f=>`
       <div class="foto-saved-thumb" style="opacity:.7">
         <div style="width:80px;height:60px;border-radius:6px;border:2px dashed #e65100;background:#fff8f5;display:flex;align-items:center;justify-content:center;font-size:1.2rem">🚫</div>
-        <button class="del-foto" style="background:#e65100" onclick="eliminarFoto('${k}','${f.tipo}')" title="Eliminar">✕</button>
+        <div class="foto-thumb-actions">
+          <button class="del-foto" style="background:#e65100" onclick="eliminarFoto('${k}','${f.tipo}')" title="Eliminar">✕</button>
+          <button class="retomar-foto" onclick="retomarFotoTipo('${f.tipo}')" title="Retomar foto">🔄</button>
+        </div>
         <div class="foto-tipo-label" style="color:#e65100">No visible</div>
       </div>`).join('');
   }
@@ -2648,6 +2863,20 @@ async function eliminarFoto(k,tipo){
   await cargarFotosGuardadas();
   filtrarInv();
   renderInc();
+}
+
+// Retomar foto: elimina la existente de ese tipo y activa la cámara en ese tab
+async function retomarFotoTipo(tipo){
+  if(!modalEq) return;
+  const k=eqKey(modalEq);
+  const rec=await dbGet(k);
+  if(rec){
+    rec.fotos=rec.fotos.filter(f=>f.tipo!==tipo);
+    if(rec.fotos.length) await dbPut(rec); else await dbDel(k);
+  }
+  // Cambiar al tab del tipo y abrir cámara
+  await setFotoTipo(tipo);
+  await cargarFotosGuardadas();
 }
 
 // Actualiza los botones "📷 Fotografiar" del modal-rsg sin cerrarlo
@@ -2978,7 +3207,7 @@ function dbCambiosDel(id){
 
 // ── Tabs de administración ──
 function setAdmTab(tab){
-  ['reasig','sust','nota','log','usr','bajas'].forEach(t=>{
+  ['reasig','sust','nota','log','usr','bajas','devol'].forEach(t=>{
     const tabEl=document.getElementById('atab-'+t);
     const panEl=document.getElementById('apanel-'+t);
     if(tabEl) tabEl.classList.toggle('active', t===tab);
@@ -2988,13 +3217,14 @@ function setAdmTab(tab){
   if(tab==='nota')  renderNotasActivas();
   if(tab==='usr')   renderUsuarios();
   if(tab==='bajas') renderListaBajasAdm();
+  if(tab==='devol') { poblarSelectDevol(); renderListaDevolucionesAdm(); }
 }
 
 // ── Poblar selects de resguardantes ──
 function poblarSelectsRsg(){
   // Saliente / sustitución: solo quienes tienen equipo activo asignado
   const conEquipo=[...RSG_MAP.values()]
-    .filter(r=>r.items.some(eq=>!_BAJAS_SET.has(eqKey(eq))))
+    .filter(r=>r.items.some(eq=>!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq))))
     .sort((a,b)=>a.nombre.localeCompare(b.nombre));
 
   // Entrante: todo el catálogo de personal (los 41), más quien tenga equipo pero no esté en catálogo
@@ -3013,7 +3243,7 @@ function poblarSelectsRsg(){
     + listaEntrante.map(r=>{
         const rsgEntry=RSG_MAP.get(r.cupo);
         const esApoyo=rsgEntry&&rsgEntry.fueraDeCatalogo;
-        const tieneEquipo=!esApoyo&&rsgEntry&&rsgEntry.items.some(eq=>!_BAJAS_SET.has(eqKey(eq)));
+        const tieneEquipo=!esApoyo&&rsgEntry&&rsgEntry.items.some(eq=>!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq)));
         const label=esApoyo?' (apoyo)':tieneEquipo?' ⚠️ ya tiene equipo':'';
         return `<option value="${r.cupo}">${r.nombre} (${r.cupo})${label}</option>`;
       }).join('');
@@ -3720,7 +3950,7 @@ function initRep(){
   if(!sel) return;
   // Solo resguardantes con al menos un equipo activo
   [...RSG_MAP.values()]
-    .filter(r=>r.items.some(eq=>!_BAJAS_SET.has(eqKey(eq))))
+    .filter(r=>r.items.some(eq=>!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq))))
     .sort((a,b)=>a.nombre.localeCompare(b.nombre))
     .forEach(r=>{
       const o = document.createElement('option');
@@ -3817,7 +4047,7 @@ async function generarPDFResguardante(){
   try{
     // Definir qué resguardantes incluir — solo con equipo activo
     let rsgs = [...RSG_MAP.values()]
-      .filter(r=>r.items.some(eq=>!_BAJAS_SET.has(eqKey(eq))))
+      .filter(r=>r.items.some(eq=>!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq))))
       .sort((a,b)=>a.nombre.localeCompare(b.nombre));
     if(cupoSel !== 'TODOS'){
       rsgs = rsgs.filter(r=>r.cupo===cupoSel);
@@ -3830,11 +4060,11 @@ async function generarPDFResguardante(){
       const rsg = rsgs[i];
       status.textContent = `⏳ Procesando ${i+1}/${rsgs.length}: ${rsg.nombre}…`;
 
-      // Agrupar equipos por tipo
+      // Agrupar equipos por tipo (excluir bajas y devueltos)
       const grupos = {};
       TIPO_ORDEN.forEach(t=>{ grupos[t]=[]; });
       grupos['OTRO']=[];
-      rsg.items.forEach(eq=>{
+      rsg.items.filter(eq=>!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq))).forEach(eq=>{
         const t = eq[8]||'OTRO';
         if(grupos[t]) grupos[t].push(eq);
         else grupos['OTRO'].push(eq);
@@ -4125,7 +4355,7 @@ async function generarExcel(){
     // Datos
     let rowNum = 0;
     for(const rsg of [...RSG_MAP.values()].sort((a,b)=>a.nombre.localeCompare(b.nombre))){
-      for(const eq of rsg.items){
+      for(const eq of rsg.items.filter(e=>!_BAJAS_SET.has(eqKey(e))&&!_DEVOL_SET.has(eqKey(e)))){
         rowNum++;
         const nfotos = (await getFotos(eq)).length;
         const row = ws1.addRow({
