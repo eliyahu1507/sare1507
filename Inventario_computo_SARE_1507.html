@@ -1334,6 +1334,12 @@ const EQUIPOS = [
 ["1502180","PACHECO RAMIREZ DULCE JOCABET","SERVIDOR EDUCATIVO","CNBBBJ-028","6CM6451GMF","HP","PRODISPLAY P202","MONITOR","MONITOR","PRÉSTAMO",""],
 ["1502180","PACHECO RAMIREZ DULCE JOCABET","SERVIDOR EDUCATIVO","CNBBBJ-028","BEXJL0BVB495MV","HP","KU-1136","TECLADO","TECLADO","PRÉSTAMO",""],
 ["1502180","PACHECO RAMIREZ DULCE JOCABET","SERVIDOR EDUCATIVO","CNBBBJ-028","FCMHH0AHD8YNMG","HP","QY77A","MOUSE","MOUSE","PRÉSTAMO",""],
+["1501637","MORENO LOPEZ RODOLFO","SERVIDOR EDUCATIVO","CNBBBJ-01-2705","MXL13923HF","HP","PRODESK 400 G7 SMALL","CPU","CPU","ARRENDAMIENTO",""],
+["1501637","MORENO LOPEZ RODOLFO","SERVIDOR EDUCATIVO","CNBBBJ-01-2705","CN41260JV1","HP","P22VA G4FHD MONITOR","MONITOR","MONITOR","ARRENDAMIENTO",""],
+["1501637","MORENO LOPEZ RODOLFO","SERVIDOR EDUCATIVO","CNBBBJ-01-2705","C1N12800T7","HP","HSA-D005K","TECLADO","TECLADO","ARRENDAMIENTO",""],
+["1501637","MORENO LOPEZ RODOLFO","SERVIDOR EDUCATIVO","CNBBBJ-01-2705","9CP122ZN63","HP","WIRED DESKTOP 320M MOUSE","MOUSE","MOUSE","ARRENDAMIENTO",""],
+["1501637","MORENO LOPEZ RODOLFO","SERVIDOR EDUCATIVO","21ZY314276","21ZY314276","COMPLET","ERI-9-002","NO BREAK TIPO II","NO BREAK","ARRENDAMIENTO",""],
+["1501637","MORENO LOPEZ RODOLFO","SERVIDOR EDUCATIVO","CNBBBJ-01-2705","CNH4346579","HP","USB EXTERNAL DVDRW DRIVE","LECTOR DE DVD EXTERNO","PERIFÉRICO","ARRENDAMIENTO",""],
 ];
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1353,6 +1359,7 @@ const PERSONAL = [
   ["1501620", "ORDAZ HERNANDEZ MARIA DEL ROCIO",          "SERVIDOR EDUCATIVO"],
   ["1501623", "HERNANDEZ HERNANDEZ CLAUDIA LIZET",        "SERVIDOR EDUCATIVO"],
   ["1501626", "CEDILLO GARCIA MIGUEL",                    "SERVIDOR EDUCATIVO"],
+  ["1501637", "MORENO LOPEZ RODOLFO",                     "SERVIDOR EDUCATIVO"],
   ["1501640", "MARTINEZ ARELLANO ROSA CARMINA",           "SERVIDOR EDUCATIVO"],
   ["1501644", "PUENTE MAGAÑA JESUS ALBERTO",              "SERVIDOR EDUCATIVO"],
   ["1501974", "SANCHEZ BERNABE MARIA GUADALUPE BRENDA",   "SERVIDOR EDUCATIVO"],
@@ -3711,8 +3718,9 @@ async function importarDatos(event){
 function initRep(){
   const sel = document.getElementById('rep-rsg-sel');
   if(!sel) return;
-  // Mantener opción "TODOS" y añadir uno por uno
+  // Solo resguardantes con al menos un equipo activo
   [...RSG_MAP.values()]
+    .filter(r=>r.items.some(eq=>!_BAJAS_SET.has(eqKey(eq))))
     .sort((a,b)=>a.nombre.localeCompare(b.nombre))
     .forEach(r=>{
       const o = document.createElement('option');
@@ -3807,8 +3815,10 @@ async function generarPDFResguardante(){
   status.textContent = '⏳ Preparando…';
 
   try{
-    // Definir qué resguardantes incluir
-    let rsgs = [...RSG_MAP.values()].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    // Definir qué resguardantes incluir — solo con equipo activo
+    let rsgs = [...RSG_MAP.values()]
+      .filter(r=>r.items.some(eq=>!_BAJAS_SET.has(eqKey(eq))))
+      .sort((a,b)=>a.nombre.localeCompare(b.nombre));
     if(cupoSel !== 'TODOS'){
       rsgs = rsgs.filter(r=>r.cupo===cupoSel);
     }
