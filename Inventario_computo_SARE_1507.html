@@ -617,6 +617,60 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
       <div class="adm-tab" id="atab-usr" onclick="setAdmTab('usr')">👥 Usuarios</div>
       <div class="adm-tab" id="atab-bajas" onclick="setAdmTab('bajas')">📤 Bajas</div>
       <div class="adm-tab" id="atab-devol" onclick="setAdmTab('devol')">📦 Devolución</div>
+      <div class="adm-tab" id="atab-traslado" onclick="setAdmTab('traslado')">🏢 Traslado de Oficina</div>
+    </div>
+
+    <!-- PANEL: TRASLADO DE OFICINA -->
+    <div class="adm-panel" id="apanel-traslado">
+      <p style="font-size:.8rem;color:var(--txt2);margin-bottom:16px">
+        Registra el <strong>traslado físico de equipos entre oficinas</strong> (SARE Ecatepec ↔ CABB Coacalco).
+        Esto actualiza la clasificación del resguardante en la vista "Por Resguardante" y en todos los reportes.
+      </p>
+      <div class="adm-form">
+        <div class="form-group" style="margin-bottom:14px">
+          <label>Resguardante</label>
+          <select id="traslado-rsg"
+            onchange="cargarInfoTraslado()"
+            style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem">
+            <option value="">— Selecciona resguardante —</option>
+          </select>
+        </div>
+        <div id="traslado-info" style="display:none">
+          <div style="background:#f5f5f5;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.82rem">
+            <div id="traslado-oficina-actual" style="font-weight:700;color:var(--guinda);margin-bottom:4px"></div>
+            <div id="traslado-equipos-lista" style="color:var(--txt2)"></div>
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label style="font-size:.78rem;color:var(--txt2);font-weight:700">Trasladar a</label>
+            <select id="traslado-dest"
+              style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;margin-top:4px">
+              <option value="">— Selecciona oficina destino —</option>
+              <option value="SARE ECATEPEC">📍 SARE ECATEPEC</option>
+              <option value="CABB COACALCO">🔵 CABB COACALCO</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label style="font-size:.78rem;color:var(--txt2);font-weight:700">Fecha de traslado</label>
+            <input type="date" id="traslado-fecha"
+              style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;margin-top:4px">
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label style="font-size:.78rem;color:var(--txt2);font-weight:700">Observaciones (opcional)</label>
+            <textarea id="traslado-obs" rows="2"
+              placeholder="Motivo del traslado, número de oficio, etc."
+              style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;resize:vertical;margin-top:4px"></textarea>
+          </div>
+          <div class="form-actions" style="margin-top:12px">
+            <button class="btn-adm-primary" onclick="guardarTraslado()"
+              style="background:var(--guinda)">🏢 Confirmar traslado</button>
+          </div>
+        </div>
+        <div id="traslado-msg" style="margin-top:8px;font-size:.82rem"></div>
+      </div>
+      <div style="margin-top:24px">
+        <div style="font-size:.8rem;font-weight:700;color:var(--txt2);margin-bottom:10px">TRASLADOS REGISTRADOS</div>
+        <div id="traslado-lista" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
     </div>
 
     <!-- PANEL: REASIGNACIÓN -->
@@ -1283,13 +1337,19 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
 //  DATOS — 138 equipos, 22 resguardantes
 // ══════════════════════════════════════════════════════════════════════
 const CABB_CUPOS = new Set(["1501166","1501977","1501974"]);
+// Traslados de oficina registrados dinámicamente (IDB tipo 'TRASLADO')
+// Map<cupo, 'CABB COACALCO'|'SARE ECATEPEC'>
+let _TRASLADOS_MAP = new Map();
 const MONITORES_DANADOS = new Set(["1501986","1502176","1502177"]);
 // Set de claves de equipos dados de baja — se puebla desde IDB al iniciar
 let _BAJAS_SET = new Set();
 // Set de claves de equipos devueltos (PRÉSTAMO) — se puebla desde IDB al iniciar
 let _DEVOL_SET = new Set();
 
-function ubicacion(cupo){ return CABB_CUPOS.has(cupo) ? "CABB COACALCO" : "SARE ECATEPEC"; }
+function ubicacion(cupo){
+  if(_TRASLADOS_MAP.has(cupo)) return _TRASLADOS_MAP.get(cupo);
+  return CABB_CUPOS.has(cupo) ? "CABB COACALCO" : "SARE ECATEPEC";
+}
 function arrendadora(tipo){
   if(tipo==="MULTIFUNCIONAL") return "BLACK ECO, S.A. de C.V.";
   if(tipo==="NO BREAK")       return "Business Support, S.A. de C.V.";
@@ -1881,9 +1941,14 @@ async function cargarBajasIDB(){
     const cambios=await dbCambiosGetAll();
     _BAJAS_SET=new Set(cambios.filter(c=>c.tipo==='BAJA').map(c=>c.eqKey));
     _DEVOL_SET=new Set(cambios.filter(c=>c.tipo==='DEVOLUCION').map(c=>c.eqKey));
+    // Cargar traslados de oficina (el último traslado de cada cupo prevalece)
+    _TRASLADOS_MAP=new Map();
+    cambios.filter(c=>c.tipo==='TRASLADO')
+      .sort((a,b)=>new Date(a.ts)-new Date(b.ts))
+      .forEach(c=>_TRASLADOS_MAP.set(c.cupo, c.oficinaDest));
     // Aplicar reasignaciones completadas al RSG_MAP (en orden cronológico)
     aplicarReasignacionesCompletadas(cambios);
-  }catch(e){ _BAJAS_SET=new Set(); _DEVOL_SET=new Set(); }
+  }catch(e){ _BAJAS_SET=new Set(); _DEVOL_SET=new Set(); _TRASLADOS_MAP=new Map(); }
 }
 
 // ── DAR DE BAJA EQUIPO ──
@@ -3292,17 +3357,133 @@ function dbCambiosDel(id){
 
 // ── Tabs de administración ──
 function setAdmTab(tab){
-  ['reasig','sust','nota','log','usr','bajas','devol'].forEach(t=>{
+  ['reasig','sust','nota','log','usr','bajas','devol','traslado'].forEach(t=>{
     const tabEl=document.getElementById('atab-'+t);
     const panEl=document.getElementById('apanel-'+t);
     if(tabEl) tabEl.classList.toggle('active', t===tab);
     if(panEl) panEl.classList.toggle('active', t===tab);
   });
-  if(tab==='log')   renderLog();
-  if(tab==='nota')  renderNotasActivas();
-  if(tab==='usr')   renderUsuarios();
-  if(tab==='bajas') renderListaBajasAdm();
-  if(tab==='devol') { poblarSelectDevol(); renderListaDevolucionesAdm(); }
+  if(tab==='log')      renderLog();
+  if(tab==='nota')     renderNotasActivas();
+  if(tab==='usr')      renderUsuarios();
+  if(tab==='bajas')    renderListaBajasAdm();
+  if(tab==='devol')    { poblarSelectDevol(); renderListaDevolucionesAdm(); }
+  if(tab==='traslado') { poblarSelectTraslado(); renderListaTrasladosAdm(); }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  TRASLADO DE OFICINA
+// ══════════════════════════════════════════════════════════════════════
+function poblarSelectTraslado(){
+  const sel=document.getElementById('traslado-rsg');
+  if(!sel) return;
+  const todos=[...RSG_MAP.values()]
+    .filter(r=>r.items.some(eq=>!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq))))
+    .sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  sel.innerHTML=`<option value="">— Selecciona resguardante —</option>`
+    +todos.map(r=>{
+      const ub=ubicacion(r.cupo);
+      const ico=ub==='CABB COACALCO'?'🔵':'📍';
+      return `<option value="${r.cupo}">${r.nombre} (${r.cupo}) ${ico} ${ub}</option>`;
+    }).join('');
+  document.getElementById('traslado-info').style.display='none';
+  document.getElementById('traslado-msg').innerHTML='';
+  document.getElementById('traslado-fecha').value=new Date().toISOString().slice(0,10);
+}
+
+function cargarInfoTraslado(){
+  const cupo=document.getElementById('traslado-rsg').value;
+  const info=document.getElementById('traslado-info');
+  if(!cupo){ info.style.display='none'; return; }
+  const r=RSG_MAP.get(cupo);
+  if(!r){ info.style.display='none'; return; }
+
+  const ubActual=ubicacion(cupo);
+  document.getElementById('traslado-oficina-actual').textContent=
+    `Ubicación actual: ${ubActual==='CABB COACALCO'?'🔵 CABB COACALCO':'📍 SARE ECATEPEC'}`;
+
+  const activos=r.items.filter(eq=>!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq)));
+  document.getElementById('traslado-equipos-lista').textContent=
+    `${activos.length} equipo${activos.length!==1?'s':''} a trasladar: `
+    +activos.map(eq=>`${eq[8]} (${eq[4]})`).join(' · ');
+
+  // Pre-seleccionar la oficina contraria
+  const dest=document.getElementById('traslado-dest');
+  dest.value= ubActual==='CABB COACALCO' ? 'SARE ECATEPEC' : 'CABB COACALCO';
+
+  info.style.display='block';
+}
+
+async function guardarTraslado(){
+  const cupo=document.getElementById('traslado-rsg').value;
+  const dest=document.getElementById('traslado-dest').value;
+  const fecha=document.getElementById('traslado-fecha').value;
+  const obs=document.getElementById('traslado-obs').value.trim();
+  const msgEl=document.getElementById('traslado-msg');
+
+  if(!cupo){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Selecciona un resguardante</span>'; return; }
+  if(!dest){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Selecciona la oficina destino</span>'; return; }
+  if(!fecha){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Indica la fecha de traslado</span>'; return; }
+
+  const r=RSG_MAP.get(cupo);
+  if(!r){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Resguardante no encontrado</span>'; return; }
+
+  const ubOrigen=ubicacion(cupo);
+  if(ubOrigen===dest){
+    msgEl.innerHTML=`<span style="color:#c62828">⚠️ El resguardante ya está en ${dest}</span>`; return;
+  }
+
+  const sesion=JSON.parse(sessionStorage.getItem('sare_sesion')||'null');
+  const ts=new Date().toISOString();
+  await dbCambiosPut({
+    tipo:'TRASLADO',
+    cupo, nombreRsg:r.nombre,
+    oficinaOrigen:ubOrigen, oficinaDest:dest,
+    fecha, obs, ts,
+    registradoPor:sesion?sesion.nombre:'—'
+  });
+
+  // Actualizar mapa en memoria de inmediato
+  _TRASLADOS_MAP.set(cupo, dest);
+
+  // Refrescar vistas
+  filtrarInv();
+  filtrarRsg();
+  await renderEstadisticas();
+
+  msgEl.innerHTML=`<span style="color:#2e7d32">✅ ${r.nombre} trasladado a ${dest} correctamente.</span>`;
+  document.getElementById('traslado-obs').value='';
+  poblarSelectTraslado();
+  await renderListaTrasladosAdm();
+}
+
+async function renderListaTrasladosAdm(){
+  const cont=document.getElementById('traslado-lista');
+  if(!cont) return;
+  let traslados=[];
+  try{ traslados=(await dbCambiosGetAll()).filter(c=>c.tipo==='TRASLADO'); }catch(e){}
+  if(!traslados.length){
+    cont.innerHTML='<div style="font-size:.8rem;color:var(--txt2);text-align:center;padding:20px">No hay traslados registrados</div>';
+    return;
+  }
+  traslados.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  cont.innerHTML=traslados.map(t=>{
+    const fecha=new Date(t.fecha).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+    const esCabb=_TRASLADOS_MAP.get(t.cupo)==='CABB COACALCO'||(t.oficinaDest==='CABB COACALCO');
+    return `<div style="background:#f3e5f5;border:1px solid #ce93d8;border-radius:8px;padding:10px 14px;font-size:.8rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">
+        <strong>🏢 ${t.nombreRsg||t.cupo}</strong>
+        <span style="font-size:.72rem;color:#888">${fecha}</span>
+      </div>
+      <div style="color:var(--txt2)">
+        <span style="font-weight:600">De:</span> ${t.oficinaOrigen||'—'}
+        &nbsp;→&nbsp;
+        <span style="font-weight:600">A:</span> ${t.oficinaDest||'—'}
+      </div>
+      ${t.obs?`<div style="color:var(--txt2);font-style:italic">Obs: ${t.obs}</div>`:''}
+      <div style="color:#aaa;font-size:.7rem;margin-top:3px">Cupo: ${t.cupo} · Por: ${t.registradoPor||'—'}</div>
+    </div>`;
+  }).join('');
 }
 
 // ── Poblar selects de resguardantes ──
