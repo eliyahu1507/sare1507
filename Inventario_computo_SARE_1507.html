@@ -1012,7 +1012,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
   <section class="section" id="sec-rep">
     <div class="sec-header">
       <h2>📄 Reportes</h2>
-      <div class="counts">3 formatos disponibles</div>
+      <div class="counts">4 formatos disponibles</div>
     </div>
 
     <div class="rep-grid">
@@ -1049,6 +1049,20 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
         <div class="rep-check"><label><input type="checkbox" id="rep-inc-fotos-xls" checked> Incluir fotografías</label></div>
         <button class="btn-rep" onclick="generarExcel()" id="btn-rep-xls">⬇️ Descargar Excel (.xlsx)</button>
         <div class="rep-status" id="rep-status-xls"></div>
+      </div>
+
+      <!-- ── Etiquetas de identificación ── -->
+      <div class="rep-card">
+        <div class="rep-icon">🏷️</div>
+        <div class="rep-titulo">Etiquetas de Identificación (CPU / Monitor)</div>
+        <div class="rep-desc">Etiquetas compactas con nombre del resguardante, cupo, TAG y número de serie. 2 etiquetas por hoja carta, listas para recortar y pegar en el equipo.</div>
+        <div class="rep-opts">
+          <select id="rep-etq-sel">
+            <option value="TODOS">★ Todos los resguardantes</option>
+          </select>
+        </div>
+        <button class="btn-rep" onclick="generarEtiquetas()" id="btn-rep-etq">🖨️ Imprimir Etiquetas</button>
+        <div class="rep-status" id="rep-status-etq"></div>
       </div>
 
     </div>
@@ -1851,6 +1865,8 @@ async function cargarBajasIDB(){
     const cambios=await dbCambiosGetAll();
     _BAJAS_SET=new Set(cambios.filter(c=>c.tipo==='BAJA').map(c=>c.eqKey));
     _DEVOL_SET=new Set(cambios.filter(c=>c.tipo==='DEVOLUCION').map(c=>c.eqKey));
+    // Aplicar reasignaciones completadas al RSG_MAP (en orden cronológico)
+    aplicarReasignacionesCompletadas(cambios);
   }catch(e){ _BAJAS_SET=new Set(); _DEVOL_SET=new Set(); }
 }
 
@@ -3328,6 +3344,78 @@ function onRsgNotaChange(){
     + document.getElementById('eq-nota-sel').innerHTML.replace('<option value="">— Sin equipos —</option>','');
 }
 
+// ── Aplicar Reasignación al RSG_MAP ──
+// Mueve los equipos del saliente al entrante en memoria (RSG_MAP).
+// Acepta el objeto cambio guardado en IDB. Soporta dos modos:
+//   • cambio.eqKeys (array de cupo__serie)  → modo preciso (registros nuevos)
+//   • sólo equipoDesc                        → intenta extraer la serie del texto
+function aplicarReasignacion(cambio){
+  const cupoSal=cambio.cupoSaliente;
+  const cupoEnt=cambio.cupoEntrante;
+  const rSal=RSG_MAP.get(cupoSal);
+  if(!rSal) return;  // saliente ya no existe, nada que mover
+
+  // Determinar qué items mover
+  let itemsAMover=[];
+  if(cambio.eqKeys && cambio.eqKeys.length>0){
+    // Modo preciso: usar eqKeys guardadas
+    const keySet=new Set(cambio.eqKeys);
+    itemsAMover=rSal.items.filter(eq=>keySet.has(eqKey(eq)));
+  } else if(cambio.equipoDesc==='Todos los equipos'){
+    // Retro-compat: mover todos (excluyendo bajas/devoluciones)
+    itemsAMover=rSal.items.filter(eq=>!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq)));
+  } else {
+    // Retro-compat: intentar extraer la serie del texto "TIPO · MARCA MODELO · SERIE"
+    const partes=cambio.equipoDesc.split('·');
+    const serieTexto=(partes[2]||'').trim();
+    if(serieTexto){
+      itemsAMover=rSal.items.filter(eq=>eq[4]===serieTexto);
+    }
+  }
+  if(!itemsAMover.length) return;
+
+  // Quitar los equipos del saliente
+  const keysAMover=new Set(itemsAMover.map(eq=>eqKey(eq)));
+  rSal.items=rSal.items.filter(eq=>!keysAMover.has(eqKey(eq)));
+  if(!rSal.items.length) rSal.sinEquipo=true;
+
+  // Si hay entrante, agregar al RSG_MAP
+  if(cupoEnt){
+    if(!RSG_MAP.has(cupoEnt)){
+      // Crear entrada nueva para cupo que no estaba en el catálogo
+      const pEnt=PERSONAL_MAP.get(cupoEnt);
+      RSG_MAP.set(cupoEnt,{
+        cupo:cupoEnt,
+        nombre:pEnt?pEnt.nombre:(cambio.nombreEntrante||cupoEnt),
+        puesto:pEnt?pEnt.puesto:'',
+        items:[],
+        sinEquipo:false,
+        fueraDeCatalogo:!pEnt
+      });
+    }
+    const rEnt=RSG_MAP.get(cupoEnt);
+    // Actualizar el cupo en cada equipo (campo [0]) para reflejar el nuevo resguardante
+    itemsAMover.forEach(eq=>{
+      const copia=[...eq];
+      copia[0]=cupoEnt;
+      copia[1]=rEnt.nombre;
+      copia[2]=rEnt.puesto;
+      rEnt.items.push(copia);
+    });
+    rEnt.sinEquipo=false;
+  }
+  // Si no hay entrante (equipo sin asignar), los equipos simplemente desaparecen de la vista
+}
+
+// Aplica todas las reasignaciones completadas desde IDB al RSG_MAP.
+// Llamar después de cargar _BAJAS_SET y _DEVOL_SET, ordenado por fecha ASC.
+function aplicarReasignacionesCompletadas(cambios){
+  const completadas=cambios
+    .filter(c=>c.tipo==='reasignacion'&&c.estado==='completado')
+    .sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  completadas.forEach(c=>aplicarReasignacion(c));
+}
+
 // ── Guardar Reasignación ──
 async function guardarReasignacion(){
   const cupoSal=document.getElementById('rsg-saliente').value;
@@ -3342,9 +3430,16 @@ async function guardarReasignacion(){
 
   const rSal=RSG_MAP.get(cupoSal);
   let eqDesc='Todos los equipos';
+  let eqKeys=[];  // Para poder reaplicar la reasignación al recargar
   if(eqIdx&&eqIdx!=='TODOS'){
     const eq=rSal.items[parseInt(eqIdx)];
     eqDesc=`${eq[8]} · ${eq[5]} ${eq[6]} · ${eq[4]}`;
+    eqKeys=[eqKey(eq)];
+  } else {
+    // "TODOS": guardar keys de todos los equipos activos del saliente
+    eqKeys=rSal.items
+      .filter(eq=>!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq)))
+      .map(eq=>eqKey(eq));
   }
 
   // Buscar entrante: primero en PERSONAL_MAP (catálogo completo), luego en RSG_MAP
@@ -3360,6 +3455,7 @@ async function guardarReasignacion(){
     cupoSaliente: cupoSal,
     nombreSaliente: rSal.nombre,
     equipoDesc: eqDesc,
+    eqKeys,           // ← guarda las keys para poder reaplicar al recargar
     cupoEntrante: cupoEnt||nuevoCupo||'',
     nombreEntrante: entranteDesc,
     obs,
@@ -3599,6 +3695,15 @@ async function cambiarEstadoLog(id, nuevoEstado){
   item.estado=nuevoEstado;
   await dbCambiosPut(item);
   await actualizarBadgeAdm();
+  // Si se completa una reasignación, aplicarla al RSG_MAP ahora mismo
+  if(item.tipo==='reasignacion' && nuevoEstado==='completado'){
+    aplicarReasignacion(item);
+    // Refrescar todas las vistas que dependen de RSG_MAP
+    filtrarInv();
+    filtrarRsg();
+    await renderEstadisticas();
+    poblarSelectsRsg();
+  }
   renderLog();
 }
 
@@ -3946,18 +4051,31 @@ async function importarDatos(event){
 
 /* ── Poblar selector de resguardantes en el panel Reportes ── */
 function initRep(){
-  const sel = document.getElementById('rep-rsg-sel');
-  if(!sel) return;
-  // Solo resguardantes con al menos un equipo activo
-  [...RSG_MAP.values()]
+  // Resguardantes con equipo activo
+  const activos=[...RSG_MAP.values()]
     .filter(r=>r.items.some(eq=>!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq))))
-    .sort((a,b)=>a.nombre.localeCompare(b.nombre))
-    .forEach(r=>{
-      const o = document.createElement('option');
-      o.value = r.cupo;
-      o.textContent = r.nombre;
+    .sort((a,b)=>a.nombre.localeCompare(b.nombre));
+
+  const sel = document.getElementById('rep-rsg-sel');
+  if(sel){
+    activos.forEach(r=>{
+      const o=document.createElement('option');
+      o.value=r.cupo; o.textContent=r.nombre;
       sel.appendChild(o);
     });
+  }
+
+  // Selector de etiquetas (solo quienes tienen CPU o MONITOR activo)
+  const selEtq=document.getElementById('rep-etq-sel');
+  if(selEtq){
+    activos.filter(r=>r.items.some(eq=>
+      (eq[8]==='CPU'||eq[8]==='MONITOR')&&!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq))
+    )).forEach(r=>{
+      const o=document.createElement('option');
+      o.value=r.cupo; o.textContent=r.nombre;
+      selEtq.appendChild(o);
+    });
+  }
 }
 
 /* ── Helper: obtener foto principal (general > tag > serie) ── */
@@ -4295,6 +4413,178 @@ async function generarPDFResumen(){
   }catch(err){
     console.error(err);
     status.textContent = '❌ Error al generar resumen';
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+/* ════════════════════════════════════════════
+   ETIQUETAS DE IDENTIFICACIÓN (CPU / MONITOR)
+   ════════════════════════════════════════════ */
+async function generarEtiquetas(){
+  const btn    = document.getElementById('btn-rep-etq');
+  const status = document.getElementById('rep-status-etq');
+  const cupoSel= document.getElementById('rep-etq-sel').value;
+
+  btn.disabled = true;
+  status.textContent = '⏳ Generando etiquetas…';
+
+  try{
+    // Construir lista de resguardantes a incluir
+    let rsgs = [...RSG_MAP.values()]
+      .filter(r=>r.items.some(eq=>
+        (eq[8]==='CPU'||eq[8]==='MONITOR')&&!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq))
+      ))
+      .sort((a,b)=>a.nombre.localeCompare(b.nombre));
+
+    if(cupoSel !== 'TODOS'){
+      rsgs = rsgs.filter(r=>r.cupo===cupoSel);
+    }
+
+    if(!rsgs.length){
+      status.textContent = '⚠️ No hay equipos CPU/Monitor activos para el resguardante seleccionado';
+      btn.disabled = false;
+      return;
+    }
+
+    // Construir pares de etiquetas (CPU + Monitor por resguardante)
+    let etiquetas = [];
+    for(const rsg of rsgs){
+      const cpus = rsg.items.filter(eq=>eq[8]==='CPU'&&!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq)));
+      const mons = rsg.items.filter(eq=>eq[8]==='MONITOR'&&!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq)));
+      // Un item por tipo de equipo
+      cpus.forEach(eq=>etiquetas.push({rsg, eq, tipoLabel:'CPU', icono:'🖥️'}));
+      mons.forEach(eq=>etiquetas.push({rsg, eq, tipoLabel:'MONITOR', icono:'🖵'}));
+    }
+
+    // Función para construir HTML de una etiqueta
+    const htmlEtiqueta = (e) => {
+      if(!e) return `<div class="etq etq-vacia"></div>`;
+      const {rsg, eq, tipoLabel, icono} = e;
+      const ubicLabel = CABB_CUPOS.has(rsg.cupo) ? 'CABB COACALCO' : 'SARE ECATEPEC';
+      return `<div class="etq">
+        <div class="etq-header">
+          <div class="etq-logo-area">
+            <div class="etq-sep-logo">SEP</div>
+            <div class="etq-org">SARE 1507 · ${ubicLabel}</div>
+          </div>
+          <div class="etq-tipo">${icono} ${tipoLabel}</div>
+        </div>
+        <div class="etq-nombre">${rsg.nombre}</div>
+        <div class="etq-puesto">${rsg.puesto||'—'}</div>
+        <div class="etq-datos">
+          <div class="etq-dato"><span class="etq-lbl">Cupo</span><span class="etq-val">${rsg.cupo}</span></div>
+          <div class="etq-dato"><span class="etq-lbl">TAG</span><span class="etq-val etq-tag">${eq[3]||'—'}</span></div>
+          <div class="etq-dato"><span class="etq-lbl">Marca / Modelo</span><span class="etq-val">${eq[5]||''} ${eq[6]||''}</span></div>
+          <div class="etq-dato"><span class="etq-lbl">No. Serie</span><span class="etq-val etq-serie">${eq[4]||'—'}</span></div>
+          <div class="etq-dato"><span class="etq-lbl">Modalidad</span><span class="etq-val">${eq[9]||'—'}</span></div>
+        </div>
+        <div class="etq-footer">Becas para el Bienestar Benito Juárez · SEP · ${new Date().toLocaleDateString('es-MX',{year:'numeric',month:'short'})}</div>
+      </div>`;
+    };
+
+    // Agrupar en pares (2 por hoja)
+    let paginasHtml = '';
+    for(let i=0; i<etiquetas.length; i+=2){
+      const izq = etiquetas[i]   || null;
+      const der = etiquetas[i+1] || null;
+      paginasHtml += `<div class="hoja">${htmlEtiqueta(izq)}${htmlEtiqueta(der)}</div>`;
+    }
+
+    const win = window.open('','_blank');
+    win.document.write(`<!DOCTYPE html><html lang="es"><head>
+      <meta charset="UTF-8">
+      <title>Etiquetas SARE 1507</title>
+      <style>
+        @page { size: letter portrait; margin: 0; }
+        *{ box-sizing:border-box; margin:0; padding:0; }
+        body{ font-family:'Arial',sans-serif; background:#fff; }
+
+        .hoja{
+          width:216mm; height:279mm;
+          display:flex; flex-direction:column;
+          align-items:center; justify-content:center;
+          gap:10mm;
+          page-break-after:always;
+          padding:12mm 10mm;
+        }
+        .hoja:last-child{ page-break-after:avoid; }
+
+        .etq{
+          width:190mm; min-height:120mm;
+          border:2.5pt solid #6B1C3E;
+          border-radius:6pt;
+          padding:8mm 9mm 6mm;
+          display:flex; flex-direction:column; gap:4pt;
+          position:relative;
+          overflow:hidden;
+        }
+        .etq::before{
+          content:'';
+          position:absolute; top:0; left:0; right:0; height:8pt;
+          background:#6B1C3E;
+        }
+        .etq-vacia{
+          width:190mm; min-height:120mm;
+          border:2pt dashed #ccc; border-radius:6pt;
+          opacity:.3;
+        }
+
+        .etq-header{
+          display:flex; justify-content:space-between; align-items:flex-start;
+          margin-top:6pt; margin-bottom:4pt;
+        }
+        .etq-logo-area{ display:flex; flex-direction:column; gap:2pt; }
+        .etq-sep-logo{
+          display:inline-block;
+          font-size:10pt; font-weight:900; color:#6B1C3E;
+          border:2pt solid #6B1C3E; border-radius:3pt;
+          padding:1pt 5pt; letter-spacing:1pt;
+        }
+        .etq-org{ font-size:7pt; color:#888; margin-top:2pt; }
+
+        .etq-tipo{
+          font-size:16pt; font-weight:800; color:#6B1C3E;
+          text-align:right; line-height:1;
+        }
+
+        .etq-nombre{
+          font-size:13pt; font-weight:800; color:#1a1a1a;
+          text-transform:uppercase; letter-spacing:.5pt;
+          border-bottom:1pt solid #e0e0e0; padding-bottom:4pt; margin-bottom:2pt;
+        }
+        .etq-puesto{ font-size:8pt; color:#555; margin-bottom:5pt; text-transform:uppercase; }
+
+        .etq-datos{ display:grid; grid-template-columns:1fr 1fr; gap:5pt 12pt; margin-bottom:6pt; }
+        .etq-dato{ display:flex; flex-direction:column; gap:1pt; }
+        .etq-lbl{ font-size:6.5pt; color:#999; text-transform:uppercase; letter-spacing:.5pt; }
+        .etq-val{ font-size:9pt; font-weight:700; color:#222; }
+        .etq-tag{ font-size:10.5pt; color:#6B1C3E; font-family:'Courier New',monospace; }
+        .etq-serie{ font-size:8.5pt; font-family:'Courier New',monospace; color:#333; }
+
+        .etq-footer{
+          font-size:6.5pt; color:#bbb; text-align:center;
+          border-top:1pt solid #f0f0f0; padding-top:4pt;
+          text-transform:uppercase; letter-spacing:.5pt;
+        }
+
+        @media print{
+          body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+          .hoja{ page-break-after:always; }
+          .hoja:last-child{ page-break-after:avoid; }
+        }
+      </style>
+    </head><body>
+      ${paginasHtml}
+      <script>window.onload=()=>{ window.print(); }<\/script>
+    </body></html>`);
+    win.document.close();
+
+    const nHojas = Math.ceil(etiquetas.length/2);
+    status.textContent = `✅ ${etiquetas.length} etiqueta${etiquetas.length!==1?'s':''} generada${etiquetas.length!==1?'s':''} · ${nHojas} hoja${nHojas!==1?'s':''}`;
+  }catch(err){
+    console.error(err);
+    status.textContent = '❌ Error al generar etiquetas';
   }finally{
     btn.disabled = false;
   }
