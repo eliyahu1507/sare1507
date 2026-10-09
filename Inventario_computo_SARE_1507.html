@@ -4294,11 +4294,11 @@ async function generarPDFResguardante(){
       pagesHtml += `
         <div>
           <div class="header-membrete">
-            <img src="${MEMBRETE_IMG}" class="membrete-img" alt="SEP - Becas Bienestar Benito Juárez">
+            <img src="${MEMBRETE_IMG}" class="membrete-img" alt="SEP - Becas Bienestar Coordinación Nacional">
           </div>
           <div class="header-titulo">
             <h1>Resguardo Individual de Cómputo</h1>
-            <div class="header-sub">SARE 1507 Ecatepec / CABB Coacalco · SEP · ${hoy}</div>
+            <div class="header-sub">SARE 1507 Ecatepec / CABB Coacalco · Becas Bienestar Coordinación Nacional · ${hoy}</div>
           </div>
 
           <h2>Resguardante: ${rsg.nombre}</h2>
@@ -4416,11 +4416,11 @@ async function generarPDFResumen(){
     </head><body>
 
       <div class="header-membrete">
-          <img src="${MEMBRETE_IMG}" class="membrete-img" alt="SEP - Becas Bienestar Benito Juárez">
+          <img src="${MEMBRETE_IMG}" class="membrete-img" alt="SEP - Becas Bienestar Coordinación Nacional">
         </div>
         <div class="header-titulo">
           <h1>Resumen Ejecutivo — Inventario de Cómputo</h1>
-          <div class="header-sub">SARE 1507 Ecatepec / CABB Coacalco · SEP · ${hoy}</div>
+          <div class="header-sub">SARE 1507 Ecatepec / CABB Coacalco · Becas Bienestar Coordinación Nacional · ${hoy}</div>
         </div>
 
       <h2>Estadísticas Generales</h2>
@@ -4440,11 +4440,11 @@ async function generarPDFResumen(){
       <div class="page-break"></div>
 
       <div class="header-membrete">
-          <img src="${MEMBRETE_IMG}" class="membrete-img" alt="SEP - Becas Bienestar Benito Juárez">
+          <img src="${MEMBRETE_IMG}" class="membrete-img" alt="SEP - Becas Bienestar Coordinación Nacional">
         </div>
         <div class="header-titulo">
           <h1>Inventario Completo por Resguardante</h1>
-          <div class="header-sub">SARE 1507 Ecatepec / CABB Coacalco · SEP · ${hoy}</div>
+          <div class="header-sub">SARE 1507 Ecatepec / CABB Coacalco · Becas Bienestar Coordinación Nacional · ${hoy}</div>
         </div>
 
       <table>
@@ -4560,7 +4560,7 @@ async function generarEtiquetas(){
         <div class="etq-barra-top"></div>
         <!-- Encabezado institucional -->
         <div class="etq-membrete">
-          <img src="${MEMBRETE_IMG}" class="etq-membrete-img" alt="SEP · CNBBJB">
+          <img src="${MEMBRETE_IMG}" class="etq-membrete-img" alt="SEP · Becas Bienestar CN">
           <div class="etq-membrete-sub">SARE 1507 · ${ubicLabel}</div>
         </div>
         <!-- Tipo de equipo destacado -->
@@ -4578,7 +4578,7 @@ async function generarEtiquetas(){
         </div>
         <!-- Periféricos / equipo relacionado -->
         ${perifericos_html}
-        <div class="etq-footer">Becas para el Bienestar Benito Juárez · SEP · ${hoy}</div>
+        <div class="etq-footer">Becas Bienestar Coordinación Nacional · SEP · ${hoy}</div>
       </div>`;
     };
 
