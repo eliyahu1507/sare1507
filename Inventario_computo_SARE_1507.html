@@ -106,7 +106,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
 .foto-count{font-size:.72rem;color:var(--txt3)}
 
 /* ── RESGUARDANTE CARD ── */
-.rsg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.rsg-grid{display:block}
+.rsg-grid-inner{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
 .rsg-card{background:var(--card);border-radius:10px;box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s}
 .rsg-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,.16)}
 .rsg-card.danado{border-color:#cc0000}
@@ -330,7 +331,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
 /* ── RESPONSIVE ── */
 @media(max-width:640px){
   #sidebar{width:220px}
-  .eq-grid,.rsg-grid{grid-template-columns:1fr}
+  .eq-grid,.rsg-grid-inner{grid-template-columns:1fr}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .modal-box{max-width:100%;border-radius:0}
   .form-row,.form-row.triple{grid-template-columns:1fr}
@@ -980,9 +981,16 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
               style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;margin-top:4px">
           </div>
           <div class="form-group" style="margin-bottom:12px">
-            <label style="font-size:.78rem;color:var(--txt2);font-weight:700">Empresa / Persona que recibe</label>
-            <input type="text" id="devol-empresa"
-              placeholder="Nombre de la empresa o persona que recibe el equipo"
+            <label style="font-size:.78rem;color:var(--txt2);font-weight:700">Empresa que retira el equipo</label>
+            <select id="devol-empresa"
+              style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;margin-top:4px">
+              <option value="">— Selecciona empresa —</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label style="font-size:.78rem;color:var(--txt2);font-weight:700">Persona designada para el retiro</label>
+            <input type="text" id="devol-persona"
+              placeholder="Nombre completo de quien retira el equipo"
               style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-size:.82rem;margin-top:4px">
           </div>
           <div class="form-group" style="margin-bottom:12px">
@@ -2114,6 +2122,13 @@ function poblarSelectDevol(){
   document.getElementById('devol-fecha').value=new Date().toISOString().slice(0,10);
 }
 
+// Empresas conocidas para devoluciones de PRÉSTAMO
+const EMPRESAS_DEVOL = [
+  'Soluciones Tecnológicas Especializadas, S.A. de C.V.',
+  'Business Support, S.A. de C.V.',
+  'BLACK ECO, S.A. de C.V.',
+];
+
 function cargarEquiposDevol(){
   const cupo=document.getElementById('devol-rsg').value;
   const equipoWrap=document.getElementById('devol-equipo-wrap');
@@ -2131,6 +2146,11 @@ function cargarEquiposDevol(){
     +`<option value="TODOS">★ Todos los equipos en préstamo (${prestamos.length})</option>`
     +prestamos.map((eq,i)=>`<option value="${i}">${eq[8]||'Equipo'} — ${eq[5]} ${eq[6]} | Serie: ${eq[4]}</option>`).join('');
 
+  // Poblar select de empresa
+  const selEmp=document.getElementById('devol-empresa');
+  selEmp.innerHTML=`<option value="">— Selecciona empresa —</option>`
+    +EMPRESAS_DEVOL.map(e=>`<option value="${e}">${e}</option>`).join('');
+
   equipoWrap.style.display='block';
   datosWrap.style.display='block';
 }
@@ -2146,13 +2166,15 @@ async function guardarDevolucion(){
   const equipoVal=document.getElementById('devol-equipo').value;
   const fecha=document.getElementById('devol-fecha').value;
   const empresa=document.getElementById('devol-empresa').value.trim();
+  const persona=document.getElementById('devol-persona').value.trim();
   const obs=document.getElementById('devol-obs').value.trim();
   const msgEl=document.getElementById('devol-msg');
 
   if(!cupo){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Selecciona un resguardante</span>'; return; }
   if(!equipoVal){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Selecciona el equipo a devolver</span>'; return; }
   if(!fecha){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Indica la fecha de devolución</span>'; return; }
-  if(!empresa){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Indica la empresa o persona que recibe</span>'; return; }
+  if(!empresa){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Selecciona la empresa que retira</span>'; return; }
+  if(!persona){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Indica el nombre de la persona designada para el retiro</span>'; return; }
 
   const r=RSG_MAP.get(cupo);
   if(!r){ msgEl.innerHTML='<span style="color:#c62828">⚠️ Resguardante no encontrado</span>'; return; }
@@ -2179,7 +2201,7 @@ async function guardarDevolucion(){
       cupo:r.cupo,
       nombreRsg:r.nombre,
       tipoEquipo:eq[8], tag:eq[3], serie:eq[4], marca:eq[5], modelo:eq[6],
-      modalidad:eq[9], empresa, obs, fecha,
+      modalidad:eq[9], empresa, persona, obs, fecha,
       ts, registradoPor:sesion?sesion.nombre:'—'
     });
     _DEVOL_SET.add(key);
@@ -2191,6 +2213,7 @@ async function guardarDevolucion(){
 
   // Reset form
   document.getElementById('devol-empresa').value='';
+  document.getElementById('devol-persona').value='';
   document.getElementById('devol-obs').value='';
   document.getElementById('devol-todos').checked=false;
   msgEl.innerHTML=`<span style="color:#2e7d32">✅ ${equiposADevolver.length} equipo${equiposADevolver.length!==1?'s':''} devuelto${equiposADevolver.length!==1?'s':''} correctamente.</span>`;
@@ -2219,7 +2242,8 @@ async function renderListaDevolucionesAdm(){
         <span style="font-size:.72rem;color:#888">${fecha}</span>
       </div>
       <div style="color:var(--txt2)"><span style="font-weight:600">Resguardante:</span> ${d.nombreRsg||'—'} (${d.cupo||'—'})</div>
-      <div style="color:var(--txt2)"><span style="font-weight:600">Entregado a:</span> ${d.empresa||'—'}</div>
+      <div style="color:var(--txt2)"><span style="font-weight:600">Empresa:</span> ${d.empresa||'—'}</div>
+      <div style="color:var(--txt2)"><span style="font-weight:600">Recibió:</span> ${d.persona||d.empresa||'—'}</div>
       ${d.obs?`<div style="color:var(--txt2);font-style:italic">Obs: ${d.obs}</div>`:''}
       <div style="color:#aaa;font-size:.7rem;margin-top:3px">TAG: ${d.tag||'—'} · Serie: ${d.serie||'—'} · Por: ${d.registradoPor||'—'}</div>
     </div>`;
@@ -2362,8 +2386,8 @@ function filtrarRsg(){
     return;
   }
 
-  // Cards con equipo
-  const htmlConEquipo=conEquipo.map(({r,its})=>{
+  // Función para generar HTML de una card
+  function cardHtml({r,its}){
     const cpu=its.find(x=>x[8]==='CPU');
     const mon=its.find(x=>x[8]==='MONITOR');
     const nb=its.find(x=>x[8]==='NO BREAK');
@@ -2371,13 +2395,11 @@ function filtrarRsg(){
     const mou=its.find(x=>x[8]==='MOUSE');
     const mod=cpu?cpu[9]:'—';
     const danado=MONITORES_DANADOS.has(r.cupo);
-    const ub2=ubicacion(r.cupo);
     const fdc=r.fueraDeCatalogo?'<span style="font-size:.62rem;background:#eeeeee;color:#666;border-radius:4px;padding:1px 5px;margin-left:4px">apoyo</span>':'';
     return `<div class="rsg-card${danado?' danado':''}" onclick="abrirModalRsg('${r.cupo}')">
       <div class="rsg-card-head">
         <div class="rsg-nombre">${r.nombre}${fdc}</div>
         <div class="rsg-cupo">CUPO: ${r.cupo} · ${r.puesto}</div>
-        <div class="rsg-ub">${ub2==='CABB COACALCO'?'🔵 CABB COACALCO':'📍 SARE ECATEPEC'}</div>
       </div>
       <div class="rsg-card-body">
         <span class="rsg-mod ${mod==='ARRENDAMIENTO'?'mod-arr':'mod-pre'}">${mod}</span>
@@ -2391,12 +2413,47 @@ function filtrarRsg(){
         <div class="rsg-ver-mas">Ver detalle completo →</div>
       </div>
     </div>`;
-  }).join('');
+  }
+
+  // Separar por oficina
+  const ecatepec=conEquipo.filter(({r})=>!CABB_CUPOS.has(r.cupo));
+  const coacalco=conEquipo.filter(({r})=>CABB_CUPOS.has(r.cupo));
+
+  // Encabezado de sección de oficina
+  function seccionHeader(label,icono,count,color){
+    return `<div style="display:flex;align-items:center;gap:10px;margin:18px 0 10px;padding:10px 16px;
+      background:${color};border-radius:10px;border-left:4px solid var(--guinda)">
+      <span style="font-size:1.1rem">${icono}</span>
+      <div>
+        <div style="font-weight:800;font-size:.88rem;color:var(--guinda);letter-spacing:.5px">${label}</div>
+        <div style="font-size:.72rem;color:var(--txt2);margin-top:1px">${count} resguardante${count!==1?'s':''} con equipo activo</div>
+      </div>
+    </div>`;
+  }
+
+  let html='';
+
+  // Solo mostrar sección si hay resultados (o si no hay filtro de ubicación activo)
+  if(!ub || ub!=='CABB COACALCO'){
+    if(ecatepec.length>0){
+      html+=seccionHeader('SARE ECATEPEC','📍',ecatepec.length,'#fdf5f8');
+      html+=`<div class="rsg-grid-inner">${ecatepec.map(cardHtml).join('')}</div>`;
+    }
+  }
+  if(!ub || ub==='CABB COACALCO'){
+    if(coacalco.length>0){
+      html+=seccionHeader('CABB COACALCO','🔵',coacalco.length,'#f0f4ff');
+      html+=`<div class="rsg-grid-inner">${coacalco.map(cardHtml).join('')}</div>`;
+    }
+  }
 
   // Panel colapsable "Personal sin equipo asignado"
   let htmlSinEquipo='';
   if(sinEquipo.length){
-    const rows=sinEquipo.map(r=>{
+    // Separar también por oficina
+    const seSare=sinEquipo.filter(r=>!CABB_CUPOS.has(r.cupo));
+    const seCabb=sinEquipo.filter(r=>CABB_CUPOS.has(r.cupo));
+    const rows=[...seSare,...seCabb].map(r=>{
       const ub2=ubicacion(r.cupo);
       return `<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid #f0e8f5;font-size:.8rem">
         <span style="min-width:80px;font-family:monospace;color:var(--txt2)">${r.cupo}</span>
@@ -2414,7 +2471,7 @@ function filtrarRsg(){
     </div>`;
   }
 
-  grid.innerHTML=htmlConEquipo+htmlSinEquipo;
+  grid.innerHTML=html+htmlSinEquipo;
 }
 
 function limpiarRsg(){
