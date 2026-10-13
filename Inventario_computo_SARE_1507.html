@@ -4412,11 +4412,12 @@ async function importarDatos(event){
         }
       }
     }
-    // Recargar bajas
+    // Recargar bajas, traslados y reasignaciones
     await cargarBajasIDB();
     await renderInc();
     await renderEstadisticas();
     filtrarInv();
+    filtrarRsg();
     await actualizarResumenSync();
     status.style.background='#e8f5e9'; status.style.color='#2e7d32';
     status.innerHTML=`✅ Importación completada:<br>
