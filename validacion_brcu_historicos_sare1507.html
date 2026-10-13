@@ -393,79 +393,161 @@ setInterval(actualizarReloj, 1000);
 actualizarReloj();
 
 // === DATOS ===
-// nominalDatos: registros CON CURP (historicos) — búsqueda exacta por CURP
-// complementoDatos: registros SIN CURP (mayo-junio y agosto 2026) — búsqueda por nombre
+// nominalDatos: registros CON CURP (operativos anteriores)
+// complementoDatos: registros SIN CURP (nominales actuales: tarjetas por entregar)
 let nominalDatos = [];
 let complementoDatos = [];
+let CURP_INDEX = new Map();   // curp normalizada -> [registros]
 
-// Normaliza texto: mayusculas, sin acentos, espacios simples
-function norm(t) {
-  return String(t||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+// ── Reparación de texto ──────────────────────────────────────────────
+// Algunos CSV vienen con "mojibake" (Ñ guardada dos veces: "Ã‘") o con
+// caracteres dañados (�) por haberse guardado en ANSI/Latin-1.
+const MOJIBAKE = [
+  ['Ã‘','Ñ'],['Ã±','Ñ'],['Ãœ','Ü'],['Ã¼','Ü'],['Ã‰','É'],['Ã©','É'],
+  ['Ã“','Ó'],['Ã³','Ó'],['Ãš','Ú'],['Ãº','Ú'],['Ã¡','Á'],['Ã­','Í'],
+  ['Ã\u0081','Á'],['Ã\u008D','Í'],['Ã\u009C','Ü'],['ÃŒ','Ü'],['Ã\u0091','Ñ'],['Â','']
+];
+function repararTexto(t){
+  let s = String(t||'');
+  if (s.indexOf('Ã') >= 0 || s.indexOf('Â') >= 0) {
+    for (const [a,b] of MOJIBAKE) s = s.split(a).join(b);
+  }
+  // Carácter perdido por codificación: en nombres casi siempre era Ñ
+  s = s.replace(/�/g,'Ñ');
+  return s.toUpperCase().replace(/\s+/g,' ').trim();
+}
+
+// Clave de comparación: sin acentos, Ñ→N, sin puntuación, espacios simples, MA. → MARIA
+function normNombre(t){
+  let s = repararTexto(t)
+    .replace(/[?£Œ]/g,'N')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^A-Z0-9 ]+/g,' ')
+    .replace(/\s+/g,' ').trim();
+  return s.split(' ').map(w => w === 'MA' ? 'MARIA' : w).join(' ');
+}
+function tokensDe(t){ return normNombre(t).split(' ').filter(w => w.length > 1); }
+
+// CURP: mayúsculas, sin espacios, y letra O usada como cero en posiciones numéricas
+function normCurp(c){
+  const s = String(c||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if (s.length !== 18) return s;
+  const a = s.split('');
+  [4,5,6,7,8,9,16,17].forEach(i => { if (a[i] === 'O') a[i] = '0'; });
+  return a.join('');
+}
+
+// Compatibilidad con código existente
+function norm(t){ return normNombre(t); }
+
+// ── Lectura de archivos con detección de codificación ────────────────
+async function leerTexto(url){
+  const r = await fetch(url + '?v=20261013');
+  if (!r.ok) return null;
+  const buf = await r.arrayBuffer();
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+  catch (e) { return new TextDecoder('windows-1252').decode(buf); }   // archivos guardados en ANSI
+}
+
+function detectarSep(data){
+  const l = (data.split('\n')[0]||'');
+  return l.split(';').length > l.split(',').length ? ';' : ',';
+}
+function lectorFila(row){
+  const keys = Object.keys(row);
+  return (nombres) => {
+    const key = keys.find(k => nombres.some(n => k.replace(/^﻿/,'').trim().toUpperCase() === n.toUpperCase()));
+    return key ? String(row[key]||'').trim() : '';
+  };
+}
+function indexar(reg){
+  reg.nn = normNombre(reg.nombre);
+  reg.tk = new Set(reg.nn.split(' ').filter(w => w.length > 1));
+  return reg;
 }
 
 // === PROCESAMIENTO CSV CON CURP ===
 function procesarDataCSV(data, nivelConfig) {
-  const sep = (data.split('\n')[0]||'').split(';').length > (data.split('\n')[0]||'').split(',').length ? ';' : ',';
-  const lineas = Papa.parse(data, { header: true, skipEmptyLines: true, delimiter: sep }).data;
+  const lineas = Papa.parse(data, { header: true, skipEmptyLines: true, delimiter: detectarSep(data) }).data;
   lineas.forEach(row => {
-    const keys = Object.keys(row);
-    const getVal = (nombres) => {
-      const key = keys.find(k => nombres.some(n => k.trim().toUpperCase() === n.toUpperCase()));
-      return key ? String(row[key]||'').trim().toUpperCase() : '';
-    };
-    const curp = getVal(['CURP']);
+    const getVal = lectorFila(row);
+    const curp = normCurp(getVal(['CURP']));
     if (!curp || curp.length < 10) return;
-    const cct = getVal(['CCT']);
-    const mun = getVal(['MUNICIPIO','MUN']);
     const nombrePila = getVal(['NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
     const ap1 = getVal(['PRIMER APELLIDO','APELLIDO PATERNO']);
     const ap2 = getVal(['SEGUNDO APELLIDO','APELLIDO MATERNO']);
     const nombreCompleto = getVal(['NOMBRE COMPLETO']);
-    // Estructura basica/bueems/jef: NOMBRE DEL TUTOR + PRIMER APELLIDO + SEGUNDO APELLIDO
-    // Estructura con columna única: NOMBRE COMPLETO
-    const nombre = nombreCompleto
-      || ((nombrePila+' '+ap1+' '+ap2).replace(/\s+/g,' ').trim());
-    nominalDatos.push({
+    const nombre = repararTexto(nombreCompleto || (nombrePila+' '+ap1+' '+ap2));
+    const reg = indexar({
       curp, nivel: nivelConfig.nombre, rol: nivelConfig.rol, nombre,
-      proceso: getVal(['PROCESO','FECHA','REMESA']) || nivelConfig.nombre,
-      cct: cct||'N/A', mun: mun||'N/A'
+      proceso: repararTexto(getVal(['PROCESO','FECHA','REMESA'])) || nivelConfig.nombre,
+      cct: getVal(['CCT']).toUpperCase() || 'N/A',
+      mun: repararTexto(getVal(['MUNICIPIO','MUN'])) || 'N/A'
     });
+    nominalDatos.push(reg);
+    if (!CURP_INDEX.has(curp)) CURP_INDEX.set(curp, []);
+    CURP_INDEX.get(curp).push(reg);
   });
 }
 
 // === PROCESAMIENTO CSV SIN CURP (complementos) ===
 function procesarDataCSVSinCurp(data, nivelConfig) {
-  const sep = (data.split('\n')[0]||'').split(';').length > (data.split('\n')[0]||'').split(',').length ? ';' : ',';
-  const lineas = Papa.parse(data, { header: true, skipEmptyLines: true, delimiter: sep }).data;
+  const lineas = Papa.parse(data, { header: true, skipEmptyLines: true, delimiter: detectarSep(data) }).data;
   lineas.forEach(row => {
-    const keys = Object.keys(row);
-    const getVal = (nombres) => {
-      const key = keys.find(k => nombres.some(n => k.trim().toUpperCase() === n.toUpperCase()));
-      return key ? String(row[key]||'').trim().toUpperCase() : '';
-    };
-    // Buscar columna nombre (mayo-jun usa "NOMBRE COMPLETO", agosto puede variar)
-    const nombre = getVal(['NOMBRE COMPLETO','NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE']);
+    const getVal = lectorFila(row);
+    let nombre = getVal(['NOMBRE COMPLETO']);
+    if (!nombre) {
+      // Por si algún nominal futuro trae el nombre en columnas separadas
+      nombre = [getVal(['NOMBRE DEL TUTOR','NOMBRE DEL BECARIO','NOMBRE','NOMBRE(S)']),
+                getVal(['PRIMER APELLIDO','APELLIDO PATERNO']),
+                getVal(['SEGUNDO APELLIDO','APELLIDO MATERNO'])].join(' ');
+    }
+    nombre = repararTexto(nombre);
     if (!nombre) return;
-    const cct  = getVal(['CCT']);
-    const mun  = getVal(['MUNICIPIO','MUN']);
-    const proc = getVal(['PROCESO','FECHA','REMESA','PROGRAMA']) || nivelConfig.nombre;
-    complementoDatos.push({
+    complementoDatos.push(indexar({
       nombre, nivel: nivelConfig.nombre, ciclo: nivelConfig.ciclo,
-      proceso: proc, cct: cct||'N/A', mun: mun||'N/A', sinCurp: true
-    });
+      proceso: repararTexto(getVal(['PROCESO','FECHA','REMESA','PROGRAMA'])) || nivelConfig.nombre,
+      cct: getVal(['CCT']).toUpperCase() || 'N/A',
+      mun: repararTexto(getVal(['MUNICIPIO','MUN'])) || 'N/A',
+      escuela: repararTexto(getVal(['NOMBRE DE LA ESCUELA','ESCUELA'])),
+      obs: repararTexto(getVal(['OBSERVACIONES','OBS'])),
+      sinCurp: true
+    }));
   });
 }
 
+// === MOTOR DE BÚSQUEDA POR NOMBRE ===
+// Nivel 1 'exacta'   : todas las palabras buscadas aparecen completas en el nombre
+// Nivel 2 'inicio'   : todas aparecen como inicio de palabra (ej. "GUADA" → GUADALUPE)
+// Nivel 3 'parcial'  : coinciden todas menos una (segundo nombre de más, error de dedo)
+function buscarNombreEn(lista, qt){
+  if (!qt.length) return { nivel: null, res: [] };
+  let res = lista.filter(r => qt.every(t => r.tk.has(t)));
+  if (res.length) return { nivel: 'exacta', res };
+  res = lista.filter(r => qt.every(t => { for (const w of r.tk) if (w.startsWith(t)) return true; return false; }));
+  if (res.length) return { nivel: 'inicio', res };
+  if (qt.length >= 3) {
+    res = lista.filter(r => qt.filter(t => r.tk.has(t)).length >= qt.length - 1);
+    if (res.length) return { nivel: 'parcial', res };
+  }
+  return { nivel: null, res: [] };
+}
+// Ordena: primero quien tiene exactamente las mismas palabras (sin palabras extra)
+function ordenarPorCercania(res, qt){
+  const q = new Set(qt);
+  const extra = r => [...r.tk].filter(w => !q.has(w)).length;
+  return res.slice().sort((a,b) => extra(a) - extra(b));
+}
+
+
 // === CARGA DE PADRONES ===
 async function cargarPadrones() {
-  // Archivos CON CURP
   const archivosConCurp = [
     { url: 'basica.csv',     config: { nombre: 'BÁSICA',        rol: 'TUTOR'    } },
     { url: 'bueems.csv',     config: { nombre: 'BUEEMS',        rol: 'BECARIO'  } },
     { url: 'jef.csv',        config: { nombre: 'JEF',           rol: 'BECARIO'  } },
     { url: 'bueems_feb.csv', config: { nombre: 'BUEEMS FEB 26', rol: 'BECARIO'  } }
   ];
-  // Archivos SIN CURP (complementos)
   const archivosSinCurp = [
     { url: 'brcu_prim_secu_mayo_junio_2026.csv', config: { nombre: 'BRCU MAYO-JUN 26',  ciclo: 'Mayo-Junio 2026'  } },
     { url: 'bueems_mayo_junio_2026.csv',         config: { nombre: 'BUEEMS MAYO-JUN 26',ciclo: 'Mayo-Junio 2026'  } },
@@ -474,12 +556,12 @@ async function cargarPadrones() {
     { url: 'bueems_agosto_2026.csv',             config: { nombre: 'BUEEMS AGOSTO 26',   ciclo: 'Agosto 2026'      } },
     { url: 'jef_agosto_2026.csv',                config: { nombre: 'JEF AGOSTO 26',      ciclo: 'Agosto 2026'      } }
   ];
-
+  const fallidos = [];
   const cargar = async (url, fn, cfg) => {
     try {
-      const r = await fetch(url + '?v=20261002');
-      if (r.ok) fn(await r.text(), cfg);
-    } catch(e) {}
+      const txt = await leerTexto(url);
+      if (txt) fn(txt, cfg); else fallidos.push(url);
+    } catch(e) { fallidos.push(url); }
   };
 
   await Promise.all([
@@ -487,15 +569,21 @@ async function cargarPadrones() {
     ...archivosSinCurp.map(a => cargar(a.url, procesarDataCSVSinCurp, a.config))
   ]);
 
-  document.getElementById('loader-db').style.display = 'none';
+  const loader = document.getElementById('loader-db');
+  if (fallidos.length) {
+    loader.style.display = 'block';
+    loader.style.background = '#fff3e0'; loader.style.color = '#b45309';
+    loader.textContent = '⚠️ No se pudieron descargar: ' + fallidos.join(', ') + ' — las búsquedas en esos nominales no estarán disponibles. Recarga la página con buena señal.';
+  } else {
+    loader.style.display = 'none';
+  }
   document.getElementById('stats-panel').style.display = 'grid';
   const btnStart = document.getElementById('btn-start');
   btnStart.disabled = false; btnStart.style.opacity = '1'; btnStart.textContent = 'Iniciar Cámara';
 
-  // Actualizar contadores
   document.getElementById('stat-total').textContent  = complementoDatos.length.toLocaleString();
   document.getElementById('stat-basica').textContent = nominalDatos.filter(d => d.nivel === 'BÁSICA').length.toLocaleString();
-  document.getElementById('stat-bueems').textContent = nominalDatos.filter(d => d.nivel.includes('BUEEMS')).length.toLocaleString();
+  document.getElementById('stat-bueems').textContent = nominalDatos.filter(d => d.nivel === 'BUEEMS').length.toLocaleString();
   document.getElementById('stat-jef').textContent    = nominalDatos.filter(d => d.nivel === 'JEF').length.toLocaleString();
   document.getElementById('stat-mayjun').textContent = complementoDatos.filter(d => d.ciclo === 'Mayo-Junio 2026').length.toLocaleString();
   document.getElementById('stat-agosto').textContent = complementoDatos.filter(d => d.ciclo === 'Agosto 2026').length.toLocaleString();
@@ -510,40 +598,63 @@ function limpiarBusqueda() {
 }
 
 function buscarManual() {
-  const input = norm(document.getElementById('manual-search-input').value);
-  if (!input || input.length < 3) return;
-
-  // Buscar en nominales con CURP (exacta por CURP, o por nombre con tokens)
-  const resCurp = nominalDatos.filter(r => {
-    if (r.curp === input) return true;
-    const tokens = input.split(' ').filter(t => t.length > 1);
-    const bn = norm(r.nombre);
-    return tokens.every(t => (' '+bn+' ').includes(' '+t+' '));
+  const raw = document.getElementById('manual-search-input').value;
+  const posibleCurp = normCurp(raw);
+  if (/^[A-Z]{4}\d{6}[HMX][A-Z]{5}[A-Z0-9]\d$/.test(posibleCurp)) {
+    // Escribieron una CURP: misma lógica que el escáner
+    buscarPorCurp(posibleCurp, null);
+    return;
+  }
+  const qt = tokensDe(raw);
+  if (!qt.length || qt.join('').length < 3) return;
+  const act = buscarNombreEn(complementoDatos, qt);
+  const ant = buscarNombreEn(nominalDatos, qt);
+  mostrarResultados({
+    titulo: normNombre(raw),
+    actuales:   { ...act, res: ordenarPorCercania(act.res, qt) },
+    anteriores: { ...ant, res: ordenarPorCercania(ant.res, qt), porCurp: false }
   });
-
-  // Buscar en complementos por nombre (tokens con word-boundary)
-  const resComp = complementoDatos.filter(r => {
-    const tokens = input.split(' ').filter(t => t.length > 1);
-    const bn = norm(r.nombre);
-    return tokens.every(t => (' '+bn+' ').includes(' '+t+' '));
-  });
-
-  const todos = [...resCurp, ...resComp];
-  if (todos.length > 0) mostrarExito('Búsqueda Manual', todos);
-  else mostrarError(input, 'No se encontraron registros coincidentes.');
 }
 
-// Búsqueda por CURP extraída del escáner
-function buscarPorCurp(curp) {
-  const c = curp.trim().toUpperCase();
-  const res = nominalDatos.filter(r => r.curp === c);
-  if (res.length > 0) mostrarExito(c, res);
-  else mostrarError(c, 'CURP no encontrada en ningún nominal.');
+// Búsqueda desde escáner (o CURP escrita): CURP en operativos anteriores
+// + nombre del código de barras en los nominales actuales (que no traen CURP)
+function buscarPorCurp(curp, datosNombre) {
+  const c = normCurp(curp);
+  let ant = { nivel: 'curp', res: CURP_INDEX.get(c) || [], porCurp: true };
+  let act = { nivel: null, res: [] };
+  let qt = [];
+  if (datosNombre) {
+    qt = tokensDe([datosNombre.nombre, datosNombre.apPat, datosNombre.apMat].join(' '));
+    act = buscarNombreEn(complementoDatos, qt);
+    act.res = ordenarPorCercania(act.res, qt);
+    // Si la CURP no está (CURP mal capturada en el padrón), intentar por nombre exacto
+    if (!ant.res.length && qt.length >= 2) {
+      const porNombre = buscarNombreEn(nominalDatos, qt);
+      if (porNombre.nivel === 'exacta') ant = { nivel: 'curpDistinta', res: ordenarPorCercania(porNombre.res, qt), porCurp: false };
+    }
+  }
+  mostrarResultados({
+    titulo: c,
+    nombreLeido: datosNombre ? [datosNombre.nombre, datosNombre.apPat, datosNombre.apMat].join(' ').trim() : '',
+    actuales: act, anteriores: ant
+  });
 }
 
-// === ESCÁNER ZXING (mejor lectura de PDF417) ===
+// === ESCÁNER ZXING (PDF417 / QR de la CURP) ===
 let zxingReader = null;
 let scannerActivo = false;
+
+// Formato del código de la CURP: CURP|<vacío>|AP_PATERNO|AP_MATERNO|NOMBRE(S)|SEXO|FECHA|ENTIDAD|...
+function leerCodigoCurp(txt) {
+  const partes = String(txt||'').split('|').map(s => s.trim());
+  const m = String(txt||'').toUpperCase().match(/[A-Z]{4}[0-9O]{6}[HMX][A-Z]{5}[A-Z0-9][0-9O]/);
+  const curp = m ? m[0] : (partes[0]||'').toUpperCase();
+  let datos = null;
+  if (partes.length >= 5 && (partes[2] || partes[4])) {
+    datos = { apPat: partes[2]||'', apMat: partes[3]||'', nombre: partes[4]||'' };
+  }
+  return { curp, datos };
+}
 
 function iniciarScanner() {
   document.getElementById('btn-start').style.display = 'none';
@@ -564,15 +675,10 @@ function iniciarScanner() {
     'video-preview',
     (result, err) => {
       if (!result || !scannerActivo) return;
-      const txt = result.getText();
-      // PDF417 del CURP impreso: CURP|NOMBRE|AP_PATERNO|AP_MATERNO|DIA|MES|AÑO|SEXO|ENTIDAD
-      const partes = txt.split('|');
-      let curpRaw = partes[0].toUpperCase();
-      const match = curpRaw.match(/[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]/);
-      const curp = match ? match[0] : curpRaw;
+      const { curp, datos } = leerCodigoCurp(result.getText());
       if (curp && curp.length >= 18) {
         scannerActivo = false;
-        buscarPorCurp(curp);
+        buscarPorCurp(curp, datos);
       }
     }
   );
@@ -592,31 +698,77 @@ function colorNivel(nivel) {
   if (nivel.includes('JEF')) return 'var(--alerta)';
   return 'var(--guinda)';
 }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])); }
 
-function mostrarExito(titulo, registros) {
+const AVISO_NIVEL = {
+  exacta:  '',
+  curp:    '',
+  curpDistinta: '⚠️ La CURP escaneada no está en el padrón, pero el nombre sí coincide (la CURP pudo capturarse con error). Verifica con la persona.',
+  inicio:  '⚠️ Coincidencia por inicio de palabra — confirma el nombre completo.',
+  parcial: '⚠️ Coincidencia parcial (falta o sobra una palabra) — confirma nombre, CCT y escuela con la persona.'
+};
+const MAX_MOSTRAR = 30;
+
+function tarjetaRegistro(reg, extraNivel) {
+  return `<div class="registro-encontrado">
+    <div class="badge-nivel" style="background:${colorNivel(reg.nivel)}">${esc(reg.nivel)}</div>
+    <p><strong>NOMBRE:</strong> ${esc(reg.nombre)}</p>
+    ${reg.curp ? `<p><strong>CURP:</strong> ${esc(reg.curp)}</p>` : ''}
+    <p><strong>PROCESO:</strong> ${esc(reg.proceso)}</p>
+    <p><strong>CCT:</strong> ${esc(reg.cct)}</p>
+    ${reg.escuela ? `<p><strong>ESCUELA:</strong> ${esc(reg.escuela)}</p>` : ''}
+    <p><strong>MUNICIPIO:</strong> ${esc(reg.mun)}</p>
+    ${reg.obs ? `<p><strong>OBSERVACIONES:</strong> ${esc(reg.obs)}</p>` : ''}
+  </div>`;
+}
+
+function bloque(titulo, grupo, vacio) {
+  const n = grupo.res.length;
+  let h = `<div style="margin:14px 0 6px;font-weight:800;font-size:.9rem">${titulo} <span style="font-weight:600;opacity:.7">(${n})</span></div>`;
+  if (!n) return h + `<p style="font-size:.85rem;opacity:.75">${vacio}</p>`;
+  const aviso = AVISO_NIVEL[grupo.nivel] || '';
+  if (aviso) h += `<p style="background:#fff3e0;color:#b45309;border-radius:8px;padding:8px 10px;font-size:.8rem;margin-bottom:8px">${aviso}</p>`;
+  if (n > 1 && grupo.nivel !== 'curp') h += `<p style="font-size:.78rem;opacity:.8;margin-bottom:6px">${n} registros coinciden: verifica nombre completo, CCT y escuela.</p>`;
+  grupo.res.slice(0, MAX_MOSTRAR).forEach(r => { h += tarjetaRegistro(r); });
+  if (n > MAX_MOSTRAR) h += `<p style="font-size:.8rem;opacity:.8">…y ${n - MAX_MOSTRAR} más. Escribe el nombre completo para acotar.</p>`;
+  return h;
+}
+
+function mostrarResultados({ titulo, nombreLeido, actuales, anteriores }) {
+  // Si en una lista hay coincidencia exacta/CURP, no mostrar coincidencias débiles de la otra
+  // (suelen ser otra persona con nombre parecido y confunden)
+  const fuerte = g => g.nivel === 'exacta' || g.nivel === 'curp';
+  const debil  = g => g.nivel === 'parcial' || g.nivel === 'inicio';
+  if (fuerte(actuales) && debil(anteriores))  anteriores = { ...anteriores, res: [] };
+  if (fuerte(anteriores) && debil(actuales))  actuales   = { ...actuales,   res: [] };
+  const total = actuales.res.length + anteriores.res.length;
   const modalBox = document.getElementById('modal-box');
+  if (!total) {
+    modalBox.className = 'modal-content error';
+    document.getElementById('modal-title').textContent = 'NO ENCONTRADO';
+    document.getElementById('modal-body').innerHTML =
+      `<p>Búsqueda: <strong>${esc(titulo)}</strong></p>
+       ${nombreLeido ? `<p>Nombre leído del código: <strong>${esc(nombreLeido)}</strong></p>` : ''}
+       <p style="margin-top:8px">No aparece en los nominales actuales ni en los operativos anteriores.</p>
+       <p style="font-size:.8rem;opacity:.8;margin-top:8px">Sugerencia: intenta solo con los apellidos y el primer nombre.</p>`;
+    document.getElementById('modal-bg').style.display = 'flex';
+    return;
+  }
   modalBox.className = 'modal-content success';
   document.getElementById('modal-title').textContent = '¡REGISTRO LOCALIZADO!';
-  let html = `<p>Búsqueda: <strong>${titulo}</strong></p><br>`;
-  registros.forEach(reg => {
-    html += `<div class="registro-encontrado">
-      <div class="badge-nivel" style="background:${colorNivel(reg.nivel)}">${reg.nivel}</div>
-      <p><strong>NOMBRE:</strong> ${reg.nombre}</p>
-      <p><strong>PROCESO:</strong> ${reg.proceso}</p>
-      <p><strong>CCT:</strong> ${reg.cct}</p>
-      <p><strong>MUNICIPIO:</strong> ${reg.mun}</p>
-    </div>`;
-  });
+  let html = `<p>Búsqueda: <strong>${esc(titulo)}</strong></p>`;
+  if (nombreLeido) html += `<p>Nombre leído del código: <strong>${esc(nombreLeido)}</strong></p>`;
+  html += bloque('📋 Nominal actual — tarjeta por entregar', actuales, 'No aparece en los nominales actuales (May-Jun / Agosto 2026).');
+  const tituloAnt = anteriores.porCurp ? '📚 Operativos anteriores — por CURP' : '📚 Operativos anteriores — por nombre';
+  html += bloque(tituloAnt, anteriores, 'Sin registros en operativos anteriores.');
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('modal-bg').style.display = 'flex';
 }
 
-function mostrarError(titulo, mensaje) {
-  document.getElementById('modal-box').className = 'modal-content error';
-  document.getElementById('modal-title').textContent = 'NO ENCONTRADO';
-  document.getElementById('modal-body').innerHTML = `<p>${mensaje}</p>`;
-  document.getElementById('modal-bg').style.display = 'flex';
-}
+// Compatibilidad
+function mostrarExito(titulo, registros) { mostrarResultados({ titulo, actuales:{nivel:'exacta',res:registros.filter(r=>r.sinCurp)}, anteriores:{nivel:'exacta',res:registros.filter(r=>!r.sinCurp)} }); }
+function mostrarError(titulo, mensaje) { mostrarResultados({ titulo, actuales:{res:[]}, anteriores:{res:[]} }); }
+
 
 function cerrarModal() {
   document.getElementById('modal-bg').style.display = 'none';
