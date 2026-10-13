@@ -2033,6 +2033,23 @@ async function eliminarIncLegacy(cupo, nombre){
   await renderEstadisticas();
 }
 
+// ── RECONSTRUIR RSG_MAP DESDE CERO ──
+// Siempre partir del catálogo limpio para que aplicar cambios sea idempotente.
+function reconstruirRSGMAP(){
+  RSG_MAP.clear();
+  PERSONAL_MAP.forEach((p,cupo)=>{
+    RSG_MAP.set(cupo,{cupo:p.cupo, nombre:p.nombre, puesto:p.puesto, items:[], sinEquipo:true});
+  });
+  EQUIPOS.forEach(eq=>{
+    if(!RSG_MAP.has(eq[0])){
+      RSG_MAP.set(eq[0],{cupo:eq[0],nombre:eq[1],puesto:eq[2],items:[],sinEquipo:false,fueraDeCatalogo:true});
+    }
+    const r=RSG_MAP.get(eq[0]);
+    r.items.push(eq);
+    r.sinEquipo=false;
+  });
+}
+
 // ── CARGAR BAJAS DESDE IDB ──
 async function cargarBajasIDB(){
   try{
@@ -2044,7 +2061,10 @@ async function cargarBajasIDB(){
     cambios.filter(c=>c.tipo==='TRASLADO')
       .sort((a,b)=>new Date(a.ts)-new Date(b.ts))
       .forEach(c=>_TRASLADOS_MAP.set(c.cupo, c.oficinaDest));
-    // Aplicar reasignaciones completadas al RSG_MAP (en orden cronológico)
+    // Reconstruir RSG_MAP desde el catálogo limpio antes de aplicar reasignaciones
+    // Esto hace que cargarBajasIDB() sea idempotente — se puede llamar N veces sin efecto acumulado
+    reconstruirRSGMAP();
+    // Aplicar todas las reasignaciones registradas en orden cronológico
     aplicarReasignacionesCompletadas(cambios);
   }catch(e){ _BAJAS_SET=new Set(); _DEVOL_SET=new Set(); _TRASLADOS_MAP=new Map(); }
 }
@@ -4418,11 +4438,33 @@ async function importarDatos(event){
     filtrarInv();
     filtrarRsg();
     await actualizarResumenSync();
+    // Diagnóstico detallado post-importación
+    const todosPost=await dbCambiosGetAll();
+    const trasladosPost=todosPost.filter(c=>c.tipo==='TRASLADO');
+    const reasigPost=todosPost.filter(c=>c.tipo==='reasignacion');
+    const incPost=todosPost.filter(c=>c.tipo==='INCIDENCIA');
+    // Desglose de lo importado
+    const importadosTipo={};
+    for(const c of data.cambios){
+      const k=c.ts+'|'+c.tipo+'|'+(c.cupo||'');
+      if(!existentesTS.has(k)){ importadosTipo[c.tipo]=(importadosTipo[c.tipo]||0)+1; }
+    }
+    const desgloseTipo=Object.entries(importadosTipo).map(([t,n])=>`<em>${t}</em>: ${n}`).join(', ');
     status.style.background='#e8f5e9'; status.style.color='#2e7d32';
     status.innerHTML=`✅ Importación completada:<br>
-      • Cambios nuevos agregados: <strong>${agregados}</strong><br>
+      • Cambios nuevos agregados: <strong>${agregados}</strong>${desgloseTipo?` (${desgloseTipo})`:''}<br>
       • Duplicados omitidos: <strong>${duplicados}</strong><br>
-      ${fotosAgregadas?`• Equipos con fotos actualizados: <strong>${fotosAgregadas}</strong>`:''}`;
+      ${fotosAgregadas?`• Equipos con fotos actualizados: <strong>${fotosAgregadas}</strong><br>`:''}
+      <span style="font-size:.75rem;color:#555;display:block;margin-top:6px">
+        📊 En IDB ahora: ${todosPost.length} registros total
+        — traslados: ${trasladosPost.length}
+        — reasignaciones: ${reasigPost.length}
+        — incidencias: ${incPost.length}
+      </span>
+      <span style="font-size:.75rem;color:#555;display:block;margin-top:2px">
+        🗺️ _TRASLADOS_MAP: ${_TRASLADOS_MAP.size} entradas
+        ${_TRASLADOS_MAP.size?'('+[..._TRASLADOS_MAP.entries()].map(([c,o])=>c+'→'+o).join(', ')+')':''}
+      </span>`;
   }catch(e){
     status.style.background='#fce4ec'; status.style.color='#c62828';
     status.textContent='❌ Error al importar: '+e.message;
