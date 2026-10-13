@@ -1935,9 +1935,14 @@ Supervisor Operativo — SARE 1507 Ecatepec
 Becas Bienestar Coordinación Nacional`;
 
   const mailUrl=`mailto:${dest}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-  // Intentar window.open primero; si falla (bloqueado), usar location.href
-  const win=window.open(mailUrl,'_self');
-  if(!win) window.location.href=mailUrl;
+  // Crear enlace temporal y hacer click — funciona en la mayoría de navegadores embebidos
+  const a=document.createElement('a');
+  a.href=mailUrl;
+  a.target='_blank';
+  a.rel='noopener';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>document.body.removeChild(a),200);
 }
 
 // ── DESCARGAR FOTOS DE INCIDENCIA ──
@@ -2581,9 +2586,9 @@ function filtrarRsg(){
     </div>`;
   }
 
-  // Separar por oficina
-  const ecatepec=conEquipo.filter(({r})=>!CABB_CUPOS.has(r.cupo));
-  const coacalco=conEquipo.filter(({r})=>CABB_CUPOS.has(r.cupo));
+  // Separar por oficina — usar ubicacion() para respetar traslados dinámicos
+  const ecatepec=conEquipo.filter(({r})=>ubicacion(r.cupo)==='SARE ECATEPEC');
+  const coacalco=conEquipo.filter(({r})=>ubicacion(r.cupo)==='CABB COACALCO');
 
   // Encabezado de sección de oficina
   function seccionHeader(label,icono,count,color){
