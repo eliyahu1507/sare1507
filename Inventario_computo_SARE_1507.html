@@ -718,6 +718,16 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx
             <input type="text" id="rsg-nuevo-cupo" placeholder="Número de cupo (6 dígitos)">
           </div>
         </div>
+        <div class="form-row single">
+          <div class="form-group">
+            <label>Oficina del nuevo resguardante</label>
+            <select id="reasig-oficina">
+              <option value="">— Misma oficina del saliente —</option>
+              <option value="SARE ECATEPEC">🏢 SARE Ecatepec</option>
+              <option value="CABB COACALCO">🏢 CABB Coacalco</option>
+            </select>
+          </div>
+        </div>
         <div class="form-group" style="margin-bottom:0">
           <label>Observaciones / motivo</label>
           <textarea id="reasig-obs" placeholder="Ej: Personal dado de baja el 01/10/2026. Equipo en espera de nueva asignación."></textarea>
@@ -1924,7 +1934,10 @@ ${sesion?sesion.nombre:'José Elías Cervantes Jiménez'}
 Supervisor Operativo — SARE 1507 Ecatepec
 Becas Bienestar Coordinación Nacional`;
 
-  window.location.href=`mailto:${dest}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+  const mailUrl=`mailto:${dest}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+  // Intentar window.open primero; si falla (bloqueado), usar location.href
+  const win=window.open(mailUrl,'_self');
+  if(!win) window.location.href=mailUrl;
 }
 
 // ── DESCARGAR FOTOS DE INCIDENCIA ──
@@ -3759,45 +3772,71 @@ async function guardarReasignacion(){
   const nuevoNombre=document.getElementById('rsg-nuevo-nombre').value.trim();
   const nuevoCupo=document.getElementById('rsg-nuevo-cupo').value.trim();
   const obs=document.getElementById('reasig-obs').value.trim();
+  const oficinaDest=document.getElementById('reasig-oficina').value; // '' = sin cambio
 
   if(!cupoSal){alert('Selecciona el resguardante saliente'); return;}
 
   const rSal=RSG_MAP.get(cupoSal);
   let eqDesc='Todos los equipos';
-  let eqKeys=[];  // Para poder reaplicar la reasignación al recargar
+  let eqKeys=[];
   if(eqIdx&&eqIdx!=='TODOS'){
     const eq=rSal.items[parseInt(eqIdx)];
     eqDesc=`${eq[8]} · ${eq[5]} ${eq[6]} · ${eq[4]}`;
     eqKeys=[eqKey(eq)];
   } else {
-    // "TODOS": guardar keys de todos los equipos activos del saliente
     eqKeys=rSal.items
       .filter(eq=>!_BAJAS_SET.has(eqKey(eq))&&!_DEVOL_SET.has(eqKey(eq)))
       .map(eq=>eqKey(eq));
   }
 
-  // Buscar entrante: primero en PERSONAL_MAP (catálogo completo), luego en RSG_MAP
   const pEnt=cupoEnt?(PERSONAL_MAP.get(cupoEnt)||RSG_MAP.get(cupoEnt)):null;
   const entranteDesc=pEnt
     ? `${pEnt.nombre} (${cupoEnt})`
     : (nuevoNombre||'Sin asignar')+(nuevoCupo?` — Cupo: ${nuevoCupo}`:'');
 
+  const cupoDestFinal=cupoEnt||nuevoCupo||'';
+  const ts=new Date().toISOString();
+
   const cambio={
     tipo:'reasignacion',
-    fecha: new Date().toISOString(),
+    fecha: ts,
     tipoReasig,
     cupoSaliente: cupoSal,
     nombreSaliente: rSal.nombre,
     equipoDesc: eqDesc,
-    eqKeys,           // ← guarda las keys para poder reaplicar al recargar
-    cupoEntrante: cupoEnt||nuevoCupo||'',
+    eqKeys,
+    cupoEntrante: cupoDestFinal,
     nombreEntrante: entranteDesc,
+    oficinaDest: oficinaDest||'',  // nueva: oficina del entrante si difiere
     obs,
     estado:'pendiente'
   };
   await dbCambiosPut(cambio);
+
+  // Si se especificó una oficina destino y hay un resguardante entrante,
+  // registrar también un TRASLADO automático para reflejar el cambio de oficina
+  if(oficinaDest && cupoDestFinal){
+    const ubOrigen=ubicacion(cupoSal);
+    if(ubOrigen!==oficinaDest){
+      const traslado={
+        tipo:'TRASLADO',
+        cupo: cupoDestFinal,
+        nombreRsg: entranteDesc,
+        oficinaOrigen: ubOrigen,
+        oficinaDest,
+        fecha: ts,
+        obs: obs||`Traslado automático por reasignación desde ${rSal.nombre}`,
+        ts,
+        registradoPor: sesion?sesion.nombre:'—'
+      };
+      await dbCambiosPut(traslado);
+      _TRASLADOS_MAP.set(cupoDestFinal, oficinaDest);
+    }
+  }
+
   limpiarFormReasig();
   await actualizarBadgeAdm();
+  filtrarInv(); filtrarRsg(); renderEstadisticas();
   setAdmTab('log');
   alert('✅ Reasignación registrada correctamente');
 }
@@ -3899,6 +3938,7 @@ function limpiarFormReasig(){
   document.getElementById('rsg-entrante').value='';
   document.getElementById('rsg-nuevo-nombre').value='';
   document.getElementById('rsg-nuevo-cupo').value='';
+  document.getElementById('reasig-oficina').value='';
   document.getElementById('reasig-obs').value='';
   previewEq(null,'eq-reasig-preview');
 }
