@@ -3759,13 +3759,14 @@ function aplicarReasignacion(cambio){
   // Si no hay entrante (equipo sin asignar), los equipos simplemente desaparecen de la vista
 }
 
-// Aplica todas las reasignaciones completadas desde IDB al RSG_MAP.
-// Llamar después de cargar _BAJAS_SET y _DEVOL_SET, ordenado por fecha ASC.
+// Aplica todas las reasignaciones desde IDB al RSG_MAP.
+// El estado (pendiente/completado/etc.) es solo para el log visual;
+// todas las reasignaciones registradas se aplican al mapa de equipos.
 function aplicarReasignacionesCompletadas(cambios){
-  const completadas=cambios
-    .filter(c=>c.tipo==='reasignacion'&&c.estado==='completado')
+  const todas=cambios
+    .filter(c=>c.tipo==='reasignacion')
     .sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
-  completadas.forEach(c=>aplicarReasignacion(c));
+  todas.forEach(c=>aplicarReasignacion(c));
 }
 
 // ── Guardar Reasignación ──
@@ -4074,10 +4075,8 @@ async function cambiarEstadoLog(id, nuevoEstado){
   item.estado=nuevoEstado;
   await dbCambiosPut(item);
   await actualizarBadgeAdm();
-  // Si se completa una reasignación, aplicarla al RSG_MAP ahora mismo
-  if(item.tipo==='reasignacion' && nuevoEstado==='completado'){
-    aplicarReasignacion(item);
-    // Refrescar todas las vistas que dependen de RSG_MAP
+  // Refrescar vistas si cambia estado de reasignación (el apply ya ocurrió al cargar)
+  if(item.tipo==='reasignacion'){
     filtrarInv();
     filtrarRsg();
     await renderEstadisticas();
