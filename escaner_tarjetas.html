@@ -314,7 +314,7 @@ footer strong { color: var(--dorado-l); }
       </div>
       <div class="stat-item">
         <div class="stat-num" id="cnt-dup" style="color:#FFB74D">0</div>
-        <div class="stat-lbl">Duplicados</div>
+        <div class="stat-lbl">Repetidos</div>
       </div>
     </div>
 
@@ -426,6 +426,7 @@ footer strong { color: var(--dorado-l); }
         font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:700;
         cursor:pointer;letter-spacing:.3px;
       ">🗑 Eliminar duplicados</button>
+      <div id="nota-dup" style="font-size:.75rem;color:#888;margin-bottom:8px"></div>
       <div class="scan-list" id="scan-list">
         <div class="scan-empty">Sin registros aún</div>
       </div>
@@ -472,7 +473,7 @@ footer strong { color: var(--dorado-l); }
       </div>
       <div class="stat-item">
         <div class="stat-num" id="exp-dup" style="color:#FFB74D">0</div>
-        <div class="stat-lbl">Duplicados</div>
+        <div class="stat-lbl">Repetidos</div>
       </div>
     </div>
 
@@ -615,7 +616,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '16-oct-26 E';
+const APP_VERSION = '16-oct-26 F';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -729,7 +730,7 @@ function persistirSesion(){
   const estado = {
     operador, cajaActual, cajasUsadas:[...cajasUsadas], registros, dupCount,
     totalCajas, tarjetasUltimaCaja, cajasEstado, activa:true, guardado:Date.now(),
-    otrosSobres, otrosCajas, otrosArchivos, otroCount, version: APP_VERSION, sesionId
+    otrosSobres, otrosCajas, otrosArchivos, otroCount, version: APP_VERSION, sesionId, dupLog
   };
   try{
     const tx = idbScan.transaction('sesion','readwrite');
@@ -760,6 +761,13 @@ async function restaurarSesion(){
   otrosSobres = est.otrosSobres || {}; otrosCajas = est.otrosCajas || {};
   otrosArchivos = est.otrosArchivos || []; otroCount = est.otroCount || 0;
   sesionId = est.sesionId || nuevoSesionId();
+  dupLog = est.dupLog || [];
+  // Sesiones de versiones anteriores: sacar los duplicados propios de la lista de registros
+  const viejosDup = registros.filter(r => r.dup && !r.otro && !r.invalido);
+  if (viejosDup.length) {
+    viejosDup.forEach(r => dupLog.push({ num: r.num, caja: r.caja, ts: r.ts }));
+    registros = registros.filter(r => !(r.dup && !r.otro && !r.invalido));
+  }
   totalCajas = 0; tarjetasUltimaCaja = 0;
   numerosSet  = new Set(registros.filter(r=>!r.dup).map(r=>r.num));
   if(!cajasUsadas.size) cajasUsadas.add(cajaActual);
@@ -923,6 +931,8 @@ function detenerScanner() {
 // Descarta lecturas falsas como "C" o números con letras.
 // ══════════════════════════════════════════
 let _lectura = { cod: '', t: 0 };
+let _ultimoAceptado = { cod: '', t: 0 };   // último sobre aceptado (para ignorarlo si sigue en cámara)
+let dupLog = [];                            // duplicados propios: solo informativo, no se exportan
 let _ultimoAvisoDudoso = 0;
 function limpiarCodigo(txt){ return String(txt || '').replace(/\s+/g, '').trim(); }
 function tarjetaValida(num){
@@ -954,8 +964,27 @@ function procesarEscaneo(codigo) {
   scanActivo = false;
   setTimeout(() => { if (zxingReader && !_modalCajaAbierto) scanActivo = true; }, 1200);
 
+  const ahoraMs = Date.now();
+  // El mismo sobre que se acaba de aceptar y sigue frente a la cámara: se ignora sin alarma
+  if (codigo === _ultimoAceptado.cod && ahoraMs - _ultimoAceptado.t < 4000) {
+    _ultimoAceptado.t = ahoraMs;
+    return;
+  }
   const esDup = numerosSet.has(codigo);
   const ts = new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+  // 0) Duplicado propio: NO se registra; solo alarma y contador
+  if (esDup) {
+    const prev = registros.find(r => r.num === codigo && !r.dup);
+    dupCount++;
+    dupLog.push({ num: codigo, caja: cajaActual, ts, cajaOriginal: prev ? prev.caja : '' });
+    persistirSesion();
+    actualizarContadores();
+    mostrarFeedback(codigo + (prev ? ` (ya está en caja #${prev.caja})` : ''), true);
+    beepDUP();
+    if (navigator.vibrate) navigator.vibrate([100,50,100]);
+    return;
+  }
 
   // 1) Sobre que ya escaneó OTRO operador (según los CSV de compañeros cargados)
   const otro = !esDup ? otrosSobres[codigo] : null;
@@ -984,9 +1013,9 @@ function procesarEscaneo(codigo) {
     return;
   }
 
-  registros.push({ num: codigo, caja: cajaActual, ts, dup: esDup });
+  registros.push({ num: codigo, caja: cajaActual, ts, dup: false });
   numerosSet.add(codigo);
-  if (esDup) dupCount++;
+  _ultimoAceptado = { cod: codigo, t: ahoraMs };
 
   actualizarContadores();
   mostrarFeedback(codigo, esDup);
@@ -1499,7 +1528,9 @@ function renderLista() {
   document.getElementById('lbl-total-lista').textContent = registros.length + ' registros';
 
   // Mostrar/ocultar botón según haya duplicados
-  if (btnDup) btnDup.style.display = dupCount > 0 ? 'flex' : 'none';
+  if (btnDup) btnDup.style.display = 'none';
+  const nota = document.getElementById('nota-dup');
+  if (nota) nota.innerHTML = dupCount ? `ℹ️ ${dupCount} lectura(s) repetida(s) se ignoraron automáticamente (no se cuentan ni se exportan).` : '';
 
   if (registros.length === 0) {
     lista.innerHTML = '<div class="scan-empty">Sin registros aún</div>';
@@ -1552,7 +1583,7 @@ function volverEscaneo() {
 function confirmarTerminar() {
   const unicos = registros.filter(r => !r.dup).length;
   let resumen = `Llevas <strong>${unicos.toLocaleString('es-MX')}</strong> tarjetas en <strong>${cajasConTarjetas().length}</strong> caja(s).<br>`;
-  if (dupCount > 0) resumen += `<span style="color:var(--naranja)">⚠️ ${dupCount} duplicado(s) detectado(s).</span><br>`;
+  if (dupCount > 0) resumen += `<span style="color:#888">ℹ️ ${dupCount} lectura(s) repetida(s) ignoradas (no se cuentan).</span><br>`;
   const pendHoja = centralActiva() ? pendientesSync().length : 0;
   if (pendHoja > 0) { resumen += `<span style="color:var(--naranja)">🟠 ${pendHoja} sobre(s) aún no llegan a la hoja central. Espera a tener señal antes de cerrar la app (tu CSV sí los incluye).</span><br>`; programarSync(0); }
   if (otroCount > 0) resumen += `<span style="color:var(--rojo)">⛔ ${otroCount} sobre(s) de otro operador rechazado(s).</span><br>`;
@@ -1613,9 +1644,10 @@ function celdaNumero(v){
 function generarCSV() {
   const fecha = new Date().toLocaleDateString('es-MX');
   const estTxt = { completa:'COMPLETA', parcial:'INCOMPLETA', abierta:'SIN CERRAR' };
-  let csv = '﻿NUM_TARJETA,CAJA,ESTADO_CAJA,TARJETAS_EN_CAJA,OPERADOR,FECHA,HORA,DUPLICADO\r\n';
-  registros.forEach(r => {
-    csv += `${celdaNumero(r.num)},${r.caja},${estTxt[estadoCaja(r.caja)]},${contarCaja(r.caja)},"${operador}",${fecha},${r.ts},${r.otro ? '"OTRO OPERADOR: ' + r.otro + '"' : (r.dup ? 'SI' : 'NO')}\r\n`;
+  let csv = '﻿NUM_TARJETA,CAJA,ESTADO_CAJA,TARJETAS_EN_CAJA,OPERADOR,FECHA,HORA\r\n';
+  // Solo sobres válidos: duplicados, inválidos y de otro operador NO van al archivo (quedan en la hoja "Rechazos")
+  registros.filter(r => !r.dup).forEach(r => {
+    csv += `${celdaNumero(r.num)},${r.caja},${estTxt[estadoCaja(r.caja)]},${contarCaja(r.caja)},"${operador}",${fecha},${r.ts}\r\n`;
   });
   return csv;
 }
@@ -1654,7 +1686,7 @@ function compartirWhatsApp() {
     `👤 Operador: ${operador}\n\n` +
     `${lineas}\n\n` +
     `✅ *Total tarjetas: ${unicos.toLocaleString('es-MX')}*\n` +
-    `⚠️ Duplicados: ${dupCount}\n` +
+    (dupCount ? `ℹ️ Lecturas repetidas ignoradas: ${dupCount}\n` : '') +
     (otroCount ? `⛔ Sobres de otro operador (rechazados): ${otroCount}\n` : '') +
     `🛠 App v${APP_VERSION} · ${TARJETAS_POR_CAJA} sobres/caja${TARJETAS_POR_CAJA !== 700 ? ' (PRUEBA)' : ''}\n\n` +
     `Archivo adjunto: ${archivo}`
@@ -1668,7 +1700,7 @@ function compartirWhatsApp() {
 function nuevaSesion() {
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
-  numerosSet = new Set(); dupCount = 0; cajasEstado = {};
+  numerosSet = new Set(); dupCount = 0; cajasEstado = {}; dupLog = [];
   otrosSobres = {}; otrosCajas = {}; otrosArchivos = []; otroCount = 0;
   limpiarSesionIDB();
   // Restaurar nombre desde sesión (no borrarlo si viene del index)
@@ -1738,7 +1770,7 @@ function ejecutarReinicio() {
   registros   = [];
   numerosSet  = new Set();
   cajasUsadas = new Set([cajaInicial]);
-  dupCount    = 0;
+  dupCount    = 0; dupLog = [];
   cajaActual  = cajaInicial;
   cajasEstado = {};
 
@@ -1857,7 +1889,7 @@ setInterval(actualizarFechaHero, 60000);
       </div>
       <div style="font-size:.8rem;opacity:.85;margin-bottom:10px">
         ✅ ${unicos} tarjeta(s) · 📦 Caja(s): ${cajasList || cajaActual}
-        ${dupCount > 0 ? ` · ⚠️ ${dupCount} dup` : ''}
+        ${dupCount > 0 ? ` · ℹ️ ${dupCount} repetido(s) ignorado(s)` : ''}
       </div>
       <div style="display:flex;gap:10px">
         <button onclick="retomarSesion()" style="
@@ -1896,7 +1928,7 @@ function descartarSesionGuardada() {
   // Limpiar en memoria y en IDB, empezar desde pantalla login
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
-  numerosSet = new Set(); dupCount = 0; cajasEstado = {};
+  numerosSet = new Set(); dupCount = 0; cajasEstado = {}; dupLog = [];
   otrosSobres = {}; otrosCajas = {}; otrosArchivos = []; otroCount = 0;
   limpiarSesionIDB();
   const b = document.getElementById('banner-retomar');
