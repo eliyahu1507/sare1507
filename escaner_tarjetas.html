@@ -615,7 +615,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '16-oct-26 D';
+const APP_VERSION = '16-oct-26 E';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -890,8 +890,17 @@ function activarCamara() {
     (result, err) => {
       if (!scanActivo) return;
       if (!result) return;
-      const codigo = result.getText().trim();
-      if (codigo) procesarEscaneo(codigo);
+      const codigo = limpiarCodigo(result.getText());
+      if (!codigo) return;
+      if (!tarjetaValida(codigo)) { avisoLecturaDudosa(codigo); return; }
+      // Doble lectura: el mismo número debe leerse 2 veces seguidas (evita lecturas falsas)
+      const t = Date.now();
+      if (_lectura.cod === codigo && t - _lectura.t < 1500) {
+        _lectura = { cod: '', t: 0 };
+        procesarEscaneo(codigo);
+      } else {
+        _lectura = { cod: codigo, t };
+      }
     }
   );
 }
@@ -908,7 +917,39 @@ function detenerScanner() {
 // ══════════════════════════════════════════
 // PROCESAR ESCANEO
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// VALIDACIÓN DE LECTURA
+// Número de tarjeta = 16 dígitos con dígito verificador (Luhn).
+// Descarta lecturas falsas como "C" o números con letras.
+// ══════════════════════════════════════════
+let _lectura = { cod: '', t: 0 };
+let _ultimoAvisoDudoso = 0;
+function limpiarCodigo(txt){ return String(txt || '').replace(/\s+/g, '').trim(); }
+function tarjetaValida(num){
+  const s = String(num || '');
+  if (!/^\d{16}$/.test(s)) return false;
+  let t = 0;
+  for (let i = 0; i < 16; i++) {
+    let d = Number(s[15 - i]);
+    if (i % 2) { d *= 2; if (d > 9) d -= 9; }
+    t += d;
+  }
+  return t % 10 === 0;
+}
+function avisoLecturaDudosa(codigo){
+  const t = Date.now();
+  if (t - _ultimoAvisoDudoso < 1500) return;      // no saturar con avisos
+  _ultimoAvisoDudoso = t;
+  const fb = document.getElementById('scan-feedback');
+  fb.className = 'scan-feedback dup';
+  fb.textContent = `⚠️ Lectura dudosa (${String(codigo).slice(0,20)}) — acerca o aleja el sobre`;
+  clearTimeout(feedbackTimer);
+  feedbackTimer = setTimeout(() => { fb.className = 'scan-feedback idle'; fb.textContent = 'Apunta al código de barras del sobre…'; }, 1800);
+}
+
 function procesarEscaneo(codigo) {
+  codigo = limpiarCodigo(codigo);
+  if (!tarjetaValida(codigo)) { beepDUP(); avisoLecturaDudosa(codigo); return; }
   // Pausa breve para evitar lecturas repetidas del mismo código
   scanActivo = false;
   setTimeout(() => { if (zxingReader && !_modalCajaAbierto) scanActivo = true; }, 1200);
@@ -962,6 +1003,9 @@ function procesarEscaneo(codigo) {
 
   // Al llegar al límite en la caja actual: avisar y pedir cerrarla
   if (!esDup && contarCaja(cajaActual) === TARJETAS_POR_CAJA) {
+    cajasEstado[cajaActual] = 'completa';
+    persistirSesion();
+    avisarCierreCaja(cajaActual, 'completa');
     setTimeout(() => { beepOK(); abrirCerrarCaja(true); }, 350);
   }
 }
@@ -1157,12 +1201,13 @@ async function enviarPendientes(){
   if (!pend.length) { renderSync(); return; }
   _syncEnVuelo = true; renderSync();
   try {
-    const j = await llamarCentral({ accion: 'registrar', items: pend.map(r => ({ num: r.num, caja: r.caja, hora: r.ts })) });
+    const j = await llamarCentral({ accion: 'registrar', limite: TARJETAS_POR_CAJA, items: pend.map(r => ({ num: r.num, caja: r.caja, hora: r.ts })) });
     const porNum = {}; (j.resultados || []).forEach(x => { porNum[x.num] = x; });
     const rechazados = [];
     pend.forEach(r => {
       const x = porNum[r.num]; if (!x) return;
       if (x.estado === 'ok') { r.sync = 'ok'; return; }
+      if (x.estado === 'invalido') { r.dup = true; r.sync = 'ok'; r.invalido = true; return; }
       if (x.estado === 'otro') {
         r.dup = true; r.sync = 'ok'; r.otro = `${x.op} (caja ${x.caja})`;
         otroCount++;
@@ -1390,6 +1435,7 @@ async function cerrarCaja(estado){
 // Tocar una caja de la lista para regresar a ella
 function irACaja(nc){
   if (nc === cajaActual) return;
+  if (!asegurarCierreCajaActual()) return;
   if (!confirm(`¿Regresar a la CAJA #${nc} para seguir escaneando en ella?`)) return;
   cajaActual = nc;
   // Si estaba cerrada como incompleta, se reabre
@@ -1410,10 +1456,25 @@ function abrirCambiarCaja() {
   abrirModal('modal-caja');
 }
 
+// Si la caja actual tiene sobres y no está cerrada, pedir cerrarla antes de cambiar
+function asegurarCierreCajaActual(){
+  const n = contarCaja(cajaActual);
+  if (!n || estadoCaja(cajaActual) !== 'abierta') return true;
+  const ok = confirm(`La CAJA #${cajaActual} tiene ${n} de ${TARJETAS_POR_CAJA} sobres y no está cerrada.\n\n` +
+    `¿Ya no tiene más sobres? Aceptar = cerrarla como INCOMPLETA con ${n}.\nCancelar = quedarte en la caja #${cajaActual}.`);
+  if (!ok) return false;
+  cajasEstado[cajaActual] = 'parcial';
+  avisarCierreCaja(cajaActual, 'parcial');
+  persistirSesion();
+  return true;
+}
+
 async function confirmarCambioCaja() {
   const nueva = parseInt(document.getElementById('inp-nueva-caja').value);
   if (!nueva || nueva < 1) { alert('Número de caja inválido.'); return; }
-  if (nueva !== cajaActual && !(await confirmarCajaLibre(nueva))) return;
+  if (nueva === cajaActual) { cerrarModal(); return; }
+  if (!asegurarCierreCajaActual()) return;
+  if (!(await confirmarCajaLibre(nueva))) return;
   cajaActual = nueva;
   cajasUsadas.add(nueva);
   if (cajasEstado[nueva] === 'parcial') delete cajasEstado[nueva];
@@ -1447,7 +1508,7 @@ function renderLista() {
     lista.innerHTML = [...registros].reverse().map((r, i) =>
       `<div class="scan-item ${r.dup ? 'dup' : ''}">
         <div class="scan-item-num">${r.num}</div>
-        <div class="scan-item-meta">Caja #${r.caja}<br>${r.ts}${r.otro ? '<br>⛔ OTRO: ' + r.otro : (r.dup ? '<br>⚠️ DUP' : '')}</div>
+        <div class="scan-item-meta">Caja #${r.caja}<br>${r.ts}${r.otro ? '<br>⛔ OTRO: ' + r.otro : r.invalido ? '<br>⛔ INVÁLIDO' : (r.dup ? '<br>⚠️ DUP' : '')}</div>
       </div>`
     ).join('');
   }
@@ -1498,7 +1559,7 @@ function confirmarTerminar() {
   const abiertas = cajasConTarjetas().filter(nc => estadoCaja(nc) === 'abierta' && contarCaja(nc) > 0);
   if (abiertas.length) {
     resumen += `<br><span style="color:var(--naranja);font-size:.82rem">⚠️ Caja(s) sin cerrar: <strong>${abiertas.map(nc=>'#'+nc+' ('+contarCaja(nc)+')').join(', ')}</strong>.<br>
-      Se reportarán como incompletas. Si alguna aún tiene sobres, cancela y termínala.</span><br>`;
+      Al terminar se cerrarán como INCOMPLETAS. Si alguna aún tiene sobres, cancela y escanéalos.</span><br>`;
   }
   resumen += `<br>Al terminar podrás exportar y enviar el archivo al supervisor.`;
   document.getElementById('modal-terminar-body').innerHTML = resumen;
@@ -1525,6 +1586,10 @@ function desgloseCajasHTML(){
 function terminarSesion() {
   detenerScanner();
   cerrarModal();
+  cajasConTarjetas().forEach(nc => {
+    if (estadoCaja(nc) === 'abierta') { cajasEstado[nc] = 'parcial'; avisarCierreCaja(nc, 'parcial'); }
+  });
+  persistirSesion();
   limpiarSesionIDB(); // la sesión se da por finalizada
   const unicos = registros.filter(r => !r.dup).length;
   document.getElementById('exp-total').textContent = unicos.toLocaleString('es-MX');
