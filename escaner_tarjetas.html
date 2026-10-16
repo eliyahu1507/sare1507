@@ -2,6 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>SARE 1507 — Escáner de Tarjetas</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -168,6 +171,16 @@ body { font-family: 'Open Sans', sans-serif; background: var(--gris-bg); color: 
 }
 .scan-feedback.ok    { background: var(--verde-l); color: var(--verde); border: 2px solid var(--verde); }
 .scan-feedback.dup   { background: var(--naranja-l); color: var(--naranja); border: 2px solid var(--naranja); }
+/* rechazado (caja llena / otro operador) */
+.scan-feedback.err { background: var(--rojo-l); color: var(--rojo); border: 2px solid var(--rojo); }
+.otros-alerta { margin-top:10px; background: var(--rojo-l); border: 1.5px solid var(--rojo); color: var(--rojo); border-radius: 10px; padding: 10px 12px; font-size: .78rem; line-height: 1.5; font-weight: 600; }
+.sync-estado { border-radius: 10px; padding: 9px 12px; font-size: .78rem; font-weight: 600; line-height: 1.4; }
+.sync-estado.ok  { background: var(--verde-l); color: var(--verde); border: 1.5px solid var(--verde); }
+.sync-estado.env { background: #E3F2FD; color: var(--azul); border: 1.5px solid #90CAF9; }
+.sync-estado.err { background: var(--naranja-l); color: #b45309; border: 1.5px solid var(--naranja); }
+.sync-estado.off { background: var(--gris); color: #777; border: 1.5px solid transparent; }
+.sync-estado button { margin-left: 6px; border: none; border-radius: 6px; padding: 3px 8px; background: var(--naranja); color: #fff; font-weight: 700; font-size: .72rem; cursor: pointer; }
+.version-tag { display:block; font-size:.6rem; opacity:.75; margin-top:3px; font-weight:600; }
 .scan-feedback.idle  { background: var(--gris); color: #888; border: 2px solid transparent; font-size: 0.8rem; font-weight: 400; }
 
 /* ── LISTA DE ESCANEOS ── */
@@ -222,7 +235,7 @@ footer strong { color: var(--dorado-l); }
         SARE 1507 · BECAS BIENESTAR
         <strong>Escáner de Tarjetas</strong>
       </div>
-      <div class="hero-badge">📦 TOLUCA<br>OPERATIVO</div>
+      <div class="hero-badge">📦 TOLUCA<br>OPERATIVO<span class="version-tag" id="lbl-version"></span></div>
     </div>
     <div class="hero-title">
       <h1>RECEPCIÓN DE<br><span>TARJETAS</span></h1>
@@ -244,7 +257,7 @@ footer strong { color: var(--dorado-l); }
 
       <p id="hint-cajas" style="font-size:0.75rem;color:#666;margin-bottom:16px;line-height:1.5">
         📦 <strong>No necesitas saber cuántas cajas llegarán.</strong> Cada caja se cuenta por separado
-        (una caja completa trae <strong>700</strong> tarjetas). Al terminar una caja tocas
+        (una caja completa trae <strong><span class="lim">700</span></strong> tarjetas). Al terminar una caja tocas
         <strong>“Caja terminada”</strong> y sigues con la siguiente conforme te las entreguen.
       </p>
 
@@ -258,8 +271,8 @@ footer strong { color: var(--dorado-l); }
         <strong style="font-family:'Montserrat',sans-serif;display:block;margin-bottom:6px">⚠️ Instrucciones</strong>
         1. Escribe tu nombre completo y el número de la primera caja.<br>
         2. Escanea cada sobre — uno por uno.<br>
-        3. Al llegar a 700 la app te avisa y pasa a la siguiente caja.<br>
-        4. Si una caja trae menos de 700 (por ejemplo la última), toca <strong>Caja terminada</strong> y confírmala como incompleta.<br>
+        3. Al llegar a <span class="lim">700</span> la app te avisa y pasa a la siguiente caja.<br>
+        4. Si una caja trae menos de <span class="lim">700</span> (por ejemplo la última), toca <strong>Caja terminada</strong> y confírmala como incompleta.<br>
         5. Al terminar el día, exporta y comparte por WhatsApp.
       </div>
     </div>
@@ -305,6 +318,8 @@ footer strong { color: var(--dorado-l); }
       </div>
     </div>
 
+    <div class="sync-estado off" id="sync-estado"></div>
+
     <!-- CAJA ACTUAL -->
     <div class="caja-panel">
       <div class="caja-top">
@@ -312,7 +327,7 @@ footer strong { color: var(--dorado-l); }
           <div class="caja-num" id="lbl-caja-actual">CAJA #1</div>
           <div class="caja-sub" id="lbl-caja-sub">Caja en curso</div>
         </div>
-        <div class="caja-cnt"><span id="lbl-barra-num">0</span><small>/ 700</small></div>
+        <div class="caja-cnt"><span id="lbl-barra-num">0</span><small>/ <span class="lim">700</span></small></div>
       </div>
       <div class="caja-barra"><div id="barra-caja"></div></div>
       <div class="caja-btns">
@@ -350,6 +365,17 @@ footer strong { color: var(--dorado-l); }
     <div class="card" style="padding:12px 14px">
       <div class="card-title" style="margin-bottom:8px">📦 Cajas de este operador <span id="lbl-cajas-resumen" style="margin-left:auto;font-weight:700;color:#666;text-transform:none;letter-spacing:0"></span></div>
       <div class="cajas-chips" id="cajas-chips"></div>
+    </div>
+
+    <!-- SOBRES DE OTROS OPERADORES -->
+    <div class="card" style="padding:12px 14px">
+      <div class="card-title" style="margin-bottom:6px">👥 Sobres de otros operadores <span style="margin-left:auto;font-weight:600;color:#999;text-transform:none;letter-spacing:0;font-size:.68rem">respaldo sin internet</span></div>
+      <p id="otros-estado" style="font-size:.75rem;color:#666;margin-bottom:10px;line-height:1.5"></p>
+      <label class="btn btn-secondary btn-sm" style="width:100%;padding:12px;cursor:pointer">
+        📂 Cargar CSV de compañeros
+        <input type="file" accept=".csv,text/csv,text/comma-separated-values,application/vnd.ms-excel" multiple style="display:none" onchange="cargarCSVOtros(event)">
+      </label>
+      <div id="otros-conflictos"></div>
     </div>
 
     <!-- BOTONES ACCIÓN -->
@@ -516,6 +542,17 @@ footer strong { color: var(--dorado-l); }
     <div class="modal-btns" id="mc-btns"></div>
   </div>
 
+  <!-- Modal: sobre ya escaneado por otro operador -->
+  <div class="modal-box" id="modal-otro" style="display:none;border:4px solid var(--rojo)">
+    <div class="modal-icon">⛔</div>
+    <div class="modal-title" style="color:var(--rojo)">SOBRE YA ESCANEADO POR OTRO OPERADOR</div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;text-align:center;font-size:1.05rem;margin:6px 0 10px;word-break:break-all" id="mo-num"></div>
+    <div class="modal-body" id="mo-body"></div>
+    <div class="modal-btns">
+      <button class="btn btn-danger" onclick="cerrarModalCaja()">Entendido, apartar el sobre</button>
+    </div>
+  </div>
+
   <!-- Modal: confirmar terminar -->
   <div class="modal-box" id="modal-terminar" style="display:none">
     <div class="modal-icon">⏹</div>
@@ -576,7 +613,9 @@ let scanActivo = false;
 let feedbackTimer = null;
 
 // Lógica de cajas
-const TARJETAS_POR_CAJA = 700;
+// ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
+const TARJETAS_POR_CAJA = 20;
+const APP_VERSION = '16-oct-26 D';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -689,7 +728,8 @@ function persistirSesion(){
   if(!idbScan) return;
   const estado = {
     operador, cajaActual, cajasUsadas:[...cajasUsadas], registros, dupCount,
-    totalCajas, tarjetasUltimaCaja, cajasEstado, activa:true, guardado:Date.now()
+    totalCajas, tarjetasUltimaCaja, cajasEstado, activa:true, guardado:Date.now(),
+    otrosSobres, otrosCajas, otrosArchivos, otroCount, version: APP_VERSION, sesionId
   };
   try{
     const tx = idbScan.transaction('sesion','readwrite');
@@ -717,6 +757,9 @@ async function restaurarSesion(){
   registros   = est.registros || [];
   dupCount    = est.dupCount || 0;
   cajasEstado = est.cajasEstado || {};
+  otrosSobres = est.otrosSobres || {}; otrosCajas = est.otrosCajas || {};
+  otrosArchivos = est.otrosArchivos || []; otroCount = est.otroCount || 0;
+  sesionId = est.sesionId || nuevoSesionId();
   totalCajas = 0; tarjetasUltimaCaja = 0;
   numerosSet  = new Set(registros.filter(r=>!r.dup).map(r=>r.num));
   if(!cajasUsadas.size) cajasUsadas.add(cajaActual);
@@ -747,7 +790,7 @@ function mostrarPantalla(id) {
 // ══════════════════════════════════════════
 function toggleUltimaCaja(){}
 
-function iniciarSesion() {
+async function iniciarSesion() {
   const nom = document.getElementById('inp-operador').value.trim().toUpperCase();
   const caja = parseInt(document.getElementById('inp-caja').value);
   if (!nom || nom.length < 3) {
@@ -758,7 +801,10 @@ function iniciarSesion() {
     alert('Escribe un número de caja válido.');
     return;
   }
-  operador = nom;
+  operador = nom;            // necesario para consultar la hoja central
+  sesionId = nuevoSesionId();
+  if (!(await confirmarCajaLibre(caja))) { operador = ''; return; }
+  setTimeout(probarCentral, 300);
   cajaActual = caja;
   cajasUsadas.add(caja);
   registros = [];
@@ -780,7 +826,8 @@ function actualizarFechaHero() {
   const now = new Date();
   const fecha = now.toLocaleDateString('es-MX', { weekday:'short', day:'numeric', month:'short' });
   const hora  = now.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
-  document.getElementById('lbl-fecha-hero').innerHTML = fecha + '<br>' + hora;
+  document.getElementById('lbl-fecha-hero').innerHTML = fecha + '<br>' + hora +
+    `<span class="version-tag">v${APP_VERSION} · ${TARJETAS_POR_CAJA}/caja</span>`;
 }
 
 // ══════════════════════════════════════════
@@ -869,6 +916,33 @@ function procesarEscaneo(codigo) {
   const esDup = numerosSet.has(codigo);
   const ts = new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 
+  // 1) Sobre que ya escaneó OTRO operador (según los CSV de compañeros cargados)
+  const otro = !esDup ? otrosSobres[codigo] : null;
+  if (otro) {
+    registros.push({ num: codigo, caja: cajaActual, ts, dup: true, otro: otro.op + ' (caja ' + otro.caja + ')' });
+    otroCount++;
+    persistirSesion();
+    actualizarContadores();
+    beepOTRO();
+    if (navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
+    const fb = document.getElementById('scan-feedback');
+    fb.className = 'scan-feedback err';
+    fb.textContent = '⛔ YA LO ESCANEÓ OTRO OPERADOR';
+    mostrarAlertaOtro(codigo, otro);
+    return;
+  }
+
+  // 2) Caja llena: no se cuenta el sobre y se pide cerrar la caja
+  if (!esDup && contarCaja(cajaActual) >= TARJETAS_POR_CAJA) {
+    beepDUP();
+    if (navigator.vibrate) navigator.vibrate([250,80,250]);
+    const fb = document.getElementById('scan-feedback');
+    fb.className = 'scan-feedback err';
+    fb.textContent = `⛔ CAJA #${cajaActual} LLENA (${TARJETAS_POR_CAJA}) — ese sobre NO se contó`;
+    abrirCerrarCaja(true, codigo);
+    return;
+  }
+
   registros.push({ num: codigo, caja: cajaActual, ts, dup: esDup });
   numerosSet.add(codigo);
   if (esDup) dupCount++;
@@ -882,14 +956,13 @@ function procesarEscaneo(codigo) {
   // Vibración en móvil
   if (navigator.vibrate) navigator.vibrate(esDup ? [100,50,100] : 60);
 
-  // Persistir inmediatamente
+  // Persistir inmediatamente y enviar a la hoja central en segundo plano
   persistirSesion();
+  if (!esDup) programarSync();
 
-  // Al completar 700 en la caja actual: avisar y ofrecer pasar a la siguiente
-  if (!esDup && contarCaja(cajaActual) === TARJETAS_POR_CAJA && !cajasEstado[cajaActual]) {
+  // Al llegar al límite en la caja actual: avisar y pedir cerrarla
+  if (!esDup && contarCaja(cajaActual) === TARJETAS_POR_CAJA) {
     setTimeout(() => { beepOK(); abrirCerrarCaja(true); }, 350);
-  } else if (!esDup && contarCaja(cajaActual) > TARJETAS_POR_CAJA) {
-    setTimeout(beepDUP, 300);
   }
 }
 
@@ -910,6 +983,273 @@ function mostrarFeedback(codigo, esDup) {
 }
 
 // ══════════════════════════════════════════
+// SOBRES DE OTROS OPERADORES
+// Se cargan los CSV que los compañeros enviaron por WhatsApp. Si un sobre
+// ya lo escaneó otro operador, se rechaza con alarma; si el número de caja
+// ya lo trabajó otro, se avisa antes de usarlo.
+// ══════════════════════════════════════════
+let otrosSobres = {};     // num -> { op, caja, hora }
+let otrosCajas  = {};     // caja -> { op: cantidad }
+let otrosArchivos = [];   // nombres de archivos cargados
+let otroCount = 0;        // sobres rechazados por ser de otro operador
+
+function _normOp(s){ return String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim(); }
+function _csvFilas(texto){
+  const filas = []; let fila = [], campo = '', q = false;
+  texto = texto.replace(/^﻿/, '');
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i];
+    if (q) {
+      if (c === '"') { if (texto[i+1] === '"') { campo += '"'; i++; } else q = false; }
+      else campo += c;
+    } else if (c === '"') q = true;
+    else if (c === ',' || c === ';') { fila.push(campo); campo = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && texto[i+1] === '\n') i++;
+      fila.push(campo); campo = '';
+      if (fila.some(x => x !== '')) filas.push(fila);
+      fila = [];
+    } else campo += c;
+  }
+  fila.push(campo); if (fila.some(x => x !== '')) filas.push(fila);
+  return filas;
+}
+
+async function cargarCSVOtros(ev){
+  const archivos = [...(ev.target.files || [])];
+  ev.target.value = '';
+  if (!archivos.length) return;
+  const yo = _normOp(operador);
+  let nuevos = 0, propios = 0, invalidos = [];
+  for (const f of archivos) {
+    const filas = _csvFilas(await f.text());
+    if (!filas.length) { invalidos.push(f.name); continue; }
+    const enc = filas[0].map(h => _normOp(h).replace(/^=/, ''));
+    const iNum = enc.indexOf('NUM_TARJETA'), iCaja = enc.indexOf('CAJA'),
+          iOp = enc.indexOf('OPERADOR'), iHora = enc.indexOf('HORA'), iDup = enc.indexOf('DUPLICADO');
+    if (iNum < 0 || iOp < 0) { invalidos.push(f.name); continue; }
+    for (const r of filas.slice(1)) {
+      const num = String(r[iNum]||'').replace(/^="?|"$/g,'').replace(/^=/,'').trim();
+      const op  = _normOp(r[iOp]);
+      if (!num) continue;
+      if (iDup >= 0 && String(r[iDup]||'').trim().toUpperCase() !== 'NO') continue; // solo sobres válidos
+      if (op === yo) { propios++; continue; }                                   // mi propio archivo
+      const caja = parseInt(r[iCaja]) || 0;
+      if (!otrosSobres[num]) nuevos++;
+      otrosSobres[num] = { op, caja, hora: iHora >= 0 ? r[iHora] : '' };
+      otrosCajas[caja] = otrosCajas[caja] || {};
+      otrosCajas[caja][op] = (otrosCajas[caja][op] || 0) + 1;
+    }
+    if (!otrosArchivos.includes(f.name)) otrosArchivos.push(f.name);
+  }
+  persistirSesion();
+  renderOtros();
+  let msg = `Se cargaron ${nuevos} sobre(s) nuevos de compañeros.`;
+  if (propios) msg += `\n(${propios} fila(s) eran tuyas y se ignoraron.)`;
+  if (invalidos.length) msg += `\n⚠️ No se pudieron leer: ${invalidos.join(', ')}`;
+  const conf = conflictosOtros();
+  if (conf.sobres.length || conf.cajas.length) msg += `\n\n⛔ Revisa los avisos en rojo: hay coincidencias con tus escaneos.`;
+  alert(msg);
+}
+
+function conflictosOtros(){
+  const sobres = registros.filter(r => !r.dup && otrosSobres[r.num]);
+  const cajas  = cajasConTarjetas().filter(nc => otrosCajas[nc]);
+  return { sobres, cajas };
+}
+function quienTrabajoCaja(nc){
+  const o = otrosCajas[nc]; if (!o) return '';
+  return Object.entries(o).map(([op,n]) => `${op} (${n} sobre${n!==1?'s':''})`).join(', ');
+}
+
+function renderOtros(){
+  const est = document.getElementById('otros-estado');
+  const box = document.getElementById('otros-conflictos');
+  if (!est || !box) return;
+  const ops = new Set(Object.values(otrosSobres).map(x => x.op));
+  const n = Object.keys(otrosSobres).length;
+  est.innerHTML = n
+    ? `✅ <strong>${n.toLocaleString('es-MX')}</strong> sobres de <strong>${ops.size}</strong> compañero(s) cargados (${otrosArchivos.length} archivo(s)). Si escaneas uno de esos sobres, la app lo rechazará.`
+    : 'Carga los CSV que tus compañeros enviaron por WhatsApp para que la app detecte si un sobre o una caja ya la trabajó alguien más.';
+  const c = conflictosOtros();
+  let h = '';
+  if (c.sobres.length) {
+    h += `<div class="otros-alerta">⛔ <strong>${c.sobres.length} sobre(s) que tú escaneaste también los escaneó otro operador:</strong><br>` +
+      c.sobres.slice(0,10).map(r => `${r.num} — tú: caja ${r.caja} · ${otrosSobres[r.num].op}: caja ${otrosSobres[r.num].caja}`).join('<br>') +
+      (c.sobres.length > 10 ? `<br>…y ${c.sobres.length - 10} más` : '') + '</div>';
+  }
+  if (c.cajas.length) {
+    h += `<div class="otros-alerta">⚠️ <strong>Número(s) de caja que también usó otro operador:</strong><br>` +
+      c.cajas.map(nc => `Caja #${nc}: ${quienTrabajoCaja(nc)}`).join('<br>') +
+      `<br><span style="font-weight:400">Confirma con el supervisor que no sea la misma caja física.</span></div>`;
+  }
+  box.innerHTML = h;
+}
+
+function mostrarAlertaOtro(codigo, otro, cuantos){
+  _modalCajaAbierto = true;
+  scanActivo = false;
+  document.getElementById('mo-num').textContent = codigo;
+  document.getElementById('mo-body').innerHTML =
+    `Este sobre ya lo escaneó <strong>${otro.op}</strong> en la <strong>caja #${otro.caja}</strong>${otro.hora ? ' a las ' + String(otro.hora).replace(/\.$/,'') : ''}.<br><br>
+     <strong>No se contó.</strong> Aparta el sobre y avisa al supervisor: puede ser una caja que ya se trabajó.` +
+    (cuantos > 1 ? `<br><br><strong style="color:var(--rojo)">Además hay ${cuantos - 1} sobre(s) más en la misma situación — revisa la lista.</strong>` : '');
+  abrirModal('modal-otro');
+}
+
+function beepOTRO(){
+  // Alarma larga y grave, distinta del duplicado propio
+  try{
+    const ctx = getAudioCtx();
+    [0, 0.28, 0.56].forEach(t => {
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'square'; osc.frequency.value = 180;
+      const t0 = ctx.currentTime + t;
+      g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.6, t0 + 0.01);
+      g.gain.setValueAtTime(0.6, t0 + 0.2); g.gain.linearRampToValueAtTime(0, t0 + 0.24);
+      osc.start(t0); osc.stop(t0 + 0.25);
+    });
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════
+// HOJA CENTRAL (Google Sheets)
+// Cada sobre se envía en segundo plano a la hoja central. La hoja responde si
+// otro operador ya lo había escaneado; en ese caso se descuenta y suena la alarma.
+// Sin internet, los sobres esperan en el celular y se envían solos al volver.
+// ══════════════════════════════════════════
+const SHEETS_URL   = 'https://script.google.com/macros/s/AKfycbwR9eAd8BI3r_9Bqga5GaPKcBx_hodkB0-Ukm_oQREyAP4axsoXSwGz2WRFQMQ1l3cZiA/exec';  // hoja SARE_1507_Escaneo_de_tarjetas                    // ← URL de la aplicación web (termina en /exec)
+const SHEETS_CLAVE = 'sare1507-0803a849ee47';   // ← la misma CLAVE que en el script de Google
+const MODO_HOJA    = TARJETAS_POR_CAJA === 700 ? 'REAL' : 'PRUEBA';
+let sesionId = '';
+let _syncEnVuelo = false, _syncTimer = null, _syncError = '', _syncUltimo = 0;
+
+function centralActiva(){ return !!SHEETS_URL && SHEETS_URL.indexOf('/exec') > 0; }
+function nuevoSesionId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+async function llamarCentral(payload, timeoutMs){
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs || 15000);
+  try {
+    const cuerpo = Object.assign({ clave: SHEETS_CLAVE, modo: MODO_HOJA, op: operador, sesion: sesionId, version: APP_VERSION }, payload);
+    // Sin encabezados personalizados (text/plain) para que Google lo acepte sin pre-verificación CORS
+    const r = await fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify(cuerpo), signal: ctrl.signal, redirect: 'follow' });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'Error de la hoja central');
+    _syncUltimo = Date.now(); _syncError = '';
+    return j;
+  } finally { clearTimeout(t); }
+}
+
+function pendientesSync(){ return registros.filter(r => !r.dup && r.sync !== 'ok'); }
+// Envía a más tardar ~0.5 s después del primer sobre pendiente (aunque se escanee muy rápido)
+function programarSync(ms){
+  if (!centralActiva()) return;
+  if (_syncTimer && ms == null) return;          // ya hay un envío programado
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(() => { _syncTimer = null; enviarPendientes(); }, ms == null ? 500 : ms);
+}
+
+async function enviarPendientes(){
+  if (!centralActiva() || _syncEnVuelo || !operador) return;
+  const pend = pendientesSync().slice(0, 100);
+  if (!pend.length) { renderSync(); return; }
+  _syncEnVuelo = true; renderSync();
+  try {
+    const j = await llamarCentral({ accion: 'registrar', items: pend.map(r => ({ num: r.num, caja: r.caja, hora: r.ts })) });
+    const porNum = {}; (j.resultados || []).forEach(x => { porNum[x.num] = x; });
+    const rechazados = [];
+    pend.forEach(r => {
+      const x = porNum[r.num]; if (!x) return;
+      if (x.estado === 'ok') { r.sync = 'ok'; return; }
+      if (x.estado === 'otro') {
+        r.dup = true; r.sync = 'ok'; r.otro = `${x.op} (caja ${x.caja})`;
+        otroCount++;
+        otrosSobres[r.num] = { op: x.op, caja: x.caja, hora: x.hora };
+        rechazados.push({ num: r.num, x });
+      }
+    });
+    persistirSesion();
+    actualizarContadores();
+    if (rechazados.length) {
+      beepOTRO();
+      if (navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
+      const fb = document.getElementById('scan-feedback');
+      fb.className = 'scan-feedback err';
+      fb.textContent = '⛔ YA LO ESCANEÓ OTRO OPERADOR';
+      mostrarAlertaOtro(rechazados[0].num, rechazados[0].x, rechazados.length);
+    }
+  } catch (e) {
+    _syncError = (navigator.onLine === false) ? 'Sin internet'
+               : (e && e.name === 'AbortError') ? 'La hoja central no respondió'
+               : (e && e.name === 'TypeError') ? 'Sin conexión con la hoja central'
+               : String(e && e.message || e);
+  } finally {
+    _syncEnVuelo = false;
+    renderSync();
+    if (pendientesSync().length) { clearTimeout(_syncTimer); _syncTimer = null; programarSync(_syncError ? 8000 : 300); }
+  }
+}
+setInterval(() => { if (pendientesSync().length) enviarPendientes(); }, 15000);
+window.addEventListener('online', () => programarSync(200));
+
+function renderSync(){
+  const el = document.getElementById('sync-estado');
+  if (!el) return;
+  if (!centralActiva()) {
+    el.className = 'sync-estado off';
+    el.innerHTML = '⚪ Hoja central no conectada — los sobres solo se guardan en este celular';
+    return;
+  }
+  const n = pendientesSync().length;
+  if (_syncEnVuelo && n) { el.className = 'sync-estado env'; el.innerHTML = `🔄 Enviando ${n} sobre(s) a la hoja central…`; return; }
+  if (_syncError && n)   { el.className = 'sync-estado err'; el.innerHTML = `🟠 ${_syncError} · <strong>${n}</strong> sobre(s) pendientes — se enviarán solos al volver la conexión <button onclick="programarSync(0)">Reintentar</button>`; return; }
+  if (n)                 { el.className = 'sync-estado env'; el.innerHTML = `🔄 ${n} sobre(s) por enviar…`; return; }
+  if (_syncError)        { el.className = 'sync-estado err'; el.innerHTML = `🟠 Hoja central: ${_syncError} <button onclick="probarCentral()">Reintentar</button>`; return; }
+  el.className = 'sync-estado ok';
+  const cuantos = registros.filter(r => !r.dup).length;
+  el.innerHTML = `🟢 Conectado a la hoja central${cuantos ? ' · todo enviado' : ''}${MODO_HOJA === 'PRUEBA' ? ' (modo PRUEBA)' : ''}`;
+}
+
+// Prueba de conexión (al iniciar o retomar sesión): muestra si la hoja responde
+let _centralOk = false;
+async function probarCentral(){
+  if (!centralActiva()) { renderSync(); return; }
+  const el = document.getElementById('sync-estado');
+  if (el) { el.className = 'sync-estado env'; el.innerHTML = '🔄 Conectando con la hoja central…'; }
+  try { await llamarCentral({ accion: 'ping' }, 15000); _centralOk = true; }
+  catch (e) {
+    _centralOk = false;
+    _syncError = (navigator.onLine === false) ? 'Sin internet'
+               : (e && e.name === 'AbortError') ? 'La hoja central no respondió'
+               : (e && e.name === 'TypeError') ? 'Sin conexión con la hoja central'
+               : String(e && e.message || e);
+  }
+  renderSync();
+  if (pendientesSync().length) programarSync(300);
+}
+
+// ¿Otro operador ya trabajó esta caja? (consulta la hoja central y los CSV cargados)
+async function confirmarCajaLibre(nc){
+  let quien = quienTrabajoCaja(nc);
+  if (centralActiva()) {
+    try {
+      const j = await llamarCentral({ accion: 'caja', caja: nc }, 6000);
+      if (j.otros && j.otros.length) quien = j.otros.map(o => `${o.op} (${o.n} sobre${o.n !== 1 ? 's' : ''})`).join(', ');
+    } catch (e) { /* sin conexión: se usa lo que haya en los CSV cargados */ }
+  }
+  if (!quien) return true;
+  return confirm(`⚠️ La CAJA #${nc} ya la trabajó: ${quien}.\n\n¿Seguro que esta es la caja #${nc}? Si es otra caja, cancela y corrige el número.`);
+}
+
+function avisarCierreCaja(nc, estado){
+  if (!centralActiva()) return;
+  llamarCentral({ accion: 'cerrar_caja', caja: nc, estado: estado === 'completa' ? 'COMPLETA' : 'INCOMPLETA', n: contarCaja(nc) }, 10000)
+    .catch(() => {});
+}
+
+// ══════════════════════════════════════════
 // LÓGICA DE CAJAS (sin saber de antemano cuántas llegarán)
 // Cada caja se cuenta contra 700. Al cerrarla queda como:
 //   'completa' → llegó a 700
@@ -918,9 +1258,8 @@ function mostrarFeedback(codigo, esDup) {
 // ══════════════════════════════════════════
 function contarCaja(nc){ return registros.filter(r => !r.dup && r.caja === nc).length; }
 function estadoCaja(nc){
-  const e = cajasEstado[nc];
-  if (e) return e;
-  return contarCaja(nc) >= TARJETAS_POR_CAJA ? 'completa' : 'abierta';
+  if (contarCaja(nc) >= TARJETAS_POR_CAJA) return 'completa';
+  return cajasEstado[nc] === 'parcial' ? 'parcial' : 'abierta';
 }
 function cajasOrdenadas(){ return [...cajasUsadas].sort((a,b)=>a-b); }
 // Cajas con al menos un sobre (las vacías no cuentan en reportes)
@@ -978,16 +1317,18 @@ function actualizarContadores() {
     sub.style.color = '#b45309';
   } else {
     barra.style.background = 'linear-gradient(90deg,var(--guinda),var(--dorado-l))';
-    sub.textContent = n ? `Faltan ${TARJETAS_POR_CAJA - n} para completar 700` : 'Caja en curso — escanea el primer sobre';
+    sub.textContent = n ? `Faltan ${TARJETAS_POR_CAJA - n} para completar ${TARJETAS_POR_CAJA}` : 'Caja en curso — escanea el primer sobre';
     sub.style.color = '';
   }
   renderChipsCajas();
+  renderOtros();
+  renderSync();
 }
 
 // ── Terminar caja ──
 // auto=true cuando se llega a 700 durante el escaneo
 let _modalCajaAbierto = false;
-function abrirCerrarCaja(auto){
+function abrirCerrarCaja(auto, codigoRechazado){
   const n = contarCaja(cajaActual);
   const sig = Math.max(...cajasOrdenadas(), cajaActual) + 1;
   document.getElementById('mc-siguiente').value = sig;
@@ -1001,19 +1342,21 @@ function abrirCerrarCaja(auto){
       <button class="btn btn-secondary" onclick="cerrarModalCaja()">Cancelar</button>`;
   } else if (n === TARJETAS_POR_CAJA) {
     icon.textContent = '✅'; title.textContent = `Caja #${cajaActual} completa`;
-    body.innerHTML = auto ? 'Llegaste a <strong>700 tarjetas</strong>. Cierra esta caja y continúa con la siguiente.'
-                          : 'La caja tiene <strong>700 tarjetas</strong>.';
+    body.innerHTML = codigoRechazado
+      ? `Esta caja ya tiene <strong>${TARJETAS_POR_CAJA} tarjetas</strong> y está llena.<br><span style="color:var(--rojo);font-weight:700">El sobre ${codigoRechazado} NO se contó</span>: pertenece a otra caja. Ciérrala y escanéalo en la siguiente.`
+      : auto ? `Llegaste a <strong>${TARJETAS_POR_CAJA} tarjetas</strong>. La caja está llena: ciérrala para continuar con la siguiente.`
+             : `La caja tiene <strong>${TARJETAS_POR_CAJA} tarjetas</strong>.`;
     btns.innerHTML = `<button class="btn btn-success" onclick="cerrarCaja('completa')">✅ Cerrar caja y seguir con la siguiente</button>
-      <button class="btn btn-secondary" onclick="cerrarModalCaja()">Seguir en esta caja</button>`;
+      <button class="btn btn-secondary" onclick="cerrarModalCaja();verLista()">📋 Revisar lista</button>`;
   } else if (n > TARJETAS_POR_CAJA) {
     icon.textContent = '⛔'; title.textContent = `Caja #${cajaActual} con ${n - TARJETAS_POR_CAJA} de más`;
-    body.innerHTML = `Una caja trae máximo 700. Revisa en la lista si escaneaste sobres de otra caja.`;
+    body.innerHTML = `Una caja trae máximo ${TARJETAS_POR_CAJA}. Revisa en la lista si escaneaste sobres de otra caja.`;
     btns.innerHTML = `<button class="btn btn-secondary" onclick="cerrarModalCaja();verLista()">📋 Revisar lista</button>
       <button class="btn btn-primary" onclick="cerrarCaja('completa')">Cerrar de todas formas</button>
       <button class="btn btn-secondary" onclick="cerrarModalCaja()">Cancelar</button>`;
   } else {
-    icon.textContent = '🟠'; title.textContent = `Caja #${cajaActual}: ${n} de 700`;
-    body.innerHTML = `Faltan <strong>${TARJETAS_POR_CAJA - n}</strong> para 700.<br>
+    icon.textContent = '🟠'; title.textContent = `Caja #${cajaActual}: ${n} de ${TARJETAS_POR_CAJA}`;
+    body.innerHTML = `Faltan <strong>${TARJETAS_POR_CAJA - n}</strong> para ${TARJETAS_POR_CAJA}.<br>
       ¿La caja ya no tiene más sobres? (por ejemplo, es la <strong>última caja</strong> del día)<br>
       <span style="font-size:.78rem;color:#888">Verifica que no quede ningún sobre dentro antes de confirmar.</span>`;
     btns.innerHTML = `<button class="btn btn-primary" style="background:var(--naranja)" onclick="cerrarCaja('parcial')">🟠 Sí, cerrar con ${n} tarjetas</button>
@@ -1028,10 +1371,11 @@ function cerrarModalCaja(){
   cerrarModal();
   if (zxingReader) setTimeout(() => { if (!_modalCajaAbierto) scanActivo = true; }, 400);
 }
-function cerrarCaja(estado){
-  if (estado) cajasEstado[cajaActual] = estado;
+async function cerrarCaja(estado){
   const sig = parseInt(document.getElementById('mc-siguiente').value);
   if (!sig || sig < 1) { alert('Escribe el número de la siguiente caja.'); return; }
+  if (sig !== cajaActual && !(await confirmarCajaLibre(sig))) return;
+  if (estado) { cajasEstado[cajaActual] = estado; avisarCierreCaja(cajaActual, estado); }
   if (sig !== cajaActual) {
     cajaActual = sig;
     cajasUsadas.add(sig);
@@ -1066,9 +1410,10 @@ function abrirCambiarCaja() {
   abrirModal('modal-caja');
 }
 
-function confirmarCambioCaja() {
+async function confirmarCambioCaja() {
   const nueva = parseInt(document.getElementById('inp-nueva-caja').value);
   if (!nueva || nueva < 1) { alert('Número de caja inválido.'); return; }
+  if (nueva !== cajaActual && !(await confirmarCajaLibre(nueva))) return;
   cajaActual = nueva;
   cajasUsadas.add(nueva);
   if (cajasEstado[nueva] === 'parcial') delete cajasEstado[nueva];
@@ -1102,7 +1447,7 @@ function renderLista() {
     lista.innerHTML = [...registros].reverse().map((r, i) =>
       `<div class="scan-item ${r.dup ? 'dup' : ''}">
         <div class="scan-item-num">${r.num}</div>
-        <div class="scan-item-meta">Caja #${r.caja}<br>${r.ts}${r.dup ? '<br>⚠️ DUP' : ''}</div>
+        <div class="scan-item-meta">Caja #${r.caja}<br>${r.ts}${r.otro ? '<br>⛔ OTRO: ' + r.otro : (r.dup ? '<br>⚠️ DUP' : '')}</div>
       </div>`
     ).join('');
   }
@@ -1110,15 +1455,9 @@ function renderLista() {
 
 function eliminarDuplicados() {
   if (dupCount === 0) return;
-  const vistos  = new Set();
-  registros = registros.filter(r => {
-    if (vistos.has(r.num)) return false;
-    vistos.add(r.num);
-    return true;
-  });
-  // Marcar todos como no-dup y reconstruir set
-  registros.forEach(r => { r.dup = false; });
-  numerosSet = new Set(registros.map(r => r.num));
+  // Quita solo los duplicados propios; los sobres de otro operador se conservan como evidencia (no cuentan)
+  registros = registros.filter(r => !r.dup || r.otro);
+  numerosSet = new Set(registros.filter(r => !r.dup).map(r => r.num));
   dupCount   = 0;
   actualizarContadores();
   persistirSesion();
@@ -1153,6 +1492,9 @@ function confirmarTerminar() {
   const unicos = registros.filter(r => !r.dup).length;
   let resumen = `Llevas <strong>${unicos.toLocaleString('es-MX')}</strong> tarjetas en <strong>${cajasConTarjetas().length}</strong> caja(s).<br>`;
   if (dupCount > 0) resumen += `<span style="color:var(--naranja)">⚠️ ${dupCount} duplicado(s) detectado(s).</span><br>`;
+  const pendHoja = centralActiva() ? pendientesSync().length : 0;
+  if (pendHoja > 0) { resumen += `<span style="color:var(--naranja)">🟠 ${pendHoja} sobre(s) aún no llegan a la hoja central. Espera a tener señal antes de cerrar la app (tu CSV sí los incluye).</span><br>`; programarSync(0); }
+  if (otroCount > 0) resumen += `<span style="color:var(--rojo)">⛔ ${otroCount} sobre(s) de otro operador rechazado(s).</span><br>`;
   const abiertas = cajasConTarjetas().filter(nc => estadoCaja(nc) === 'abierta' && contarCaja(nc) > 0);
   if (abiertas.length) {
     resumen += `<br><span style="color:var(--naranja);font-size:.82rem">⚠️ Caja(s) sin cerrar: <strong>${abiertas.map(nc=>'#'+nc+' ('+contarCaja(nc)+')').join(', ')}</strong>.<br>
@@ -1208,7 +1550,7 @@ function generarCSV() {
   const estTxt = { completa:'COMPLETA', parcial:'INCOMPLETA', abierta:'SIN CERRAR' };
   let csv = '﻿NUM_TARJETA,CAJA,ESTADO_CAJA,TARJETAS_EN_CAJA,OPERADOR,FECHA,HORA,DUPLICADO\r\n';
   registros.forEach(r => {
-    csv += `${celdaNumero(r.num)},${r.caja},${estTxt[estadoCaja(r.caja)]},${contarCaja(r.caja)},"${operador}",${fecha},${r.ts},${r.dup ? 'SI' : 'NO'}\r\n`;
+    csv += `${celdaNumero(r.num)},${r.caja},${estTxt[estadoCaja(r.caja)]},${contarCaja(r.caja)},"${operador}",${fecha},${r.ts},${r.otro ? '"OTRO OPERADOR: ' + r.otro + '"' : (r.dup ? 'SI' : 'NO')}\r\n`;
   });
   return csv;
 }
@@ -1217,7 +1559,8 @@ function nombreArchivo() {
   const fecha = new Date().toISOString().slice(0,10).replace(/-/g,'');
   const op = operador.split(' ')[0]; // primer apellido
   const cs = cajasConTarjetas();
-  return `escaneo_${fecha}_${op}_cajas${cs.length ? cs[0]+'-a-'+cs[cs.length-1] : '0'}.csv`;
+  const pre = TARJETAS_POR_CAJA !== 700 ? 'PRUEBA_' : '';
+  return `${pre}escaneo_${fecha}_${op}_cajas${cs.length ? cs[0]+'-a-'+cs[cs.length-1] : '0'}.csv`;
 }
 
 function descargarCSV() {
@@ -1246,7 +1589,9 @@ function compartirWhatsApp() {
     `👤 Operador: ${operador}\n\n` +
     `${lineas}\n\n` +
     `✅ *Total tarjetas: ${unicos.toLocaleString('es-MX')}*\n` +
-    `⚠️ Duplicados: ${dupCount}\n\n` +
+    `⚠️ Duplicados: ${dupCount}\n` +
+    (otroCount ? `⛔ Sobres de otro operador (rechazados): ${otroCount}\n` : '') +
+    `🛠 App v${APP_VERSION} · ${TARJETAS_POR_CAJA} sobres/caja${TARJETAS_POR_CAJA !== 700 ? ' (PRUEBA)' : ''}\n\n` +
     `Archivo adjunto: ${archivo}`
   );
   window.open(`https://wa.me/?text=${msg}`, '_blank');
@@ -1259,6 +1604,7 @@ function nuevaSesion() {
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
   numerosSet = new Set(); dupCount = 0; cajasEstado = {};
+  otrosSobres = {}; otrosCajas = {}; otrosArchivos = []; otroCount = 0;
   limpiarSesionIDB();
   // Restaurar nombre desde sesión (no borrarlo si viene del index)
   const inp = document.getElementById('inp-operador');
@@ -1374,6 +1720,19 @@ document.getElementById('modal-bg').addEventListener('click', function(e) {
   if (e.target === this) cerrarModal();
 });
 
+// Textos del HTML con el límite de sobres por caja + aviso de MODO PRUEBA
+document.querySelectorAll('.lim').forEach(e => e.textContent = TARJETAS_POR_CAJA);
+document.getElementById('lbl-version').textContent = 'v' + APP_VERSION + ' · ' + TARJETAS_POR_CAJA + '/caja';
+if (TARJETAS_POR_CAJA !== 700) {
+  const av = document.createElement('div');
+  av.id = 'aviso-prueba';
+  av.textContent = `🧪 MODO PRUEBA — cajas de ${TARJETAS_POR_CAJA} sobres (en operativo real son 700)`;
+  av.style.cssText = 'position:sticky;top:0;z-index:2500;background:#FFD600;color:#3a2a00;text-align:center;' +
+    'font-family:Montserrat,sans-serif;font-weight:800;font-size:.75rem;padding:7px 10px;letter-spacing:.3px;' +
+    'box-shadow:0 2px 6px rgba(0,0,0,.2)';
+  document.body.insertBefore(av, document.body.firstChild);
+}
+
 // Actualizar fecha cada minuto
 setInterval(actualizarFechaHero, 60000);
 
@@ -1465,6 +1824,7 @@ function retomarSesion() {
   actualizarContadores();
   mostrarPantalla('screen-scan');
   arrancarScanner();
+  probarCentral();
 }
 
 function descartarSesionGuardada() {
@@ -1472,6 +1832,7 @@ function descartarSesionGuardada() {
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
   numerosSet = new Set(); dupCount = 0; cajasEstado = {};
+  otrosSobres = {}; otrosCajas = {}; otrosArchivos = []; otroCount = 0;
   limpiarSesionIDB();
   const b = document.getElementById('banner-retomar');
   if(b) b.remove();
