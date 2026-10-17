@@ -292,7 +292,10 @@ footer strong { color: var(--dorado-l); }
         SARE 1507 · BECAS BIENESTAR
         <strong id="lbl-operador-hero">OPERADOR</strong>
       </div>
-      <div class="hero-badge" id="lbl-fecha-hero" style="font-size:0.65rem"></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <button onclick="abrirSalir()" style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);color:#fff;border-radius:10px;padding:7px 12px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.78rem;cursor:pointer">🏠 Salir</button>
+        <div class="hero-badge" id="lbl-fecha-hero" style="font-size:0.65rem"></div>
+      </div>
     </div>
     <div class="hero-title">
       <h1><span>ESCANEO</span> EN CURSO</h1>
@@ -554,6 +557,43 @@ footer strong { color: var(--dorado-l); }
     </div>
   </div>
 
+  <!-- Modal: caja ocupada por otro operador -->
+  <div class="modal-box" id="modal-caja-ocupada" style="display:none">
+    <div class="modal-icon">📦</div>
+    <div class="modal-title" id="mco-title"></div>
+    <div class="modal-body" id="mco-body" style="text-align:left"></div>
+    <div class="modal-btns" id="mco-btns"></div>
+  </div>
+
+  <!-- Modal: salir -->
+  <div class="modal-box" id="modal-salir" style="display:none">
+    <div class="modal-icon">🏠</div>
+    <div class="modal-title">Salir del escaneo</div>
+    <div class="modal-body" id="ms-body"></div>
+    <div class="modal-btns">
+      <button class="btn btn-success" onclick="cerrarModal();confirmarTerminar()">✅ Terminar y entregar</button>
+      <button class="btn btn-danger" onclick="abrirCancelar()">✖ Cancelar sesión sin guardar</button>
+      <button class="btn btn-secondary" onclick="cerrarModal()">↩ Volver al escaneo</button>
+    </div>
+    <p style="font-size:.72rem;color:#888;text-align:center;margin-top:10px;line-height:1.4">
+      Usa <strong>Cancelar sin guardar</strong> si tu celular no escanea bien o te vas a otra tarea: tus sobres se liberan para que otro operador escanee esas cajas completas.
+    </p>
+  </div>
+
+  <!-- Modal: cancelar sesión sin guardar -->
+  <div class="modal-box" id="modal-cancelar" style="display:none">
+    <div class="modal-icon">🗑</div>
+    <div class="modal-title" style="color:var(--rojo)">Cancelar sesión sin guardar</div>
+    <div class="modal-body">Se borrarán tus <strong id="mcan-num">0</strong> sobre(s) de este celular y se <strong>liberarán en la hoja central</strong> para que otro operador pueda escanear esas cajas.<br><br>
+      Escribe <strong>CANCELAR</strong> para confirmar:</div>
+    <input type="text" id="inp-cancelar" class="input-field" placeholder="CANCELAR" autocomplete="off"
+      style="text-align:center;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px" oninput="validarTextoCancelar()">
+    <div class="modal-btns">
+      <button class="btn btn-danger" id="btn-cancelar-ok" onclick="ejecutarCancelacion()" disabled style="opacity:.4">🗑 Cancelar sesión y liberar sobres</button>
+      <button class="btn btn-secondary" onclick="cerrarModal()">No, volver</button>
+    </div>
+  </div>
+
   <!-- Modal: confirmar terminar -->
   <div class="modal-box" id="modal-terminar" style="display:none">
     <div class="modal-icon">⏹</div>
@@ -616,7 +656,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '16-oct-26 F';
+const APP_VERSION = '16-oct-26 G';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -1304,17 +1344,141 @@ async function probarCentral(){
   if (pendientesSync().length) programarSync(300);
 }
 
-// ¿Otro operador ya trabajó esta caja? (consulta la hoja central y los CSV cargados)
+// ══════════════════════════════════════════
+// CAJAS OCUPADAS, CANCELAR SESIÓN Y LIBERAR SOBRES
+// ══════════════════════════════════════════
+// Modal de 3 opciones que devuelve la elección del operador
+function preguntarCajaOcupada(nc, otros){
+  return new Promise(resolve => {
+    const liberables = otros.filter(o => o.estado !== 'COMPLETA');
+    const lista = otros.map(o => `<div style="padding:6px 0;border-bottom:1px solid var(--gris)">👤 <strong>${o.op}</strong><br>
+        <span style="font-size:.8rem">${o.n} sobre(s) · caja <strong>${o.estado || 'ABIERTA'}</strong></span></div>`).join('');
+    document.getElementById('mco-title').textContent = `La CAJA #${nc} ya tiene sobres de otro operador`;
+    document.getElementById('mco-body').innerHTML = lista +
+      (liberables.length
+        ? `<p style="margin-top:10px;font-size:.82rem">Si ese operador <strong>ya no está trabajando esta caja</strong> (su celular falló o se salió), libera sus sobres para que tú escanees la caja completa.</p>`
+        : `<p style="margin-top:10px;font-size:.82rem;color:var(--rojo)"><strong>Esa caja ya está COMPLETA.</strong> Verifica el número de la caja física.</p>`);
+    const btns = document.getElementById('mco-btns');
+    btns.innerHTML = '';
+    const boton = (txt, cls, val) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.innerHTML = txt;
+      b.onclick = () => { cerrarModal(); resolve(val); }; btns.appendChild(b); };
+    if (liberables.length) boton(`🔓 Liberar ${liberables.reduce((a, o) => a + o.n, 0)} sobre(s) y escanear la caja completa`, 'btn-primary', 'liberar');
+    boton('Es otra caja física con el mismo número — continuar', 'btn-secondary', 'continuar');
+    boton('Cancelar y corregir el número', 'btn-secondary', 'cancelar');
+    abrirModal('modal-caja-ocupada');
+  });
+}
+
+// ¿Otro operador ya trabajó esta caja? (consulta la hoja central; sin red usa los CSV cargados)
 async function confirmarCajaLibre(nc){
-  let quien = quienTrabajoCaja(nc);
   if (centralActiva()) {
-    try {
-      const j = await llamarCentral({ accion: 'caja', caja: nc }, 6000);
-      if (j.otros && j.otros.length) quien = j.otros.map(o => `${o.op} (${o.n} sobre${o.n !== 1 ? 's' : ''})`).join(', ');
-    } catch (e) { /* sin conexión: se usa lo que haya en los CSV cargados */ }
+    let j = null;
+    try { j = await llamarCentral({ accion: 'caja', caja: nc }, 8000); } catch (e) { j = null; }
+    if (j) {
+      const otros = (j.otros || []).filter(o => o.n > 0);
+      if (!otros.length) return true;
+      const r = await preguntarCajaOcupada(nc, otros);
+      if (r === 'cancelar') return false;
+      if (r === 'continuar') return true;
+      // Liberar los sobres de los operadores con caja no completa
+      let total = 0;
+      try {
+        for (const o of otros.filter(o => o.estado !== 'COMPLETA')) {
+          const x = await llamarCentral({ accion: 'liberar', caja: nc, opLiberar: o.op }, 15000);
+          total += x.liberados || 0;
+          (x.nums || []).forEach(n => { delete otrosSobres[n]; });
+        }
+      } catch (e) {
+        alert('No se pudieron liberar los sobres: ' + (e.message || e) + '\nRevisa la señal e intenta de nuevo.');
+        return false;
+      }
+      delete otrosCajas[nc];
+      persistirSesion();
+      alert(`🔓 Se liberaron ${total} sobre(s) de la caja #${nc}. Ya puedes escanear la caja completa.`);
+      return true;
+    }
   }
+  const quien = quienTrabajoCaja(nc);
   if (!quien) return true;
   return confirm(`⚠️ La CAJA #${nc} ya la trabajó: ${quien}.\n\n¿Seguro que esta es la caja #${nc}? Si es otra caja, cancela y corrige el número.`);
+}
+
+// Libera en la hoja todos los sobres de ESTA sesión (para cancelar sin guardar)
+async function liberarSesionPropia(){
+  if (!centralActiva()) return { ok: true, total: 0 };
+  const cajas = [...new Set(registros.filter(r => !r.dup && r.sync === 'ok').map(r => r.caja))];
+  let total = 0;
+  for (const nc of cajas) {
+    const x = await llamarCentral({ accion: 'liberar', caja: nc }, 15000);
+    total += x.liberados || 0;
+  }
+  return { ok: true, total };
+}
+
+function reiniciarEstadoLocal(){
+  detenerScanner();
+  operador = ''; cajaActual = 1;
+  cajasUsadas = new Set(); registros = [];
+  numerosSet = new Set(); dupCount = 0; cajasEstado = {}; dupLog = [];
+  otrosSobres = {}; otrosCajas = {}; otrosArchivos = []; otroCount = 0;
+  limpiarSesionIDB();
+}
+
+// ── Botón 🏠 Salir ──
+function abrirSalir(){
+  const n = registros.filter(r => !r.dup).length;
+  document.getElementById('ms-body').innerHTML = n
+    ? `Llevas <strong>${n}</strong> sobre(s) en ${cajasConTarjetas().length} caja(s). ¿Qué quieres hacer?`
+    : 'No has escaneado sobres en esta sesión.';
+  abrirModal('modal-salir');
+}
+function salirAlMenu(){ window.location.href = 'index.html'; }
+
+// ── Cancelar sesión sin guardar ──
+function abrirCancelar(){
+  const n = registros.filter(r => !r.dup).length;
+  document.getElementById('mcan-num').textContent = n;
+  document.getElementById('inp-cancelar').value = '';
+  const btn = document.getElementById('btn-cancelar-ok');
+  btn.disabled = true; btn.style.opacity = '.4';
+  abrirModal('modal-cancelar');
+}
+function validarTextoCancelar(){
+  const ok = document.getElementById('inp-cancelar').value.trim().toUpperCase() === 'CANCELAR';
+  const btn = document.getElementById('btn-cancelar-ok');
+  btn.disabled = !ok; btn.style.opacity = ok ? '1' : '.4';
+}
+async function ejecutarCancelacion(){
+  const btn = document.getElementById('btn-cancelar-ok');
+  btn.disabled = true; btn.textContent = 'Liberando en la hoja central…';
+  try {
+    const r = await liberarSesionPropia();
+    reiniciarEstadoLocal();
+    cerrarModal();
+    alert(`✅ Sesión cancelada.${r.total ? `\n${r.total} sobre(s) liberados en la hoja: otro operador ya puede escanear esas cajas.` : ''}`);
+    salirAlMenu();
+  } catch (e) {
+    btn.textContent = '🗑 Cancelar sesión y liberar sobres'; btn.disabled = false;
+    alert('❌ No se pudo liberar en la hoja central (' + (e.message || e) + ').\nNo se borró nada. Intenta de nuevo con señal.');
+  }
+}
+
+// ── Al retomar: quitar sobres que otro operador liberó desde su celular ──
+async function reconciliarConHoja(){
+  if (!centralActiva()) return 0;
+  let j;
+  try { j = await llamarCentral({ accion: 'mis_sobres' }, 15000); } catch (e) { return 0; }
+  const enHoja = new Set(j.nums || []);
+  const quitados = registros.filter(r => !r.dup && r.sync === 'ok' && !enHoja.has(r.num));
+  quitados.forEach(r => { r.dup = true; r.otro = 'LIBERADO en la hoja (otro operador tomó la caja)'; numerosSet.delete(r.num); });
+  if (quitados.length) {
+    const cajas = [...new Set(quitados.map(r => r.caja))];
+    cajas.forEach(nc => { if (cajasEstado[nc] === 'parcial' && !contarCaja(nc)) delete cajasEstado[nc]; });
+    persistirSesion();
+    actualizarContadores();
+    alert(`ℹ️ ${quitados.length} sobre(s) de la(s) caja(s) ${cajas.map(c => '#' + c).join(', ')} fueron liberados por otro operador y se quitaron de esta sesión.`);
+  }
+  return quitados.length;
 }
 
 function avisarCierreCaja(nc, estado){
@@ -1580,7 +1744,8 @@ function volverEscaneo() {
 // ══════════════════════════════════════════
 // TERMINAR SESIÓN
 // ══════════════════════════════════════════
-function confirmarTerminar() {
+async function confirmarTerminar() {
+  await reconciliarConHoja();
   const unicos = registros.filter(r => !r.dup).length;
   let resumen = `Llevas <strong>${unicos.toLocaleString('es-MX')}</strong> tarjetas en <strong>${cajasConTarjetas().length}</strong> caja(s).<br>`;
   if (dupCount > 0) resumen += `<span style="color:#888">ℹ️ ${dupCount} lectura(s) repetida(s) ignoradas (no se cuentan).</span><br>`;
@@ -1921,10 +2086,16 @@ function retomarSesion() {
   actualizarContadores();
   mostrarPantalla('screen-scan');
   arrancarScanner();
-  probarCentral();
+  probarCentral().then(() => reconciliarConHoja());
 }
 
-function descartarSesionGuardada() {
+async function descartarSesionGuardada() {
+  const n = registros.filter(r => !r.dup).length;
+  if (n && !confirm(`Se descartará la sesión de ${operador} con ${n} sobre(s) y se LIBERARÁN en la hoja central para que otro operador escanee esas cajas.\n\n¿Continuar?`)) return;
+  if (n) {
+    try { await liberarSesionPropia(); }
+    catch (e) { alert('❌ No se pudo liberar en la hoja central (' + (e.message || e) + '). Intenta de nuevo con señal.'); return; }
+  }
   // Limpiar en memoria y en IDB, empezar desde pantalla login
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
