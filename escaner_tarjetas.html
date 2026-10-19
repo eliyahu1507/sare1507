@@ -17,6 +17,10 @@
 .btn-proc span{display:block;font-size:.66rem;color:#666;margin-top:3px}
 .btn-proc.sel{border-color:var(--guinda);background:var(--guinda);color:#fff}
 .btn-proc.sel span{color:#f3e6c8}
+.caja-panel.comp{border-color:#1565c0;background:#e3f2fd}
+.caja-panel.comp .caja-num{color:#0d47a1}
+.comp-tag{display:inline-block;background:#1565c0;color:#fff;border-radius:8px;padding:2px 9px;font-family:'Montserrat',sans-serif;font-weight:900;font-size:.8rem;margin-left:6px}
+.btn-cam{background:none;border:1.5px solid #ccc;color:#555;border-radius:10px;padding:8px 10px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;width:100%;margin-top:8px}
 .proc-tag{display:inline-block;background:var(--guinda);color:#fff;border-radius:8px;padding:2px 9px;font-family:'Montserrat',sans-serif;font-weight:900;font-size:.8rem;letter-spacing:.5px;margin-bottom:4px}
 
 :root {
@@ -342,11 +346,11 @@ footer strong { color: var(--dorado-l); }
     <div class="caja-panel">
       <div class="caja-top">
         <div style="min-width:0">
-          <div class="proc-tag" id="lbl-proceso">—</div>
+          <div class="proc-tag" id="lbl-proceso">—</div><span class="comp-tag" id="lbl-comp" style="display:none">➕ COMPLEMENTO</span>
           <div class="caja-num" id="lbl-caja-actual">CAJA #1</div>
           <div class="caja-sub" id="lbl-caja-sub">Caja en curso</div>
         </div>
-        <div class="caja-cnt"><span id="lbl-barra-num">0</span><small>/ <span class="lim">700</span></small></div>
+        <div class="caja-cnt"><span id="lbl-barra-num">0</span><small id="lbl-barra-lim">/ <span class="lim">700</span></small></div>
       </div>
       <div class="caja-barra"><div id="barra-caja"></div></div>
       <div class="caja-btns">
@@ -378,6 +382,7 @@ footer strong { color: var(--dorado-l); }
       <div class="scan-feedback idle" id="scan-feedback">
         Toca "Activar cámara" para comenzar…
       </div>
+      <button class="btn-cam" onclick="reiniciarCamara()">🔄 ¿No lee? Reiniciar cámara (no se pierde nada)</button>
     </div>
 
     <!-- CAJAS RECIBIDAS -->
@@ -396,15 +401,7 @@ footer strong { color: var(--dorado-l); }
       </button>
     </div>
 
-    <!-- Reiniciar: enlace discreto, no botón grande para evitar toques accidentales -->
-    <div style="text-align:center;padding-bottom:4px">
-      <button onclick="confirmarReiniciar()" style="
-        background:none;border:none;color:#aaa;font-size:0.72rem;
-        font-family:'Open Sans',sans-serif;cursor:pointer;text-decoration:underline;
-        padding:4px 8px">
-        🔄 Reiniciar conteo desde cero
-      </button>
-    </div>
+
 
   </div>
   <footer>✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
@@ -513,9 +510,13 @@ footer strong { color: var(--dorado-l); }
       </p>
     </div>
 
+    <button class="btn btn-primary" onclick="cerrarSesionYSalir()">
+      🚪 Cerrar sesión y salir al menú
+    </button>
     <button class="btn btn-secondary" onclick="nuevaSesion()">
       🔄 Nueva sesión / Nuevo operador
     </button>
+    <p style="font-size:.72rem;color:#888;text-align:center;line-height:1.4">Tus sobres ya están en la hoja central. Cierra sesión cuando hayas enviado el archivo.</p>
   </div>
   <footer>✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
 </div>
@@ -576,12 +577,14 @@ footer strong { color: var(--dorado-l); }
     <div class="modal-title">Salir del escaneo</div>
     <div class="modal-body" id="ms-body"></div>
     <div class="modal-btns">
-      <button class="btn btn-success" onclick="cerrarModal();confirmarTerminar()">✅ Terminar y entregar</button>
-      <button class="btn btn-danger" onclick="abrirCancelar()">✖ Cancelar sesión sin guardar</button>
+      <button class="btn btn-success" onclick="cerrarModal();confirmarTerminar()">✅ Terminar y entregar<br><span style="font-size:.7rem;font-weight:600">Ya acabé: cierra mis cajas y cierra la sesión</span></button>
+      <button class="btn btn-primary" onclick="pausarYSalir()">⏸ Guardar y salir<br><span style="font-size:.7rem;font-weight:600">Regreso después y continúo donde me quedé</span></button>
+      <button class="btn btn-secondary" onclick="recargarSinPerder()">🔄 Recargar la app sin perder nada<br><span style="font-size:.7rem;font-weight:600">Si el escaneo se trabó</span></button>
+      <button class="btn btn-danger" onclick="abrirCancelar()">✖ Cancelar sesión sin guardar<br><span style="font-size:.7rem;font-weight:600">Borra y libera mis sobres (celular que no sirve)</span></button>
       <button class="btn btn-secondary" onclick="cerrarModal()">↩ Volver al escaneo</button>
     </div>
     <p style="font-size:.72rem;color:#888;text-align:center;margin-top:10px;line-height:1.4">
-      Usa <strong>Cancelar sin guardar</strong> si tu celular no escanea bien o te vas a otra tarea: tus sobres se liberan para que otro operador escanee esas cajas completas.
+      Con <strong>Guardar y salir</strong> tus sobres quedan en la hoja central. Si cambias de celular, entra con el mismo nombre y proceso: la app te ofrece continuar tus cajas abiertas.
     </p>
   </div>
 
@@ -661,7 +664,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '19-oct-26 H';
+const APP_VERSION = '19-oct-26 I';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -775,7 +778,7 @@ function persistirSesion(){
   const estado = {
     operador, cajaActual, cajasUsadas:[...cajasUsadas], registros, dupCount,
     totalCajas, tarjetasUltimaCaja, cajasEstado, activa:true, guardado:Date.now(),
-    otrosSobres, otroCount, version: APP_VERSION, sesionId, dupLog, procesoSesion
+    otrosSobres, otroCount, version: APP_VERSION, sesionId, dupLog, procesoSesion, enComplemento, compEstado
   };
   try{
     const tx = idbScan.transaction('sesion','readwrite');
@@ -805,6 +808,7 @@ async function restaurarSesion(){
   cajasEstado = est.cajasEstado || {};
   otrosSobres = est.otrosSobres || {}; otroCount = est.otroCount || 0;
   procesoSesion = est.procesoSesion || '';
+  enComplemento = !!est.enComplemento; compEstado = est.compEstado || {};
   sesionId = est.sesionId || nuevoSesionId();
   dupLog = est.dupLog || [];
   // Sesiones de versiones anteriores: sacar los duplicados propios de la lista de registros
@@ -861,7 +865,11 @@ async function iniciarSesion() {
   operador = nom;            // necesario para consultar la hoja central
   procesoSesion = _procesoElegido;
   sesionId = nuevoSesionId();
-  if (!(await confirmarCajaLibre(caja))) { operador = ''; procesoSesion = ''; return; }
+  enComplemento = false; compEstado = {};
+  // ¿Dejó cajas abiertas en otro celular o en una sesión que se perdió? → continuar donde se quedó
+  if (await ofrecerContinuarDesdeHoja()) return;
+  const libre = await confirmarCajaLibre(caja);
+  if (!libre) { operador = ''; procesoSesion = ''; return; }
   setTimeout(probarCentral, 300);
   cajaActual = caja;
   cajasUsadas.add(caja);
@@ -871,6 +879,8 @@ async function iniciarSesion() {
   totalCajas = 0; tarjetasUltimaCaja = 0;
   cajasEstado = {};
   cajasUsadas = new Set([caja]);
+  enComplemento = libre === 'complemento';
+  persistirSesion();
 
   mostrarProceso();
   document.getElementById('lbl-caja-actual').textContent = 'CAJA #' + cajaActual;
@@ -960,7 +970,7 @@ function activarCamara() {
         _lectura = { cod: codigo, t };
       }
     }
-  );
+  ).catch(() => { zxingReader = null; arrancarScanner(); });
 }
 
 function detenerScanner() {
@@ -1053,7 +1063,7 @@ function procesarEscaneo(codigo) {
   }
 
   // 2) Caja llena: no se cuenta el sobre y se pide cerrar la caja
-  if (!esDup && contarCaja(cajaActual) >= TARJETAS_POR_CAJA) {
+  if (!esDup && !enComplemento && contarCaja(cajaActual) >= TARJETAS_POR_CAJA) {
     beepDUP();
     if (navigator.vibrate) navigator.vibrate([250,80,250]);
     const fb = document.getElementById('scan-feedback');
@@ -1063,12 +1073,14 @@ function procesarEscaneo(codigo) {
     return;
   }
 
-  registros.push({ num: codigo, caja: cajaActual, ts, dup: false });
+  const reg = { num: codigo, caja: cajaActual, ts, dup: false };
+  if (enComplemento) reg.comp = true;
+  registros.push(reg);
   numerosSet.add(codigo);
   _ultimoAceptado = { cod: codigo, t: ahoraMs };
 
   actualizarContadores();
-  mostrarFeedback(codigo + '  ·  #' + contarCaja(cajaActual), esDup);
+  mostrarFeedback(codigo + (enComplemento ? '  ·  complemento +' + contarComp(cajaActual) : '  ·  #' + contarCaja(cajaActual)), esDup);
 
   // Sonido distintivo (Web Audio API — no requiere archivos)
   if (esDup) beepDUP(); else beepOK();
@@ -1081,7 +1093,7 @@ function procesarEscaneo(codigo) {
   if (!esDup) programarSync();
 
   // Al llegar al límite en la caja actual: avisar y pedir cerrarla
-  if (!esDup && contarCaja(cajaActual) === TARJETAS_POR_CAJA) {
+  if (!esDup && !enComplemento && contarCaja(cajaActual) === TARJETAS_POR_CAJA) {
     cajasEstado[cajaActual] = 'completa';
     persistirSesion();
     avisarCierreCaja(cajaActual, 'completa');
@@ -1117,6 +1129,8 @@ const PROCESOS_TXT = {
   JEF:    'JEF · Jóvenes Escribiendo el Futuro (universidad)'
 };
 let procesoSesion = '';   // BRCU | BRC | BUEEMS | JEF
+let enComplemento = false; // la caja actual se escanea como COMPLEMENTO (sobres que llegaron después)
+let compEstado = {};       // caja -> 'cerrado' (complemento terminado)
 let otrosSobres = {};     // num -> { op, caja, hora } (respuesta de la hoja)
 let otroCount = 0;        // sobres rechazados por ser de otro operador
 let _procesoElegido = '';
@@ -1134,8 +1148,8 @@ function mostrarProceso(){
 // Posición del sobre dentro de su caja (la de la hoja manda; si aún no responde, la local)
 function consecDe(r){
   if (r.consec) return r.consec;
-  let i = 0;
-  for (const x of registros) { if (x.dup || x.caja !== r.caja) continue; i++; if (x === r) return i; }
+  let i = r.comp ? contarCaja(r.caja) : 0;     // el complemento sigue después de la caja (21, 22… / 701…)
+  for (const x of registros) { if (x.dup || x.caja !== r.caja || !!x.comp !== !!r.comp) continue; i++; if (x === r) return i; }
   return '';
 }
 
@@ -1210,7 +1224,7 @@ async function enviarPendientes(){
   if (!pend.length) { renderSync(); return; }
   _syncEnVuelo = true; renderSync();
   try {
-    const j = await llamarCentral({ accion: 'registrar', limite: TARJETAS_POR_CAJA, items: pend.map(r => ({ num: r.num, caja: r.caja, hora: r.ts })) });
+    const j = await llamarCentral({ accion: 'registrar', limite: TARJETAS_POR_CAJA, items: pend.map(r => ({ num: r.num, caja: r.caja, hora: r.ts, tipo: r.comp ? 'COMPLEMENTO' : 'NORMAL' })) });
     const porNum = {}; (j.resultados || []).forEach(x => { porNum[x.num] = x; });
     const rechazados = [];
     pend.forEach(r => {
@@ -1288,22 +1302,27 @@ async function probarCentral(){
 // CAJAS OCUPADAS, CANCELAR SESIÓN Y LIBERAR SOBRES
 // ══════════════════════════════════════════
 // Modal de 3 opciones que devuelve la elección del operador
-function preguntarCajaOcupada(nc, otros){
+function preguntarCajaOcupada(nc, otros, propioCompleta){
   return new Promise(resolve => {
     const liberables = otros.filter(o => o.estado !== 'COMPLETA');
+    const completa = propioCompleta || otros.some(o => o.estado === 'COMPLETA');
     const lista = otros.map(o => `<div style="padding:6px 0;border-bottom:1px solid var(--gris)">👤 <strong>${o.op}</strong><br>
         <span style="font-size:.8rem">${o.n} sobre(s) · caja <strong>${o.estado || 'ABIERTA'}</strong></span></div>`).join('');
-    document.getElementById('mco-title').textContent = `La caja ${procesoSesion} #${nc} ya tiene sobres de otro operador`;
+    document.getElementById('mco-title').textContent = !otros.length
+      ? `Ya completaste la caja ${procesoSesion} #${nc}`
+      : `La caja ${procesoSesion} #${nc} ya tiene sobres de otro operador`;
     document.getElementById('mco-body').innerHTML = lista +
-      (liberables.length
+      (completa ? `<p style="margin-top:10px;font-size:.82rem;color:#0d47a1">➕ Si llegaron <strong>más sobres para esta misma caja</strong> después de completarla, agrégalos como <strong>COMPLEMENTO</strong>: quedan marcados y su consecutivo sigue después del último.</p>` : '') +
+      (!otros.length ? '' : liberables.length
         ? `<p style="margin-top:10px;font-size:.82rem">Si ese operador <strong>ya no está trabajando esta caja</strong> (su celular falló o se salió), libera sus sobres para que tú escanees la caja completa.</p>`
         : `<p style="margin-top:10px;font-size:.82rem;color:var(--rojo)"><strong>Esa caja ya está COMPLETA.</strong> Verifica el número de la caja física.</p>`);
     const btns = document.getElementById('mco-btns');
     btns.innerHTML = '';
     const boton = (txt, cls, val) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.innerHTML = txt;
       b.onclick = () => { cerrarModal(); resolve(val); }; btns.appendChild(b); };
+    if (completa) boton(`➕ Agregar COMPLEMENTO a la caja #${nc}`, 'btn-primary', 'complemento');
     if (liberables.length) boton(`🔓 Liberar ${liberables.reduce((a, o) => a + o.n, 0)} sobre(s) y escanear la caja completa`, 'btn-primary', 'liberar');
-    boton('Es otra caja física con el mismo número — continuar', 'btn-secondary', 'continuar');
+    if (otros.length) boton('Es otra caja física con el mismo número — continuar', 'btn-secondary', 'continuar');
     boton('Cancelar y corregir el número', 'btn-secondary', 'cancelar');
     abrirModal('modal-caja-ocupada');
   });
@@ -1316,10 +1335,12 @@ async function confirmarCajaLibre(nc){
     try { j = await llamarCentral({ accion: 'caja', caja: nc }, 8000); } catch (e) { j = null; }
     if (j) {
       const otros = (j.otros || []).filter(o => o.n > 0);
-      if (!otros.length) return true;
-      const r = await preguntarCajaOcupada(nc, otros);
+      const propioCompleta = (contarCaja(nc) > 0 && estadoCaja(nc) === 'completa') || (j.propio && j.propio.estado === 'COMPLETA');
+      if (!otros.length && !propioCompleta) return true;
+      const r = await preguntarCajaOcupada(nc, otros, propioCompleta);
       if (r === 'cancelar') return false;
       if (r === 'continuar') return true;
+      if (r === 'complemento') return 'complemento';
       // Liberar los sobres de los operadores con caja no completa
       let total = 0;
       try {
@@ -1337,7 +1358,67 @@ async function confirmarCajaLibre(nc){
       return true;
     }
   }
-  return true;   // sin hoja central o sin señal: se permite y la hoja revisa al sincronizar
+  // Sin hoja central o sin señal: se permite (la hoja revisa al sincronizar); si la caja propia está completa, ofrecer complemento
+  if (contarCaja(nc) > 0 && estadoCaja(nc) === 'completa') {
+    const r = await preguntarCajaOcupada(nc, [], true);
+    return r === 'complemento' ? 'complemento' : false;
+  }
+  return true;
+}
+
+// ── Continuar desde la hoja central (otro celular, navegador borrado, sesión trabada) ──
+async function ofrecerContinuarDesdeHoja(){
+  if (!centralActiva()) return false;
+  let j;
+  try { j = await llamarCentral({ accion: 'mis_sobres' }, 10000); } catch (e) { return false; }
+  const filas = (j.abiertas || []).filter(x => x.proceso === procesoSesion);
+  if (!filas.length) return false;
+  const porCaja = {};
+  filas.forEach(x => { const k = x.caja + (x.tipo === 'COMPLEMENTO' ? ' (complemento)' : ''); porCaja[k] = (porCaja[k] || 0) + 1; });
+  const lista = Object.entries(porCaja).map(([k, n]) => `caja #${k}: ${n} sobre(s)`).join('\n');
+  if (!confirm(`📂 Tienes cajas ABIERTAS de ${procesoSesion} en la hoja central:\n${lista}\n\n¿Continuar donde te quedaste?\n\nAceptar = continuar con esos sobres.\nCancelar = empezar con la caja que escribiste.`)) return false;
+  const ult = filas[filas.length - 1];
+  registros = filas.map(x => { const r = { num: x.num, caja: x.caja, ts: x.hora, dup: false, sync: 'ok', consec: x.consec, recup: true }; if (x.tipo === 'COMPLEMENTO') r.comp = true; return r; });
+  numerosSet = new Set(registros.map(r => r.num));
+  dupCount = 0; dupLog = []; otrosSobres = {}; otroCount = 0;
+  cajasEstado = {}; compEstado = {};
+  cajasUsadas = new Set(registros.map(r => r.caja));
+  cajaActual = ult.caja;
+  enComplemento = ult.tipo === 'COMPLEMENTO';
+  if (enComplemento) cajasEstado[cajaActual] = 'completa';
+  persistirSesion();
+  mostrarProceso();
+  actualizarFechaHero();
+  actualizarContadores();
+  mostrarPantalla('screen-scan');
+  arrancarScanner();
+  setTimeout(probarCentral, 300);
+  const fb = document.getElementById('scan-feedback');
+  fb.className = 'scan-feedback ok';
+  fb.textContent = `📂 Recuperados ${registros.length} sobre(s). Sigues en la caja #${cajaActual}${enComplemento ? ' (complemento)' : ''}.`;
+  return true;
+}
+
+// ── Salir guardando / recargar / cerrar sesión ──
+function pausarYSalir(){
+  persistirSesion();
+  programarSync(0);
+  cerrarModal();
+  detenerScanner();
+  const pend = centralActiva() ? pendientesSync().length : 0;
+  alert(`💾 Sesión guardada.${pend ? `\n🟠 ${pend} sobre(s) se enviarán a la hoja al volver a abrir la app con señal.` : '\nTodo está en la hoja central.'}\n\nAl regresar toca "Continuar sesión".`);
+  salirAlMenu();
+}
+function recargarSinPerder(){
+  persistirSesion();
+  try { sessionStorage.setItem('esc_auto_retomar', '1'); } catch (e) {}
+  setTimeout(() => location.reload(), 300);
+}
+function cerrarSesionYSalir(){
+  const pend = centralActiva() ? pendientesSync().length : 0;
+  if (pend && !confirm(`🟠 ${pend} sobre(s) aún no llegan a la hoja central (sin señal).\nSi cierras sesión ahora solo quedarán en tu archivo CSV.\n\n¿Cerrar sesión de todas formas?`)) return;
+  reiniciarEstadoLocal();
+  salirAlMenu();
 }
 
 // Libera en la hoja todos los sobres de ESTA sesión (para cancelar sin guardar)
@@ -1346,7 +1427,9 @@ async function liberarSesionPropia(){
   const cajas = [...new Set(registros.filter(r => !r.dup && r.sync === 'ok').map(r => r.caja))];
   let total = 0;
   for (const nc of cajas) {
-    const x = await llamarCentral({ accion: 'liberar', caja: nc }, 15000);
+    // Sobres recuperados de otra sesión: se liberan sin filtrar por sesión
+    const extra = registros.some(r => r.caja === nc && r.recup) ? { sesion: '' } : {};
+    const x = await llamarCentral(Object.assign({ accion: 'liberar', caja: nc }, extra), 15000);
     total += x.liberados || 0;
   }
   return { ok: true, total };
@@ -1357,7 +1440,7 @@ function reiniciarEstadoLocal(){
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
   numerosSet = new Set(); dupCount = 0; cajasEstado = {}; dupLog = [];
-  otrosSobres = {}; otroCount = 0; procesoSesion = '';
+  otrosSobres = {}; otroCount = 0; procesoSesion = ''; enComplemento = false; compEstado = {};
   limpiarSesionIDB();
 }
 
@@ -1420,10 +1503,30 @@ async function reconciliarConHoja(){
   return quitados.length;
 }
 
-function avisarCierreCaja(nc, estado){
+function avisarCierreCaja(nc, estado, comp){
   if (!centralActiva()) return;
-  llamarCentral({ accion: 'cerrar_caja', caja: nc, estado: estado === 'completa' ? 'COMPLETA' : 'INCOMPLETA', n: contarCaja(nc) }, 10000)
+  const est = comp ? 'CERRADA' : estado === 'completa' ? 'COMPLETA' : 'INCOMPLETA';
+  llamarCentral({ accion: 'cerrar_caja', caja: nc, estado: est, tipo: comp ? 'COMPLEMENTO' : 'NORMAL', n: comp ? contarComp(nc) : contarCaja(nc) }, 10000)
     .catch(() => {});
+}
+// ── COMPLEMENTO: sobres que llegan después para una caja que ya estaba completa ──
+let _codigoPendiente = '';
+function iniciarComplemento(nc, codigo){
+  if (enComplemento && cajaActual !== nc) cerrarComplementoActual();
+  cajaActual = nc; cajasUsadas.add(nc);
+  enComplemento = true; delete compEstado[nc];
+  actualizarContadores(); persistirSesion();
+  if (document.getElementById('modal-bg').classList.contains('active')) cerrarModalCaja();
+  const fb = document.getElementById('scan-feedback');
+  fb.className = 'scan-feedback ok';
+  fb.textContent = `➕ COMPLEMENTO de la caja #${nc}: escanea los sobres que llegaron después`;
+  if (codigo) { _ultimoAceptado = { cod: '', t: 0 }; procesarEscaneo(codigo); }
+}
+function cerrarComplementoActual(){
+  if (!enComplemento) return;
+  if (contarComp(cajaActual)) { compEstado[cajaActual] = 'cerrado'; avisarCierreCaja(cajaActual, 'cerrado', true); }
+  enComplemento = false;
+  persistirSesion();
 }
 
 // ══════════════════════════════════════════
@@ -1433,14 +1536,15 @@ function avisarCierreCaja(nc, estado){
 //   'parcial'  → el operador confirmó que trae menos de 700 (ej. la última)
 // Mientras no se cierre, la caja está 'abierta'.
 // ══════════════════════════════════════════
-function contarCaja(nc){ return registros.filter(r => !r.dup && r.caja === nc).length; }
+function contarCaja(nc){ return registros.filter(r => !r.dup && !r.comp && r.caja === nc).length; }
+function contarComp(nc){ return registros.filter(r => !r.dup && r.comp && r.caja === nc).length; }
 function estadoCaja(nc){
   if (contarCaja(nc) >= TARJETAS_POR_CAJA) return 'completa';
   return cajasEstado[nc] === 'parcial' ? 'parcial' : 'abierta';
 }
 function cajasOrdenadas(){ return [...cajasUsadas].sort((a,b)=>a-b); }
 // Cajas con al menos un sobre (las vacías no cuentan en reportes)
-function cajasConTarjetas(){ return cajasOrdenadas().filter(nc => contarCaja(nc) > 0); }
+function cajasConTarjetas(){ return cajasOrdenadas().filter(nc => contarCaja(nc) > 0 || contarComp(nc) > 0); }
 function etiquetaEstado(est){
   return est === 'completa' ? 'Completa' : est === 'parcial' ? 'Incompleta (confirmada)' : 'Abierta';
 }
@@ -1448,13 +1552,14 @@ function etiquetaEstado(est){
 function renderChipsCajas(){
   const cont = document.getElementById('cajas-chips');
   if (!cont) return;
-  const arr = cajasOrdenadas().filter(nc => contarCaja(nc) > 0 || nc === cajaActual);
+  const arr = cajasOrdenadas().filter(nc => contarCaja(nc) > 0 || contarComp(nc) > 0 || nc === cajaActual);
   if (!arr.length){ cont.innerHTML = '<span class="cajas-vacio">Aún no hay cajas</span>'; return; }
   cont.innerHTML = arr.map(nc => {
     const n = contarCaja(nc), est = estadoCaja(nc);
     const cls = (n > TARJETAS_POR_CAJA ? 'excedida' : est) + (nc === cajaActual ? ' actual' : '');
     const ic  = n > TARJETAS_POR_CAJA ? '⛔' : est === 'completa' ? '✅' : est === 'parcial' ? '🟠' : (nc === cajaActual ? '▶' : '⏸');
-    return `<span class="caja-chip ${cls}" onclick="irACaja(${nc})" title="${etiquetaEstado(est)}">${ic} #${nc} · ${n}</span>`;
+    const k = contarComp(nc);
+    return `<span class="caja-chip ${cls}" onclick="irACaja(${nc})" title="${etiquetaEstado(est)}">${ic} #${nc} · ${n}${k ? ` <b style="color:#1565c0">+${k}</b>` : ''}</span>`;
   }).join('');
   const comp = arr.filter(nc => estadoCaja(nc)==='completa').length;
   const parc = arr.filter(nc => estadoCaja(nc)==='parcial').length;
@@ -1472,13 +1577,21 @@ function actualizarContadores() {
   const est = estadoCaja(cajaActual);
   const pct = Math.min(100, Math.round(n / TARJETAS_POR_CAJA * 100));
   document.getElementById('lbl-caja-actual').textContent = 'CAJA #' + cajaActual;
-  document.getElementById('lbl-barra-num').textContent = n;
+  document.getElementById('lbl-barra-num').textContent = enComplemento ? '+' + contarComp(cajaActual) : n;
+  document.getElementById('lbl-barra-lim').style.display = enComplemento ? 'none' : '';
+  document.getElementById('lbl-comp').style.display = enComplemento ? 'inline-block' : 'none';
+  document.getElementById('btn-caja-terminada').textContent = enComplemento ? '➕ Terminar complemento' : '📦 Caja terminada';
   const barra = document.getElementById('barra-caja');
-  barra.style.width = pct + '%';
+  barra.style.width = (enComplemento ? 100 : pct) + '%';
   const panel = document.querySelector('.caja-panel');
   const sub = document.getElementById('lbl-caja-sub');
-  panel.classList.remove('completa','excedida');
-  if (n > TARJETAS_POR_CAJA) {
+  panel.classList.remove('completa','excedida','comp');
+  if (enComplemento) {
+    panel.classList.add('comp');
+    barra.style.background = '#1565c0';
+    sub.innerHTML = `Caja completa con ${n}. Sobres que llegaron después: <strong>${contarComp(cajaActual)}</strong> (sin límite)`;
+    sub.style.color = '#0d47a1';
+  } else if (n > TARJETAS_POR_CAJA) {
     panel.classList.add('excedida');
     barra.style.background = 'var(--rojo)';
     sub.innerHTML = `⛔ <strong>${n - TARJETAS_POR_CAJA} de más</strong> — revisa si son sobres de otra caja`;
@@ -1511,7 +1624,15 @@ function abrirCerrarCaja(auto, codigoRechazado){
   document.getElementById('mc-num').textContent = n;
   const title = document.getElementById('mc-title'), body = document.getElementById('mc-body'),
         icon = document.getElementById('mc-icon'), btns = document.getElementById('mc-btns');
-  if (n === 0) {
+  _codigoPendiente = codigoRechazado || '';
+  if (enComplemento) {
+    const k = contarComp(cajaActual);
+    document.getElementById('mc-num').textContent = '+' + k;
+    icon.textContent = '➕'; title.textContent = `Complemento de la caja #${cajaActual}`;
+    body.innerHTML = `Se agregaron <strong>${k}</strong> sobre(s) que llegaron después de completar la caja.<br>¿Ya no hay más sobres de complemento?`;
+    btns.innerHTML = `<button class="btn btn-success" onclick="cerrarCaja('complemento')">✅ Terminar complemento y pasar a la siguiente caja</button>
+      <button class="btn btn-secondary" onclick="cerrarModalCaja()">Seguir agregando al complemento</button>`;
+  } else if (n === 0) {
     icon.textContent = '📭'; title.textContent = `Caja #${cajaActual} vacía`;
     body.innerHTML = 'Esta caja no tiene sobres escaneados. Si ya vas a recibir otra, escribe su número.';
     btns.innerHTML = `<button class="btn btn-primary" onclick="cerrarCaja(null)">➡️ Pasar a la siguiente caja</button>
@@ -1523,6 +1644,7 @@ function abrirCerrarCaja(auto, codigoRechazado){
       : auto ? `Llegaste a <strong>${TARJETAS_POR_CAJA} tarjetas</strong>. La caja está llena: ciérrala para continuar con la siguiente.`
              : `La caja tiene <strong>${TARJETAS_POR_CAJA} tarjetas</strong>.`;
     btns.innerHTML = `<button class="btn btn-success" onclick="cerrarCaja('completa')">✅ Cerrar caja y seguir con la siguiente</button>
+      <button class="btn" style="background:#1565c0;color:#fff" onclick="cajasEstado[cajaActual]='completa';avisarCierreCaja(cajaActual,'completa');iniciarComplemento(cajaActual,_codigoPendiente)">➕ Llegaron más sobres para ESTA caja (complemento)</button>
       <button class="btn btn-secondary" onclick="cerrarModalCaja();verLista()">📋 Revisar lista</button>`;
   } else if (n > TARJETAS_POR_CAJA) {
     icon.textContent = '⛔'; title.textContent = `Caja #${cajaActual} con ${n - TARJETAS_POR_CAJA} de más`;
@@ -1550,12 +1672,16 @@ function cerrarModalCaja(){
 async function cerrarCaja(estado){
   const sig = parseInt(document.getElementById('mc-siguiente').value);
   if (!sig || sig < 1) { alert('Escribe el número de la siguiente caja.'); return; }
-  if (sig !== cajaActual && !(await confirmarCajaLibre(sig))) return;
-  if (estado) { cajasEstado[cajaActual] = estado; avisarCierreCaja(cajaActual, estado); }
+  const libre = sig !== cajaActual ? await confirmarCajaLibre(sig) : true;
+  if (!libre) return;
+  if (estado === 'complemento') cerrarComplementoActual();
+  else if (estado) { cajasEstado[cajaActual] = estado; avisarCierreCaja(cajaActual, estado); }
   if (sig !== cajaActual) {
+    if (enComplemento) cerrarComplementoActual();
     cajaActual = sig;
     cajasUsadas.add(sig);
   }
+  if (libre === 'complemento') { iniciarComplemento(sig); return; }
   actualizarContadores();
   persistirSesion();
   cerrarModalCaja();
@@ -1564,9 +1690,14 @@ async function cerrarCaja(estado){
   fb.textContent = `📦 Ahora escaneando CAJA #${cajaActual}`;
 }
 // Tocar una caja de la lista para regresar a ella
-function irACaja(nc){
-  if (nc === cajaActual) return;
+async function irACaja(nc){
+  if (nc === cajaActual && !enComplemento) return;
   if (!asegurarCierreCajaActual()) return;
+  if (estadoCaja(nc) === 'completa') {
+    const r = await confirmarCajaLibre(nc);
+    if (r === 'complemento') iniciarComplemento(nc);
+    return;
+  }
   if (!confirm(`¿Regresar a la CAJA #${nc} para seguir escaneando en ella?`)) return;
   cajaActual = nc;
   // Si estaba cerrada como incompleta, se reabre
@@ -1589,6 +1720,7 @@ function abrirCambiarCaja() {
 
 // Si la caja actual tiene sobres y no está cerrada, pedir cerrarla antes de cambiar
 function asegurarCierreCajaActual(){
+  if (enComplemento) { cerrarComplementoActual(); return true; }
   const n = contarCaja(cajaActual);
   if (!n || estadoCaja(cajaActual) !== 'abierta') return true;
   const ok = confirm(`La CAJA #${cajaActual} tiene ${n} de ${TARJETAS_POR_CAJA} sobres y no está cerrada.\n\n` +
@@ -1603,9 +1735,11 @@ function asegurarCierreCajaActual(){
 async function confirmarCambioCaja() {
   const nueva = parseInt(document.getElementById('inp-nueva-caja').value);
   if (!nueva || nueva < 1) { alert('Número de caja inválido.'); return; }
-  if (nueva === cajaActual) { cerrarModal(); return; }
+  if (nueva === cajaActual && !enComplemento && estadoCaja(nueva) !== 'completa') { cerrarModal(); return; }
   if (!asegurarCierreCajaActual()) return;
-  if (!(await confirmarCajaLibre(nueva))) return;
+  const libre = await confirmarCajaLibre(nueva);
+  if (!libre) return;
+  if (libre === 'complemento') { iniciarComplemento(nueva); return; }
   cajaActual = nueva;
   cajasUsadas.add(nueva);
   if (cajasEstado[nueva] === 'parcial') delete cajasEstado[nueva];
@@ -1641,7 +1775,7 @@ function renderLista() {
     lista.innerHTML = [...registros].reverse().map((r, i) =>
       `<div class="scan-item ${r.dup ? 'dup' : ''}">
         <div class="scan-item-num">${r.num}</div>
-        <div class="scan-item-meta">Caja #${r.caja}<br>${r.ts}${r.otro ? '<br>⛔ OTRO: ' + r.otro : r.invalido ? '<br>⛔ INVÁLIDO' : (r.dup ? '<br>⚠️ DUP' : '')}</div>
+        <div class="scan-item-meta">Caja #${r.caja}${r.comp ? ' ➕' : ''}<br>${r.ts}${r.otro ? '<br>⛔ OTRO: ' + r.otro : r.invalido ? '<br>⛔ INVÁLIDO' : (r.dup ? '<br>⚠️ DUP' : '')}</div>
       </div>`
     ).join('');
   }
@@ -1711,6 +1845,9 @@ function desgloseCajasHTML(){
     html += `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gris);font-size:.85rem">
       <span>${icono} Caja #${nc}<span style="color:#888;font-size:.75rem">${nota}</span></span>
       <strong>${cnt}</strong></div>`;
+    const k = contarComp(nc);
+    if (k) html += `<div style="display:flex;justify-content:space-between;padding:6px 0 6px 14px;border-bottom:1px solid var(--gris);font-size:.82rem;color:#0d47a1">
+      <span>➕ Complemento caja #${nc}</span><strong>+${k}</strong></div>`;
   });
   html += `<div style="display:flex;justify-content:space-between;padding:9px 0 2px;font-size:.95rem;font-weight:800;color:var(--guinda)">
     <span>TOTAL TARJETAS</span><strong>${unicos.toLocaleString('es-MX')}</strong></div>`;
@@ -1720,6 +1857,7 @@ function desgloseCajasHTML(){
 function terminarSesion() {
   detenerScanner();
   cerrarModal();
+  cerrarComplementoActual();
   cajasConTarjetas().forEach(nc => {
     if (estadoCaja(nc) === 'abierta') { cajasEstado[nc] = 'parcial'; avisarCierreCaja(nc, 'parcial'); }
   });
@@ -1747,10 +1885,10 @@ function celdaNumero(v){
 function generarCSV() {
   const fecha = new Date().toLocaleDateString('es-MX');
   const estTxt = { completa:'COMPLETA', parcial:'INCOMPLETA', abierta:'SIN CERRAR' };
-  let csv = '﻿PROCESO,NUM_TARJETA,CAJA,CONSECUTIVO,ESTADO_CAJA,TARJETAS_EN_CAJA,OPERADOR,FECHA,HORA\r\n';
+  let csv = '﻿PROCESO,NUM_TARJETA,CAJA,CONSECUTIVO,TIPO,ESTADO_CAJA,TARJETAS_EN_CAJA,OPERADOR,FECHA,HORA\r\n';
   // Solo sobres válidos: duplicados, inválidos y de otro operador NO van al archivo (quedan en la hoja "Rechazos")
   registros.filter(r => !r.dup).forEach(r => {
-    csv += `${procesoSesion || 'SIN PROCESO'},${celdaNumero(r.num)},${r.caja},${consecDe(r)},${estTxt[estadoCaja(r.caja)]},${contarCaja(r.caja)},"${operador}",${fecha},${r.ts}\r\n`;
+    csv += `${procesoSesion || 'SIN PROCESO'},${celdaNumero(r.num)},${r.caja},${consecDe(r)},${r.comp ? 'COMPLEMENTO' : 'NORMAL'},${estTxt[estadoCaja(r.caja)]},${contarCaja(r.caja)},"${operador}",${fecha},${r.ts}\r\n`;
   });
   return csv;
 }
@@ -1781,7 +1919,8 @@ function compartirWhatsApp() {
   const lineas  = cajasConTarjetas().map(nc => {
     const est = estadoCaja(nc), cnt = contarCaja(nc);
     const ic = cnt > TARJETAS_POR_CAJA ? '⛔' : est === 'completa' ? '✅' : est === 'parcial' ? '🟠' : '⚠️';
-    return `${ic} Caja #${nc}: ${cnt}${est==='parcial'?' (incompleta)':est==='abierta'?' (sin cerrar)':''}`;
+    const k = contarComp(nc);
+    return `${ic} Caja #${nc}: ${cnt}${est==='parcial'?' (incompleta)':est==='abierta'?' (sin cerrar)':''}${k ? `\n   ➕ Complemento: +${k}` : ''}`;
   }).join('\n');
   const msg = encodeURIComponent(
     `📦 *ESCANEO TARJETAS — SARE 1507*\n` +
@@ -1805,7 +1944,7 @@ function nuevaSesion() {
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
   numerosSet = new Set(); dupCount = 0; cajasEstado = {}; dupLog = [];
-  otrosSobres = {}; otroCount = 0; procesoSesion = '';
+  otrosSobres = {}; otroCount = 0; procesoSesion = ''; enComplemento = false; compEstado = {};
   limpiarSesionIDB();
   // Restaurar nombre desde sesión (no borrarlo si viene del index)
   const inp = document.getElementById('inp-operador');
@@ -1916,9 +2055,33 @@ function cerrarModal() {
   document.getElementById('modal-bg').classList.remove('active');
 }
 
-// Cerrar modal tocando fondo
+// Cerrar modal tocando fondo (y reanudar el lector si estaba pausado por ese modal)
 document.getElementById('modal-bg').addEventListener('click', function(e) {
-  if (e.target === this) cerrarModal();
+  if (e.target === this) { if (_modalCajaAbierto) cerrarModalCaja(); else cerrarModal(); }
+});
+
+// ── Vigilante: si el lector quedó en pausa sin ninguna ventana abierta, se reanuda solo ──
+let _pausaTicks = 0;
+setInterval(() => {
+  const enScan = document.getElementById('screen-scan').classList.contains('active');
+  const hayModal = document.getElementById('modal-bg').classList.contains('active');
+  if (enScan && zxingReader && !scanActivo && !hayModal) {
+    if (++_pausaTicks >= 2) { _modalCajaAbierto = false; scanActivo = true; _pausaTicks = 0; }
+  } else _pausaTicks = 0;
+}, 1500);
+
+// Reiniciar la cámara sin perder nada (si dejó de leer)
+function reiniciarCamara(){
+  _modalCajaAbierto = false;
+  detenerScanner();
+  setTimeout(() => { try { activarCamara(); } catch (e) { arrancarScanner(); } }, 250);
+}
+// Al volver a la app (bloqueo de pantalla, cambio de app) la cámara suele quedar congelada: se reinicia
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  const enScan = document.getElementById('screen-scan').classList.contains('active');
+  if (enScan && zxingReader) reiniciarCamara();
+  if (enScan) programarSync(0);
 });
 
 // Textos del HTML con el límite de sobres por caja + aviso de MODO PRUEBA
@@ -1971,6 +2134,9 @@ setInterval(actualizarFechaHero, 60000);
   try{
     const hayDatos = await restaurarSesion();
     if(!hayDatos) return; // sin sesión previa, pantalla de login normal
+    let auto = false;
+    try { auto = sessionStorage.getItem('esc_auto_retomar') === '1'; sessionStorage.removeItem('esc_auto_retomar'); } catch (e) {}
+    if (auto) { retomarSesion(); return; }
 
     const unicos = registros.filter(r => !r.dup).length;
     const cajasList = cajasConTarjetas().join(', ');
@@ -2039,7 +2205,7 @@ async function descartarSesionGuardada() {
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
   numerosSet = new Set(); dupCount = 0; cajasEstado = {}; dupLog = [];
-  otrosSobres = {}; otroCount = 0; procesoSesion = '';
+  otrosSobres = {}; otroCount = 0; procesoSesion = ''; enComplemento = false; compEstado = {};
   limpiarSesionIDB();
   const b = document.getElementById('banner-retomar');
   if(b) b.remove();
