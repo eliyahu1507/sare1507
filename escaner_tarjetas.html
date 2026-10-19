@@ -11,6 +11,14 @@
 <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
 
 <style>
+.proc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.btn-proc{border:2px solid #ddd;background:#fff;border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;font-family:'Montserrat',sans-serif;line-height:1.25;color:#333}
+.btn-proc b{display:block;font-size:1.25rem;font-weight:900;letter-spacing:.5px}
+.btn-proc span{display:block;font-size:.66rem;color:#666;margin-top:3px}
+.btn-proc.sel{border-color:var(--guinda);background:var(--guinda);color:#fff}
+.btn-proc.sel span{color:#f3e6c8}
+.proc-tag{display:inline-block;background:var(--guinda);color:#fff;border-radius:8px;padding:2px 9px;font-family:'Montserrat',sans-serif;font-weight:900;font-size:.8rem;letter-spacing:.5px;margin-bottom:4px}
+
 :root {
   --guinda: #6B1C3E; --guinda-o: #4A0E29; --guinda-d: #8B2252;
   --dorado: #C8962A; --dorado-l: #E8B84B;
@@ -246,6 +254,13 @@ footer strong { color: var(--dorado-l); }
   <div class="content">
     <div class="card">
       <div class="card-title">👤 Datos del operador</div>
+      <label class="field-label">Proceso de las cajas que vas a escanear</label>
+      <div class="proc-grid" id="proc-grid">
+        <button type="button" class="btn-proc" data-p="BRCU" onclick="elegirProceso('BRCU')"><b>BRCU</b><span>Rita Cetina útiles y uniformes · PRIMARIAS</span></button>
+        <button type="button" class="btn-proc" data-p="BRC" onclick="elegirProceso('BRC')"><b>BRC</b><span>Rita Cetina · SECUNDARIAS</span></button>
+        <button type="button" class="btn-proc" data-p="BUEEMS" onclick="elegirProceso('BUEEMS')"><b>BUEEMS</b><span>Benito Juárez · MEDIA SUPERIOR</span></button>
+        <button type="button" class="btn-proc" data-p="JEF" onclick="elegirProceso('JEF')"><b>JEF</b><span>Jóvenes Escribiendo el Futuro · UNIVERSIDAD</span></button>
+      </div>
       <label class="field-label">Tu nombre completo</label>
       <input type="text" id="inp-operador" class="input-field uppercase"
         placeholder="APELLIDO PATERNO APELLIDO MATERNO NOMBRE(S)"
@@ -269,7 +284,7 @@ footer strong { color: var(--dorado-l); }
     <div class="card" style="background:var(--naranja-l);border:1.5px solid var(--naranja)">
       <div style="font-size:0.8rem;color:var(--naranja);line-height:1.6">
         <strong style="font-family:'Montserrat',sans-serif;display:block;margin-bottom:6px">⚠️ Instrucciones</strong>
-        1. Escribe tu nombre completo y el número de la primera caja.<br>
+        1. Elige el <strong>proceso</strong> (BRCU, BRC, BUEEMS o JEF), escribe tu nombre completo y el número de la primera caja.<br>
         2. Escanea cada sobre — uno por uno.<br>
         3. Al llegar a <span class="lim">700</span> la app te avisa y pasa a la siguiente caja.<br>
         4. Si una caja trae menos de <span class="lim">700</span> (por ejemplo la última), toca <strong>Caja terminada</strong> y confírmala como incompleta.<br>
@@ -327,6 +342,7 @@ footer strong { color: var(--dorado-l); }
     <div class="caja-panel">
       <div class="caja-top">
         <div style="min-width:0">
+          <div class="proc-tag" id="lbl-proceso">—</div>
           <div class="caja-num" id="lbl-caja-actual">CAJA #1</div>
           <div class="caja-sub" id="lbl-caja-sub">Caja en curso</div>
         </div>
@@ -368,17 +384,6 @@ footer strong { color: var(--dorado-l); }
     <div class="card" style="padding:12px 14px">
       <div class="card-title" style="margin-bottom:8px">📦 Cajas de este operador <span id="lbl-cajas-resumen" style="margin-left:auto;font-weight:700;color:#666;text-transform:none;letter-spacing:0"></span></div>
       <div class="cajas-chips" id="cajas-chips"></div>
-    </div>
-
-    <!-- SOBRES DE OTROS OPERADORES -->
-    <div class="card" style="padding:12px 14px">
-      <div class="card-title" style="margin-bottom:6px">👥 Sobres de otros operadores <span style="margin-left:auto;font-weight:600;color:#999;text-transform:none;letter-spacing:0;font-size:.68rem">respaldo sin internet</span></div>
-      <p id="otros-estado" style="font-size:.75rem;color:#666;margin-bottom:10px;line-height:1.5"></p>
-      <label class="btn btn-secondary btn-sm" style="width:100%;padding:12px;cursor:pointer">
-        📂 Cargar CSV de compañeros
-        <input type="file" accept=".csv,text/csv,text/comma-separated-values,application/vnd.ms-excel" multiple style="display:none" onchange="cargarCSVOtros(event)">
-      </label>
-      <div id="otros-conflictos"></div>
     </div>
 
     <!-- BOTONES ACCIÓN -->
@@ -656,7 +661,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '16-oct-26 G';
+const APP_VERSION = '19-oct-26 H';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -770,7 +775,7 @@ function persistirSesion(){
   const estado = {
     operador, cajaActual, cajasUsadas:[...cajasUsadas], registros, dupCount,
     totalCajas, tarjetasUltimaCaja, cajasEstado, activa:true, guardado:Date.now(),
-    otrosSobres, otrosCajas, otrosArchivos, otroCount, version: APP_VERSION, sesionId, dupLog
+    otrosSobres, otroCount, version: APP_VERSION, sesionId, dupLog, procesoSesion
   };
   try{
     const tx = idbScan.transaction('sesion','readwrite');
@@ -798,8 +803,8 @@ async function restaurarSesion(){
   registros   = est.registros || [];
   dupCount    = est.dupCount || 0;
   cajasEstado = est.cajasEstado || {};
-  otrosSobres = est.otrosSobres || {}; otrosCajas = est.otrosCajas || {};
-  otrosArchivos = est.otrosArchivos || []; otroCount = est.otroCount || 0;
+  otrosSobres = est.otrosSobres || {}; otroCount = est.otroCount || 0;
+  procesoSesion = est.procesoSesion || '';
   sesionId = est.sesionId || nuevoSesionId();
   dupLog = est.dupLog || [];
   // Sesiones de versiones anteriores: sacar los duplicados propios de la lista de registros
@@ -841,6 +846,10 @@ function toggleUltimaCaja(){}
 async function iniciarSesion() {
   const nom = document.getElementById('inp-operador').value.trim().toUpperCase();
   const caja = parseInt(document.getElementById('inp-caja').value);
+  if (!_procesoElegido) {
+    alert('Elige el PROCESO de las cajas: BRCU, BRC, BUEEMS o JEF.');
+    return;
+  }
   if (!nom || nom.length < 3) {
     alert('Escribe tu nombre completo.');
     return;
@@ -850,8 +859,9 @@ async function iniciarSesion() {
     return;
   }
   operador = nom;            // necesario para consultar la hoja central
+  procesoSesion = _procesoElegido;
   sesionId = nuevoSesionId();
-  if (!(await confirmarCajaLibre(caja))) { operador = ''; return; }
+  if (!(await confirmarCajaLibre(caja))) { operador = ''; procesoSesion = ''; return; }
   setTimeout(probarCentral, 300);
   cajaActual = caja;
   cajasUsadas.add(caja);
@@ -862,7 +872,7 @@ async function iniciarSesion() {
   cajasEstado = {};
   cajasUsadas = new Set([caja]);
 
-  document.getElementById('lbl-operador-hero').textContent = operador;
+  mostrarProceso();
   document.getElementById('lbl-caja-actual').textContent = 'CAJA #' + cajaActual;
   actualizarFechaHero();
   actualizarContadores();
@@ -1026,10 +1036,10 @@ function procesarEscaneo(codigo) {
     return;
   }
 
-  // 1) Sobre que ya escaneó OTRO operador (según los CSV de compañeros cargados)
+  // 1) Sobre que la hoja central ya reportó como de OTRO operador
   const otro = !esDup ? otrosSobres[codigo] : null;
   if (otro) {
-    registros.push({ num: codigo, caja: cajaActual, ts, dup: true, otro: otro.op + ' (caja ' + otro.caja + ')' });
+    registros.push({ num: codigo, caja: cajaActual, ts, dup: true, otro: otro.op + ' (' + (otro.proceso && otro.proceso !== procesoSesion ? otro.proceso + ' ' : '') + 'caja ' + otro.caja + ')' });
     otroCount++;
     persistirSesion();
     actualizarContadores();
@@ -1058,7 +1068,7 @@ function procesarEscaneo(codigo) {
   _ultimoAceptado = { cod: codigo, t: ahoraMs };
 
   actualizarContadores();
-  mostrarFeedback(codigo, esDup);
+  mostrarFeedback(codigo + '  ·  #' + contarCaja(cajaActual), esDup);
 
   // Sonido distintivo (Web Audio API — no requiere archivos)
   if (esDup) beepDUP(); else beepOK();
@@ -1096,107 +1106,37 @@ function mostrarFeedback(codigo, esDup) {
 }
 
 // ══════════════════════════════════════════
-// SOBRES DE OTROS OPERADORES
-// Se cargan los CSV que los compañeros enviaron por WhatsApp. Si un sobre
-// ya lo escaneó otro operador, se rechaza con alarma; si el número de caja
-// ya lo trabajó otro, se avisa antes de usarlo.
+// PROCESO Y SOBRES DE OTROS OPERADORES
+// La hoja central indica si un sobre ya lo escaneó otro operador; aquí se
+// recuerda para rechazarlo al instante aunque se vuelva a escanear sin señal.
 // ══════════════════════════════════════════
-let otrosSobres = {};     // num -> { op, caja, hora }
-let otrosCajas  = {};     // caja -> { op: cantidad }
-let otrosArchivos = [];   // nombres de archivos cargados
+const PROCESOS_TXT = {
+  BRCU:   'BRCU · Rita Cetina útiles y uniformes (primarias)',
+  BRC:    'BRC · Rita Cetina (secundarias)',
+  BUEEMS: 'BUEEMS · Benito Juárez (media superior)',
+  JEF:    'JEF · Jóvenes Escribiendo el Futuro (universidad)'
+};
+let procesoSesion = '';   // BRCU | BRC | BUEEMS | JEF
+let otrosSobres = {};     // num -> { op, caja, hora } (respuesta de la hoja)
 let otroCount = 0;        // sobres rechazados por ser de otro operador
+let _procesoElegido = '';
 
-function _normOp(s){ return String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim(); }
-function _csvFilas(texto){
-  const filas = []; let fila = [], campo = '', q = false;
-  texto = texto.replace(/^﻿/, '');
-  for (let i = 0; i < texto.length; i++) {
-    const c = texto[i];
-    if (q) {
-      if (c === '"') { if (texto[i+1] === '"') { campo += '"'; i++; } else q = false; }
-      else campo += c;
-    } else if (c === '"') q = true;
-    else if (c === ',' || c === ';') { fila.push(campo); campo = ''; }
-    else if (c === '\n' || c === '\r') {
-      if (c === '\r' && texto[i+1] === '\n') i++;
-      fila.push(campo); campo = '';
-      if (fila.some(x => x !== '')) filas.push(fila);
-      fila = [];
-    } else campo += c;
-  }
-  fila.push(campo); if (fila.some(x => x !== '')) filas.push(fila);
-  return filas;
+function elegirProceso(pr){
+  _procesoElegido = pr;
+  document.querySelectorAll('#proc-grid .btn-proc').forEach(b => b.classList.toggle('sel', b.dataset.p === pr));
 }
-
-async function cargarCSVOtros(ev){
-  const archivos = [...(ev.target.files || [])];
-  ev.target.value = '';
-  if (!archivos.length) return;
-  const yo = _normOp(operador);
-  let nuevos = 0, propios = 0, invalidos = [];
-  for (const f of archivos) {
-    const filas = _csvFilas(await f.text());
-    if (!filas.length) { invalidos.push(f.name); continue; }
-    const enc = filas[0].map(h => _normOp(h).replace(/^=/, ''));
-    const iNum = enc.indexOf('NUM_TARJETA'), iCaja = enc.indexOf('CAJA'),
-          iOp = enc.indexOf('OPERADOR'), iHora = enc.indexOf('HORA'), iDup = enc.indexOf('DUPLICADO');
-    if (iNum < 0 || iOp < 0) { invalidos.push(f.name); continue; }
-    for (const r of filas.slice(1)) {
-      const num = String(r[iNum]||'').replace(/^="?|"$/g,'').replace(/^=/,'').trim();
-      const op  = _normOp(r[iOp]);
-      if (!num) continue;
-      if (iDup >= 0 && String(r[iDup]||'').trim().toUpperCase() !== 'NO') continue; // solo sobres válidos
-      if (op === yo) { propios++; continue; }                                   // mi propio archivo
-      const caja = parseInt(r[iCaja]) || 0;
-      if (!otrosSobres[num]) nuevos++;
-      otrosSobres[num] = { op, caja, hora: iHora >= 0 ? r[iHora] : '' };
-      otrosCajas[caja] = otrosCajas[caja] || {};
-      otrosCajas[caja][op] = (otrosCajas[caja][op] || 0) + 1;
-    }
-    if (!otrosArchivos.includes(f.name)) otrosArchivos.push(f.name);
-  }
-  persistirSesion();
-  renderOtros();
-  let msg = `Se cargaron ${nuevos} sobre(s) nuevos de compañeros.`;
-  if (propios) msg += `\n(${propios} fila(s) eran tuyas y se ignoraron.)`;
-  if (invalidos.length) msg += `\n⚠️ No se pudieron leer: ${invalidos.join(', ')}`;
-  const conf = conflictosOtros();
-  if (conf.sobres.length || conf.cajas.length) msg += `\n\n⛔ Revisa los avisos en rojo: hay coincidencias con tus escaneos.`;
-  alert(msg);
+function mostrarProceso(){
+  const el = document.getElementById('lbl-proceso');
+  if (el) el.textContent = procesoSesion || 'SIN PROCESO';
+  const h = document.getElementById('lbl-operador-hero');
+  if (h) h.textContent = operador + (procesoSesion ? ' · ' + procesoSesion : '');
 }
-
-function conflictosOtros(){
-  const sobres = registros.filter(r => !r.dup && otrosSobres[r.num]);
-  const cajas  = cajasConTarjetas().filter(nc => otrosCajas[nc]);
-  return { sobres, cajas };
-}
-function quienTrabajoCaja(nc){
-  const o = otrosCajas[nc]; if (!o) return '';
-  return Object.entries(o).map(([op,n]) => `${op} (${n} sobre${n!==1?'s':''})`).join(', ');
-}
-
-function renderOtros(){
-  const est = document.getElementById('otros-estado');
-  const box = document.getElementById('otros-conflictos');
-  if (!est || !box) return;
-  const ops = new Set(Object.values(otrosSobres).map(x => x.op));
-  const n = Object.keys(otrosSobres).length;
-  est.innerHTML = n
-    ? `✅ <strong>${n.toLocaleString('es-MX')}</strong> sobres de <strong>${ops.size}</strong> compañero(s) cargados (${otrosArchivos.length} archivo(s)). Si escaneas uno de esos sobres, la app lo rechazará.`
-    : 'Carga los CSV que tus compañeros enviaron por WhatsApp para que la app detecte si un sobre o una caja ya la trabajó alguien más.';
-  const c = conflictosOtros();
-  let h = '';
-  if (c.sobres.length) {
-    h += `<div class="otros-alerta">⛔ <strong>${c.sobres.length} sobre(s) que tú escaneaste también los escaneó otro operador:</strong><br>` +
-      c.sobres.slice(0,10).map(r => `${r.num} — tú: caja ${r.caja} · ${otrosSobres[r.num].op}: caja ${otrosSobres[r.num].caja}`).join('<br>') +
-      (c.sobres.length > 10 ? `<br>…y ${c.sobres.length - 10} más` : '') + '</div>';
-  }
-  if (c.cajas.length) {
-    h += `<div class="otros-alerta">⚠️ <strong>Número(s) de caja que también usó otro operador:</strong><br>` +
-      c.cajas.map(nc => `Caja #${nc}: ${quienTrabajoCaja(nc)}`).join('<br>') +
-      `<br><span style="font-weight:400">Confirma con el supervisor que no sea la misma caja física.</span></div>`;
-  }
-  box.innerHTML = h;
+// Posición del sobre dentro de su caja (la de la hoja manda; si aún no responde, la local)
+function consecDe(r){
+  if (r.consec) return r.consec;
+  let i = 0;
+  for (const x of registros) { if (x.dup || x.caja !== r.caja) continue; i++; if (x === r) return i; }
+  return '';
 }
 
 function mostrarAlertaOtro(codigo, otro, cuantos){
@@ -1204,7 +1144,7 @@ function mostrarAlertaOtro(codigo, otro, cuantos){
   scanActivo = false;
   document.getElementById('mo-num').textContent = codigo;
   document.getElementById('mo-body').innerHTML =
-    `Este sobre ya lo escaneó <strong>${otro.op}</strong> en la <strong>caja #${otro.caja}</strong>${otro.hora ? ' a las ' + String(otro.hora).replace(/\.$/,'') : ''}.<br><br>
+    `Este sobre ya lo escaneó <strong>${otro.op}</strong> en la <strong>caja ${otro.proceso && otro.proceso !== procesoSesion ? otro.proceso + ' ' : ''}#${otro.caja}</strong>${otro.hora ? ' a las ' + String(otro.hora).replace(/\.$/,'') : ''}.<br><br>
      <strong>No se contó.</strong> Aparta el sobre y avisa al supervisor: puede ser una caja que ya se trabajó.` +
     (cuantos > 1 ? `<br><br><strong style="color:var(--rojo)">Además hay ${cuantos - 1} sobre(s) más en la misma situación — revisa la lista.</strong>` : '');
   abrirModal('modal-otro');
@@ -1232,7 +1172,7 @@ function beepOTRO(){
 // otro operador ya lo había escaneado; en ese caso se descuenta y suena la alarma.
 // Sin internet, los sobres esperan en el celular y se envían solos al volver.
 // ══════════════════════════════════════════
-const SHEETS_URL   = 'https://script.google.com/macros/s/AKfycbwR9eAd8BI3r_9Bqga5GaPKcBx_hodkB0-Ukm_oQREyAP4axsoXSwGz2WRFQMQ1l3cZiA/exec';  // hoja SARE_1507_Escaneo_de_tarjetas                    // ← URL de la aplicación web (termina en /exec)
+const SHEETS_URL   = 'https://script.google.com/macros/s/AKfycbzo3XMrRvW5s-QxsDKlEKkPbudZ6dXGAUE1T5X7ACNOFIdIC_rGZhu8PXYdJUWEKFLwGg/exec';  // hoja SARE_1507_Escaneo_de_tarjetas                    // ← URL de la aplicación web (termina en /exec)
 const SHEETS_CLAVE = 'sare1507-0803a849ee47';   // ← la misma CLAVE que en el script de Google
 const MODO_HOJA    = TARJETAS_POR_CAJA === 700 ? 'REAL' : 'PRUEBA';
 let sesionId = '';
@@ -1245,7 +1185,7 @@ async function llamarCentral(payload, timeoutMs){
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs || 15000);
   try {
-    const cuerpo = Object.assign({ clave: SHEETS_CLAVE, modo: MODO_HOJA, op: operador, sesion: sesionId, version: APP_VERSION }, payload);
+    const cuerpo = Object.assign({ clave: SHEETS_CLAVE, modo: MODO_HOJA, op: operador, proceso: procesoSesion || 'SIN PROCESO', sesion: sesionId, version: APP_VERSION }, payload);
     // Sin encabezados personalizados (text/plain) para que Google lo acepte sin pre-verificación CORS
     const r = await fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify(cuerpo), signal: ctrl.signal, redirect: 'follow' });
     const j = await r.json();
@@ -1275,12 +1215,12 @@ async function enviarPendientes(){
     const rechazados = [];
     pend.forEach(r => {
       const x = porNum[r.num]; if (!x) return;
-      if (x.estado === 'ok') { r.sync = 'ok'; return; }
+      if (x.estado === 'ok') { r.sync = 'ok'; if (x.consecutivo) r.consec = x.consecutivo; return; }
       if (x.estado === 'invalido') { r.dup = true; r.sync = 'ok'; r.invalido = true; return; }
       if (x.estado === 'otro') {
-        r.dup = true; r.sync = 'ok'; r.otro = `${x.op} (caja ${x.caja})`;
+        r.dup = true; r.sync = 'ok'; r.otro = `${x.op} (${x.proceso && x.proceso !== procesoSesion ? x.proceso + ' ' : ''}caja ${x.caja})`;
         otroCount++;
-        otrosSobres[r.num] = { op: x.op, caja: x.caja, hora: x.hora };
+        otrosSobres[r.num] = { op: x.op, caja: x.caja, proceso: x.proceso || '', hora: x.hora };
         rechazados.push({ num: r.num, x });
       }
     });
@@ -1353,7 +1293,7 @@ function preguntarCajaOcupada(nc, otros){
     const liberables = otros.filter(o => o.estado !== 'COMPLETA');
     const lista = otros.map(o => `<div style="padding:6px 0;border-bottom:1px solid var(--gris)">👤 <strong>${o.op}</strong><br>
         <span style="font-size:.8rem">${o.n} sobre(s) · caja <strong>${o.estado || 'ABIERTA'}</strong></span></div>`).join('');
-    document.getElementById('mco-title').textContent = `La CAJA #${nc} ya tiene sobres de otro operador`;
+    document.getElementById('mco-title').textContent = `La caja ${procesoSesion} #${nc} ya tiene sobres de otro operador`;
     document.getElementById('mco-body').innerHTML = lista +
       (liberables.length
         ? `<p style="margin-top:10px;font-size:.82rem">Si ese operador <strong>ya no está trabajando esta caja</strong> (su celular falló o se salió), libera sus sobres para que tú escanees la caja completa.</p>`
@@ -1369,7 +1309,7 @@ function preguntarCajaOcupada(nc, otros){
   });
 }
 
-// ¿Otro operador ya trabajó esta caja? (consulta la hoja central; sin red usa los CSV cargados)
+// ¿Otro operador ya trabajó esta caja del mismo proceso? (consulta la hoja central)
 async function confirmarCajaLibre(nc){
   if (centralActiva()) {
     let j = null;
@@ -1392,15 +1332,12 @@ async function confirmarCajaLibre(nc){
         alert('No se pudieron liberar los sobres: ' + (e.message || e) + '\nRevisa la señal e intenta de nuevo.');
         return false;
       }
-      delete otrosCajas[nc];
       persistirSesion();
       alert(`🔓 Se liberaron ${total} sobre(s) de la caja #${nc}. Ya puedes escanear la caja completa.`);
       return true;
     }
   }
-  const quien = quienTrabajoCaja(nc);
-  if (!quien) return true;
-  return confirm(`⚠️ La CAJA #${nc} ya la trabajó: ${quien}.\n\n¿Seguro que esta es la caja #${nc}? Si es otra caja, cancela y corrige el número.`);
+  return true;   // sin hoja central o sin señal: se permite y la hoja revisa al sincronizar
 }
 
 // Libera en la hoja todos los sobres de ESTA sesión (para cancelar sin guardar)
@@ -1420,7 +1357,7 @@ function reiniciarEstadoLocal(){
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
   numerosSet = new Set(); dupCount = 0; cajasEstado = {}; dupLog = [];
-  otrosSobres = {}; otrosCajas = {}; otrosArchivos = []; otroCount = 0;
+  otrosSobres = {}; otroCount = 0; procesoSesion = '';
   limpiarSesionIDB();
 }
 
@@ -1428,8 +1365,8 @@ function reiniciarEstadoLocal(){
 function abrirSalir(){
   const n = registros.filter(r => !r.dup).length;
   document.getElementById('ms-body').innerHTML = n
-    ? `Llevas <strong>${n}</strong> sobre(s) en ${cajasConTarjetas().length} caja(s). ¿Qué quieres hacer?`
-    : 'No has escaneado sobres en esta sesión.';
+    ? `Llevas <strong>${n}</strong> sobre(s) en ${cajasConTarjetas().length} caja(s) de <strong>${procesoSesion || 'SIN PROCESO'}</strong>. ¿Qué quieres hacer?<br><span style="font-size:.78rem;color:#666">Para cambiar de proceso, termina esta sesión y empieza una nueva.</span>`
+    : `No has escaneado sobres en esta sesión (${procesoSesion || 'SIN PROCESO'}).`;
   abrirModal('modal-salir');
 }
 function salirAlMenu(){ window.location.href = 'index.html'; }
@@ -1469,6 +1406,8 @@ async function reconciliarConHoja(){
   let j;
   try { j = await llamarCentral({ accion: 'mis_sobres' }, 15000); } catch (e) { return 0; }
   const enHoja = new Set(j.nums || []);
+  const cons = new Map(j.consecutivos || []);
+  registros.forEach(r => { if (!r.dup && cons.get(r.num)) r.consec = cons.get(r.num); });
   const quitados = registros.filter(r => !r.dup && r.sync === 'ok' && !enHoja.has(r.num));
   quitados.forEach(r => { r.dup = true; r.otro = 'LIBERADO en la hoja (otro operador tomó la caja)'; numerosSet.delete(r.num); });
   if (quitados.length) {
@@ -1559,7 +1498,6 @@ function actualizarContadores() {
     sub.style.color = '';
   }
   renderChipsCajas();
-  renderOtros();
   renderSync();
 }
 
@@ -1809,10 +1747,10 @@ function celdaNumero(v){
 function generarCSV() {
   const fecha = new Date().toLocaleDateString('es-MX');
   const estTxt = { completa:'COMPLETA', parcial:'INCOMPLETA', abierta:'SIN CERRAR' };
-  let csv = '﻿NUM_TARJETA,CAJA,ESTADO_CAJA,TARJETAS_EN_CAJA,OPERADOR,FECHA,HORA\r\n';
+  let csv = '﻿PROCESO,NUM_TARJETA,CAJA,CONSECUTIVO,ESTADO_CAJA,TARJETAS_EN_CAJA,OPERADOR,FECHA,HORA\r\n';
   // Solo sobres válidos: duplicados, inválidos y de otro operador NO van al archivo (quedan en la hoja "Rechazos")
   registros.filter(r => !r.dup).forEach(r => {
-    csv += `${celdaNumero(r.num)},${r.caja},${estTxt[estadoCaja(r.caja)]},${contarCaja(r.caja)},"${operador}",${fecha},${r.ts}\r\n`;
+    csv += `${procesoSesion || 'SIN PROCESO'},${celdaNumero(r.num)},${r.caja},${consecDe(r)},${estTxt[estadoCaja(r.caja)]},${contarCaja(r.caja)},"${operador}",${fecha},${r.ts}\r\n`;
   });
   return csv;
 }
@@ -1822,7 +1760,7 @@ function nombreArchivo() {
   const op = operador.split(' ')[0]; // primer apellido
   const cs = cajasConTarjetas();
   const pre = TARJETAS_POR_CAJA !== 700 ? 'PRUEBA_' : '';
-  return `${pre}escaneo_${fecha}_${op}_cajas${cs.length ? cs[0]+'-a-'+cs[cs.length-1] : '0'}.csv`;
+  return `${pre}escaneo_${procesoSesion || 'SINPROC'}_${fecha}_${op}_cajas${cs.length ? cs[0]+'-a-'+cs[cs.length-1] : '0'}.csv`;
 }
 
 function descargarCSV() {
@@ -1848,6 +1786,7 @@ function compartirWhatsApp() {
   const msg = encodeURIComponent(
     `📦 *ESCANEO TARJETAS — SARE 1507*\n` +
     `📅 Fecha: ${fecha}\n` +
+    `🗂 Proceso: ${PROCESOS_TXT[procesoSesion] || 'SIN PROCESO'}\n` +
     `👤 Operador: ${operador}\n\n` +
     `${lineas}\n\n` +
     `✅ *Total tarjetas: ${unicos.toLocaleString('es-MX')}*\n` +
@@ -1866,7 +1805,7 @@ function nuevaSesion() {
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
   numerosSet = new Set(); dupCount = 0; cajasEstado = {}; dupLog = [];
-  otrosSobres = {}; otrosCajas = {}; otrosArchivos = []; otroCount = 0;
+  otrosSobres = {}; otroCount = 0; procesoSesion = '';
   limpiarSesionIDB();
   // Restaurar nombre desde sesión (no borrarlo si viene del index)
   const inp = document.getElementById('inp-operador');
@@ -2050,7 +1989,7 @@ setInterval(actualizarFechaHero, 60000);
         📂 SESIÓN GUARDADA ENCONTRADA
       </div>
       <div style="font-size:.88rem;font-weight:600;margin-bottom:2px">
-        👤 ${operador}
+        👤 ${operador} · 🗂 ${procesoSesion || 'SIN PROCESO'}
       </div>
       <div style="font-size:.8rem;opacity:.85;margin-bottom:10px">
         ✅ ${unicos} tarjeta(s) · 📦 Caja(s): ${cajasList || cajaActual}
@@ -2080,7 +2019,7 @@ function retomarSesion() {
   const b = document.getElementById('banner-retomar');
   if(b) b.remove();
   // Actualizar UI con datos recuperados
-  document.getElementById('lbl-operador-hero').textContent = operador;
+  mostrarProceso();
   document.getElementById('lbl-caja-actual').textContent   = 'CAJA #' + cajaActual;
   actualizarFechaHero();
   actualizarContadores();
@@ -2100,7 +2039,7 @@ async function descartarSesionGuardada() {
   operador = ''; cajaActual = 1;
   cajasUsadas = new Set(); registros = [];
   numerosSet = new Set(); dupCount = 0; cajasEstado = {}; dupLog = [];
-  otrosSobres = {}; otrosCajas = {}; otrosArchivos = []; otroCount = 0;
+  otrosSobres = {}; otroCount = 0; procesoSesion = '';
   limpiarSesionIDB();
   const b = document.getElementById('banner-retomar');
   if(b) b.remove();
