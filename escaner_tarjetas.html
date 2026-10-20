@@ -704,7 +704,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '20-oct-26 K';
+const APP_VERSION = '20-oct-26 L';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -814,11 +814,11 @@ function idbScanGet(key){
 // la pestaña o se recarga, nunca queda un estado a medias.
 let _persistPend = false;
 function persistirSesion(){
-  if(!idbScan) return;
+  if(!idbScan || !operador) return;
   const estado = {
     operador, cajaActual, cajasUsadas:[...cajasUsadas], registros, dupCount,
     totalCajas, tarjetasUltimaCaja, cajasEstado, activa:true, guardado:Date.now(),
-    otrosSobres, otroCount, version: APP_VERSION, sesionId, dupLog, procesoSesion, enComplemento, compEstado
+    otrosSobres, otroCount, version: APP_VERSION, sesionId, dupLog, procesoSesion, enComplemento, compEstado, genSesion
   };
   try{
     const tx = idbScan.transaction('sesion','readwrite');
@@ -849,6 +849,7 @@ async function restaurarSesion(){
   otrosSobres = est.otrosSobres || {}; otroCount = est.otroCount || 0;
   procesoSesion = est.procesoSesion || '';
   enComplemento = !!est.enComplemento; compEstado = est.compEstado || {};
+  genSesion = est.genSesion || '';
   sesionId = est.sesionId || nuevoSesionId();
   dupLog = est.dupLog || [];
   // Sesiones de versiones anteriores: sacar los duplicados propios de la lista de registros
@@ -905,6 +906,7 @@ async function iniciarSesion() {
   operador = nom;            // necesario para consultar la hoja central
   procesoSesion = _procesoElegido;
   sesionId = nuevoSesionId();
+  genSesion = '';
   enComplemento = false; compEstado = {};
   // ¿Dejó cajas abiertas en otro celular o en una sesión que se perdió? → continuar donde se quedó
   if (await ofrecerContinuarDesdeHoja()) return;
@@ -921,6 +923,7 @@ async function iniciarSesion() {
   cajasUsadas = new Set([caja]);
   enComplemento = libre === 'complemento';
   persistirSesion();
+  if (libre === 'recuperar') aplicarRecuperacion();
 
   mostrarProceso();
   document.getElementById('lbl-caja-actual').textContent = 'CAJA #' + cajaActual;
@@ -1332,8 +1335,20 @@ const SHEETS_URL   = 'https://script.google.com/macros/s/AKfycbyaC6REsnnu5zIN3SH
 const SHEETS_CLAVE = 'sare1507-0803a849ee47';   // ← la misma CLAVE que en el script de Google
 const MODO_HOJA    = TARJETAS_POR_CAJA === 700 ? 'REAL' : 'PRUEBA';
 let sesionId = '';
+let genSesion = '';   // "generación" de la hoja de prueba al iniciar la sesión
 let _syncEnVuelo = false, _syncTimer = null, _syncError = '', _syncUltimo = 0;
 
+function reinicioPorLimpieza(){
+  const nom = operador;
+  _modalCajaAbierto = false;
+  try { cerrarModal(); } catch (e) {}
+  reiniciarEstadoLocal();
+  genSesion = '';
+  const b = document.getElementById('banner-retomar'); if (b) b.remove();
+  mostrarPantalla('screen-login');
+  document.getElementById('inp-operador').value = nom;
+  setTimeout(() => alert('🧹 El supervisor borró los datos de PRUEBA de la hoja central.\nTu sesión se reinició para empezar limpio: elige el proceso y la caja.'), 50);
+}
 function centralActiva(){ return !!SHEETS_URL && SHEETS_URL.indexOf('/exec') > 0; }
 function nuevoSesionId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
@@ -1346,6 +1361,11 @@ async function llamarCentral(payload, timeoutMs){
     const r = await fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify(cuerpo), signal: ctrl.signal, redirect: 'follow' });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Error de la hoja central');
+    // ¿El supervisor borró los datos de PRUEBA? → esta sesión ya no vale: reiniciar el celular
+    if (j.gen && MODO_HOJA === 'PRUEBA' && operador) {
+      if (!genSesion) { genSesion = j.gen; persistirSesion(); }
+      else if (j.gen !== genSesion) { reinicioPorLimpieza(); throw new Error('REINICIO'); }
+    }
     _syncUltimo = Date.now(); _syncError = '';
     return j;
   } finally { clearTimeout(t); }
@@ -1391,6 +1411,7 @@ async function enviarPendientes(){
       mostrarAlertaOtro(rechazados[0].num, rechazados[0].x, rechazados.length, rechazados[0].caja);
     }
   } catch (e) {
+    if (e && e.message === 'REINICIO') { _syncEnVuelo = false; return; }
     _syncError = (navigator.onLine === false) ? 'Sin internet'
                : (e && e.name === 'AbortError') ? 'La hoja central no respondió'
                : (e && e.name === 'TypeError') ? 'Sin conexión con la hoja central'
@@ -1444,6 +1465,36 @@ async function probarCentral(){
 // CAJAS OCUPADAS, CANCELAR SESIÓN Y LIBERAR SOBRES
 // ══════════════════════════════════════════
 // Modal de 3 opciones que devuelve la elección del operador
+let _filasRecuperar = null;
+function preguntarCajaPropia(nc, propio){
+  return new Promise(resolve => {
+    document.getElementById('mco-title').textContent = `Ya tienes ${propio.n} sobre(s) en la caja ${procesoSesion} #${nc}`;
+    document.getElementById('mco-body').innerHTML =
+      `La hoja central tiene <strong>${propio.n}</strong> sobre(s) tuyos en esta caja (estado <strong>${propio.estado || 'ABIERTA'}</strong>) de una sesión anterior o de otro celular.<br><br>
+       • <strong>Continuar</strong>: se cargan esos sobres y sigues contando desde el ${propio.n + 1}.<br>
+       • <strong>Empezar de cero</strong>: se quitan de la hoja y vuelves a escanear la caja completa.`;
+    const btns = document.getElementById('mco-btns'); btns.innerHTML = '';
+    const boton = (txt, cls, val) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.innerHTML = txt;
+      b.onclick = () => { cerrarModal(); resolve(val); }; btns.appendChild(b); };
+    boton(`▶ Continuar mi caja #${nc} (llevo ${propio.n})`, 'btn-primary', 'continuar');
+    boton('🔄 Empezar de cero esta caja', 'btn-secondary', 'cero');
+    boton('Cancelar y corregir el número', 'btn-secondary', 'cancelar');
+    abrirModal('modal-caja-ocupada');
+  });
+}
+function aplicarRecuperacion(){
+  if (!_filasRecuperar) return;
+  _filasRecuperar.forEach(x => {
+    if (numerosSet.has(x.num)) return;
+    registros.push({ num: x.num, caja: x.caja, ts: x.hora, dup: false, sync: 'ok', consec: x.consec, recup: true });
+    numerosSet.add(x.num); cajasUsadas.add(x.caja);
+  });
+  const n = _filasRecuperar.length; _filasRecuperar = null;
+  if (cajasEstado[cajaActual] === 'parcial') delete cajasEstado[cajaActual];
+  persistirSesion(); actualizarContadores();
+  const fb = document.getElementById('scan-feedback');
+  fb.className = 'scan-feedback ok'; fb.textContent = `📂 Se cargaron ${n} sobre(s) tuyos de la caja #${cajaActual}. Continúa escaneando.`;
+}
 function preguntarCajaOcupada(nc, otros, propioCompleta){
   return new Promise(resolve => {
     const liberables = otros.filter(o => o.estado !== 'COMPLETA');
@@ -1478,6 +1529,23 @@ async function confirmarCajaLibre(nc){
     if (j) {
       const otros = (j.otros || []).filter(o => o.n > 0);
       const propioCompleta = (contarCaja(nc) > 0 && estadoCaja(nc) === 'completa') || (j.propio && j.propio.estado === 'COMPLETA');
+      // Ya tengo sobres en esta caja en la hoja, pero NO en este celular (otra sesión / otro celular)
+      if (!propioCompleta && j.propio && j.propio.n > 0 && contarCaja(nc) < j.propio.n) {
+        const r0 = await preguntarCajaPropia(nc, j.propio);
+        if (r0 === 'cancelar') return false;
+        if (r0 === 'continuar') {
+          try { const m = await llamarCentral({ accion: 'mis_sobres', caja: nc }, 10000); _filasRecuperar = (m.caja || []).filter(x => x.tipo !== 'COMPLEMENTO'); }
+          catch (e) { alert('No se pudieron traer tus sobres de la hoja: ' + (e.message || e)); return false; }
+          if (!otros.length) return 'recuperar';
+        }
+        if (r0 === 'cero') {
+          try { await llamarCentral({ accion: 'liberar', caja: nc, sesion: '' }, 15000); }
+          catch (e) { alert('No se pudieron quitar tus sobres anteriores: ' + (e.message || e)); return false; }
+          registros = registros.filter(r => r.caja !== nc);
+          numerosSet = new Set(registros.filter(r => !r.dup).map(r => r.num));
+          if (!otros.length) return true;
+        }
+      }
       if (!otros.length && !propioCompleta) return true;
       const r = await preguntarCajaOcupada(nc, otros, propioCompleta);
       if (r === 'cancelar') return false;
@@ -1907,6 +1975,7 @@ async function cerrarCaja(estado){
     cajasUsadas.add(sig);
   }
   if (libre === 'complemento') { iniciarComplemento(sig); return; }
+  if (libre === 'recuperar') aplicarRecuperacion();
   actualizarContadores();
   persistirSesion();
   cerrarModalCaja();
@@ -1966,6 +2035,7 @@ async function confirmarCambioCaja() {
   if (!libre) return;
   if (libre === 'complemento') { iniciarComplemento(nueva); return; }
   cajaActual = nueva;
+  if (libre === 'recuperar') { cajasUsadas.add(nueva); aplicarRecuperacion(); }
   cajasUsadas.add(nueva);
   if (cajasEstado[nueva] === 'parcial') delete cajasEstado[nueva];
   actualizarContadores();
