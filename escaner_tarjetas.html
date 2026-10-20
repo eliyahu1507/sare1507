@@ -20,6 +20,16 @@
 .caja-panel.comp{border-color:#1565c0;background:#e3f2fd}
 .caja-panel.comp .caja-num{color:#0d47a1}
 .comp-tag{display:inline-block;background:#1565c0;color:#fff;border-radius:8px;padding:2px 9px;font-family:'Montserrat',sans-serif;font-weight:900;font-size:.8rem;margin-left:6px}
+.modo-sel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.modo-sel button{border:2px solid #ddd;background:#fff;border-radius:10px;padding:10px 6px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.85rem;cursor:pointer;color:#555}
+.modo-sel button.sel{border-color:var(--guinda);background:var(--guinda);color:#fff}
+.usb-box{border:3px dashed var(--guinda);border-radius:14px;padding:22px 12px;text-align:center;background:#fdf6f8;cursor:pointer}
+.usb-box.ok{border-color:var(--verde);background:#eef8ef}
+.usb-box.err{border-color:var(--rojo);background:#fdecec}
+.usb-big{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.15rem;color:var(--guinda)}
+.usb-ult{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.25rem;margin-top:8px;letter-spacing:.5px;word-break:break-all}
+.cam-tools{display:flex;gap:8px}
+.cam-tools .btn-cam{flex:1}
 .btn-cam{background:none;border:1.5px solid #ccc;color:#555;border-radius:10px;padding:8px 10px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;width:100%;margin-top:8px}
 .proc-tag{display:inline-block;background:var(--guinda);color:#fff;border-radius:8px;padding:2px 9px;font-family:'Montserrat',sans-serif;font-weight:900;font-size:.8rem;letter-spacing:.5px;margin-bottom:4px}
 
@@ -359,8 +369,21 @@ footer strong { color: var(--dorado-l); }
       </div>
     </div>
 
-    <!-- CÁMARA -->
+    <!-- CÁMARA / ESCÁNER USB -->
     <div class="card" style="padding:14px">
+      <div class="modo-sel" id="modo-sel">
+        <button type="button" data-m="camara" onclick="cambiarModoEntrada('camara')">📷 Cámara</button>
+        <button type="button" data-m="usb" onclick="cambiarModoEntrada('usb')">⌨️ Escáner USB</button>
+      </div>
+      <div id="usb-zona" style="display:none;margin-bottom:10px">
+        <div class="usb-box" id="usb-box" onclick="prepararUSB()">
+          <div class="usb-big" id="usb-titulo">⌨️ ESCÁNER USB LISTO</div>
+          <div style="font-size:.78rem;color:#666;margin-top:4px">Escanea el sobre con la pistola. No hace falta tocar la pantalla.</div>
+          <div class="usb-ult" id="usb-ult">—</div>
+        </div>
+        <p style="font-size:.7rem;color:#888;margin-top:6px;line-height:1.4">Conecta el escáner al celular con un adaptador OTG. Si una lectura no entra, toca el recuadro y vuelve a escanear.</p>
+      </div>
+      <div id="cam-zona">
       <div class="scan-overlay">
         <video id="video-scan" playsinline autoplay muted></video>
         <div class="scan-line" id="scan-line"></div>
@@ -379,10 +402,17 @@ footer strong { color: var(--dorado-l); }
           <span style="color:rgba(255,255,255,0.7);font-size:0.72rem">Toca para iniciar el escáner</span>
         </div>
       </div>
+      </div>
       <div class="scan-feedback idle" id="scan-feedback">
         Toca "Activar cámara" para comenzar…
       </div>
-      <button class="btn-cam" onclick="reiniciarCamara()">🔄 ¿No lee? Reiniciar cámara (no se pierde nada)</button>
+      <div id="cam-zona2">
+      <div class="cam-tools">
+        <button class="btn-cam" onclick="reiniciarCamara()">🔄 ¿No lee? Reiniciar cámara</button>
+        <button class="btn-cam" id="btn-linterna" style="display:none;flex:0 0 auto" onclick="alternarLinterna()">🔦</button>
+      </div>
+      <div id="lbl-motor" style="font-size:.65rem;color:#aaa;text-align:center;margin-top:4px"></div>
+      </div>
     </div>
 
     <!-- CAJAS RECIBIDAS -->
@@ -664,7 +694,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '19-oct-26 I';
+const APP_VERSION = '20-oct-26 J';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -905,6 +935,8 @@ function actualizarFechaHero() {
 // por iOS/Android para otorgar permiso). Igual que en nominal_busqueda_v2.
 
 function arrancarScanner() {
+  aplicarModoEntrada();
+  if (modoEntrada === 'usb') return;
   // Solo preparar la pantalla — la cámara la activa el usuario
   scanActivo = false;
   const wrap = document.getElementById('btn-activar-wrap');
@@ -914,63 +946,149 @@ function arrancarScanner() {
   fb.textContent = 'Toca "Activar cámara" para comenzar…';
 }
 
-function activarCamara() {
-  // Ocultar botón de activación
+// ══════════════════════════════════════════
+// MOTOR DE LECTURA (más rápido)
+// 1) Lector NATIVO del celular (BarcodeDetector, Android/Chrome): muy rápido, una sola lectura.
+// 2) Respaldo ZXing: solo códigos de barras lineales (el sobre trae un código de barras de 16
+//    dígitos; ya no se buscan QR, PDF417, EAN, etc.) y con doble lectura.
+// La app aprende qué formato trae el sobre y después busca solo ese.
+// ══════════════════════════════════════════
+const FORMATOS_1D = ['code_39', 'code_128', 'itf', 'codabar', 'code_93'];
+const ZX_FMT = { code_39: 'CODE_39', code_128: 'CODE_128', itf: 'ITF', codabar: 'CODABAR', code_93: 'CODE_93' };
+let _motor = '', _stream = null, _detector = null, _loopNativo = null, _linterna = false;
+function formatoAprendido(){ try { const f = localStorage.getItem('esc_formato'); return FORMATOS_1D.includes(f) ? f : ''; } catch (e) { return ''; } }
+let _vistos = {};
+function aprenderFormato(f){
+  f = String(f || '').toLowerCase();
+  if (!FORMATOS_1D.includes(f)) return;
+  _vistos[f] = (_vistos[f] || 0) + 1;
+  if (_vistos[f] === 5 && formatoAprendido() !== f) { try { localStorage.setItem('esc_formato', f); } catch (e) {} }
+}
+function formatosABuscar(){ const f = formatoAprendido(); return f ? [f] : FORMATOS_1D; }
+
+// Una lectura de la cámara (nativo: se acepta a la primera; ZXing: doble lectura)
+function manejarLectura(texto, formato, nativo){
+  if (!scanActivo) return;
+  const codigo = limpiarCodigo(texto);
+  if (!codigo) return;
+  if (!tarjetaValida(codigo)) { avisoLecturaDudosa(codigo); return; }
+  aprenderFormato(formato);
+  if (nativo) { procesarEscaneo(codigo); return; }
+  const t = Date.now();
+  if (_lectura.cod === codigo && t - _lectura.t < 1500) { _lectura = { cod: '', t: 0 }; procesarEscaneo(codigo); }
+  else _lectura = { cod: codigo, t };
+}
+
+const VIDEO_CONSTRAINTS = { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } };
+let _zx = null, _cv = null, _cuadro = 0;
+
+// Lector nativo del celular (si existe y soporta el formato del sobre)
+async function crearDetectorNativo(){
+  if (!('BarcodeDetector' in window)) return null;
+  try {
+    const sop = await BarcodeDetector.getSupportedFormats();
+    const fm = formatosABuscar().filter(f => sop.includes(f));
+    return fm.length ? new BarcodeDetector({ formats: fm }) : null;
+  } catch (e) { return null; }
+}
+function crearZXing(){
+  const hints = new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formatosABuscar().map(f => ZXing.BarcodeFormat[ZX_FMT[f]]));
+  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+  const r = new ZXing.MultiFormatReader(); r.setHints(hints);
+  return r;
+}
+// ZXing revisa solo la FRANJA CENTRAL de la imagen (donde está la línea roja) y reducida:
+// mucho menos trabajo por cuadro → más lecturas por segundo. Cada 5 cuadros revisa la imagen completa.
+function decodificarZX(v){
+  const W = v.videoWidth, H = v.videoHeight;
+  const completo = (++_cuadro % 5) === 0;
+  const bh = completo ? H : Math.round(H * 0.5), by = Math.round((H - bh) / 2);
+  const esc = Math.min(1, 960 / W);
+  if (!_cv) _cv = document.createElement('canvas');
+  _cv.width = Math.round(W * esc); _cv.height = Math.round(bh * esc);
+  const ctx = _cv.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(v, 0, by, W, bh, 0, 0, _cv.width, _cv.height);
+  try {
+    const res = _zx.decodeWithState(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(_cv))));
+    let f = res.getBarcodeFormat(); f = typeof f === 'number' ? ZXing.BarcodeFormat[f] : f;
+    return { texto: res.getText(), formato: String(f || '').toLowerCase() };
+  } catch (e) { return null; }
+}
+function cicloLectura(){
+  const v = document.getElementById('video-scan');
+  const tick = async () => {
+    if (!_stream) return;
+    if (scanActivo && v.readyState >= 2 && v.videoWidth) {
+      try {
+        if (_detector) {
+          const r = await _detector.detect(v);
+          if (r && r.length) manejarLectura(r[0].rawValue, r[0].format, true);
+        } else {
+          const r = decodificarZX(v);
+          if (r) manejarLectura(r.texto, r.formato, false);
+        }
+      } catch (e) {}
+    }
+    _loopNativo = setTimeout(tick, _detector ? 40 : 50);
+  };
+  tick();
+}
+function detenerNativo(){
+  clearTimeout(_loopNativo); _loopNativo = null;
+  if (_stream) { _stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} }); }
+  _stream = null; _detector = null; _zx = null;
+}
+
+// Enfoque continuo y botón de linterna (si el celular lo permite)
+function pistaVideo(){
+  const v = document.getElementById('video-scan');
+  const st = v && v.srcObject;
+  return st && st.getVideoTracks ? st.getVideoTracks()[0] : null;
+}
+function prepararPista(){
+  const t = pistaVideo(); if (!t) return;
+  let cap = {}; try { cap = t.getCapabilities ? t.getCapabilities() : {}; } catch (e) {}
+  if (cap.focusMode && cap.focusMode.includes('continuous')) t.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+  document.getElementById('btn-linterna').style.display = cap.torch ? '' : 'none';
+  _linterna = false;
+}
+function alternarLinterna(){
+  const t = pistaVideo(); if (!t) return;
+  _linterna = !_linterna;
+  t.applyConstraints({ advanced: [{ torch: _linterna }] }).catch(() => {});
+}
+
+async function activarCamara() {
   const wrap = document.getElementById('btn-activar-wrap');
   if (wrap) wrap.style.display = 'none';
-
-  scanActivo = true;
-  document.getElementById('scan-line').classList.add('active');
   const fb = document.getElementById('scan-feedback');
   fb.className = 'scan-feedback idle';
+  fb.textContent = 'Abriendo cámara…';
+  detenerNativo();
+  try {
+    _stream = await navigator.mediaDevices.getUserMedia({ video: VIDEO_CONSTRAINTS, audio: false });
+    const v = document.getElementById('video-scan');
+    v.srcObject = _stream;
+    await v.play();
+  } catch (e) {
+    _stream = null; zxingReader = null; arrancarScanner();
+    fb.className = 'scan-feedback err';
+    fb.textContent = '📷 No se pudo abrir la cámara: permite el acceso y toca "Activar cámara"';
+    return;
+  }
+  _detector = await crearDetectorNativo();
+  if (!_detector) _zx = crearZXing();
+  _motor = _detector ? 'nativo' : 'zxing';
+  zxingReader = { reset(){ detenerNativo(); } };     // el resto de la app lo trata como "cámara activa"
+  prepararPista();
+  scanActivo = true;
+  document.getElementById('scan-line').classList.add('active');
   fb.textContent = 'Apunta al código de barras del sobre…';
-
-  const hints = new Map();
-  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-    ZXing.BarcodeFormat.CODE_128,
-    ZXing.BarcodeFormat.CODE_39,
-    ZXing.BarcodeFormat.CODE_93,
-    ZXing.BarcodeFormat.EAN_13,
-    ZXing.BarcodeFormat.EAN_8,
-    ZXing.BarcodeFormat.UPC_A,
-    ZXing.BarcodeFormat.UPC_E,
-    ZXing.BarcodeFormat.PDF_417,
-    ZXing.BarcodeFormat.ITF,
-    ZXing.BarcodeFormat.QR_CODE,
-    ZXing.BarcodeFormat.DATA_MATRIX,
-    ZXing.BarcodeFormat.AZTEC,
-    ZXing.BarcodeFormat.CODABAR
-  ]);
-  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-  hints.set(ZXing.DecodeHintType.ASSUME_GS1, false);
-
-  zxingReader = new ZXing.BrowserMultiFormatReader(hints);
-  // Resolución alta para mejor detección en móvil
-  zxingReader.decodeFromConstraints(
-    {
-      video: {
-        facingMode: { ideal: 'environment' },
-        width:  { ideal: 1920, min: 640 },
-        height: { ideal: 1080, min: 480 }
-      }
-    },
-    'video-scan',
-    (result, err) => {
-      if (!scanActivo) return;
-      if (!result) return;
-      const codigo = limpiarCodigo(result.getText());
-      if (!codigo) return;
-      if (!tarjetaValida(codigo)) { avisoLecturaDudosa(codigo); return; }
-      // Doble lectura: el mismo número debe leerse 2 veces seguidas (evita lecturas falsas)
-      const t = Date.now();
-      if (_lectura.cod === codigo && t - _lectura.t < 1500) {
-        _lectura = { cod: '', t: 0 };
-        procesarEscaneo(codigo);
-      } else {
-        _lectura = { cod: codigo, t };
-      }
-    }
-  ).catch(() => { zxingReader = null; arrancarScanner(); });
+  cicloLectura();
+  const fa = formatoAprendido();
+  document.getElementById('lbl-motor').textContent =
+    (_motor === 'nativo' ? '⚡ Lector rápido del celular' : 'Lector estándar (franja central)') + (fa ? ' · ' + fa.toUpperCase().replace('_', ' ') : '');
 }
 
 function detenerScanner() {
@@ -994,7 +1112,7 @@ let _lectura = { cod: '', t: 0 };
 let _ultimoAceptado = { cod: '', t: 0 };   // último sobre aceptado (para ignorarlo si sigue en cámara)
 let dupLog = [];                            // duplicados propios: solo informativo, no se exportan
 let _ultimoAvisoDudoso = 0;
-function limpiarCodigo(txt){ return String(txt || '').replace(/\s+/g, '').trim(); }
+function limpiarCodigo(txt){ return String(txt || '').replace(/\s+/g, '').replace(/^[^0-9]+|[^0-9]+$/g, '').trim(); }
 function tarjetaValida(num){
   const s = String(num || '');
   if (!/^\d{16}$/.test(s)) return false;
@@ -1022,7 +1140,7 @@ function procesarEscaneo(codigo) {
   if (!tarjetaValida(codigo)) { beepDUP(); avisoLecturaDudosa(codigo); return; }
   // Pausa breve para evitar lecturas repetidas del mismo código
   scanActivo = false;
-  setTimeout(() => { if (zxingReader && !_modalCajaAbierto) scanActivo = true; }, 1200);
+  setTimeout(() => { if (zxingReader && !_modalCajaAbierto) scanActivo = true; }, 600);
 
   const ahoraMs = Date.now();
   // El mismo sobre que se acaba de aceptar y sigue frente a la cámara: se ignora sin alarma
@@ -2059,6 +2177,79 @@ function cerrarModal() {
 document.getElementById('modal-bg').addEventListener('click', function(e) {
   if (e.target === this) { if (_modalCajaAbierto) cerrarModalCaja(); else cerrarModal(); }
 });
+
+// ══════════════════════════════════════════
+// ESCÁNER USB (pistola con adaptador OTG)
+// El escáner "teclea" el número muy rápido y termina con Enter. Se capturan las teclas en
+// toda la pantalla (no hace falta tocar un campo) y solo se acepta si llegaron rápido
+// (máx. 120 ms entre teclas): así una persona tecleando no se confunde con el escáner.
+// ══════════════════════════════════════════
+let modoEntrada = (() => { try { return localStorage.getItem('esc_modo') === 'usb' ? 'usb' : 'camara'; } catch (e) { return 'camara'; } })();
+let _kb = { buf: '', t: 0, timer: null };
+function cambiarModoEntrada(m){
+  modoEntrada = m === 'usb' ? 'usb' : 'camara';
+  try { localStorage.setItem('esc_modo', modoEntrada); } catch (e) {}
+  if (modoEntrada === 'usb') detenerScanner();
+  arrancarScanner();
+}
+function aplicarModoEntrada(){
+  const usb = modoEntrada === 'usb';
+  document.getElementById('cam-zona').style.display = usb ? 'none' : '';
+  document.getElementById('cam-zona2').style.display = usb ? 'none' : '';
+  document.getElementById('usb-zona').style.display = usb ? '' : 'none';
+  document.querySelectorAll('#modo-sel button').forEach(b => b.classList.toggle('sel', b.dataset.m === modoEntrada));
+  if (usb) prepararUSB();
+}
+function prepararUSB(){
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();  // que Enter no "toque" un botón
+  const fb = document.getElementById('scan-feedback');
+  fb.className = 'scan-feedback idle';
+  fb.textContent = '⌨️ Escáner USB listo: escanea el sobre';
+}
+function usbEstado(cls, titulo, ult){
+  const box = document.getElementById('usb-box');
+  box.className = 'usb-box' + (cls ? ' ' + cls : '');
+  document.getElementById('usb-titulo').textContent = titulo;
+  if (ult != null) document.getElementById('usb-ult').textContent = ult;
+  clearTimeout(box._t);
+  box._t = setTimeout(() => { box.className = 'usb-box'; document.getElementById('usb-titulo').textContent = '⌨️ ESCÁNER USB LISTO'; }, 1500);
+}
+function lecturaUSB(txt){
+  const codigo = limpiarCodigo(txt);
+  if (document.getElementById('modal-bg').classList.contains('active')) {
+    beepDUP(); if (navigator.vibrate) navigator.vibrate([200, 80, 200]);
+    usbEstado('err', '⛔ Cierra la ventana primero', codigo + ' — NO se contó');
+    return;
+  }
+  if (!tarjetaValida(codigo)) { beepDUP(); avisoLecturaDudosa(codigo); usbEstado('err', '⚠️ Lectura dudosa', codigo); return; }
+  const antes = registros.filter(r => !r.dup).length, dupAntes = dupCount;
+  procesarEscaneo(codigo);
+  const ok = registros.filter(r => !r.dup).length > antes;
+  usbEstado(ok ? 'ok' : 'err', ok ? '✅ Contado' : dupCount > dupAntes ? '⚠️ REPETIDO: ya estaba contado' : '⛔ No se contó (revisa el aviso)', codigo);
+}
+function _procesarBufferUSB(){
+  const c = _kb.buf; _kb.buf = '';
+  if (c.replace(/\D/g, '').length >= 12) lecturaUSB(c);
+}
+document.addEventListener('keydown', e => {
+  if (modoEntrada !== 'usb') return;
+  if (!document.getElementById('screen-scan').classList.contains('active')) return;
+  const tag = (e.target && e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;   // escribir en un campo de una ventana
+  const t = Date.now();
+  if (e.key === 'Enter' || e.key === 'Tab') {
+    clearTimeout(_kb.timer);
+    if (_kb.buf) { e.preventDefault(); _procesarBufferUSB(); }
+    return;
+  }
+  if (e.key && e.key.length === 1) {
+    if (t - _kb.t > 120) _kb.buf = '';        // tecleo lento = persona, se descarta
+    _kb.buf += e.key; _kb.t = t;
+    e.preventDefault();
+    clearTimeout(_kb.timer);                   // escáneres configurados sin Enter
+    _kb.timer = setTimeout(_procesarBufferUSB, 250);
+  }
+}, true);
 
 // ── Vigilante: si el lector quedó en pausa sin ninguna ventana abierta, se reanuda solo ──
 let _pausaTicks = 0;
