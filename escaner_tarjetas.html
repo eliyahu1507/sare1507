@@ -11,6 +11,7 @@
 <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
 
 <style>
+body.ocupado #screen-login .btn-primary{opacity:.55}
 .proc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .btn-proc{border:2px solid #ddd;background:#fff;border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;font-family:'Montserrat',sans-serif;line-height:1.25;color:#333}
 .btn-proc b{display:block;font-size:1.25rem;font-weight:900;letter-spacing:.5px}
@@ -704,7 +705,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '20-oct-26 L';
+const APP_VERSION = '21-oct-26 M';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -888,7 +889,8 @@ function mostrarPantalla(id) {
 // ══════════════════════════════════════════
 function toggleUltimaCaja(){}
 
-async function iniciarSesion() {
+function iniciarSesion(){ return enUnaVez(_iniciarSesion); }
+async function _iniciarSesion() {
   const nom = document.getElementById('inp-operador').value.trim().toUpperCase();
   const caja = parseInt(document.getElementById('inp-caja').value);
   if (!_procesoElegido) {
@@ -1402,6 +1404,14 @@ async function enviarPendientes(){
     });
     persistirSesion();
     actualizarContadores();
+    // Cajas que se habían llenado contando sobres que la hoja rechazó: se reabren
+    const reabiertas = [...new Set(rechazados.map(x => x.caja))].filter(nc => cajasEstado[nc] === 'completa' && contarCaja(nc) < TARJETAS_POR_CAJA);
+    reabiertas.forEach(nc => {
+      delete cajasEstado[nc];
+      avisarCierreCaja(nc, 'abierta');
+      if (nc === cajaActual && enComplemento && !contarComp(nc)) enComplemento = false;
+    });
+    if (reabiertas.length) { persistirSesion(); actualizarContadores(); }
     if (rechazados.length) {
       beepOTRO();
       if (navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
@@ -1798,8 +1808,8 @@ async function reconciliarConHoja(){
 
 function avisarCierreCaja(nc, estado, comp){
   if (!centralActiva()) return;
-  const est = comp ? 'CERRADA' : estado === 'completa' ? 'COMPLETA' : 'INCOMPLETA';
-  llamarCentral({ accion: 'cerrar_caja', caja: nc, estado: est, tipo: comp ? 'COMPLEMENTO' : 'NORMAL', n: comp ? contarComp(nc) : contarCaja(nc) }, 10000)
+  const est = comp ? 'CERRADA' : estado === 'completa' ? 'COMPLETA' : estado === 'abierta' ? 'ABIERTA' : 'INCOMPLETA';
+  llamarCentral({ accion: 'cerrar_caja', caja: nc, estado: est, limite: TARJETAS_POR_CAJA, tipo: comp ? 'COMPLEMENTO' : 'NORMAL', n: comp ? contarComp(nc) : contarCaja(nc) }, 10000)
     .catch(() => {});
 }
 // ── COMPLEMENTO: sobres que llegan después para una caja que ya estaba completa ──
@@ -1814,6 +1824,20 @@ function iniciarComplemento(nc, codigo){
   fb.className = 'scan-feedback ok';
   fb.textContent = `➕ COMPLEMENTO de la caja #${nc}: escanea los sobres que llegaron después`;
   if (codigo) { _ultimoAceptado = { cod: '', t: 0 }; procesarEscaneo(codigo); }
+}
+// Sin señal, los 20 (700) sobres de la caja aún no están verificados por la hoja: alguno podría
+// ser de otro operador y la caja NO estaría llena. El complemento se habilita cuando todo se confirmó.
+function sinConfirmarEnCaja(nc){ return registros.filter(r => !r.dup && !r.comp && r.caja === nc && r.sync !== 'ok').length; }
+function pedirComplementoCajaLlena(){
+  const pend = centralActiva() ? sinConfirmarEnCaja(cajaActual) : 0;
+  if (pend) {
+    programarSync(0);
+    alert(`⏳ ${pend} sobre(s) de la caja #${cajaActual} todavía no se confirman con la hoja central (sin señal).\n\nPara agregar un complemento espera a que arriba diga "todo enviado": así se comprueba que la caja de verdad tiene ${TARJETAS_POR_CAJA}. Mientras, aparta los sobres que llegaron después.`);
+    return;
+  }
+  cajasEstado[cajaActual] = 'completa';
+  avisarCierreCaja(cajaActual, 'completa');
+  iniciarComplemento(cajaActual, _codigoPendiente);
 }
 function cerrarComplementoActual(){
   if (!enComplemento) return;
@@ -1937,7 +1961,7 @@ function abrirCerrarCaja(auto, codigoRechazado){
       : auto ? `Llegaste a <strong>${TARJETAS_POR_CAJA} tarjetas</strong>. La caja está llena: ciérrala para continuar con la siguiente.`
              : `La caja tiene <strong>${TARJETAS_POR_CAJA} tarjetas</strong>.`;
     btns.innerHTML = `<button class="btn btn-success" onclick="cerrarCaja('completa')">✅ Cerrar caja y seguir con la siguiente</button>
-      <button class="btn" style="background:#1565c0;color:#fff" onclick="cajasEstado[cajaActual]='completa';avisarCierreCaja(cajaActual,'completa');iniciarComplemento(cajaActual,_codigoPendiente)">➕ Llegaron más sobres para ESTA caja (complemento)</button>
+      <button class="btn" style="background:#1565c0;color:#fff" onclick="pedirComplementoCajaLlena()">➕ Llegaron más sobres para ESTA caja (complemento)</button>
       <button class="btn btn-secondary" onclick="cerrarModalCaja();verLista()">📋 Revisar lista</button>`;
   } else if (n > TARJETAS_POR_CAJA) {
     icon.textContent = '⛔'; title.textContent = `Caja #${cajaActual} con ${n - TARJETAS_POR_CAJA} de más`;
@@ -1962,11 +1986,21 @@ function cerrarModalCaja(){
   cerrarModal();
   if (zxingReader) setTimeout(() => { if (!_modalCajaAbierto) scanActivo = true; }, 400);
 }
-async function cerrarCaja(estado){
+// Candado: un doble toque (o tocar otra vez mientras responde la hoja) no repite la acción
+let _ocupado = false;
+async function enUnaVez(fn){
+  if (_ocupado) return;
+  _ocupado = true;
+  document.body.classList.add('ocupado');
+  try { return await fn(); } finally { _ocupado = false; document.body.classList.remove('ocupado'); }
+}
+function cerrarCaja(estado){ return enUnaVez(() => _cerrarCaja(estado)); }
+async function _cerrarCaja(estado){
   const sig = parseInt(document.getElementById('mc-siguiente').value);
   if (!sig || sig < 1) { alert('Escribe el número de la siguiente caja.'); return; }
-  const libre = sig !== cajaActual ? await confirmarCajaLibre(sig) : true;
-  if (!libre) return;
+  const origen = cajaActual;
+  const libre = sig !== origen ? await confirmarCajaLibre(sig) : true;
+  if (!libre || cajaActual !== origen) return;
   if (estado === 'complemento') cerrarComplementoActual();
   else if (estado) { cajasEstado[cajaActual] = estado; avisarCierreCaja(cajaActual, estado); }
   if (sig !== cajaActual) {
@@ -2026,7 +2060,8 @@ function asegurarCierreCajaActual(){
   return true;
 }
 
-async function confirmarCambioCaja() {
+function confirmarCambioCaja(){ return enUnaVez(_confirmarCambioCaja); }
+async function _confirmarCambioCaja() {
   const nueva = parseInt(document.getElementById('inp-nueva-caja').value);
   if (!nueva || nueva < 1) { alert('Número de caja inválido.'); return; }
   if (nueva === cajaActual && !enComplemento && estadoCaja(nueva) !== 'completa') { cerrarModal(); return; }
