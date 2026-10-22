@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Monitor de escaneo · SARE 1507</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800;900&family=Noto+Sans:wght@400;600;700&family=Noto+Sans+Mono:wght@500&display=swap">
+<style>
+/* Monitor del supervisor: alertas arriba, una tarjeta por operador (lo que necesita atención primero) */
+:root{
+  --bg:#f5f1ee; --card:#fff; --fg:#2b2224; --muted:#6e6266; --line:#e4d9d5;
+  --guinda:#691c32; --dorado:#bc955c; --dorado-l:#f1e3c8;
+  --ok:#1f7a3f; --ok-bg:#e5f3ea; --warn:#9a5300; --warn-bg:#fdefdc; --err:#b3261e; --err-bg:#fbe7e5; --info:#1559a8; --info-bg:#e5eefa; --gris-bg:#efeae8;
+  --f-disp:'Montserrat',system-ui,sans-serif; --f-body:'Noto Sans',system-ui,sans-serif; --f-mono:'Noto Sans Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#191315; --card:#241c1f; --fg:#f1e9e6; --muted:#b5a6a2; --line:#3b2f33;
+  --guinda:#d36a86; --dorado:#d8b47c; --dorado-l:#4d3b22;
+  --ok:#6fd393; --ok-bg:#143021; --warn:#f2b45a; --warn-bg:#382811; --err:#ff8a80; --err-bg:#3b1a18; --info:#8cbcff; --info-bg:#162840; --gris-bg:#2c2326; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+header{background:#691c32;color:#fff;padding-block:16px 14px}
+header .wrap{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-end;justify-content:space-between}
+.eyebrow{font-family:var(--f-disp);font-weight:800;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:#e8d3ad}
+h1{font-family:var(--f-disp);font-weight:900;font-size:1.45rem;margin:2px 0 0}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;background:rgba(255,255,255,.12);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;color:#fff;font-family:var(--f-disp);font-weight:800;font-size:.75rem;padding:6px 11px;border-radius:999px;cursor:pointer}
+.seg button.sel{background:#fff;color:#691c32}
+.btn-mini{border:1px solid rgba(255,255,255,.5);background:none;color:#fff;border-radius:999px;padding:6px 11px;font-family:var(--f-disp);font-weight:800;font-size:.75rem;cursor:pointer}
+.estado-act{font-size:.75rem;color:#f3e6e9}
+main{padding-block:14px 30px;display:flex;flex-direction:column;gap:16px}
+.totales{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tot{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.tot b{font-family:var(--f-disp);font-weight:900;color:var(--guinda)}
+.tot .n{font-family:var(--f-disp);font-weight:900;font-size:1.5rem;font-variant-numeric:tabular-nums}
+.tot small{color:var(--muted);display:block}
+h2{font-family:var(--f-disp);font-weight:900;font-size:1rem;margin:0;display:flex;gap:8px;align-items:center}
+.badge{font-family:var(--f-disp);font-weight:800;font-size:.72rem;border-radius:999px;padding:2px 9px;background:var(--gris-bg);color:var(--muted)}
+.badge.err{background:var(--err-bg);color:var(--err)}
+.alertas{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;padding-right:2px}
+.al{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:'tipo det hora';gap:4px 10px;align-items:start;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--muted);border-radius:10px;padding:8px 10px}
+.al.err{border-left-color:var(--err)} .al.warn{border-left-color:var(--warn)} .al.info{border-left-color:var(--info)}
+.al.nueva{box-shadow:0 0 0 2px var(--dorado)}
+.al .tipo{font-family:var(--f-disp);font-weight:900;font-size:.7rem;letter-spacing:.04em;white-space:nowrap}
+.al.err .tipo{color:var(--err)} .al.warn .tipo{color:var(--warn)} .al.info .tipo{color:var(--info)}
+.al .tipo{grid-area:tipo} .al .hora{grid-area:hora}
+.al .det{grid-area:det;min-width:0;overflow-wrap:anywhere}
+@media (max-width:560px){.al{grid-template-columns:1fr auto;grid-template-areas:'tipo hora' 'det det'}}
+.al .det b{font-family:var(--f-disp)}
+.al .hora{color:var(--muted);font-size:.75rem;white-space:nowrap}
+.vacio{color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:10px;padding:12px;text-align:center}
+.ops{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.op{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.op.err{border-color:var(--err)} .op.warn{border-color:var(--warn)}
+.op-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.op-nom{font-family:var(--f-disp);font-weight:800;font-size:.88rem;line-height:1.25;min-width:0;overflow-wrap:anywhere}
+.pill{font-family:var(--f-disp);font-weight:800;font-size:.68rem;border-radius:999px;padding:3px 8px;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.err{background:var(--err-bg);color:var(--err)} .pill.off{background:var(--gris-bg);color:var(--muted)}
+.caja{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.caja .c{font-family:var(--f-disp);font-weight:900;font-size:1.15rem}
+.caja .tag{font-family:var(--f-disp);font-weight:900;font-size:.66rem;background:var(--guinda);color:#fff;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:middle}
+.caja .tag.comp{background:var(--info)}
+.caja .cnt{font-family:var(--f-disp);font-weight:900;font-size:1.3rem;font-variant-numeric:tabular-nums}
+.caja .cnt small{font-size:.75rem;color:var(--muted)}
+.barra{height:8px;background:var(--gris-bg);border-radius:99px;overflow:hidden}
+.barra div{height:100%;background:var(--guinda);border-radius:99px;transition:width .4s}
+.barra.comp div{background:var(--info)}
+.datos{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:.78rem;color:var(--muted)}
+.datos strong{color:var(--fg);font-weight:700}
+.ult{font-family:var(--f-mono);font-size:.74rem;background:var(--gris-bg);border-radius:8px;padding:6px 8px;display:flex;flex-direction:column;gap:1px}
+.ult span{display:flex;justify-content:space-between;gap:6px}
+.ult .mal{color:var(--err);font-weight:700}
+.nota{font-size:.75rem;color:var(--muted)}
+.err-con{background:var(--err-bg);color:var(--err);border:1px solid var(--err);border-radius:10px;padding:10px 12px;font-weight:700}
+button:focus-visible{outline:3px solid var(--dorado);outline-offset:2px}
+footer{color:var(--muted);font-size:.75rem;text-align:center;padding-bottom:20px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">SARE 1507 · Recepción de tarjetas</div>
+      <h1>Monitor de escaneo</h1>
+    </div>
+    <div class="ctrl">
+      <div class="seg" id="seg-modo"><button data-v="PRUEBA">PRUEBA</button><button data-v="REAL">REAL</button></div>
+      <div class="seg" id="seg-proc"><button data-v="">Todos</button><button data-v="BRCU">BRCU</button><button data-v="BRC">BRC</button><button data-v="BUEEMS">BUEEMS</button><button data-v="JEF">JEF</button></div>
+      <button class="btn-mini" id="btn-sonido" type="button">🔔 Sonido: no</button>
+      <span class="estado-act" id="act">Conectando…</span>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <div id="error"></div>
+  <section class="totales" id="totales"></section>
+  <section style="display:flex;flex-direction:column;gap:8px">
+    <h2>Alertas <span class="badge" id="n-alertas">0</span></h2>
+    <div class="alertas" id="alertas"></div>
+  </section>
+  <section style="display:flex;flex-direction:column;gap:8px">
+    <h2>Operadores <span class="badge" id="n-ops">0</span></h2>
+    <p class="nota" style="margin:0">🟢 enviando al momento · 🟠 tiene sobres sin enviar o con retraso · 🔴 sin conexión hace más de 2 min · ⚪ inactivo. Primero aparecen los que necesitan atención.</p>
+    <div class="ops" id="ops"></div>
+  </section>
+</main>
+<footer>Se actualiza cada 10 segundos · Elaborado por José Elías Cervantes Jiménez · SARE 1507</footer>
+
+<script>
+const SHEETS_URL   = 'https://script.google.com/macros/s/AKfycbyaC6REsnnu5zIN3SH0I8fCvsJVueACgkkHAUGTHGvDt3tgcSoGBa7zyB_S12-ZSiAEZg/exec';
+const SHEETS_CLAVE = 'sare1507-0803a849ee47';
+const REFRESCO = 10000;
+
+let modo = 'PRUEBA', proc = '', sonido = false, vistas = null, datos = null, enCurso = false;
+try { modo = localStorage.getItem('mon_modo') || 'PRUEBA'; proc = localStorage.getItem('mon_proc') || ''; sonido = localStorage.getItem('mon_sonido') === '1'; } catch (e) {}
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function hace(ms){
+  if (!ms) return '—';
+  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (s < 60) return `hace ${s} s`;
+  if (s < 3600) return `hace ${Math.floor(s / 60)} min`;
+  return `hace ${Math.floor(s / 3600)} h ${Math.floor(s % 3600 / 60)} min`;
+}
+function pintarSeg(){
+  document.querySelectorAll('#seg-modo button').forEach(b => b.classList.toggle('sel', b.dataset.v === modo));
+  document.querySelectorAll('#seg-proc button').forEach(b => b.classList.toggle('sel', b.dataset.v === proc));
+  $('btn-sonido').textContent = sonido ? '🔔 Sonido: sí' : '🔕 Sonido: no';
+}
+document.querySelectorAll('#seg-modo button').forEach(b => b.onclick = () => { modo = b.dataset.v; vistas = null; try { localStorage.setItem('mon_modo', modo); } catch (e) {} pintarSeg(); cargar(); });
+document.querySelectorAll('#seg-proc button').forEach(b => b.onclick = () => { proc = b.dataset.v; try { localStorage.setItem('mon_proc', proc); } catch (e) {} pintarSeg(); pintar(); });
+$('btn-sonido').onclick = () => { sonido = !sonido; try { localStorage.setItem('mon_sonido', sonido ? '1' : '0'); } catch (e) {} pintarSeg(); if (sonido) pitar(); };
+pintarSeg();
+
+let ctxAudio = null;
+function pitar(){
+  try {
+    ctxAudio = ctxAudio || new (window.AudioContext || window.webkitAudioContext)();
+    [0, .25].forEach(t => { const o = ctxAudio.createOscillator(), g = ctxAudio.createGain(); o.connect(g); g.connect(ctxAudio.destination);
+      o.frequency.value = 880; const t0 = ctxAudio.currentTime + t; g.gain.setValueAtTime(.25, t0); g.gain.exponentialRampToValueAtTime(.001, t0 + .2); o.start(t0); o.stop(t0 + .21); });
+  } catch (e) {}
+}
+
+async function cargar(){
+  if (enCurso) return;
+  enCurso = true;
+  try {
+    const r = await fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify({ clave: SHEETS_CLAVE, accion: 'monitor', modo }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'Error de la hoja central');
+    datos = j; $('error').innerHTML = '';
+    $('act').textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX')} · hoja ${j.version || ''}`;
+    pintar();
+  } catch (e) {
+    $('error').innerHTML = `<div class="err-con">No se pudo consultar la hoja central (${esc(e.message || e)}). Se vuelve a intentar en 10 segundos.</div>`;
+    $('act').textContent = 'Sin conexión';
+  } finally { enCurso = false; }
+}
+
+const PRIOR = { 'CAJA COMPARTIDA': 0, 'MISMO SOBRE 2 VECES': 1, 'LECTURA DUDOSA': 2, 'RECHAZO': 3, 'LIBERADO': 4 };
+const CLASE = { 'CAJA COMPARTIDA': 'err', 'MISMO SOBRE 2 VECES': 'err', 'LECTURA DUDOSA': 'warn', 'RECHAZO': 'warn', 'LIBERADO': 'info' };
+function claveAl(a){ return [a.tipo, a.proceso, a.caja, a.op, a.detalle].join('|'); }
+
+function estadoOp(o){
+  const sinContacto = o.contacto ? Date.now() - o.contacto : Infinity;
+  const ultEnvio = o.ultimoEnvio ? Date.now() - o.ultimoEnvio : Infinity;
+  const visto = Math.min(sinContacto, ultEnvio);
+  if (visto > 15 * 60000) return { c: 'off', t: '⚪ Inactivo', n: 3 };
+  if (sinContacto > 2 * 60000 && ultEnvio > 2 * 60000) return { c: 'err', t: '🔴 Sin conexión', n: 0 };
+  if (o.pend > 0 || o.espera > 30) return { c: 'warn', t: `🟠 ${o.pend} sin enviar`, n: 1 };
+  return { c: 'ok', t: '🟢 Enviando', n: 2 };
+}
+
+function pintar(){
+  if (!datos) return;
+  // Totales por proceso
+  const tot = Object.entries(datos.totales || {}).filter(([p]) => !proc || p === proc);
+  $('totales').innerHTML = tot.length ? tot.map(([p, t]) => `<div class="tot"><b>${esc(p)}</b><div class="n">${t.tarjetas.toLocaleString('es-MX')}</div>
+      <small>tarjetas · ${t.cajas} caja(s) · ${t.completas} completa(s)${t.complemento ? ` · ${t.complemento} de complemento` : ''}</small></div>`).join('')
+    : `<div class="vacio">Aún no hay escaneos en modo ${esc(datos.modo)}.</div>`;
+
+  // Alertas
+  const al = (datos.alertas || []).filter(a => !proc || a.proceso === proc)
+    .sort((a, b) => (PRIOR[a.tipo] ?? 9) - (PRIOR[b.tipo] ?? 9) || (b.t || 0) - (a.t || 0));
+  const claves = new Set(al.map(claveAl));
+  let nuevas = 0;
+  if (vistas) claves.forEach(k => { if (!vistas.has(k)) nuevas++; });
+  const graves = al.filter(a => CLASE[a.tipo] === 'err').length;
+  $('n-alertas').textContent = al.length; $('n-alertas').className = 'badge' + (graves ? ' err' : '');
+  $('alertas').innerHTML = al.length ? al.map(a => `<div class="al ${CLASE[a.tipo] || 'info'}${vistas && !vistas.has(claveAl(a)) ? ' nueva' : ''}">
+      <span class="tipo">${esc(a.tipo)}</span>
+      <span class="det"><b>${esc(a.proceso)} caja ${esc(a.caja)}</b>${a.op ? ' · ' + esc(a.op) : ''}<br>${esc(a.detalle)}</span>
+      <span class="hora">${a.t ? hace(a.t) : ''}</span></div>`).join('')
+    : '<div class="vacio">✅ Sin alertas</div>';
+  if (vistas && nuevas && sonido && al.some(a => !vistas.has(claveAl(a)) && CLASE[a.tipo] !== 'info')) pitar();
+  vistas = claves;
+
+  // Operadores
+  const ops = (datos.operadores || []).filter(o => !proc || o.proceso === proc)
+    .map(o => Object.assign(o, { _e: estadoOp(o) }))
+    .sort((a, b) => a._e.n - b._e.n || (b.desorden - a.desorden) || a.op.localeCompare(b.op));
+  $('n-ops').textContent = ops.length;
+  const versiones = {}; ops.forEach(o => { if (o.version) versiones[o.version] = (versiones[o.version] || 0) + 1; });
+  const verMayor = Object.keys(versiones).sort((a, b) => versiones[b] - versiones[a])[0];
+  $('ops').innerHTML = ops.length ? ops.map(o => {
+    const lim = o.lim || (datos.modo === 'REAL' ? 700 : 20);
+    const pct = o.comp ? 100 : Math.min(100, Math.round(o.n / lim * 100));
+    const est = o.estadoCaja ? ` · ${esc(o.estadoCaja)}` : '';
+    const ult = (o.ultimos || []).map(([num, c], i, arr) => {
+      const mal = i > 0 && num < arr[i - 1][0];
+      return `<span class="${mal ? 'mal' : ''}"><span>#${c}</span><span>${esc(num)}${mal ? ' ↓' : ''}</span></span>`;
+    }).join('');
+    return `<article class="op ${o._e.c === 'err' ? 'err' : o._e.c === 'warn' ? 'warn' : ''}">
+      <div class="op-top"><div class="op-nom">${esc(o.op)}</div><span class="pill ${o._e.c}">${o._e.t}</span></div>
+      <div class="caja"><div class="c"><span class="tag${o.comp ? ' comp' : ''}">${esc(o.proceso || '—')}${o.comp ? ' ➕' : ''}</span>CAJA #${esc(o.caja || '—')}</div>
+        <div class="cnt">${o.comp ? '+' + o.n : o.n}${o.comp ? '' : `<small> / ${lim}</small>`}</div></div>
+      <div class="barra${o.comp ? ' comp' : ''}"><div style="width:${pct}%"></div></div>
+      <div class="datos">
+        <span>Último sobre en la hoja</span><strong>${hace(o.ultimoEnvio)}</strong>
+        <span>Celular visto</span><strong>${hace(o.contacto)}</strong>
+        <span>Sin enviar</span><strong>${o.pend ? `${o.pend} (el más viejo ${o.espera} s)` : '0'}</strong>
+        <span>Orden de sobres</span><strong style="color:${o.desorden ? 'var(--err)' : 'var(--ok)'}">${o.desorden ? `⚠ ${o.desorden} fuera de orden` : '✓ en orden'}</strong>
+        <span>Total escaneado</span><strong>${o.total} en ${o.cajas} caja(s)${est}</strong>
+        <span>Versión app</span><strong style="color:${o.version && verMayor && o.version !== verMayor ? 'var(--err)' : 'inherit'}">${esc(o.version || '—')}</strong>
+      </div>
+      ${ult ? `<div class="ult">${ult}</div>` : ''}
+    </article>`;
+  }).join('') : '<div class="vacio">Nadie ha escaneado todavía.</div>';
+}
+
+cargar();
+setInterval(cargar, REFRESCO);
+setInterval(pintar, 5000);   // refresca los "hace X s" entre consultas
+</script>
+</body>
+</html>

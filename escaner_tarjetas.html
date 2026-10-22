@@ -600,7 +600,7 @@ footer strong { color: var(--dorado-l); }
     <div class="modal-body" id="mp-body"></div>
     <div class="modal-btns">
       <button class="btn btn-primary" onclick="cerrarModalCaja()">🔁 Volver a escanear (recomendado)</button>
-      <button class="btn btn-secondary" onclick="aceptarPrefijo()">✔ El número es correcto: contarlo</button>
+      <button class="btn btn-secondary" id="btn-prefijo-ok" onclick="aceptarPrefijo()">✔ El número es correcto: contarlo</button>
     </div>
   </div>
 
@@ -705,7 +705,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '21-oct-26 M';
+const APP_VERSION = '22-oct-26 N';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -989,12 +989,16 @@ function manejarLectura(texto, formato, nativo){
   if (!tarjetaValida(codigo)) { avisoLecturaDudosa(codigo); return; }
   aprenderFormato(formato);
   if (nativo) { procesarEscaneo(codigo); return; }
+  // Lector estándar: el mismo número 3 veces seguidas (en el código del sobre, una lectura borrosa
+  // puede confundir barras anchas y angostas y dar otro número que también pasa el verificador)
   const t = Date.now();
-  if (_lectura.cod === codigo && t - _lectura.t < 1500) { _lectura = { cod: '', t: 0 }; procesarEscaneo(codigo); }
-  else _lectura = { cod: codigo, t };
+  if (_lectura.cod === codigo && t - _lectura.t < 2000) {
+    _lectura.n = (_lectura.n || 1) + 1; _lectura.t = t;
+    if (_lectura.n >= 3) { _lectura = { cod: '', t: 0, n: 0 }; procesarEscaneo(codigo); }
+  } else _lectura = { cod: codigo, t, n: 1 };
 }
 
-const VIDEO_CONSTRAINTS = { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } };
+const VIDEO_CONSTRAINTS = { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } };
 let _zx = null, _cv = null, _cuadro = 0;
 
 // Lector nativo del celular (si existe y soporta el formato del sobre)
@@ -1019,7 +1023,7 @@ function decodificarZX(v){
   const W = v.videoWidth, H = v.videoHeight;
   const completo = (++_cuadro % 5) === 0;
   const bh = completo ? H : Math.round(H * 0.5), by = Math.round((H - bh) / 2);
-  const esc = Math.min(1, 960 / W);
+  const esc = 1;   // sin reducir: las barras angostas deben verse nítidas
   if (!_cv) _cv = document.createElement('canvas');
   _cv.width = Math.round(W * esc); _cv.height = Math.round(bh * esc);
   const ctx = _cv.getContext('2d', { willReadFrequently: true });
@@ -1196,7 +1200,19 @@ function procesarEscaneo(codigo) {
   }
 
   // 1b) Número con un inicio que no se ha visto en los sobres (posible lectura equivocada)
-  if (codigo !== _prefijoAceptado && prefijoSospechoso(codigo)) { pedirRevisionPrefijo(codigo); return; }
+  // 1a) Mismos últimos 8 dígitos que un sobre ya contado = el mismo sobre leído con otro inicio
+  const gemelo = registros.find(r => !r.dup && r.num !== codigo && String(r.num).slice(-8) === codigo.slice(-8));
+  if (gemelo) {
+    dupCount++;
+    dupLog.push({ num: codigo, caja: cajaActual, ts, cajaOriginal: gemelo.caja, gemelo: gemelo.num });
+    persistirSesion(); actualizarContadores();
+    mostrarFeedback(`${codigo}: es el sobre …${gemelo.num.slice(-8)} (caja #${gemelo.caja}) leído con error`, true);
+    beepDUP(); if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    return;
+  }
+  const forzado = codigo === _prefijoAceptado;
+  const rev = forzado ? null : revisarInicio(codigo);
+  if (rev) { pedirRevisionPrefijo(codigo, rev); return; }
   _prefijoAceptado = '';
 
   // 2) Caja llena: no se cuenta el sobre y se pide cerrar la caja
@@ -1210,7 +1226,8 @@ function procesarEscaneo(codigo) {
     return;
   }
 
-  const reg = { num: codigo, caja: cajaActual, ts, dup: false };
+  const reg = { num: codigo, caja: cajaActual, ts, t: Date.now(), dup: false };
+  if (forzado) reg.forzado = true;
   if (enComplemento) reg.comp = true;
   registros.push(reg);
   numerosSet.add(codigo);
@@ -1358,7 +1375,10 @@ async function llamarCentral(payload, timeoutMs){
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs || 15000);
   try {
-    const cuerpo = Object.assign({ clave: SHEETS_CLAVE, modo: MODO_HOJA, op: operador, proceso: procesoSesion || 'SIN PROCESO', sesion: sesionId, version: APP_VERSION }, payload);
+    const pend = registros.filter(r => !r.dup && r.sync !== 'ok');
+    const estado = operador ? { caja: cajaActual, comp: enComplemento, n: enComplemento ? contarComp(cajaActual) : contarCaja(cajaActual),
+      lim: TARJETAS_POR_CAJA, pend: pend.length, espera: pend.length ? Math.round((Date.now() - Math.min(...pend.map(r => r.t || Date.now()))) / 1000) : 0 } : null;
+    const cuerpo = Object.assign({ clave: SHEETS_CLAVE, modo: MODO_HOJA, op: operador, estado, proceso: procesoSesion || 'SIN PROCESO', sesion: sesionId, version: APP_VERSION }, payload);
     // Sin encabezados personalizados (text/plain) para que Google lo acepte sin pre-verificación CORS
     const r = await fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify(cuerpo), signal: ctrl.signal, redirect: 'follow' });
     const j = await r.json();
@@ -1388,12 +1408,21 @@ async function enviarPendientes(){
   if (!pend.length) { renderSync(); return; }
   _syncEnVuelo = true; renderSync();
   try {
-    const j = await llamarCentral({ accion: 'registrar', limite: TARJETAS_POR_CAJA, items: pend.map(r => ({ num: r.num, caja: r.caja, hora: r.ts, tipo: r.comp ? 'COMPLEMENTO' : 'NORMAL' })) });
+    const j = await llamarCentral({ accion: 'registrar', limite: TARJETAS_POR_CAJA, items: pend.map(r => ({ num: r.num, caja: r.caja, hora: r.ts, tipo: r.comp ? 'COMPLEMENTO' : 'NORMAL', forzado: r.forzado ? 1 : 0 })) });
     const porNum = {}; (j.resultados || []).forEach(x => { porNum[x.num] = x; });
-    const rechazados = [];
+    const rechazados = [], sospechosos = [];
     pend.forEach(r => {
       const x = porNum[r.num]; if (!x) return;
-      if (x.estado === 'ok') { r.sync = 'ok'; if (x.consecutivo) r.consec = x.consecutivo; guardarPrefijo(String(r.num).slice(0, 8)); return; }
+      if (x.estado === 'ok') {
+        r.sync = 'ok'; if (x.consecutivo) r.consec = x.consecutivo;
+        if (prefijoCaja(r.caja) === String(r.num).slice(0, 9)) guardarPrefijo(String(r.num).slice(0, 8));   // remesa confirmada por 3+ sobres
+        return;
+      }
+      if (x.estado === 'sospechoso') {
+        r.dup = true; r.sync = 'ok'; r.otro = `POSIBLE LECTURA ERRÓNEA: igual a ${x.parecido} (${x.op})`; numerosSet.delete(r.num);
+        sospechosos.push({ num: r.num, x, caja: r.caja });
+        return;
+      }
       if (x.estado === 'invalido') { r.dup = true; r.sync = 'ok'; r.invalido = true; return; }
       if (x.estado === 'otro') {
         r.dup = true; r.sync = 'ok'; r.otro = `${x.op} (${x.proceso && x.proceso !== procesoSesion ? x.proceso + ' ' : ''}caja ${x.caja})`;
@@ -1405,13 +1434,20 @@ async function enviarPendientes(){
     persistirSesion();
     actualizarContadores();
     // Cajas que se habían llenado contando sobres que la hoja rechazó: se reabren
-    const reabiertas = [...new Set(rechazados.map(x => x.caja))].filter(nc => cajasEstado[nc] === 'completa' && contarCaja(nc) < TARJETAS_POR_CAJA);
+    const reabiertas = [...new Set(rechazados.concat(sospechosos).map(x => x.caja))].filter(nc => cajasEstado[nc] === 'completa' && contarCaja(nc) < TARJETAS_POR_CAJA);
     reabiertas.forEach(nc => {
       delete cajasEstado[nc];
       avisarCierreCaja(nc, 'abierta');
       if (nc === cajaActual && enComplemento && !contarComp(nc)) enComplemento = false;
     });
     if (reabiertas.length) { persistirSesion(); actualizarContadores(); }
+    if (sospechosos.length && !rechazados.length) {
+      beepDUP();
+      const fb = document.getElementById('scan-feedback');
+      fb.className = 'scan-feedback err';
+      fb.textContent = `⚠️ Se quitó ${sospechosos.length} lectura(s) errónea(s): ${sospechosos[0].num} era el sobre ${sospechosos[0].x.parecido}`;
+    }
+    (j.compartidas || []).forEach(mostrarCajaCompartida);
     if (rechazados.length) {
       beepOTRO();
       if (navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
@@ -1642,37 +1678,57 @@ function cerrarSesionYSalir(){
 }
 
 // ── Inicio del número de tarjeta ──
-// Todas las tarjetas de un lote comparten los primeros 8 dígitos (ej. 5515 0730…). Una lectura de
-// cámara borrosa puede cambiar dígitos y aun así pasar el dígito verificador (ej. 5515 0030…).
-// Si el inicio no se ha visto antes, se pide revisar antes de contarlo.
-const PREFIJOS_BASE = ['55150730'];
-let _prefijoAceptado = '', _prefijoPend = '';
+// INICIO DEL NÚMERO
+// Los sobres de una caja son de la misma remesa: comparten los primeros 9 dígitos (ej. 5261 9607 9…).
+// Una lectura borrosa puede cambiar dígitos y aun así pasar el dígito verificador (5961 9600 9… ).
+//  • Si la caja ya tiene 3 o más sobres, un inicio distinto se detiene; solo se puede contar si el
+//    mismo número se leyó igual 3 veces (otra remesa de verdad).
+//  • En los primeros sobres de una caja se compara contra las remesas conocidas.
+const PREFIJOS_BASE = ['55150730', '52619607'];
+let _prefijoAceptado = '', _prefijoPend = '', _intentosPrefijo = {};
+function prefijoCaja(nc){
+  const c = {};
+  registros.forEach(r => { if (!r.dup && r.caja === nc) { const p = String(r.num).slice(0, 9); c[p] = (c[p] || 0) + 1; } });
+  let b = '', n = 0; for (const p in c) if (c[p] > n) { n = c[p]; b = p; }
+  return n >= 3 ? b : '';
+}
 function prefijosConocidos(){
   const s = new Set(PREFIJOS_BASE);
   try { (JSON.parse(localStorage.getItem('esc_prefijos') || '[]')).forEach(p => s.add(p)); } catch (e) {}
-  registros.forEach(r => { if (!r.dup) s.add(String(r.num).slice(0, 8)); });
   return s;
 }
 function guardarPrefijo(p){
   try { const a = JSON.parse(localStorage.getItem('esc_prefijos') || '[]'); if (!a.includes(p)) { a.push(p); localStorage.setItem('esc_prefijos', JSON.stringify(a.slice(-30))); } } catch (e) {}
 }
-function prefijoSospechoso(c){ return !prefijosConocidos().has(String(c).slice(0, 8)); }
-function pedirRevisionPrefijo(codigo){
+// null = inicio normal · {ref, enCaja} = revisar
+function revisarInicio(c){
+  const pc = prefijoCaja(cajaActual);
+  if (pc) return String(c).slice(0, 9) === pc ? null : { ref: pc, enCaja: true };
+  const con = prefijosConocidos();
+  return con.has(String(c).slice(0, 8)) ? null : { ref: [...con][0] || '', enCaja: false };
+}
+function pedirRevisionPrefijo(codigo, rev){
   _prefijoPend = codigo;
+  const intentos = _intentosPrefijo[codigo] = (_intentosPrefijo[codigo] || 0) + 1;
   _modalCajaAbierto = true; scanActivo = false;
   beepDUP(); if (navigator.vibrate) navigator.vibrate([150, 60, 150]);
-  const ref = [...prefijosConocidos()][0] || '';
-  const fmt = String(codigo).replace(/(\d{4})(?=\d)/g, '$1 ');
+  const ref = rev.ref;
   let html = '';
   for (let i = 0; i < codigo.length; i++) {
-    const d = codigo[i], mal = i < 8 && ref[i] && ref[i] !== d;
+    const d = codigo[i], mal = i < ref.length && ref[i] !== d;
     html += (mal ? `<span style="color:var(--rojo);text-decoration:underline">${d}</span>` : d) + (i % 4 === 3 ? ' ' : '');
   }
   document.getElementById('mp-num').innerHTML = html;
-  document.getElementById('mp-body').innerHTML =
-    `El inicio de este número (<strong>${codigo.slice(0, 8)}</strong>) es distinto al de los demás sobres (<strong>${ref}…</strong>).<br>
-     Lo más común es una <strong>lectura equivocada de la cámara</strong>: vuelve a escanear el sobre con buena luz y sin moverlo.<br>
-     <span style="font-size:.78rem;color:#888">Solo si la tarjeta de verdad empieza distinto (otro lote), toca "El número es correcto".</span>`;
+  const puede = !rev.enCaja || intentos >= 3;
+  document.getElementById('mp-body').innerHTML = rev.enCaja
+    ? `Los demás sobres de la caja #${cajaActual} empiezan con <strong>${ref.replace(/(\d{4})(?=\d)/g, '$1 ')}…</strong> y este no.<br>
+       Es casi seguro una <strong>lectura equivocada de la cámara</strong>: vuelve a escanear el sobre con buena luz, sin moverlo, con el código centrado.<br>
+       <span style="font-size:.78rem;color:#888">${puede ? 'Se leyó igual 3 veces: si de verdad es de otra remesa puedes contarlo (el supervisor verá la alerta).' : `Lectura ${intentos} de 3. Si sale igual 3 veces se podrá contar como otra remesa.`}</span>`
+    : `El inicio de este número (<strong>${codigo.slice(0, 8)}</strong>) no es de una remesa conocida (<strong>${ref}…</strong>).<br>
+       Si es el <strong>primer sobre de una remesa nueva</strong>, toca "Es correcto". Si no, vuelve a escanear.`;
+  const ok = document.getElementById('btn-prefijo-ok');
+  ok.style.display = puede ? '' : 'none';
+  ok.textContent = rev.enCaja ? '✔ Es de otra remesa: contarlo (avisa al supervisor)' : '✔ Es correcto: remesa nueva';
   const fb = document.getElementById('scan-feedback');
   fb.className = 'scan-feedback err'; fb.textContent = '🔍 Número con inicio distinto — revisa (no se contó)';
   abrirModal('modal-prefijo');
@@ -1680,11 +1736,28 @@ function pedirRevisionPrefijo(codigo){
 function aceptarPrefijo(){
   const c = _prefijoPend; _prefijoPend = '';
   if (!c) { cerrarModalCaja(); return; }
-  guardarPrefijo(c.slice(0, 8));
   _prefijoAceptado = c;
   cerrarModalCaja();
   _ultimoAceptado = { cod: '', t: 0 };
   procesarEscaneo(c);
+}
+
+// ── Otra persona escaneando la misma caja ──
+let _avisoCompartida = {};
+function mostrarCajaCompartida(c){
+  const clave = c.caja + '|' + c.otros.map(o => o.op).sort().join('+');
+  if (_avisoCompartida[clave] || document.getElementById('modal-bg').classList.contains('active')) return;
+  _avisoCompartida[clave] = 1;
+  _modalCajaAbierto = true; scanActivo = false;
+  beepOTRO(); if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+  document.getElementById('mco-title').textContent = `⚠️ Otra persona también escanea la caja ${procesoSesion} #${c.caja}`;
+  document.getElementById('mco-body').innerHTML = c.otros.map(o => `<div style="padding:6px 0;border-bottom:1px solid var(--gris)">👤 <strong>${o.op}</strong> · ${o.n} sobre(s)</div>`).join('') +
+    `<p style="margin-top:10px;font-size:.85rem">Solo <strong>una persona</strong> debe escanear cada caja. Revisen el número de caja que tiene cada quien. El supervisor ya recibió la alerta.</p>`;
+  const btns = document.getElementById('mco-btns'); btns.innerHTML = '';
+  const boton = (txt, cls, fn) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.innerHTML = txt; b.onclick = fn; btns.appendChild(b); };
+  boton(`Yo tengo la caja #${c.caja}: seguir escaneando`, 'btn-primary', () => cerrarModalCaja());
+  boton(`🗑 Me equivoqué de caja: descartar mi caja #${c.caja}`, 'btn-secondary', () => descartarCaja(c.caja, false));
+  abrirModal('modal-caja-ocupada');
 }
 
 // ── Descartar una caja tomada por error (ya la había trabajado otro operador u otro proceso) ──
@@ -2462,6 +2535,13 @@ document.addEventListener('keydown', e => {
     _kb.timer = setTimeout(_procesarBufferUSB, 250);
   }
 }, true);
+
+// ── Latido cada 30 s: el monitor del supervisor ve que este celular sigue conectado ──
+setInterval(() => {
+  if (!operador || !centralActiva() || _syncEnVuelo) return;
+  if (!document.getElementById('screen-scan').classList.contains('active')) return;
+  llamarCentral({ accion: 'latido' }, 10000).catch(() => {});
+}, 30000);
 
 // ── Vigilante: si el lector quedó en pausa sin ninguna ventana abierta, se reanuda solo ──
 let _pausaTicks = 0;
