@@ -56,6 +56,10 @@ h2{font-family:var(--f-disp);font-weight:900;font-size:1rem;margin:0;display:fle
 .op{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .op.err{border-color:var(--err)} .op.warn{border-color:var(--warn)}
 .op-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.op{border-top-width:6px;overflow:hidden}
+.op-top.color{margin:-12px -12px 0;padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.06)}
+.op-top.color .op-nom{color:#2a1a1f}
+.punto{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.15)}
 .op-nom{font-family:var(--f-disp);font-weight:800;font-size:.88rem;line-height:1.25;min-width:0;overflow-wrap:anywhere}
 .pill{font-family:var(--f-disp);font-weight:800;font-size:.68rem;border-radius:999px;padding:3px 8px;white-space:nowrap}
 .pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.err{background:var(--err-bg);color:var(--err)} .pill.off{background:var(--gris-bg);color:var(--muted)}
@@ -193,7 +197,7 @@ function pintar(){
   $('n-alertas').textContent = al.length; $('n-alertas').className = 'badge' + (graves ? ' err' : '');
   $('alertas').innerHTML = al.length ? al.map(a => `<div class="al ${CLASE[a.tipo] || 'info'}${vistas && !vistas.has(claveAl(a)) ? ' nueva' : ''}">
       <span class="tipo">${esc(a.tipo)}</span>
-      <span class="det"><b>${esc(a.proceso)} caja ${esc(a.caja)}</b>${a.op ? ' · ' + esc(a.op) : ''}<br>${esc(a.detalle)}</span>
+      <span class="det"><b>${esc(a.proceso)} caja ${esc(a.caja)}</b>${a.op ? ' · ' + (a.color ? `<span class="punto" style="background:${esc(a.color)}"></span>` : '') + esc(a.op) : ''}<br>${esc(a.detalle)}</span>
       <span class="hora">${a.t ? hace(a.t) : ''}</span></div>`).join('')
     : '<div class="vacio">✅ Sin alertas</div>';
   if (vistas && nuevas && sonido && al.some(a => !vistas.has(claveAl(a)) && CLASE[a.tipo] !== 'info')) pitar();
@@ -214,8 +218,8 @@ function pintar(){
       const mal = i > 0 && num < arr[i - 1][0];
       return `<span class="${mal ? 'mal' : ''}"><span>#${c}</span><span>${esc(num)}${mal ? ' ↓' : ''}</span></span>`;
     }).join('');
-    return `<article class="op ${o._e.c === 'err' ? 'err' : o._e.c === 'warn' ? 'warn' : ''}">
-      <div class="op-top"><div class="op-nom">${esc(o.op)}</div><span class="pill ${o._e.c}">${o._e.t}</span></div>
+    return `<article class="op ${o._e.c === 'err' ? 'err' : o._e.c === 'warn' ? 'warn' : ''}" style="border-top-color:${esc(o.color || 'var(--line)')}">
+      <div class="op-top${o.color ? ' color' : ''}" style="${o.color ? 'background:' + esc(o.color) : ''}"><div class="op-nom">${esc(o.op)}</div><span class="pill ${o._e.c}">${o._e.t}</span></div>
       <div class="caja"><div class="c"><span class="tag${o.comp ? ' comp' : ''}">${esc(o.proceso || '—')}${o.comp ? ' ➕' : ''}</span>CAJA #${esc(o.caja || '—')}</div>
         <div class="cnt">${o.comp ? '+' + o.n : o.n}${o.comp ? '' : `<small> / ${lim}</small>`}</div></div>
       <div class="barra${o.comp ? ' comp' : ''}"><div style="width:${pct}%"></div></div>

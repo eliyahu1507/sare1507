@@ -321,6 +321,7 @@ footer strong { color: var(--dorado-l); }
       <div class="hero-brand">
         SARE 1507 · BECAS BIENESTAR
         <strong id="lbl-operador-hero">OPERADOR</strong>
+        <span id="lbl-mi-color" title="Tu color en la hoja y en el monitor" style="display:none;margin-top:4px;border-radius:999px;padding:1px 10px;font-size:.66rem;font-weight:800;color:#3a2a2e;letter-spacing:.3px">TU COLOR</span>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <button onclick="abrirSalir()" style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);color:#fff;border-radius:10px;padding:7px 12px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.78rem;cursor:pointer">🏠 Salir</button>
@@ -705,7 +706,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '22-oct-26 N';
+const APP_VERSION = '23-oct-26 P';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -908,6 +909,7 @@ async function _iniciarSesion() {
   operador = nom;            // necesario para consultar la hoja central
   procesoSesion = _procesoElegido;
   sesionId = nuevoSesionId();
+  if (nom !== operador) { miColor = ''; pintarMiColor(); }
   genSesion = '';
   enComplemento = false; compEstado = {};
   // ¿Dejó cajas abiertas en otro celular o en una sesión que se perdió? → continuar donde se quedó
@@ -1293,11 +1295,20 @@ function elegirProceso(pr){
   _procesoElegido = pr;
   document.querySelectorAll('#proc-grid .btn-proc').forEach(b => b.classList.toggle('sel', b.dataset.p === pr));
 }
+let miColor = '';
+try { miColor = localStorage.getItem('esc_color') || ''; } catch (e) {}
+function pintarMiColor(){
+  const el = document.getElementById('lbl-mi-color');
+  if (!el) return;
+  el.style.display = miColor ? 'inline-block' : 'none';
+  el.style.background = miColor || 'transparent';
+}
 function mostrarProceso(){
   const el = document.getElementById('lbl-proceso');
   if (el) el.textContent = procesoSesion || 'SIN PROCESO';
   const h = document.getElementById('lbl-operador-hero');
   if (h) h.textContent = operador + (procesoSesion ? ' · ' + procesoSesion : '');
+  pintarMiColor();
 }
 // Posición del sobre dentro de su caja (la de la hoja manda; si aún no responde, la local)
 function consecDe(r){
@@ -1383,6 +1394,7 @@ async function llamarCentral(payload, timeoutMs){
     const r = await fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify(cuerpo), signal: ctrl.signal, redirect: 'follow' });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Error de la hoja central');
+    if (j.color && j.color !== miColor && operador) { miColor = j.color; try { localStorage.setItem('esc_color', miColor); } catch (e) {} pintarMiColor(); }
     // ¿El supervisor borró los datos de PRUEBA? → esta sesión ya no vale: reiniciar el celular
     if (j.gen && MODO_HOJA === 'PRUEBA' && operador) {
       if (!genSesion) { genSesion = j.gen; persistirSesion(); }
