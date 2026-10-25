@@ -307,14 +307,38 @@ footer strong { color: var(--dorado-l); }
       </div>
     </div>
 
-    <div class="card" style="padding:12px 14px">
-      <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.82rem;color:#6B1C3E;margin-bottom:8px">⚙️ Administración (solo supervisor)</div>
+    <div class="card" style="padding:12px 14px" id="adm-bloque">
+      <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.82rem;color:#6B1C3E;margin-bottom:8px">⚙️ Administración <span id="adm-quien" style="font-weight:600;color:#8a7a80"></span></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <a href="impresion_tarjetas.html#etiquetas" style="flex:1;min-width:130px;text-align:center;padding:9px 8px;border-radius:9px;border:1.5px solid #e3d3d9;font-size:0.8rem;font-weight:700;color:#6B1C3E;text-decoration:none">🏷️ Etiquetas de cajas</a>
-        <a href="monitor_tarjetas.html" style="flex:1;min-width:130px;text-align:center;padding:9px 8px;border-radius:9px;border:1.5px solid #e3d3d9;font-size:0.8rem;font-weight:700;color:#6B1C3E;text-decoration:none">📊 Monitor</a>
-        <a href="impresion_tarjetas.html#datos" style="flex:1;min-width:130px;text-align:center;padding:9px 8px;border-radius:9px;border:1.5px solid #e3d3d9;font-size:0.8rem;font-weight:700;color:#6B1C3E;text-decoration:none">🖨️ Impresión por caja y CCT</a>
+        <a class="adm-link" href="impresion_tarjetas.html#etiquetas" style="flex:1;min-width:130px;text-align:center;padding:9px 8px;border-radius:9px;border:1.5px solid #e3d3d9;font-size:0.8rem;font-weight:700;color:#6B1C3E;text-decoration:none">🏷️ Etiquetas de cajas</a>
+        <a class="adm-link" href="monitor_tarjetas.html" style="flex:1;min-width:130px;text-align:center;padding:9px 8px;border-radius:9px;border:1.5px solid #e3d3d9;font-size:0.8rem;font-weight:700;color:#6B1C3E;text-decoration:none">📊 Monitor</a>
+        <a class="adm-link" href="impresion_tarjetas.html#datos" style="flex:1;min-width:130px;text-align:center;padding:9px 8px;border-radius:9px;border:1.5px solid #e3d3d9;font-size:0.8rem;font-weight:700;color:#6B1C3E;text-decoration:none">🖨️ Impresión por caja y CCT</a>
       </div>
+      <div id="adm-msg" style="display:none;margin-top:10px;background:#fff4e0;border:1px solid #f0c27a;color:#6d4300;border-radius:9px;padding:10px 12px;font-size:0.8rem;line-height:1.5"></div>
     </div>
+    <script>
+    (function () {   // Administración: solo JOSE ELIAS CERVANTES JIMENEZ y JOSE EDUARDO NOH CRUZ (misma sesión del panel)
+      const ADMINS = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ' };
+      let s = null;
+      try { s = JSON.parse(sessionStorage.getItem('sare1507_sesion')); if (s && s.ts && Date.now() - s.ts > 8 * 3600e3) s = null; } catch (e) {}
+      const cupo = s ? String(s.CUPO || '').trim() : '';
+      const quien = document.getElementById('adm-quien');
+      if (ADMINS[cupo]) { quien.textContent = '· ' + ADMINS[cupo]; return; }
+      quien.textContent = '· 🔒 solo supervisión';
+      document.querySelectorAll('#adm-bloque .adm-link').forEach(a => {
+        a.textContent = '🔒 ' + a.textContent.replace(/^\S+\s/, '');
+        a.style.color = '#8a7a80'; a.style.background = '#f6f2f3';
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          const m = document.getElementById('adm-msg');
+          m.innerHTML = (s && s.NOMBRE ? 'Hola <b>' + String(s.NOMBRE).replace(/[<>&]/g, '') + '</b>: tu' : 'Tu') +
+            ' usuario no tiene acceso a esta sección. Solo pueden entrar <b>JOSE ELIAS CERVANTES JIMENEZ</b> y <b>JOSE EDUARDO NOH CRUZ</b>.' +
+            '<br><a href="' + a.getAttribute('href') + '" style="color:#6B1C3E;font-weight:700">Soy uno de ellos: ingresar con mi nombre y CUPO →</a>';
+          m.style.display = 'block';
+        });
+      });
+    })();
+    </script>
   </div>
 
   <footer>✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>

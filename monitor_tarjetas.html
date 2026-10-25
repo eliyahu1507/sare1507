@@ -84,6 +84,92 @@ footer{color:var(--muted);font-size:.75rem;text-align:center;padding-bottom:20px
 </style>
 </head>
 <body>
+<!-- ════════ ACCESO DE ADMINISTRACIÓN (solo JEC y JEN) ════════ -->
+<style>
+body.acceso-bloq > *:not(#acceso):not(script):not(style){display:none!important}
+#acceso{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#4d0011 0%,#6f1223 60%,#832231 100%);display:flex;align-items:center;justify-content:center;padding:20px;font-family:'Segoe UI',Arial,sans-serif;overflow:auto}
+#acceso .ac-caja{background:#fff;border-radius:16px;max-width:440px;width:100%;padding:26px 24px;box-shadow:0 20px 60px rgba(0,0,0,.35);color:#2a1f24;margin:auto}
+#acceso .ac-top{text-align:center;margin-bottom:14px}
+#acceso .ac-top .ic{font-size:2rem;line-height:1}
+#acceso h1{font-size:1.15rem;color:#4d0011;margin:6px 0 2px;font-weight:800}
+#acceso .ac-sub{font-size:.8rem;color:#77592a}
+#acceso .ac-msg{background:#fff4e0;border:1px solid #f0c27a;color:#6d4300;border-radius:9px;padding:10px 12px;font-size:.86rem;line-height:1.45;margin-bottom:12px}
+#acceso .ac-quien{border:1.5px solid #e8c0cc;background:#faf0f3;border-radius:10px;padding:10px 12px;font-size:.86rem;line-height:1.5;margin-bottom:14px}
+#acceso .ac-quien b{color:#4d0011;display:block}
+#acceso label{display:block;font-size:.76rem;font-weight:700;color:#564242;margin:8px 0 4px}
+#acceso input{width:100%;padding:10px 12px;border:1.5px solid #dcc0c0;border-radius:8px;font-size:.92rem;box-sizing:border-box;font-family:inherit}
+#acceso .ac-err{display:none;background:#ffdad6;color:#93000a;border-radius:8px;padding:8px 12px;font-size:.8rem;margin-top:10px}
+#acceso .ac-btn{width:100%;background:#4d0011;color:#fff;border:0;border-radius:8px;padding:12px;font-weight:800;font-size:.92rem;cursor:pointer;margin-top:12px;font-family:inherit}
+#acceso .ac-links{display:flex;gap:8px;margin-top:12px}
+#acceso .ac-links a{flex:1;text-align:center;font-size:.8rem;font-weight:700;color:#6B1C3E;text-decoration:none;border:1.5px solid #e3d3d9;border-radius:8px;padding:8px 6px}
+#acceso .ac-pie{text-align:center;font-size:.7rem;color:#897172;margin-top:14px}
+@media print{#acceso{display:none!important}}
+</style>
+<script>
+(function () {
+  // Únicos usuarios con acceso a la Administración de Recepción de tarjetas
+  const ADMINS = [
+    { id: 'JEC', cupo: '159415',  nombre: 'JOSE ELIAS CERVANTES JIMENEZ', login: 'CERVANTES JIMENEZ JOSE ELIAS' },
+    { id: 'JEN', cupo: '1500585', nombre: 'JOSE EDUARDO NOH CRUZ',        login: 'NOH CRUZ JOSE EDUARDO' }
+  ];
+  const KEY = 'sare1507_sesion', TTL = 8 * 60 * 60 * 1000;
+  const norm = t => String(t || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function leer() {
+    try { const s = JSON.parse(sessionStorage.getItem(KEY)); if (!s) return null; if (s.ts && Date.now() - s.ts > TTL) return null; return s; }
+    catch (e) { return null; }
+  }
+  const adminDe = s => s ? ADMINS.find(a => a.cupo === String(s.CUPO || '').trim()) || null : null;
+  const pendientes = [];
+  const A = window.ACCESO = {
+    admin: null, admins: ADMINS.map(a => a.nombre),
+    alListo(cb) { if (this.admin) cb(this.admin); else pendientes.push(cb); },
+    salir() { try { sessionStorage.removeItem(KEY); } catch (e) {} location.reload(); }
+  };
+  function abrir(a) {
+    A.admin = { id: a.id, cupo: a.cupo, nombre: a.nombre };
+    document.body.classList.remove('acceso-bloq');
+    const o = document.getElementById('acceso'); if (o) o.remove();
+    pendientes.splice(0).forEach(f => { try { f(A.admin); } catch (e) { console.error(e); } });
+  }
+  function pantalla(s) {
+    document.body.classList.add('acceso-bloq');
+    const nom = s && (s.NOMBRE || s.nombre);
+    const d = document.createElement('div'); d.id = 'acceso';
+    d.innerHTML = `<div class="ac-caja">
+      <div class="ac-top"><div class="ic">🔒</div><h1>Acceso restringido</h1><div class="ac-sub">Administración · Recepción de tarjetas · SARE 1507</div></div>
+      ${nom ? `<div class="ac-msg">Hola <b>${esc(nom)}</b>: tu usuario no tiene acceso a esta sección.</div>` : ''}
+      <div class="ac-quien">Las etiquetas de cajas, el monitor y la impresión por caja y CCT solo están disponibles para:
+        ${ADMINS.map(a => `<b>• ${esc(a.nombre)}</b>`).join('')}
+        Si necesitas algo de esta sección, pídeselo a alguno de ellos.</div>
+      <form id="ac-form" autocomplete="off">
+        <div style="font-size:.8rem;color:#564242;font-weight:700">¿Eres uno de ellos? Ingresa con tu nombre y CUPO:</div>
+        <label for="ac-nom">Nombre completo</label>
+        <input id="ac-nom" type="text" placeholder="APELLIDO PATERNO APELLIDO MATERNO NOMBRE(S)" style="text-transform:uppercase">
+        <label for="ac-cupo">CUPO / Número de empleado</label>
+        <input id="ac-cupo" type="password" inputmode="numeric" placeholder="CUPO">
+        <div class="ac-err" id="ac-err">⚠️ Ese nombre y CUPO no tienen acceso de administración.</div>
+        <button class="ac-btn" type="submit">Ingresar</button>
+      </form>
+      <div class="ac-links"><a href="index.html">← Panel de herramientas</a><a href="escaner_tarjetas.html">📦 Recepción de tarjetas</a></div>
+      <div class="ac-pie">El acceso se mantiene 8 horas en esta pestaña del navegador.</div>
+    </div>`;
+    document.body.appendChild(d);
+    d.querySelector('#ac-form').onsubmit = e => {
+      e.preventDefault();
+      const n = norm(d.querySelector('#ac-nom').value), c = d.querySelector('#ac-cupo').value.trim();
+      const a = ADMINS.find(x => x.cupo === c && (n === norm(x.login) || n === norm(x.nombre)));
+      if (!a) { d.querySelector('#ac-err').style.display = 'block'; return; }
+      try { sessionStorage.setItem(KEY, JSON.stringify({ id: a.id, NOMBRE: a.nombre, CUPO: a.cupo, rol: 'admin', ts: Date.now() })); } catch (err) {}
+      abrir(a);
+    };
+  }
+  const s = leer(), a = adminDe(s);
+  if (a) A.admin = { id: a.id, cupo: a.cupo, nombre: a.nombre };
+  else pantalla(s);
+})();
+</script>
+
 <header>
   <div class="wrap">
     <div>
@@ -95,6 +181,7 @@ footer{color:var(--muted);font-size:.75rem;text-align:center;padding-bottom:20px
       <div class="seg" id="seg-proc"><button data-v="">Todos</button><button data-v="BRCU">BRCU</button><button data-v="BRC">BRC</button><button data-v="BUEEMS">BUEEMS</button><button data-v="JEF">JEF</button></div>
       <button class="btn-mini" id="btn-sonido" type="button">🔔 Sonido: no</button>
       <span class="estado-act" id="act">Conectando…</span>
+      <span class="estado-act" id="usr-nom"></span><button class="btn-mini" id="btn-salir" type="button">Salir</button>
     </div>
   </div>
 </header>
@@ -153,7 +240,7 @@ async function cargar(){
   if (enCurso) return;
   enCurso = true;
   try {
-    const r = await fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify({ clave: SHEETS_CLAVE, accion: 'monitor', modo }) });
+    const r = await fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify({ clave: SHEETS_CLAVE, cupo: ACCESO.admin.cupo, accion: 'monitor', modo }) });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Error de la hoja central');
     datos = j; $('error').innerHTML = '';
@@ -236,9 +323,13 @@ function pintar(){
   }).join('') : '<div class="vacio">Nadie ha escaneado todavía.</div>';
 }
 
-cargar();
-setInterval(cargar, REFRESCO);
-setInterval(pintar, 5000);   // refresca los "hace X s" entre consultas
+$('btn-salir').onclick = () => ACCESO.salir();
+ACCESO.alListo(a => {
+  $('usr-nom').textContent = '👤 ' + a.nombre;
+  cargar();
+  setInterval(cargar, REFRESCO);
+  setInterval(pintar, 5000);   // refresca los "hace X s" entre consultas
+});
 </script>
 </body>
 </html>
