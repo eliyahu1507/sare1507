@@ -441,6 +441,10 @@ footer strong { color: var(--dorado-l); }
       <div class="scan-feedback idle" id="scan-feedback">
         Toca "Activar cámara" para comenzar…
       </div>
+      <div id="aviso-salto" style="display:none;margin-top:8px;background:#fff8e1;border:1.5px solid #ffb300;color:#6d4c00;border-radius:12px;padding:9px 11px;font-size:.82rem;line-height:1.45">
+        <span id="aviso-salto-txt"></span>
+        <button onclick="document.getElementById('aviso-salto').style.display='none'" style="display:block;margin-top:6px;border:0;background:#ffe082;color:#6d4c00;border-radius:8px;padding:5px 10px;font-weight:700;font-size:.78rem;cursor:pointer">Entendido</button>
+      </div>
       <div id="cam-zona2">
       <div class="cam-tools">
         <button class="btn-cam" onclick="reiniciarCamara()">🔄 ¿No lee? Reiniciar cámara</button>
@@ -617,6 +621,17 @@ footer strong { color: var(--dorado-l); }
     <div class="modal-btns" id="mc-btns"></div>
   </div>
 
+  <!-- Modal: buscar sobres faltantes por saltos de numeración -->
+  <div class="modal-box" id="modal-faltantes" style="display:none;max-height:86vh;overflow:auto">
+    <div class="modal-icon">🔎</div>
+    <div class="modal-title" id="mf-title">Buscar sobres faltantes</div>
+    <div class="modal-body" id="mf-body" style="text-align:left"></div>
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="cerrarModalCaja()">📷 Seguir escaneando esta caja</button>
+      <button class="btn btn-secondary" onclick="abrirCerrarCaja(false)">↩ Volver</button>
+    </div>
+  </div>
+
   <!-- Modal: sobre ya escaneado por otro operador -->
   <div class="modal-box" id="modal-otro" style="display:none;border:4px solid var(--rojo)">
     <div class="modal-icon">⛔</div>
@@ -739,7 +754,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '24-oct-26 R';
+const APP_VERSION = '26-oct-26 S';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -1270,6 +1285,7 @@ function procesarEscaneo(codigo) {
 
   actualizarContadores();
   mostrarFeedback(codigo + (enComplemento ? '  ·  complemento +' + contarComp(cajaActual) : '  ·  #' + contarCaja(cajaActual)), esDup);
+  if (!esDup && !enComplemento) { try { revisarSalto(); } catch (e) {} }
 
   // Sonido distintivo (Web Audio API — no requiere archivos)
   if (esDup) beepDUP(); else beepOK();
@@ -2049,6 +2065,138 @@ function actualizarContadores() {
   renderSync();
 }
 
+// ── Sobres faltantes: dónde hay un salto de numeración fuera de lo común (SARE 1507) ──
+// items: [{ tar: '5515…', cons: 345 }] de UNA caja (sin complemento). esperado: 700 (o 20 en prueba).
+// opc.anterior / opc.siguiente: último número de la caja anterior y primero de la siguiente (opcional).
+function analizarFaltantes(items, esperado, opc) {
+  opc = opc || {};
+  const base = t => Number(String(t).replace(/\D/g, '').slice(0, 15));
+  const luhn = b => { const s = String(b); let t = 0; for (let i = 0; i < 15; i++) { let d = +s[14 - i]; if (i % 2 === 0) { d *= 2; if (d > 9) d -= 9; } t += d; } return s + ((10 - t % 10) % 10); };
+  const med = a => { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const fisico = items.filter(x => x && x.tar);
+  let desorden = 0;
+  for (let i = 0; i < fisico.length - 1; i++) if (base(fisico[i + 1].tar) <= base(fisico[i].tar)) desorden++;
+  const vistos = new Set();
+  let s = fisico.map(x => ({ tar: String(x.tar), cons: x.cons, b: base(x.tar) })).filter(x => !vistos.has(x.b) && vistos.add(x.b)).sort((x, y) => x.b - y.b);
+  const faltan = Math.max(0, (esperado || 0) - s.length);
+  const res = { n: s.length, esperado, faltan, ordenPct: fisico.length > 1 ? 1 - desorden / (fisico.length - 1) : 1, candidatos: [], explicados: 0, modo: '', ajenos: [] };
+  if (s.length < 5) { res.pocos = true; return res; }
+  // Sobres que no siguen la numeración de la caja (posiblemente de otra caja): se apartan antes de buscar huecos
+  const g0 = med(s.slice(1).map((x, k) => x.b - s[k].b));
+  if (g0 <= 1.5) {
+    const T = 50, aj = new Set();
+    s.forEach((x, k) => {
+      const dp = k > 0 ? x.b - s[k - 1].b : Infinity, dn = k < s.length - 1 ? s[k + 1].b - x.b : Infinity;
+      if (dp > T && dn > T) aj.add(k);
+    });
+    if (aj.size && aj.size <= Math.max(2, s.length * 0.05)) { res.ajenos = s.filter((_, k) => aj.has(k)).map(x => ({ tar: x.tar, cons: x.cons })); s = s.filter((_, k) => !aj.has(k)); }
+  }
+  const n = s.length;
+  const pares = [];
+  for (let k = 0; k < n - 1; k++) pares.push({ a: s[k], b: s[k + 1], d: s[k + 1].b - s[k].b, k });
+  if (opc.anterior) { const b0 = base(opc.anterior); if (b0 < s[0].b) pares.unshift({ a: { tar: String(opc.anterior), cons: null, b: b0, otra: 'anterior' }, b: s[0], d: s[0].b - b0, k: -1 }); }
+  if (opc.siguiente) { const b1 = base(opc.siguiente); if (b1 > s[n - 1].b) pares.push({ a: s[n - 1], b: { tar: String(opc.siguiente), cons: null, b: b1, otra: 'siguiente' }, d: b1 - s[n - 1].b, k: n });
+  }
+  const dentro = pares.filter(p => p.k >= 0 && p.k < n);
+  const global = med(dentro.map(p => p.d));
+  const cand = [];
+  if (global <= 1.5) {
+    // Numeración seguida (lo normal en una caja completa del banco): cada hueco dice exactamente qué número falta
+    res.modo = 'consecutivo';
+    pares.filter(p => p.d >= 2).forEach(p => {
+      const faltNum = p.d - 1;
+      cand.push({ p, faltNum, nivel: faltNum <= Math.min(Math.max(faltan, 1), 25) ? 'alta' : 'bloque',
+        numeros: faltNum <= 6 ? Array.from({ length: faltNum }, (_, j) => luhn(p.a.b + 1 + j)) : [] });
+    });
+    cand.sort((x, y) => (x.nivel === 'alta' ? 0 : 1) - (y.nivel === 'alta' ? 0 : 1) || (x.nivel === 'alta' ? x.p.k - y.p.k : x.faltNum - y.faltNum));
+  } else {
+    // Numeración dispersa: se compara cada salto con el salto normal de esa zona de la caja
+    res.modo = 'disperso';
+    const W = Math.max(6, Math.min(30, Math.round(dentro.length / 8)));
+    pares.forEach(p => {
+      const k = Math.max(0, Math.min(dentro.length - 1, p.k));
+      const vec = dentro.slice(Math.max(0, k - W), k).concat(dentro.slice(k + 1, k + 1 + W)).map(x => x.d);
+      const mu = Math.sqrt((med(vec) || global) * global) / Math.LN2;
+      p.veces = p.d / mu; p.normal = mu;
+      if (p.veces >= 2.2) cand.push({ p, faltNum: Math.max(1, Math.round(p.veces - 1)), nivel: p.veces >= 4 ? 'alta' : 'media', numeros: [] });
+    });
+    cand.sort((x, y) => y.p.veces - x.p.veces);
+  }
+  const max = Math.max(4, Math.min(15, faltan + 4));
+  res.candidatos = cand.slice(0, max).map(c => ({
+    numA: c.p.a.tar, consA: c.p.a.cons, otraA: c.p.a.otra || '', numB: c.p.b.tar, consB: c.p.b.cons, otraB: c.p.b.otra || '',
+    salto: c.p.d, veces: c.p.veces || c.p.d, faltan: c.faltNum, numeros: c.numeros, nivel: c.nivel,
+    juntos: c.p.a.cons != null && c.p.b.cons != null && Math.abs(c.p.b.cons - c.p.a.cons) === 1
+  }));
+  res.totalCand = cand.length;
+  res.explicados = cand.filter(c => c.nivel === 'alta').reduce((t, c) => t + c.faltNum, 0);
+  return res;
+}
+
+// Aviso en el momento: si la caja trae numeración seguida y el número brinca 2–4, probablemente se saltó un sobre
+const luhnNum = b => { const s = String(b); let t = 0; for (let i = 0; i < 15; i++) { let d = +s[14 - i]; if (i % 2 === 0) { d *= 2; if (d > 9) d -= 9; } t += d; } return s + ((10 - t % 10) % 10); };
+let _saltoTimer = null;
+function revisarSalto(){
+  const de = registros.filter(r => !r.dup && !r.comp && r.caja === cajaActual);
+  if (de.length < 8) return;
+  const b = de.map(r => Number(String(r.num).slice(0, 15))), k = b.length - 1, d = b[k] - b[k - 1];
+  if (d < 2 || d > 4) return;
+  const g = []; for (let i = Math.max(1, k - 15); i < k; i++) g.push(b[i] - b[i - 1]);
+  g.sort((x, y) => x - y);
+  if (g[g.length >> 1] !== 1) return;                     // solo cuando la caja viene seguida y en orden
+  const pend = []; for (let x = b[k - 1] + 1; x < b[k]; x++) { const t = luhnNum(x); if (!numerosSet.has(t)) pend.push(t); }
+  if (!pend.length) return;
+  document.getElementById('aviso-salto-txt').innerHTML = `⚠️ <strong>Posible sobre saltado</strong> entre el #${k} y el #${k + 1}. Falta${pend.length > 1 ? 'n' : ''}: ${pend.map(fmtT).join(', ')}.<br>Revisa si venía pegado al anterior. Si lo encuentras, escanéalo y ponlo al final de la caja.`;
+  document.getElementById('aviso-salto').style.display = 'block';
+  if (navigator.vibrate) navigator.vibrate([40, 60, 40, 60, 40]);
+  clearTimeout(_saltoTimer); _saltoTimer = setTimeout(() => { document.getElementById('aviso-salto').style.display = 'none'; }, 20000);
+}
+// Sobres de la caja en el orden en que se escanearon (sin complemento) y vecinos de las cajas de junto
+function faltantesCaja(nc){
+  const de = c => registros.filter(r => !r.dup && !r.comp && r.caja === c);
+  const items = de(nc).map(r => ({ tar: r.num, cons: consecDe(r) }));
+  const prev = de(nc - 1).map(r => r.num).sort(), sig = de(nc + 1).map(r => r.num).sort();
+  return analizarFaltantes(items, TARJETAS_POR_CAJA, { anterior: prev[prev.length - 1], siguiente: sig[0] });
+}
+const fmtT = t => { const x = String(t || ''); return x.slice(0, 8).replace(/(\d{4})(?=\d)/g, '$1 ') + ' <strong>' + x.slice(8).replace(/(\d{4})(?=\d)/g, '$1 ') + '</strong>'; };
+function lugarSobre(numero, cons, otra){
+  if (otra === 'anterior') return 'el último sobre de la caja #' + (cajaActual - 1);
+  if (otra === 'siguiente') return 'el primer sobre de la caja #' + (cajaActual + 1);
+  return 'el sobre <strong>#' + cons + '</strong>';
+}
+function resumenFaltantes(a){
+  const alta = a.candidatos.filter(c => c.nivel === 'alta');
+  if (!alta.length) return '';
+  const c = alta[0];
+  return `<div style="margin-top:10px;background:#e3f2fd;border:1px solid #90caf9;color:#0d47a1;border-radius:10px;padding:8px 10px;font-size:.82rem;text-align:left">
+    🔎 Por la numeración, ${a.modo === 'consecutivo' ? 'falta' + (c.faltan > 1 ? 'n ' + c.faltan + ' sobres' : ' un sobre') : 'puede faltar un sobre'} entre ${lugarSobre(c.numA, c.consA, c.otraA)} y ${lugarSobre(c.numB, c.consB, c.otraB)}${alta.length > 1 ? ` (y ${alta.length - 1} lugar${alta.length > 2 ? 'es' : ''} más)` : ''}.</div>`;
+}
+function verFaltantes(){
+  const a = faltantesCaja(cajaActual);
+  document.getElementById('mf-title').textContent = `Caja #${cajaActual}: ${a.n} de ${TARJETAS_POR_CAJA} · faltan ${a.faltan}`;
+  let h = '';
+  if (a.pocos) h = '<p>Hay muy pocos sobres escaneados para comparar la numeración.</p>';
+  else {
+    const alta = a.candidatos.filter(c => c.nivel === 'alta'), otros = a.candidatos.filter(c => c.nivel !== 'alta');
+    h += a.modo === 'consecutivo'
+      ? '<p style="margin:0 0 8px">Los sobres de esta caja tienen <strong>numeración seguida</strong>, así que se sabe qué números no se escanearon. Búscalos primero en estos lugares:</p>'
+      : '<p style="margin:0 0 8px">La numeración de esta caja <strong>no es seguida</strong>; estos son los saltos más grandes de lo normal. Revisa primero ahí:</p>';
+    const item = (c, i) => `<div style="border:1.5px solid ${c.nivel === 'alta' ? '#90caf9' : '#e0e0e0'};background:${c.nivel === 'alta' ? '#f3f9ff' : '#fafafa'};border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:.82rem;line-height:1.45">
+      <div><strong>${i + 1}.</strong> Entre ${lugarSobre(c.numA, c.consA, c.otraA)} <span style="color:#666">(${fmtT(c.numA)})</span><br>y ${lugarSobre(c.numB, c.consB, c.otraB)} <span style="color:#666">(${fmtT(c.numB)})</span></div>
+      ${c.numeros.length ? `<div style="margin-top:4px">Falta${c.numeros.length > 1 ? 'n' : ''}: ${c.numeros.map(fmtT).join(', ')}</div>`
+        : `<div style="margin-top:4px;color:#555">${a.modo === 'consecutivo' ? `Faltan ${c.faltan} números seguidos` : `Salto ${c.veces.toFixed(1)} veces mayor de lo normal (≈${c.faltan} sobre${c.faltan > 1 ? 's' : ''})`}</div>`}
+      ${!c.juntos && c.consA && c.consB ? '<div style="color:#8a5200;margin-top:3px">Esos dos sobres no estaban juntos: busca cerca de los dos.</div>' : ''}</div>`;
+    h += alta.length ? alta.map(item).join('') : '<p style="color:#555">No hay ningún salto claramente fuera de lo común.</p>';
+    if (otros.length) h += `<p style="margin:10px 0 6px;font-size:.8rem;color:#555">${a.modo === 'consecutivo' ? 'Saltos grandes que probablemente son un cambio de bloque de numeración (revísalos solo si no aparecen los de arriba):' : 'Otros saltos menos claros:'}</p>` + otros.map((c, i) => item(c, alta.length + i)).join('');
+    if (a.modo === 'consecutivo' && a.explicados < a.faltan) h += `<p style="font-size:.8rem;color:#555;margin:8px 0 0">Los huecos explican <strong>${a.explicados}</strong> de los ${a.faltan} faltantes. Los demás pueden ser el primer o el último sobre de la caja, o la caja de verdad trae menos (por ejemplo, la última de la remesa).</p>`;
+    if (a.ordenPct < 0.8) h += '<p style="font-size:.8rem;color:#8a5200;margin:8px 0 0">⚠️ Los sobres no venían en orden de número: guíate por el número de tarjeta más que por la posición.</p>';
+    if (a.ajenos.length) h += `<div style="margin-top:10px;background:#fdecea;border:1px solid #f5b5ae;color:#8e1c12;border-radius:10px;padding:8px 10px;font-size:.8rem;line-height:1.45">⚠️ ${a.ajenos.length === 1 ? 'Este sobre no sigue' : 'Estos sobres no siguen'} la numeración de la caja y ${a.ajenos.length === 1 ? 'puede ser' : 'pueden ser'} de otra caja: ${a.ajenos.map(x => `#${x.cons} (${fmtT(x.tar)})`).join(', ')}. Apártalo${a.ajenos.length === 1 ? '' : 's'} y avisa al supervisor.</div>`;
+  }
+  h += `<div style="margin-top:12px;background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:8px 10px;font-size:.8rem;line-height:1.45">Puede ser un sobre que se saltó o <strong>dos sobres pegados</strong>. Si lo encuentras, toca <strong>Seguir escaneando</strong>, escanéalo y <strong>colócalo al final de la caja</strong> para que su consecutivo coincida con su lugar.</div>`;
+  document.getElementById('mf-body').innerHTML = h;
+  abrirModal('modal-faltantes');
+}
+
 // ── Terminar caja ──
 // auto=true cuando se llega a 700 durante el escaneo
 let _modalCajaAbierto = false;
@@ -2089,10 +2237,12 @@ function abrirCerrarCaja(auto, codigoRechazado){
       <button class="btn btn-secondary" onclick="cerrarModalCaja()">Cancelar</button>`;
   } else {
     icon.textContent = '🟠'; title.textContent = `Caja #${cajaActual}: ${n} de ${TARJETAS_POR_CAJA}`;
+    let fa = null; try { fa = n >= 5 ? faltantesCaja(cajaActual) : null; } catch (e) { fa = null; }
     body.innerHTML = `Faltan <strong>${TARJETAS_POR_CAJA - n}</strong> para ${TARJETAS_POR_CAJA}.<br>
       ¿La caja ya no tiene más sobres? (por ejemplo, es la <strong>última caja</strong> del día)<br>
-      <span style="font-size:.78rem;color:#888">Verifica que no quede ningún sobre dentro antes de confirmar.</span>`;
-    btns.innerHTML = `<button class="btn btn-primary" style="background:var(--naranja)" onclick="cerrarCaja('parcial')">🟠 Sí, cerrar con ${n} tarjetas</button>
+      <span style="font-size:.78rem;color:#888">Verifica que no quede ningún sobre dentro antes de confirmar.</span>` + (fa ? resumenFaltantes(fa) : '');
+    btns.innerHTML = (fa && !fa.pocos ? `<button class="btn" style="background:#1565c0;color:#fff" onclick="verFaltantes()">🔎 Buscar dónde pueden faltar sobres</button>` : '') +
+      `<button class="btn btn-primary" style="background:var(--naranja)" onclick="cerrarCaja('parcial')">🟠 Sí, cerrar con ${n} tarjetas</button>
       <button class="btn btn-secondary" onclick="cerrarModalCaja()">No, seguir escaneando esta caja</button>`;
   }
   _modalCajaAbierto = true;
