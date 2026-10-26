@@ -755,7 +755,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '26-oct-26 T';
+const APP_VERSION = '26-oct-26 V';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -2113,17 +2113,10 @@ function analizarFaltantes(items, esperado, opc) {
     });
     cand.sort((x, y) => (x.nivel === 'alta' ? 0 : 1) - (y.nivel === 'alta' ? 0 : 1) || (x.nivel === 'alta' ? x.p.k - y.p.k : x.faltNum - y.faltNum));
   } else {
-    // Numeración dispersa: se compara cada salto con el salto normal de esa zona de la caja
+    // Numeración dispersa (otras regiones tienen los números de en medio): el salto donde falta un sobre es del mismo
+    // tamaño que los demás, así que los números NO indican dónde buscar. No se señala ningún lugar: se usa la
+    // verificación por paquetes (último sobre de cada liga), que no depende de los números.
     res.modo = 'disperso';
-    const W = Math.max(6, Math.min(30, Math.round(dentro.length / 8)));
-    pares.forEach(p => {
-      const k = Math.max(0, Math.min(dentro.length - 1, p.k));
-      const vec = dentro.slice(Math.max(0, k - W), k).concat(dentro.slice(k + 1, k + 1 + W)).map(x => x.d);
-      const mu = Math.sqrt((med(vec) || global) * global) / Math.LN2;
-      p.veces = p.d / mu; p.normal = mu;
-      if (p.veces >= 3) cand.push({ p, faltNum: Math.max(1, Math.round(p.veces - 1)), nivel: p.veces >= 4 ? 'alta' : 'media', numeros: [] });
-    });
-    cand.sort((x, y) => y.p.veces - x.p.veces);
   }
   const max = Math.max(4, Math.min(15, faltan + 4));
   res.candidatos = cand.slice(0, max).map(c => ({
@@ -2136,111 +2129,156 @@ function analizarFaltantes(items, esperado, opc) {
   return res;
 }
 
-// ════════ VERIFICACIÓN POR BLOQUES: encontrar sobres sin escanear sin volver a escanear toda la caja ════════
-// El operador cuenta B sobres y escanea solo el último. Si ese sobre tiene un consecutivo menor al esperado,
-// en ese bloque hay sobres sin escanear; entonces se revisa solo ese bloque, uno por uno.
+// ════════ VERIFICACIÓN POR PAQUETES: encontrar sobres sin escanear sin volver a escanear toda la caja ════════
+// La caja se separa en paquetes de B sobres (en el operativo, las ligas de 25). Paso 1: de cada paquete se escanea
+// SOLO el último sobre. Como su lugar en la caja es fijo (paquete k → sobre k·B), su consecutivo dice cuántos sobres
+// sin escanear hay hasta ahí; la diferencia con el paquete anterior dice exactamente en qué paquete están.
+// Paso 2: solo esos paquetes se revisan uno por uno hasta que la app dice "¡Encontrado!".
 let VERIF = null;
-function bloqueSugerido(n){ return n <= 40 ? 5 : n <= 200 ? 10 : 20; }
+function bloqueSugerido(){ return TARJETAS_POR_CAJA >= 100 ? 25 : 5; }
 function verificarPorBloques(){
   const lista = new Map();
   registros.filter(r => !r.dup && !r.comp && r.caja === cajaActual).forEach(r => lista.set(r.num, consecDe(r)));
-  VERIF = { caja: cajaActual, B: bloqueSugerido(lista.size), lista, n: lista.size, faltan: Math.max(0, TARJETAS_POR_CAJA - lista.size),
-            pos: 0, d: 0, fase: 'bloques', bloque: null, encontrados: [], ultimo: '', tUlt: 0, msg: '', tipo: 'info' };
+  VERIF = { caja: cajaActual, lista, n: lista.size, faltan: Math.max(0, TARJETAS_POR_CAJA - lista.size), encontrados: [],
+            ultimo: '', tUlt: 0, msg: '', tipo: 'info' };
+  verifConB(bloqueSugerido());
   cerrarModalCaja();
   document.getElementById('verif-panel').style.display = 'block';
-  pintarVerif('Empieza desde el <strong>primer sobre de la caja</strong>, en el mismo orden en que se escanearon.', 'info');
+  pintarVerif('Separa la caja en paquetes de ' + VERIF.B + ' sobres <strong>en el mismo orden</strong> en que se escanearon (en el operativo, cada liga es un paquete).', 'info');
   document.getElementById('verif-panel').scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
+function verifConB(B){
+  const V = VERIF; V.B = B; V.M = Math.ceil(TARJETAS_POR_CAJA / B);
+  V.paq = Array.from({ length: V.M + 1 }, () => ({ d: null, hallados: [], vistos: new Set() }));
+  V.paq[0].d = 0; V.sel = 1; V.fase = 'anclas'; V.penultimo = null; V.revisando = null;
+  V.encontrados.forEach(e => { e.paq = null; });
+}
+const vD = k => VERIF.paq[k] ? VERIF.paq[k].d : null;
+function faltanEn(k){ const a = vD(k - 1), b = vD(k); return a == null || b == null ? null : b - a; }
+function rangoPaq(k){ const V = VERIF; return { desde: (k - 1) * V.B - (vD(k - 1) || 0) + 1, hasta: Math.min(V.n, k * V.B - (vD(k) ?? vD(k - 1) ?? 0)) }; }
+function hallPaq(k){ return VERIF.encontrados.filter(e => e.paq === k).length; }
+function sigPendiente(desde){ const V = VERIF; for (let i = 0; i < V.M; i++) { const k = ((desde - 1 + i) % V.M) + 1; if (V.paq[k].d == null) return k; } return null; }
+function marcados(){ const V = VERIF, r = []; for (let k = 1; k <= V.M; k++) { const f = faltanEn(k); if (f > 0 && hallPaq(k) < f) r.push(k); } return r; }
 function pintarVerif(msg, tipo){
   const V = VERIF; if (!V) return;
   if (msg != null) { V.msg = msg; V.tipo = tipo || 'info'; }
   const col = { ok: ['#e8f5e9', '#2e7d32'], warn: ['#fff3e0', '#e65100'], err: ['#fdecea', '#b3261e'], info: ['#e3f2fd', '#0d47a1'], hallado: ['#e8f5e9', '#1b5e20'] }[V.tipo] || ['#e3f2fd', '#0d47a1'];
-  const b = V.bloque;
-  const instr = V.fase === 'bloques'
-    ? `Cuenta <strong>${V.B} sobres</strong> ${V.pos === 0 ? 'desde el inicio de la caja' : 'a partir del último que escaneaste'} y escanea <strong>solo el último</strong> (el sobre ${V.pos + V.B}° de la caja).`
-    : `Escanea <strong>uno por uno</strong> los sobres de este bloque${isFinite(b.hastaPos) ? ` (del ${b.desdePos + 1}° al ${b.hastaPos}° de la caja)` : ' que quedan hasta el final de la caja'}. Revisados: ${b.vistos.size + b.hallados}.`;
+  const chips = [];
+  for (let k = 1; k <= V.M; k++) {
+    const f = faltanEn(k), h = hallPaq(k), act = (V.fase === 'anclas' ? V.sel : V.revisando) === k;
+    let bg = '#eceff1', fg = '#455a64', t = '';
+    if (V.paq[k].d != null) {
+      if (f == null) { bg = '#e3f2fd'; fg = '#0d47a1'; t = '·'; }
+      else if (f <= 0) { bg = '#e8f5e9'; fg = '#2e7d32'; t = '✓'; }
+      else if (h >= f) { bg = '#c8e6c9'; fg = '#1b5e20'; t = '✓' + h; }
+      else { bg = '#ffe0b2'; fg = '#e65100'; t = '−' + (f - h); }
+    }
+    chips.push(`<button onclick="verifElegir(${k})" style="min-width:42px;border:${act ? '2.5px solid #0d47a1' : '1px solid #cfd8dc'};background:${bg};color:${fg};border-radius:8px;padding:4px 5px;font-weight:800;font-size:.74rem;cursor:pointer">${k}${t ? '<br><span style="font-size:.68rem">' + t + '</span>' : ''}</button>`);
+  }
+  let instr = '';
+  if (V.encontrados.length >= V.faltan && V.faltan > 0) instr = '';
+  else if (V.fase === 'anclas') {
+    const k = V.penultimo || V.sel;
+    instr = V.penultimo
+      ? `Del paquete <strong>${k}</strong>, escanea ahora el <strong>PENÚLTIMO</strong> sobre.`
+      : `Toma el paquete <strong>${k}</strong> (sobres del ${(k - 1) * V.B + 1}° al ${k * V.B}° de la caja) y escanea <strong>solo el ÚLTIMO</strong> sobre del paquete.`;
+  } else if (V.revisando) {
+    const k = V.revisando, f = faltanEn(k), r = rangoPaq(k);
+    instr = `Revisa el paquete <strong>${k}</strong> uno por uno: ${f - hallPaq(k) === 1 ? 'falta <strong>1 sobre</strong>' : `faltan <strong>${f - hallPaq(k)} sobres</strong>`} sin escanear, entre el sobre #${r.desde - 1 > 0 ? r.desde - 1 : 1} y el #${r.hasta}. Escanea cada sobre hasta que salga <strong>¡Encontrado!</strong> (revisados ${V.paq[k].vistos.size}).`;
+  }
   document.getElementById('verif-panel').innerHTML = `
-    <div style="font-family:'Montserrat',sans-serif;font-weight:800;color:#0d47a1;font-size:.9rem">🔎 Verificación por bloques · Caja #${V.caja}</div>
-    <div style="font-size:.78rem;color:#555;margin:2px 0 8px">Faltan ${V.faltan} · encontrados <strong>${V.encontrados.length}</strong> · bloques de
-      <select onchange="VERIF.B=+this.value;pintarVerif()" style="font-size:.78rem;padding:1px 4px">${[5, 10, 20, 25, 50].map(x => `<option ${x === V.B ? 'selected' : ''}>${x}</option>`).join('')}</select> sobres</div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;color:#0d47a1;font-size:.9rem">🔎 Verificación por paquetes · Caja #${V.caja}</div>
+    <div style="font-size:.78rem;color:#555;margin:2px 0 8px">Faltan ${V.faltan} · encontrados <strong>${V.encontrados.length}</strong> · paquetes de
+      <select onchange="verifConB(+this.value);pintarVerif('Cambié el tamaño de paquete; empieza otra vez por el paquete 1.','info')" style="font-size:.78rem;padding:1px 4px">${[5, 10, 20, 25, 50].map(x => `<option ${x === V.B ? 'selected' : ''}>${x}</option>`).join('')}</select> sobres</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${chips.join('')}</div>
     <div style="background:${col[0]};color:${col[1]};border-radius:10px;padding:8px 10px;font-size:.84rem;line-height:1.45;margin-bottom:8px">${V.msg}</div>
-    ${V.encontrados.length >= V.faltan && V.faltan > 0 ? '' : `<div style="font-size:.86rem;line-height:1.45;margin-bottom:10px">👉 ${instr}</div>`}
+    ${instr ? `<div style="font-size:.86rem;line-height:1.45;margin-bottom:10px">👉 ${instr}</div>` : ''}
     <div style="display:flex;gap:6px;flex-wrap:wrap">
-      ${V.fase === 'bloques' ? `<button class="btn btn-secondary" style="flex:1;padding:9px;font-size:.8rem" onclick="verifFinCaja()">Llegué al final de la caja</button>`
-        : `<button class="btn btn-secondary" style="flex:1;padding:9px;font-size:.8rem" onclick="verifSaltarBloque()">No aparece: seguir con bloques</button>`}
+      ${V.fase === 'anclas' && V.encontrados.length < V.faltan ? `<button class="btn btn-secondary" style="flex:1;padding:9px;font-size:.8rem" onclick="verifFinPaquetes()">Ya no hay más paquetes</button>` : ''}
       <button class="btn" style="flex:1;padding:9px;font-size:.8rem;background:#0d47a1;color:#fff" onclick="terminarVerif()">${V.encontrados.length ? `✅ Contar ${V.encontrados.length} encontrado(s) y terminar` : 'Terminar verificación'}</button>
     </div>`;
 }
-function verifEncontrado(code, donde){
+function verifElegir(k){
+  const V = VERIF; if (!V) return;
+  if (V.fase === 'revisar' && faltanEn(k) > hallPaq(k)) { V.revisando = k; pintarVerif(`Revisando el paquete ${k}.`, 'info'); return; }
+  V.fase = 'anclas'; V.sel = k; V.penultimo = null; V.revisando = null;
+  pintarVerif(V.paq[k].d != null ? `El paquete ${k} ya está revisado; si lo vuelves a escanear se corrige.` : `Paquete ${k} elegido.`, 'info');
+}
+function verifEncontrado(code, k){
   const V = VERIF;
-  if (V.encontrados.includes(code)) { pintarVerif(`Ese sobre ya lo marcaste como encontrado (…${code.slice(-8)}).`, 'warn'); return false; }
-  V.encontrados.push(code);
+  if (V.encontrados.some(e => e.num === code)) { pintarVerif(`Ese sobre ya lo marcaste como encontrado (…${code.slice(-8)}).`, 'warn'); return false; }
+  V.encontrados.push({ num: code, paq: k });
   beepOK(); if (navigator.vibrate) navigator.vibrate([80, 60, 80, 60, 200]);
-  const todos = V.encontrados.length >= V.faltan;
-  pintarVerif(`🎉 <strong>¡Encontrado!</strong> ${fmtT(code)} no estaba escaneado${donde ? ' (' + donde + ')' : ''}.<br>Apártalo: al terminar se cuenta y lo pones <strong>al final de la caja</strong>.` +
-    (todos ? `<br><strong>Ya encontraste los ${V.faltan} que faltaban.</strong>` : ''), 'hallado');
   return true;
+}
+function verifResumen(){
+  const V = VERIF, m = marcados();
+  if (V.encontrados.length >= V.faltan) return `<br><strong>Ya encontraste los ${V.faltan} que faltaban.</strong>`;
+  return '';
+}
+function verifPasoSiguiente(prefijo, tipo){
+  const V = VERIF, pend = sigPendiente(V.sel + 1 > V.M ? 1 : V.sel + 1);
+  if (V.encontrados.length >= V.faltan) { V.fase = 'anclas'; pintarVerif(prefijo + verifResumen(), 'hallado'); return; }
+  if (pend != null && V.fase === 'anclas') { V.sel = pend; pintarVerif(prefijo, tipo); return; }
+  const m = marcados();
+  if (m.length) { V.fase = 'revisar'; V.revisando = m[0];
+    pintarVerif(prefijo + `<br><strong>Paquetes con sobres sin escanear: ${m.map(k => `${k} (falta${faltanEn(k) - hallPaq(k) > 1 ? 'n ' + (faltanEn(k) - hallPaq(k)) : ' 1'})`).join(', ')}.</strong>`, 'warn'); return; }
+  verifFinPaquetes(prefijo);
 }
 function verifScan(code){
   const V = VERIF, ahora = Date.now();
-  if (code === V.ultimo && ahora - V.tUlt < 4000) { V.tUlt = ahora; return; }   // el mismo sobre sigue frente a la cámara
+  if (code === V.ultimo && ahora - V.tUlt < 4000) { V.tUlt = ahora; return; }
   V.ultimo = code; V.tUlt = ahora;
   const c = V.lista.get(code);
   if (c == null && numerosSet.has(code)) { beepDUP(); pintarVerif(`Ese sobre (…${code.slice(-8)}) está en <strong>otra caja</strong> de tu sesión. Apártalo y avisa al supervisor.`, 'err'); return; }
-  if (V.fase === 'bloques') {
-    const esperado = V.pos + V.B;
-    if (c == null) { verifEncontrado(code, `era el sobre ${esperado}° de la caja`); V.pos = esperado; V.d += 1; pintarVerif(); return; }
-    const d = esperado - c;
-    if (d > V.d) {
-      V.fase = 'revisar';
-      V.bloque = { desdePos: V.pos, hastaPos: esperado, desdeCons: V.pos - V.d + 1, hastaCons: c, faltanAqui: d - V.d, dAntes: V.d, dDespues: d, vistos: new Set(), hallados: 0 };
-      beepDUP(); if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
-      pintarVerif(`⚠️ Este sobre es el <strong>#${c}</strong> y debía ser el #${esperado - V.d}: en este bloque ${d - V.d === 1 ? 'falta <strong>1 sobre</strong>' : `faltan <strong>${d - V.d} sobres</strong>`} sin escanear, entre el sobre #${V.bloque.desdeCons} y el #${c}.`, 'warn');
-    } else if (d < V.d) {
-      V.pos = c + V.d; beepDUP();
-      pintarVerif(`Este sobre es el #${c}: parece que contaste ${V.d - d} de más. Ajusté la cuenta a partir de este sobre.`, 'warn');
-    } else {
-      V.pos = esperado; beepOK();
-      pintarVerif(`✅ Bien hasta el sobre #${c}: en este bloque no falta ninguno.`, 'ok');
+  if (V.fase === 'anclas') {
+    const k = V.penultimo || V.sel;
+    if (c == null) {                                   // el último del paquete es justo un sobre sin escanear
+      if (verifEncontrado(code, k)) { V.penultimo = k;
+        pintarVerif(`🎉 <strong>¡Encontrado!</strong> ${fmtT(code)} no estaba escaneado: era el último del paquete ${k}. Apártalo para contarlo al final.`, 'hallado'); }
+      return;
     }
+    const p = V.penultimo ? k * V.B - 1 : k * V.B;
+    const d = p - c + (V.penultimo ? hallPaq(k) : 0);
+    if (d < 0 || (vD(k - 1) != null && d < vD(k - 1))) { beepDUP();
+      pintarVerif(`Ese sobre es el #${c}: no puede ser el último del paquete ${k}. Revisa que sea el paquete ${k} y que esté completo (${V.B} sobres).`, 'err'); return; }
+    V.paq[k].d = d; V.penultimo = null; beepOK();
+    const f = faltanEn(k), sig = vD(k + 1) != null ? faltanEn(k + 1) : null;
+    let txt = f == null ? `Paquete ${k} anotado (sobre #${c}).` : f <= 0 ? `✅ Paquete ${k} completo (termina en el sobre #${c}).` : `⚠️ En el paquete ${k} ${f === 1 ? 'falta <strong>1 sobre</strong>' : `faltan <strong>${f} sobres</strong>`} sin escanear.`;
+    if (sig != null && sig > 0) txt += ` En el paquete ${k + 1} ${sig === 1 ? 'falta 1' : 'faltan ' + sig}.`;
+    verifPasoSiguiente(txt, f > 0 ? 'warn' : 'ok');
     return;
   }
-  // fase revisar: uno por uno dentro del bloque marcado
-  const b = V.bloque;
+  // Paso 2: revisando un paquete marcado, uno por uno
+  const k = V.revisando; if (!k) return;
   if (c == null) {
-    verifEncontrado(code, 'en este bloque'); b.hallados++;
-    if (b.hallados >= b.faltanAqui) { V.fase = 'bloques'; V.pos = b.hastaPos; V.d = b.dDespues; V.bloque = null;
-      pintarVerif(V.msg + (V.encontrados.length < V.faltan ? `<br>Sigue contando bloques a partir del sobre #${b.hastaCons}.` : ''), 'hallado'); }
-    else pintarVerif();
+    if (!verifEncontrado(code, k)) return;
+    const resta = faltanEn(k) - hallPaq(k);
+    const pref = `🎉 <strong>¡Encontrado!</strong> ${fmtT(code)} no estaba escaneado (paquete ${k}). Apártalo para contarlo al final.`;
+    if (resta > 0) { pintarVerif(pref, 'hallado'); return; }
+    V.revisando = null; verifPasoSiguiente(pref, 'hallado');
     return;
   }
-  if (c < b.desdeCons - 1 || c > b.hastaCons + 1) { beepDUP(); pintarVerif(`Este sobre es el #${c}, no es de este bloque (del #${b.desdeCons} al #${b.hastaCons}). Revisa que estés en el bloque correcto.`, 'err'); return; }
-  b.vistos.add(c); beepOK();
-  if (b.vistos.size >= b.hastaCons - b.desdeCons + 1 && isFinite(b.hastaPos)) {
-    V.fase = 'bloques'; V.pos = b.hastaCons + b.dAntes; V.d = b.dAntes; V.bloque = null;
-    pintarVerif(`Revisaste todo el bloque y no apareció ningún sobre sin escanear: probablemente se contó mal. Sigue con el siguiente bloque a partir del sobre #${b.hastaCons}.`, 'warn');
-  } else pintarVerif(`✓ Sobre #${c} (…${code.slice(-8)}) sí está escaneado.`, 'ok');
+  const r = rangoPaq(k);
+  if (c < r.desde - 1 || c > r.hasta + 1) { beepDUP(); pintarVerif(`Ese es el sobre #${c}, no es del paquete ${k} (del #${r.desde} al #${r.hasta}).`, 'err'); return; }
+  V.paq[k].vistos.add(c); beepOK();
+  if (V.paq[k].vistos.size >= r.hasta - r.desde + 1) {
+    pintarVerif(`Revisaste todo el paquete ${k} y no apareció el sobre sin escanear. Cuenta otra vez ese paquete (¿son ${V.B}?) o revisa si quedó pegado a otro sobre.`, 'err');
+  } else pintarVerif(`✓ Sobre #${c} sí está escaneado.`, 'ok');
 }
-function verifSaltarBloque(){
-  const V = VERIF, b = V.bloque; if (!b) return;
-  V.fase = 'bloques'; V.pos = isFinite(b.hastaPos) ? b.hastaPos : V.pos; V.d = b.dDespues; V.bloque = null;
-  pintarVerif('Seguimos con los bloques. Si al final no aparece, revisa ese bloque otra vez con calma.', 'info');
-}
-function verifFinCaja(){
-  const V = VERIF, resta = V.faltan - V.encontrados.length;
-  if (resta <= 0) { terminarVerif(); return; }
-  const ultimoCons = V.pos - V.d;
-  V.fase = 'revisar';
-  V.bloque = { desdePos: V.pos, hastaPos: Infinity, desdeCons: ultimoCons + 1, hastaCons: V.n, faltanAqui: resta, dAntes: V.d, dDespues: V.d + resta, vistos: new Set(), hallados: 0 };
-  pintarVerif(ultimoCons >= V.n
-    ? `Todos los bloques cuadraron. Si faltan ${resta}, puede ser que la caja de verdad traiga menos o que esté al final: revisa los últimos sobres.`
-    : `Los ${resta} que faltan deben estar después del sobre #${ultimoCons}: escanea uno por uno los sobres que quedan.`, 'warn');
+function verifFinPaquetes(prefijo){
+  const V = VERIF, resta = V.faltan - V.encontrados.length, m = marcados();
+  if (m.length) { V.fase = 'revisar'; V.revisando = m[0]; pintarVerif((prefijo ? prefijo + '<br>' : '') + `Revisa ahora los paquetes marcados en naranja: ${m.join(', ')}.`, 'warn'); return; }
+  V.fase = 'anclas';
+  pintarVerif((prefijo ? prefijo + '<br>' : '') + (resta > 0
+    ? `Los paquetes revisados cuadran. ${resta === 1 ? 'El que falta' : 'Los ' + resta + ' que faltan'} debe${resta === 1 ? '' : 'n'} estar en un paquete que no se ha revisado (toca su número) o la caja de verdad trae menos.`
+    : 'Todo cuadra.'), resta > 0 ? 'warn' : 'ok');
 }
 function terminarVerif(){
   const V = VERIF; if (!V) return;
   VERIF = null;
   document.getElementById('verif-panel').style.display = 'none';
-  const enc = V.encontrados.slice();
+  const enc = V.encontrados.map(e => e.num);
   if (!enc.length) return;
   let k = 0;
   (function sig(){ if (k >= enc.length) return; procesarEscaneo(enc[k++]); setTimeout(sig, 700); })();
@@ -2279,7 +2317,7 @@ function lugarSobre(numero, cons, otra){
 }
 function resumenFaltantes(a){
   if (a.modo !== 'consecutivo') return `<div style="margin-top:10px;background:#e3f2fd;border:1px solid #90caf9;color:#0d47a1;border-radius:10px;padding:8px 10px;font-size:.82rem;text-align:left">
-    🔎 Antes de volver a escanear todo, usa <strong>Buscar dónde pueden faltar sobres → Verificar por bloques</strong>: cuentas ${bloqueSugerido(a.n)} sobres y escaneas solo el último.</div>`;
+    🔎 Antes de volver a escanear todo, usa <strong>Buscar dónde pueden faltar sobres → Verificar por paquetes</strong>: de cada paquete de ${bloqueSugerido()} escaneas solo el último.</div>`;
   const alta = a.candidatos.filter(c => c.nivel === 'alta');
   if (!alta.length) return '';
   const c = alta[0];
@@ -2295,8 +2333,8 @@ function verFaltantes(){
     const alta = a.candidatos.filter(c => c.nivel === 'alta'), otros = a.candidatos.filter(c => c.nivel !== 'alta');
     if (a.modo !== 'consecutivo') {
       h += `<p style="margin:0 0 8px">En esta caja los números <strong>no van seguidos</strong>: de un sobre al siguiente el número brinca unos ${Math.round(a.saltoTipico || 0)} lugares (otras regiones tienen los números de en medio). Por eso un sobre sin escanear <strong>no deja un hueco que se note</strong> y no se puede ubicar solo con los números.</p>
-        <div style="background:#e3f2fd;border:1px solid #90caf9;color:#0d47a1;border-radius:10px;padding:9px 11px;font-size:.84rem;line-height:1.45;margin-bottom:8px"><strong>Usa la verificación por bloques:</strong> cuentas ${bloqueSugerido(a.n)} sobres y escaneas solo el último. La app te dice en qué bloque falta y solo revisas ese, uno por uno. En una caja de 700 son unos 35 escaneos en vez de 700.</div>
-        <button class="btn" style="background:#1565c0;color:#fff;margin-bottom:10px" onclick="verificarPorBloques()">🔎 Verificar por bloques</button>`;
+        <div style="background:#e3f2fd;border:1px solid #90caf9;color:#0d47a1;border-radius:10px;padding:9px 11px;font-size:.84rem;line-height:1.45;margin-bottom:8px"><strong>Usa la verificación por paquetes:</strong> separa la caja en paquetes de ${bloqueSugerido()} (en el operativo, las ligas de 25) y de cada paquete escanea solo el último sobre. La app te dice exactamente en qué paquetes faltan y solo revisas esos, uno por uno. En una caja de 700 son 28 escaneos más unos 13 por cada sobre faltante, en vez de 700.</div>
+        <button class="btn" style="background:#1565c0;color:#fff;margin-bottom:10px" onclick="verificarPorBloques()">🔎 Verificar por paquetes</button>`;
     }
     h += a.modo === 'consecutivo'
       ? '<p style="margin:0 0 8px">Los sobres de esta caja tienen <strong>numeración seguida</strong>, así que se sabe qué números no se escanearon. Búscalos primero en estos lugares:</p>'
@@ -2308,7 +2346,7 @@ function verFaltantes(){
       ${!c.juntos && c.consA && c.consB ? '<div style="color:#8a5200;margin-top:3px">Esos dos sobres no estaban juntos: busca cerca de los dos.</div>' : ''}</div>`;
     h += alta.length ? alta.map(item).join('') : (a.modo === 'consecutivo' ? '<p style="color:#555">No hay ningún salto claramente fuera de lo común.</p>' : '');
     if (otros.length) h += `<p style="margin:10px 0 6px;font-size:.8rem;color:#555">${a.modo === 'consecutivo' ? 'Saltos grandes que probablemente son un cambio de bloque de numeración (revísalos solo si no aparecen los de arriba):' : 'Otros saltos menos claros:'}</p>` + otros.map((c, i) => item(c, alta.length + i)).join('');
-    if (a.modo === 'consecutivo' && a.explicados < a.faltan) h += `<p style="font-size:.8rem;color:#555;margin:8px 0 0">Los huecos explican <strong>${a.explicados}</strong> de los ${a.faltan} faltantes. Los demás pueden ser el primer o el último sobre de la caja, o la caja de verdad trae menos (por ejemplo, la última de la remesa).</p><button class="btn btn-secondary" style="margin-top:8px" onclick="verificarPorBloques()">🔎 Verificar por bloques</button>`;
+    if (a.modo === 'consecutivo' && a.explicados < a.faltan) h += `<p style="font-size:.8rem;color:#555;margin:8px 0 0">Los huecos explican <strong>${a.explicados}</strong> de los ${a.faltan} faltantes. Los demás pueden ser el primer o el último sobre de la caja, o la caja de verdad trae menos (por ejemplo, la última de la remesa).</p><button class="btn btn-secondary" style="margin-top:8px" onclick="verificarPorBloques()">🔎 Verificar por paquetes</button>`;
     if (a.ordenPct < 0.8) h += '<p style="font-size:.8rem;color:#8a5200;margin:8px 0 0">⚠️ Los sobres no venían en orden de número: guíate por el número de tarjeta más que por la posición.</p>';
     if (a.ajenos.length) h += `<div style="margin-top:10px;background:#fdecea;border:1px solid #f5b5ae;color:#8e1c12;border-radius:10px;padding:8px 10px;font-size:.8rem;line-height:1.45">⚠️ ${a.ajenos.length === 1 ? 'Este sobre no sigue' : 'Estos sobres no siguen'} la numeración de la caja y ${a.ajenos.length === 1 ? 'puede ser' : 'pueden ser'} de otra caja: ${a.ajenos.map(x => `#${x.cons} (${fmtT(x.tar)})`).join(', ')}. Apártalo${a.ajenos.length === 1 ? '' : 's'} y avisa al supervisor.</div>`;
   }
