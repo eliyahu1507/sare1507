@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SARE 1507 — Operativo Rita Cetina Tultitlán</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="zxing.min.js"></script>
+<script>if (!window.ZXing) document.write('<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"><\/script>');</script>
+<style>
+:root {
+  --guinda: #6B1C3E; --guinda-o: #4A0E29; --guinda-d: #8B2252;
+  --dorado: #C8962A; --dorado-l: #E8B84B;
+  --verde: #1A7A3A; --verde-bg: #E8F5E9; --azul: #1565C0; --azul-bg: #E3F2FD; --alerta: #B45309; --alerta-bg: #FFF3E0;
+  --rojo: #C62828; --rojo-bg: #FFEBEE; --blanco: #FFF;
+  --gris-bg: #F5F2F3; --gris: #EDE8EA; --texto: #1A0A10; --muted: #6d5d63;
+  --sombra: rgba(74,14,41,0.18);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+body { font-family: 'Open Sans', sans-serif; background: var(--gris-bg); color: var(--texto); padding-bottom: 80px; }
+button { font-family: inherit; }
+
+.top-bar { background: #1a0a10; color: rgba(255,255,255,0.75); font-size: 0.68rem; padding: 5px 20px; display: flex; align-items: center; gap: 14px; letter-spacing: 0.3px; flex-wrap: wrap; }
+.top-bar span { opacity: 0.55; }
+.top-bar .usr { opacity: 1; margin-left: auto; display: flex; gap: 10px; align-items: center; color: #fff; font-weight: 600; }
+.top-bar .usr button { background: rgba(255,255,255,.15); border: none; color: #fff; border-radius: 6px; padding: 3px 9px; font-size: .68rem; cursor: pointer; font-weight: 600; }
+
+.hero { background: linear-gradient(135deg, var(--guinda-o) 0%, var(--guinda) 55%, var(--guinda-d) 100%); color: var(--blanco); padding: 26px 32px 22px; position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; right: -60px; top: -60px; width: 280px; height: 280px; background: radial-gradient(circle, rgba(200,150,42,0.18) 0%, transparent 70%); pointer-events: none; }
+.hero-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.hero-brand { display: flex; align-items: center; gap: 12px; }
+.hero-brand-icon { width: 44px; height: 44px; border-radius: 10px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
+.hero-brand-text { font-size: 0.7rem; opacity: 0.75; letter-spacing: 0.5px; }
+.hero-brand-text strong { display: block; font-size: 0.85rem; color: var(--dorado-l); font-weight: 700; }
+.hero-clock { text-align: right; }
+.hero-clock-time { font-family: 'Montserrat', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.hero-clock-date { font-size: 0.72rem; opacity: 0.7; margin-top: 3px; }
+.hero-title { margin-top: 18px; }
+.hero-title h1 { font-family: 'Montserrat', sans-serif; font-size: clamp(1.35rem, 3.4vw, 2.1rem); font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.1; }
+.hero-title h1 span { color: var(--dorado-l); }
+.hero-title p { font-size: 0.8rem; opacity: 0.8; margin-top: 6px; }
+.hero-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.chip { padding: 5px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; border: 1.5px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.92); display: flex; align-items: center; gap: 5px; }
+.chip.active { background: var(--dorado); border-color: var(--dorado); color: #1a0a10; }
+
+.stats-panel { display: grid; grid-template-columns: 1fr 1fr; background: var(--blanco); box-shadow: 0 4px 16px var(--sombra); }
+@media (max-width: 640px) { .top-bar > span { display: none; } .stats-panel { grid-template-columns: 1fr; } .hero { padding: 22px 18px 18px; } .hero-clock-time { font-size: 1.5rem; } }
+.stats-col { padding: 20px 24px; }
+.stats-col-left { border-right: 1px solid var(--gris); }
+.stats-col-label { font-size: 0.65rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--dorado); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.stats-col-label::before { content: '▶'; font-size: 0.55rem; }
+.stat-big { font-family: 'Montserrat', sans-serif; font-size: 3rem; font-weight: 900; color: var(--guinda); line-height: 1; font-variant-numeric: tabular-nums; }
+.stat-big small { font-size: 1.1rem; color: #999; font-weight: 700; }
+.stat-big-label { font-size: 0.72rem; color: #888; margin-top: 4px; }
+.barra { height: 10px; background: var(--gris); border-radius: 6px; overflow: hidden; margin-top: 12px; }
+.barra i { display: block; height: 100%; background: linear-gradient(90deg, var(--verde), #2e9d52); border-radius: 6px; transition: width .4s; }
+.stats-list { list-style: none; display: flex; flex-direction: column; }
+.stats-list li { display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; padding: 6px 0; border-bottom: 1px solid var(--gris); }
+.stats-list li:last-child { border-bottom: none; }
+.stats-list .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.stats-list .lbl { flex: 1; margin-left: 9px; color: #555; }
+.stats-list .val { font-family: 'Montserrat', sans-serif; font-weight: 800; color: var(--guinda); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+
+.container { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+.section-box { background: var(--blanco); border-radius: 14px; padding: 22px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); margin-bottom: 20px; }
+.section-title { font-family: 'Montserrat', sans-serif; font-size: 1rem; font-weight: 800; color: var(--guinda); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.section-title::before { content: attr(data-icon); font-size: 1.1rem; }
+.section-title .der { margin-left: auto; text-transform: none; letter-spacing: 0; }
+.nota { font-size: .78rem; color: var(--muted); margin-top: 10px; text-align: center; line-height: 1.45; }
+
+.search-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.input-text { padding: 13px 16px; flex: 1; min-width: 200px; max-width: 460px; border: 2px solid var(--gris); border-radius: 10px; font-size: 1rem; font-family: 'Open Sans', sans-serif; transition: border-color 0.2s; text-transform: uppercase; }
+.input-text:focus { outline: none; border-color: var(--guinda); }
+.btn { padding: 13px 22px; border: none; border-radius: 10px; font-weight: 800; cursor: pointer; font-family: 'Montserrat', sans-serif; transition: background 0.2s; font-size: 0.9rem; letter-spacing: 0.3px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn-primary { background: var(--guinda); color: white; }
+.btn-primary:hover:not(:disabled) { background: var(--guinda-o); }
+.btn-secondary { background: var(--gris); color: var(--texto); }
+.btn-secondary:hover { background: #ddd; }
+.btn-danger { background: var(--rojo); color: white; }
+.btn-ok { background: var(--verde); color: white; }
+.btn.chico { padding: 8px 14px; font-size: .78rem; border-radius: 8px; }
+
+#video-preview { width: 100%; max-width: 480px; border-radius: 12px; border: 3px solid var(--gris); display: block; margin: 0 auto 14px; background: #111; min-height: 120px; aspect-ratio: 4/3; object-fit: cover; }
+.scanner-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* avance por CCT */
+.filtros { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.filtro { padding: 7px 14px; border-radius: 18px; border: 1.5px solid var(--gris); background: #fff; font-weight: 700; font-size: .76rem; cursor: pointer; color: var(--muted); }
+.filtro[aria-pressed="true"] { background: var(--guinda); border-color: var(--guinda); color: #fff; }
+.cct { border: 1px solid var(--gris); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+.cct > summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+.cct > summary::-webkit-details-marker { display: none; }
+.cct-nom { font-weight: 700; font-size: .86rem; }
+.cct-nom code { font-family: 'Montserrat', sans-serif; font-weight: 800; color: var(--guinda); margin-right: 6px; }
+.cct-cnt { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: .85rem; color: var(--guinda); font-variant-numeric: tabular-nums; }
+.cct .barra { grid-column: 1 / -1; margin-top: 2px; height: 6px; }
+.cct ul { list-style: none; border-top: 1px solid var(--gris); }
+.cct li { display: flex; align-items: center; gap: 10px; padding: 8px 14px; font-size: .84rem; border-bottom: 1px solid var(--gris-bg); }
+.cct li:last-child { border-bottom: none; }
+.cct li .num { width: 26px; color: #999; font-size: .72rem; text-align: right; font-variant-numeric: tabular-nums; }
+.cct li .who { flex: 1; }
+.cct li .hora { font-size: .72rem; color: var(--verde); font-weight: 700; }
+.cct li.ok .who { color: var(--verde); font-weight: 700; }
+.cct li.ok .who::before { content: '✅ '; }
+.vacio { text-align: center; color: var(--muted); font-size: .85rem; padding: 14px; }
+
+.tabla-reg { width: 100%; border-collapse: collapse; font-size: .8rem; }
+.tabla-reg th { text-align: left; background: var(--gris-bg); color: var(--guinda); font-size: .7rem; text-transform: uppercase; letter-spacing: .4px; padding: 7px 8px; }
+.tabla-reg td { padding: 7px 8px; border-bottom: 1px solid var(--gris); vertical-align: top; }
+.tabla-wrap { overflow-x: auto; max-height: 360px; overflow-y: auto; border: 1px solid var(--gris); border-radius: 10px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: .68rem; font-weight: 800; }
+.tag.ok { background: var(--verde-bg); color: var(--verde); }
+.tag.no { background: var(--rojo-bg); color: var(--rojo); }
+.acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* modal */
+#modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 12px; }
+.modal-content { background: var(--blanco); width: 100%; max-width: 560px; border-radius: 18px; padding: 24px 22px; box-shadow: 0 16px 48px rgba(0,0,0,0.35); max-height: 90vh; overflow-y: auto; }
+.modal-content.success { border-top: 8px solid var(--verde); }
+.modal-content.warn { border-top: 8px solid var(--dorado); }
+.modal-content.error { border-top: 8px solid var(--rojo); }
+#modal-title { font-family: 'Montserrat', sans-serif; font-size: 1.35rem; font-weight: 900; text-align: center; margin-bottom: 6px; }
+.success #modal-title { color: var(--verde); }
+.warn #modal-title { color: var(--alerta); }
+.error #modal-title { color: var(--rojo); }
+.modal-sub { text-align: center; font-size: .84rem; color: var(--muted); margin-bottom: 14px; }
+.leido { background: var(--gris-bg); border-radius: 10px; padding: 10px 14px; font-size: .84rem; margin-bottom: 12px; }
+.leido b { color: var(--guinda); }
+.registro-card { background: #fff; border: 2px solid var(--gris); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+.registro-card.exacta { border-color: #9fd3ad; background: #f6fbf7; }
+.registro-card.dudosa { border-color: #f1cf95; background: #fffbf3; }
+.registro-card p { font-size: .88rem; margin-bottom: 5px; line-height: 1.4; }
+.registro-card strong { color: var(--guinda); }
+.registro-card .nombre { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; margin-bottom: 6px; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-weight: 800; font-size: 0.7rem; margin-bottom: 8px; color: #fff; }
+.aviso { border-radius: 8px; padding: 9px 11px; font-size: .8rem; margin: 8px 0; line-height: 1.4; }
+.aviso.warn { background: var(--alerta-bg); color: var(--alerta); }
+.aviso.ok { background: var(--verde-bg); color: var(--verde); }
+.aviso.err { background: var(--rojo-bg); color: var(--rojo); }
+.btn-close-modal { width: 100%; padding: 14px; background: var(--guinda); color: white; border: none; border-radius: 10px; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+.docs { font-size: .78rem; color: var(--muted); margin-top: 6px; }
+
+footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--guinda-o); color: rgba(255,255,255,0.7); font-size: 0.68rem; text-align: center; padding: 8px; letter-spacing: 0.3px; z-index: 100; }
+footer strong { color: var(--dorado-l); }
+
+/* login */
+#login-overlay-sare{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#4d0011 0%,#6f1223 60%,#832231 100%);display:none;align-items:center;justify-content:center;padding:24px;}
+#login-overlay-sare .login-box{background:#fff;border-radius:16px;max-width:420px;width:100%;padding:36px 32px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+#login-overlay-sare .login-logo{text-align:center;margin-bottom:24px;}
+#login-overlay-sare .login-logo img{height:48px;margin:0 auto 16px;display:block;opacity:.85;}
+#login-overlay-sare h1{font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.2rem;color:#4d0011;margin:0 0 4px;}
+#login-overlay-sare .login-sub{font-size:.85rem;color:#77592a;margin:0;}
+#login-overlay-sare label{display:block;font-size:.8rem;font-weight:600;color:#564242;margin-bottom:6px;}
+#login-overlay-sare input{width:100%;padding:12px 14px;border:1.5px solid #dcc0c0;border-radius:8px;font-size:.95rem;margin-bottom:16px;}
+#login-overlay-sare input#login-nombre-sare{text-transform:uppercase;}
+#login-error-sare{display:none;background:#ffdad6;color:#93000a;border-radius:8px;padding:10px 14px;font-size:.82rem;margin-bottom:14px;}
+#login-overlay-sare button[type=submit]{width:100%;background:#4d0011;color:#fff;border:none;border-radius:8px;padding:13px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;}
+#login-overlay-sare .login-foot{text-align:center;font-size:.7rem;color:#897172;margin:18px 0 0;}
+@media print { .top-bar, .hero-chips, footer, .no-imp, #modal-bg { display: none !important; } body { padding: 0; } }
+</style>
+</head>
+<body>
+
+<div id="login-overlay-sare">
+  <div class="login-box">
+    <div class="login-logo">
+      <img src="https://framework-gb.cdn.gob.mx/landing/img/logoheader.svg" alt="Gobierno de México">
+      <h1>OPERATIVO RITA CETINA TULTITLÁN</h1>
+      <p class="login-sub">SARE 1507 · Acceso restringido · Personal autorizado</p>
+    </div>
+    <form id="login-form-sare" autocomplete="off">
+      <label for="login-nombre-sare">Nombre completo</label>
+      <input id="login-nombre-sare" type="text" placeholder="APELLIDO PATERNO APELLIDO MATERNO NOMBRE(S)" autocomplete="off">
+      <label for="login-cupo-sare">CUPO / Número de empleado</label>
+      <input id="login-cupo-sare" type="text" inputmode="numeric" placeholder="Ej. 1500585" autocomplete="off">
+      <div id="login-error-sare">⚠️ Nombre o CUPO incorrectos. Verifica e intenta de nuevo.</div>
+      <button type="submit">Ingresar</button>
+    </form>
+    <p class="login-foot">Uso exclusivo de personal SARE 1507. Sesión válida 8 horas en este dispositivo.</p>
+  </div>
+</div>
+
+<div class="top-bar">
+  <span>MX GOBIERNO DE MÉXICO</span><span>|</span><span>SECRETARÍA DE EDUCACIÓN PÚBLICA</span><span>|</span><span>COORDINACIÓN NACIONAL DE BECAS PARA EL BIENESTAR</span>
+  <div class="usr" id="usr" hidden><b id="usr-nom"></b><button id="usr-salir" type="button">Cerrar sesión</button></div>
+</div>
+
+<div class="hero">
+  <div class="hero-top">
+    <div class="hero-brand">
+      <div class="hero-brand-icon">🎒</div>
+      <div>
+        <div class="hero-brand-text">SARE 1507 — VERIFICACIÓN DE CONVOCADOS</div>
+        <div class="hero-brand-text"><strong>Beca Rita Cetina · ¡Educar es Transformar!</strong></div>
+      </div>
+    </div>
+    <div class="hero-clock">
+      <div class="hero-clock-time" id="clock-time">00:00:00</div>
+      <div class="hero-clock-date" id="clock-date"></div>
+    </div>
+  </div>
+  <div class="hero-title">
+    <h1>OPERATIVO RITA CETINA<br><span>TULTITLÁN</span></h1>
+    <p>Escaneo CURP · Búsqueda por nombre · Verificación de madres, padres o tutores convocados</p>
+  </div>
+  <div class="hero-chips">
+    <div class="chip active">📍 Deportivo Toltitlán</div>
+    <div class="chip">📅 30 de octubre de 2026</div>
+    <div class="chip">⏰ 9:00 a 17:00 h</div>
+    <div class="chip" id="chip-total">👥 0 convocados</div>
+  </div>
+</div>
+
+<div class="stats-panel">
+  <div class="stats-col stats-col-left">
+    <div class="stats-col-label">Asistencia registrada en este equipo</div>
+    <div class="stat-big"><span id="st-at">0</span> <small>/ <span id="st-tot">0</span></small></div>
+    <div class="stat-big-label" id="st-pct">0 % de los convocados</div>
+    <div class="barra"><i id="st-barra" style="width:0%"></i></div>
+  </div>
+  <div class="stats-col">
+    <div class="stats-col-label">Resumen</div>
+    <ul class="stats-list">
+      <li><div class="dot" style="background:var(--verde)"></div><span class="lbl">Convocados atendidos</span><span class="val" id="st-at2">0</span></li>
+      <li><div class="dot" style="background:var(--dorado)"></div><span class="lbl">Convocados pendientes</span><span class="val" id="st-pend">0</span></li>
+      <li><div class="dot" style="background:var(--rojo)"></div><span class="lbl">Personas no convocadas que acudieron</span><span class="val" id="st-no">0</span></li>
+      <li><div class="dot" style="background:var(--azul)"></div><span class="lbl">Escuelas (CCT) convocadas</span><span class="val" id="st-cct">0</span></li>
+    </ul>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="section-box no-imp">
+    <div class="section-title" data-icon="📷">Escáner de CURP</div>
+    <video id="video-preview" playsinline muted hidden></video>
+    <div class="scanner-btns">
+      <button class="btn btn-primary" id="btn-start" type="button">📷 Iniciar cámara</button>
+      <button class="btn btn-danger" id="btn-stop" type="button" hidden>⏹ Detener cámara</button>
+    </div>
+    <p class="nota">Apunta al código QR de la CURP impresa (o de la constancia). La app lee CURP y nombre y los compara con la lista de convocados. Con un lector USB, dispara al código con el cursor en el recuadro de búsqueda.</p>
+  </div>
+
+  <div class="section-box no-imp">
+    <div class="section-title" data-icon="🔍">Búsqueda manual (CURP o nombre)</div>
+    <div class="search-row">
+      <input type="text" id="q" class="input-text" placeholder="CURP, nombre y apellido…" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <button class="btn btn-primary" id="btn-buscar" type="button">Buscar</button>
+      <button class="btn btn-secondary" id="btn-limpiar" type="button">Limpiar</button>
+    </div>
+    <p class="nota">La lista de convocados trae solo <b>nombre y primer apellido</b>. Escribe al menos el nombre y el apellido paterno; también puedes escribir el nombre completo.</p>
+  </div>
+
+  <div class="section-box">
+    <div class="section-title" data-icon="🏫">Convocados por escuela <span class="der"><button class="btn btn-secondary chico no-imp" id="btn-abrir" type="button">Abrir todas</button></span></div>
+    <div class="filtros no-imp" role="group" aria-label="Filtro">
+      <button class="filtro" data-f="todos" aria-pressed="true" type="button">Todos</button>
+      <button class="filtro" data-f="pend" aria-pressed="false" type="button">Pendientes</button>
+      <button class="filtro" data-f="ok" aria-pressed="false" type="button">Atendidos</button>
+    </div>
+    <div id="lista-cct"></div>
+  </div>
+
+  <div class="section-box">
+    <div class="section-title" data-icon="🗂️">Registro del día en este equipo <span class="der" id="reg-cnt" style="font-size:.8rem;color:var(--muted)"></span></div>
+    <div class="tabla-wrap"><table class="tabla-reg"><thead><tr><th>Hora</th><th>Persona</th><th>CURP</th><th>Escuela</th><th>Registró</th></tr></thead><tbody id="reg-body"></tbody></table></div>
+    <div class="acciones no-imp">
+      <button class="btn btn-primary chico" id="btn-csv" type="button">⬇️ Descargar CSV</button>
+      <label class="btn btn-secondary chico" style="display:inline-flex;align-items:center">⬆️ Unir CSV de otro equipo<input type="file" id="in-csv" accept=".csv,text/csv" hidden></label>
+      <button class="btn btn-secondary chico" id="btn-imp" type="button">🖨️ Imprimir avance</button>
+      <button class="btn btn-danger chico" id="btn-borrar" type="button" style="margin-left:auto">🗑 Borrar registros</button>
+    </div>
+    <p class="nota" style="text-align:left">Cada equipo guarda su propio registro. Al final del día, cada capturista descarga su CSV y quien concentra usa <b>Unir CSV de otro equipo</b> para juntar todo sin duplicar.</p>
+  </div>
+</div>
+
+<div id="modal-bg" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-content" id="modal-box">
+    <div id="modal-title">Resultado</div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div id="modal-body"></div>
+    <button class="btn-close-modal" id="btn-cerrar-modal" type="button">ACEPTAR Y CONTINUAR</button>
+  </div>
+</div>
+
+<footer>✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong> — SARE 1507</footer>
+
+<script type="application/json" id="d-conv">{"p": [{"i": 1, "n": "ABRAHAM ARZATE", "c": "15DST0093Q"}, {"i": 2, "n": "ALEJANDRA HERNANDEZ", "c": "15DST0093Q"}, {"i": 3, "n": "ALICIA RAMOS", "c": "15DST0093Q"}, {"i": 4, "n": "AMERICA RODRIGUEZ", "c": "15DST0093Q"}, {"i": 5, "n": "ANALLELY SOLIS", "c": "15DST0093Q"}, {"i": 6, "n": "ARACELI REYES", "c": "15DST0093Q"}, {"i": 7, "n": "BRENDA MIRANDA", "c": "15DST0093Q"}, {"i": 8, "n": "CANDELARIA SOLIS", "c": "15DST0093Q"}, {"i": 9, "n": "DIANA MORALES", "c": "15DST0093Q"}, {"i": 10, "n": "DULCE MOSQUEDA", "c": "15DST0093Q"}, {"i": 11, "n": "ELSA SALINAS", "c": "15DST0093Q"}, {"i": 12, "n": "FATIMA CALIXTO", "c": "15DST0093Q"}, {"i": 13, "n": "GORETTI SANCHEZ", "c": "15DST0093Q"}, {"i": 14, "n": "GUADALUPE CARRANZA", "c": "15DST0093Q"}, {"i": 15, "n": "JESSICA ISLAS", "c": "15DST0093Q"}, {"i": 16, "n": "JILARY RUBIO", "c": "15DST0093Q"}, {"i": 17, "n": "LIZBETH NICOLAS", "c": "15DST0093Q"}, {"i": 18, "n": "LUCERO ROQUE", "c": "15DST0093Q"}, {"i": 19, "n": "MARIBEL RODRIGUEZ", "c": "15DST0093Q"}, {"i": 20, "n": "MARTHA REYES", "c": "15DST0093Q"}, {"i": 21, "n": "ROSA ZARAGOZA", "c": "15DST0093Q"}, {"i": 22, "n": "SILVIA HERNANDEZ", "c": "15DST0093Q"}, {"i": 23, "n": "TOMAS OLVERA", "c": "15DST0093Q"}, {"i": 24, "n": "VIRGINIA PEREZ", "c": "15DST0093Q"}, {"i": 25, "n": "YAEL RIVAS", "c": "15DST0093Q"}, {"i": 26, "n": "YOLANDA CRUZ", "c": "15DST0093Q"}, {"i": 27, "n": "BLANCA RESENDIZ", "c": "15DST0094P"}, {"i": 28, "n": "MARICELA CARDENAS", "c": "15DST0094P"}, {"i": 29, "n": "ALEJANDRA VARGAS", "c": "15DST0185G"}, {"i": 30, "n": "ANGEL PEREZ", "c": "15DST0185G"}, {"i": 31, "n": "ARELI DIAZ", "c": "15DST0185G"}, {"i": 32, "n": "ARGELIA FONTANES", "c": "15DST0185G"}, {"i": 33, "n": "CATALINA PEREZ", "c": "15DST0185G"}, {"i": 34, "n": "DIANA MENDOZA", "c": "15DST0185G"}, {"i": 35, "n": "DULCE ESTRADA", "c": "15DST0185G"}, {"i": 36, "n": "ELIZABETH MARTINEZ", "c": "15DST0185G"}, {"i": 37, "n": "EMILIA HERNANDEZ", "c": "15DST0185G"}, {"i": 38, "n": "ENGRACIA SALAS", "c": "15DST0185G"}, {"i": 39, "n": "EVA CARRILLO", "c": "15DST0185G"}, {"i": 40, "n": "FATIMA GARCIA", "c": "15DST0185G"}, {"i": 41, "n": "GENY DIAZ", "c": "15DST0185G"}, {"i": 42, "n": "GUILLERMINA GARCIA", "c": "15DST0185G"}, {"i": 43, "n": "JANET GONZALEZ", "c": "15DST0185G"}, {"i": 44, "n": "JANNETTE HERNANDEZ", "c": "15DST0185G"}, {"i": 45, "n": "JOSELIN BARRIOS", "c": "15DST0185G"}, {"i": 46, "n": "JUANA REYES", "c": "15DST0185G"}, {"i": 47, "n": "MA RODRIGUEZ", "c": "15DST0185G"}, {"i": 48, "n": "MARIA MEDRANO", "c": "15DST0185G"}, {"i": 49, "n": "MARIBEL TORRES", "c": "15DST0185G"}, {"i": 50, "n": "MARINA SANTILLAN", "c": "15DST0185G"}, {"i": 51, "n": "MELINA MORALES", "c": "15DST0185G"}, {"i": 52, "n": "MONICA MACIAS", "c": "15DST0185G"}, {"i": 53, "n": "NANCY GARCIA", "c": "15DST0185G"}, {"i": 54, "n": "OSCAR MENDOZA", "c": "15DST0185G"}, {"i": 55, "n": "PAOLA GONZALEZ", "c": "15DST0185G"}, {"i": 56, "n": "REYNA MARIN", "c": "15DST0185G"}, {"i": 57, "n": "ROCIO GARDUÑO", "c": "15DST0185G"}, {"i": 58, "n": "SHIRLEY DEL VALLE", "c": "15DST0185G"}, {"i": 59, "n": "SONIA SOBERANES", "c": "15DST0185G"}, {"i": 60, "n": "STHEFANYA VILLANUEVA", "c": "15DST0185G"}, {"i": 61, "n": "TANIA SIMBRON", "c": "15DST0185G"}, {"i": 62, "n": "VIVIANA SALAZAR", "c": "15DST0185G"}, {"i": 63, "n": "YESSENIA JIMENEZ", "c": "15DST0185G"}, {"i": 64, "n": "YURIDIA CARAPIA", "c": "15DST0185G"}, {"i": 65, "n": "ERIKA VELAZQUEZ", "c": "15DST0221V"}, {"i": 66, "n": "GRISELDA BAUTISTA", "c": "15DST0221V"}, {"i": 67, "n": "GUADALUPE CORTES", "c": "15DST0221V"}, {"i": 68, "n": "LAURA MORANCHEL", "c": "15DST0221V"}, {"i": 69, "n": "LETICIA CHAVEZ", "c": "15DST0221V"}, {"i": 70, "n": "LETICIA RAMIREZ", "c": "15DST0221V"}, {"i": 71, "n": "MARISOL MORALES", "c": "15DST0221V"}, {"i": 72, "n": "REBECA ACEVEDO", "c": "15DST0221V"}, {"i": 73, "n": "ALDONZA BARAJAS", "c": "15DST0227P"}, {"i": 74, "n": "ALONDRA VICENCIO", "c": "15DST0227P"}, {"i": 75, "n": "ANA PEREZ", "c": "15DST0227P"}, {"i": 76, "n": "ANA JIMENEZ", "c": "15DST0227P"}, {"i": 77, "n": "ANGELICA CUAUTLE", "c": "15DST0227P"}, {"i": 78, "n": "ANGELICA TOMAS", "c": "15DST0227P"}, {"i": 79, "n": "ARIADNA OLVERA", "c": "15DST0227P"}, {"i": 80, "n": "BRENDA FERRER", "c": "15DST0227P"}, {"i": 81, "n": "BRYAN RUIZ", "c": "15DST0227P"}, {"i": 82, "n": "CRISTINA APARICIO", "c": "15DST0227P"}, {"i": 83, "n": "CRISTINA DIAZ", "c": "15DST0227P"}, {"i": 84, "n": "CRISTINA MARTINEZ", "c": "15DST0227P"}, {"i": 85, "n": "DANIELA LOPEZ", "c": "15DST0227P"}, {"i": 86, "n": "DIANA CRUZ", "c": "15DST0227P"}, {"i": 87, "n": "DULCE RUEDA", "c": "15DST0227P"}, {"i": 88, "n": "EDITH RODRIGUEZ", "c": "15DST0227P"}, {"i": 89, "n": "ELIA TAMAYO", "c": "15DST0227P"}, {"i": 90, "n": "ELIZABETH PORTUGUEZ", "c": "15DST0227P"}, {"i": 91, "n": "ELIZABETH SANCHEZ", "c": "15DST0227P"}, {"i": 92, "n": "ERIKA MEJIA", "c": "15DST0227P"}, {"i": 93, "n": "GRISELDA PEREZ", "c": "15DST0227P"}, {"i": 94, "n": "GRISELDA HUICHAN", "c": "15DST0227P"}, {"i": 95, "n": "INGRID CASTILLO", "c": "15DST0227P"}, {"i": 96, "n": "IVAN GUERRERO", "c": "15DST0227P"}, {"i": 97, "n": "JACQUELINE ROSALES", "c": "15DST0227P"}, {"i": 98, "n": "JANET BASURTO", "c": "15DST0227P"}, {"i": 99, "n": "JESSICA BRIOSO", "c": "15DST0227P"}, {"i": 100, "n": "JORGE FIGUEROA", "c": "15DST0227P"}, {"i": 101, "n": "KAHORY VILLAGRAN", "c": "15DST0227P"}, {"i": 102, "n": "MARCOS LOZANO", "c": "15DST0227P"}, {"i": 103, "n": "MARIA PEREA", "c": "15DST0227P"}, {"i": 104, "n": "MARIA URBINA", "c": "15DST0227P"}, {"i": 105, "n": "MARIA DE BENITO", "c": "15DST0227P"}, {"i": 106, "n": "MARIA SANDOVAL", "c": "15DST0227P"}, {"i": 107, "n": "MARTHA MANUEL", "c": "15DST0227P"}, {"i": 108, "n": "MIRIAM RODRIGUEZ", "c": "15DST0227P"}, {"i": 109, "n": "MONSERRAT HERNANDEZ", "c": "15DST0227P"}, {"i": 110, "n": "NALLELY HERNANDEZ", "c": "15DST0227P"}, {"i": 111, "n": "NELLY GONZALEZ", "c": "15DST0227P"}, {"i": 112, "n": "PAULA GONZALEZ", "c": "15DST0227P"}, {"i": 113, "n": "ROBERTO HILARION", "c": "15DST0227P"}, {"i": 114, "n": "ROSALIA JIMENEZ", "c": "15DST0227P"}, {"i": 115, "n": "ROSELIA MARQUEZ", "c": "15DST0227P"}, {"i": 116, "n": "VICTOR PEREZ", "c": "15DST0227P"}, {"i": 117, "n": "YECICA GONZALEZ", "c": "15DST0227P"}, {"i": 118, "n": "YESENIA ESCOBAR", "c": "15DST0227P"}, {"i": 119, "n": "ANA MUÑOZ", "c": "15DTV0042X"}, {"i": 120, "n": "ARMANDO MONTOYA", "c": "15DTV0042X"}, {"i": 121, "n": "DULCE GONZALEZ", "c": "15DTV0042X"}, {"i": 122, "n": "EDITH CRUZ", "c": "15DTV0042X"}, {"i": 123, "n": "EMMA NUÑEZ", "c": "15DTV0042X"}, {"i": 124, "n": "ERIKA DE LA CRUZ", "c": "15DTV0042X"}, {"i": 125, "n": "GEORGINA NOGUEZ", "c": "15DTV0042X"}, {"i": 126, "n": "JAQUELINE CRUZ", "c": "15DTV0042X"}, {"i": 127, "n": "JESSICA CARRERA", "c": "15DTV0042X"}, {"i": 128, "n": "JUANA MARTINEZ", "c": "15DTV0042X"}, {"i": 129, "n": "LAURA ARIAS", "c": "15DTV0042X"}, {"i": 130, "n": "LAURA GUERRERO", "c": "15DTV0042X"}, {"i": 131, "n": "LAURA CARRERA", "c": "15DTV0042X"}, {"i": 132, "n": "LOURDES DE LA CRUZ", "c": "15DTV0042X"}, {"i": 133, "n": "MARGARITA RAMIREZ", "c": "15DTV0042X"}, {"i": 134, "n": "MARIA RUIZ", "c": "15DTV0042X"}, {"i": 135, "n": "MARIA GUTIERREZ", "c": "15DTV0042X"}, {"i": 136, "n": "MARIA YAÑEZ", "c": "15DTV0042X"}, {"i": 137, "n": "MARIBEL DIAZ", "c": "15DTV0042X"}, {"i": 138, "n": "MARTIN RODRIGUEZ", "c": "15DTV0042X"}, {"i": 139, "n": "PETRA RODRIGUEZ", "c": "15DTV0042X"}, {"i": 140, "n": "VERONICA GERMAN", "c": "15DTV0042X"}, {"i": 141, "n": "VIRIDIANA GARCIA", "c": "15DTV0042X"}, {"i": 142, "n": "YESSENIA VEGA", "c": "15DTV0042X"}, {"i": 143, "n": "ZENAIDA GUTIERREZ", "c": "15DTV0042X"}, {"i": 144, "n": "ITZEL ESPINOSA", "c": "15DTV0089R"}, {"i": 145, "n": "ALEJANDRA GONZALEZ", "c": "15DTV0257X"}, {"i": 146, "n": "ANA DAVALOS", "c": "15DTV0257X"}, {"i": 147, "n": "ANGELICA GONZALEZ", "c": "15DTV0257X"}, {"i": 148, "n": "CLAUDIA REGALADO", "c": "15DTV0257X"}, {"i": 149, "n": "CRYSTEL HERNANDEZ", "c": "15DTV0257X"}, {"i": 150, "n": "ESMERALDA BENITO", "c": "15DTV0257X"}, {"i": 151, "n": "FILOMENA FLORES", "c": "15DTV0257X"}, {"i": 152, "n": "GABRIELA HERNANDEZ", "c": "15DTV0257X"}, {"i": 153, "n": "IGNACIO SALMERON", "c": "15DTV0257X"}, {"i": 154, "n": "ITZEL MORALES", "c": "15DTV0257X"}, {"i": 155, "n": "JAQUELINE PIÑAL", "c": "15DTV0257X"}, {"i": 156, "n": "JESUS PONCE", "c": "15DTV0257X"}, {"i": 157, "n": "JORGE MIRANDA", "c": "15DTV0257X"}, {"i": 158, "n": "KARLA VALDEZ", "c": "15DTV0257X"}, {"i": 159, "n": "MARIA QUIROZ", "c": "15DTV0257X"}, {"i": 160, "n": "MARIBEL REYES", "c": "15DTV0257X"}, {"i": 161, "n": "MARTHA SOLARES", "c": "15DTV0257X"}, {"i": 162, "n": "MARTHA LOPEZ", "c": "15DTV0257X"}, {"i": 163, "n": "MELISSA PICHARDO", "c": "15DTV0257X"}, {"i": 164, "n": "TREYSI RAMIREZ", "c": "15DTV0257X"}, {"i": 165, "n": "VALERIA GUADARRAMA", "c": "15DTV0257X"}, {"i": 166, "n": "VERONICA YESCAS", "c": "15DTV0257X"}, {"i": 167, "n": "VICTORIA MARTINEZ", "c": "15DTV0257X"}, {"i": 168, "n": "YADIRA VILLALOBOS", "c": "15DTV0257X"}, {"i": 169, "n": "YESICA GOMEZ", "c": "15DTV0257X"}, {"i": 170, "n": "ALEJANDRA TREJO", "c": "15DTV0262I"}, {"i": 171, "n": "ALLAN CEBALLOS", "c": "15DTV0262I"}, {"i": 172, "n": "ANA ROJAS", "c": "15DTV0262I"}, {"i": 173, "n": "ANA PARRA", "c": "15DTV0262I"}, {"i": 174, "n": "ANGELICA DE LA CRUZ", "c": "15DTV0262I"}, {"i": 175, "n": "ESTHER DE LA CRUZ", "c": "15DTV0262I"}, {"i": 176, "n": "GLORIA JIMENEZ", "c": "15DTV0262I"}, {"i": 177, "n": "HECTOR ESCAMILLA", "c": "15DTV0262I"}, {"i": 178, "n": "JESUS GUTIERREZ", "c": "15DTV0262I"}, {"i": 179, "n": "LESLIE GONZALEZ", "c": "15DTV0262I"}, {"i": 180, "n": "MAGDALENA HERNANDEZ", "c": "15DTV0262I"}, {"i": 181, "n": "MARIA GALVAN", "c": "15DTV0262I"}, {"i": 182, "n": "MARIA RODRIGUEZ", "c": "15DTV0262I"}, {"i": 183, "n": "MARISOL MERIDA", "c": "15DTV0262I"}, {"i": 184, "n": "MARTHA COLIN", "c": "15DTV0262I"}, {"i": 185, "n": "PATRICIA CASTILLO", "c": "15DTV0262I"}, {"i": 186, "n": "RAFAEL SOLANO", "c": "15DTV0262I"}, {"i": 187, "n": "ROSA SANTOS", "c": "15DTV0262I"}, {"i": 188, "n": "XOCHITL GARCIA", "c": "15DTV0262I"}, {"i": 189, "n": "JOSE TERRAZAS", "c": "15DTV0327B"}, {"i": 190, "n": "ANAHI HERNANDEZ", "c": "15DTV0335K"}, {"i": 191, "n": "CINDY CRUZ", "c": "15DTV0360J"}, {"i": 192, "n": "LAURA MENDOZA", "c": "15DTV0360J"}, {"i": 193, "n": "YENI ZAMORANO", "c": "15DTV0360J"}, {"i": 194, "n": "YENY SANCHEZ", "c": "15DTV0360J"}, {"i": 195, "n": "ANA ZAMORA", "c": "15EES0096U"}, {"i": 196, "n": "ARINELI PASCUAL", "c": "15EES0096U"}, {"i": 197, "n": "IRAIS HERNANDEZ", "c": "15EES0096U"}, {"i": 198, "n": "KATIA CRUZ", "c": "15EES0096U"}, {"i": 199, "n": "MONCERRAT RODRIGUEZ", "c": "15EES0096U"}, {"i": 200, "n": "ANEL JUAREZ", "c": "15EES0099R"}, {"i": 201, "n": "ANTONIA CRUZ", "c": "15EES0099R"}, {"i": 202, "n": "ARELI RUBIO", "c": "15EES0099R"}, {"i": 203, "n": "ARELI MENA", "c": "15EES0099R"}, {"i": 204, "n": "BARBARA SANTILLAN", "c": "15EES0099R"}, {"i": 205, "n": "BEATRIZ ENRIQUEZ", "c": "15EES0099R"}, {"i": 206, "n": "BENITA ENRIQUEZ", "c": "15EES0099R"}, {"i": 207, "n": "DULCE REYES", "c": "15EES0099R"}, {"i": 208, "n": "ELIDE SANTILLAN", "c": "15EES0099R"}, {"i": 209, "n": "ELIZABETH CARDENAS", "c": "15EES0099R"}, {"i": 210, "n": "ERIKA JIMENEZ", "c": "15EES0099R"}, {"i": 211, "n": "HOLITA PERALTA", "c": "15EES0099R"}, {"i": 212, "n": "IRVING GONZALEZ", "c": "15EES0099R"}, {"i": 213, "n": "JESSICA CORTES", "c": "15EES0099R"}, {"i": 214, "n": "JUAN REYES", "c": "15EES0099R"}, {"i": 215, "n": "JUAN AVILA", "c": "15EES0099R"}, {"i": 216, "n": "LAURA OLIVARES", "c": "15EES0099R"}, {"i": 217, "n": "LORENA MONROY", "c": "15EES0099R"}, {"i": 218, "n": "LUISA LOPEZ", "c": "15EES0099R"}, {"i": 219, "n": "MARA DIAZ", "c": "15EES0099R"}, {"i": 220, "n": "MARIA REYES", "c": "15EES0099R"}, {"i": 221, "n": "MARIANA ENRIQUEZ", "c": "15EES0099R"}, {"i": 222, "n": "MARTHA AVILA", "c": "15EES0099R"}, {"i": 223, "n": "MAYRA MOYA", "c": "15EES0099R"}, {"i": 224, "n": "MAYRA ANGEL", "c": "15EES0099R"}, {"i": 225, "n": "MIRIAM MOCTEZUMA", "c": "15EES0099R"}, {"i": 226, "n": "MONSERRAT BAHENA", "c": "15EES0099R"}, {"i": 227, "n": "NADIA BERNAL", "c": "15EES0099R"}, {"i": 228, "n": "NANCY MOCTEZUMA", "c": "15EES0099R"}, {"i": 229, "n": "NOELIA HERNANDEZ", "c": "15EES0099R"}, {"i": 230, "n": "OLGA CRUZ", "c": "15EES0099R"}, {"i": 231, "n": "PAOLA RAMIREZ", "c": "15EES0099R"}, {"i": 232, "n": "POLETH LOPEZ", "c": "15EES0099R"}, {"i": 233, "n": "REYNA ZAMORA", "c": "15EES0099R"}, {"i": 234, "n": "VIANNEY JUAREZ", "c": "15EES0099R"}, {"i": 235, "n": "YAMELI SANTIAGO", "c": "15EES0099R"}, {"i": 236, "n": "YAZMIN HERNANDEZ", "c": "15EES0099R"}, {"i": 237, "n": "ZITA OROPEZA", "c": "15EES0099R"}, {"i": 238, "n": "ZULEYMA QUEZADA", "c": "15EES0099R"}, {"i": 239, "n": "FLOR MONDRAGON", "c": "15EES0202N"}, {"i": 240, "n": "ANA VIVEROS", "c": "15EES0213T"}, {"i": 241, "n": "ANTONIO VAZQUEZ", "c": "15EES0213T"}, {"i": 242, "n": "DIANA CORTEZ", "c": "15EES0213T"}, {"i": 243, "n": "GLORIA CARRICHI", "c": "15EES0213T"}, {"i": 244, "n": "LAURA TORRES", "c": "15EES0213T"}, {"i": 245, "n": "MARGARITA MONTIEL", "c": "15EES0213T"}, {"i": 246, "n": "MARIA CRUZ", "c": "15EES0213T"}, {"i": 247, "n": "PERLA VEGA", "c": "15EES0213T"}, {"i": 248, "n": "BRENDA MARTINEZ", "c": "15EES0248I"}, {"i": 249, "n": "CLAUDIA RODRIGUEZ", "c": "15EES0248I"}, {"i": 250, "n": "CRISTIAN PEREZ", "c": "15EES0248I"}, {"i": 251, "n": "ELIZABETH ORTEGA", "c": "15EES0248I"}, {"i": 252, "n": "ERIKA GARCIA", "c": "15EES0248I"}, {"i": 253, "n": "LIZBETH FLORES", "c": "15EES0248I"}, {"i": 254, "n": "MARIA SANCHEZ", "c": "15EES0248I"}, {"i": 255, "n": "MARIA GARCIA", "c": "15EES0248I"}, {"i": 256, "n": "MARIANA MAGAÑA", "c": "15EES0248I"}, {"i": 257, "n": "NORMA PADILLA", "c": "15EES0248I"}, {"i": 258, "n": "RAFAEL ROJAS", "c": "15EES0248I"}, {"i": 259, "n": "AMELIA TORRES", "c": "15EES0470I"}, {"i": 260, "n": "ANDRES RODRIGUEZ", "c": "15EES0470I"}, {"i": 261, "n": "BRENDA TREJO", "c": "15EES0470I"}, {"i": 262, "n": "CECILIA LOPEZ", "c": "15EES0470I"}, {"i": 263, "n": "DOLORES CRUZ", "c": "15EES0470I"}, {"i": 264, "n": "ELSA PACHECO", "c": "15EES0470I"}, {"i": 265, "n": "EVELIN TORRES", "c": "15EES0470I"}, {"i": 266, "n": "EVELYN HERNANDEZ", "c": "15EES0470I"}, {"i": 267, "n": "FABIOLA CARBAJAL", "c": "15EES0470I"}, {"i": 268, "n": "JENNI ANACLETO", "c": "15EES0470I"}, {"i": 269, "n": "JUANA CARBAJAL", "c": "15EES0470I"}, {"i": 270, "n": "JUDITH SANTILLAN", "c": "15EES0470I"}, {"i": 271, "n": "KAREN GONZALEZ", "c": "15EES0470I"}, {"i": 272, "n": "KARINA PACHECO", "c": "15EES0470I"}, {"i": 273, "n": "LUIS SANTILLAN", "c": "15EES0470I"}, {"i": 274, "n": "MA. RIVERO", "c": "15EES0470I"}, {"i": 275, "n": "MA. GARCIA", "c": "15EES0470I"}, {"i": 276, "n": "MARGARITA GARCIA", "c": "15EES0470I"}, {"i": 277, "n": "MARIA CARMONA", "c": "15EES0470I"}, {"i": 278, "n": "MARIA CORONA", "c": "15EES0470I"}, {"i": 279, "n": "MARIA MARQUEZ", "c": "15EES0470I"}, {"i": 280, "n": "MARISOL JUAREZ", "c": "15EES0470I"}, {"i": 281, "n": "MARISOL RIVERO", "c": "15EES0470I"}, {"i": 282, "n": "MARLEN RODRIGUEZ", "c": "15EES0470I"}, {"i": 283, "n": "MARTIN MENDOZA", "c": "15EES0470I"}, {"i": 284, "n": "NORMA MARQUEZ", "c": "15EES0470I"}, {"i": 285, "n": "NORMA MONTES", "c": "15EES0470I"}, {"i": 286, "n": "RITA CARBAJAL", "c": "15EES0470I"}, {"i": 287, "n": "RUFINA CASTRO", "c": "15EES0470I"}, {"i": 288, "n": "SANDRA GARCIA", "c": "15EES0470I"}, {"i": 289, "n": "SILVIA AGUILAR", "c": "15EES0470I"}, {"i": 290, "n": "VERONICA MARTINEZ", "c": "15EES0470I"}, {"i": 291, "n": "WENDOLINEE VIGUERAS", "c": "15EES0470I"}, {"i": 292, "n": "WENDY QUINTERO", "c": "15EES0470I"}, {"i": 293, "n": "YAQUELIN SANCHEZ", "c": "15EES0470I"}, {"i": 294, "n": "YATSIRI TORRES", "c": "15EES0470I"}, {"i": 295, "n": "YOLANDA CARBAJAL", "c": "15EES0470I"}, {"i": 296, "n": "YOLANDA PEREZ", "c": "15EES0470I"}, {"i": 297, "n": "ALBA RAMIREZ", "c": "15EES0608D"}, {"i": 298, "n": "AURORA TREJO", "c": "15EES0608D"}, {"i": 299, "n": "DULCE HERNANDEZ", "c": "15EES0608D"}, {"i": 300, "n": "LETICIA PINEDA", "c": "15EES0608D"}, {"i": 301, "n": "MARIELA RAMIREZ", "c": "15EES0608D"}, {"i": 302, "n": "MARTHA ESTRADA", "c": "15EES0608D"}, {"i": 303, "n": "THALIA VELAZQUEZ", "c": "15EES0608D"}, {"i": 304, "n": "ZAIRA CLEMENTE", "c": "15EES0608D"}, {"i": 305, "n": "CLARET LEAL", "c": "15EES0609C"}, {"i": 306, "n": "JOSELIN CONTRERAS", "c": "15EES0609C"}, {"i": 307, "n": "JUANA ANTONIO", "c": "15EES0609C"}, {"i": 308, "n": "MARIA HURTADO", "c": "15EES0609C"}, {"i": 309, "n": "MARIA RAMIREZ", "c": "15EES0609C"}, {"i": 310, "n": "MARIA OLVERA", "c": "15EES0609C"}, {"i": 311, "n": "MARISOL HURTADO", "c": "15EES0609C"}, {"i": 312, "n": "MAXIMO ALVAREZ", "c": "15EES0609C"}, {"i": 313, "n": "NATALIA GARCIA", "c": "15EES0609C"}, {"i": 314, "n": "ALMA ENRIQUEZ", "c": "15EES0611R"}, {"i": 315, "n": "ARACELI GUZMAN", "c": "15EES0611R"}, {"i": 316, "n": "ARACELI PEREZ", "c": "15EES0611R"}, {"i": 317, "n": "ARLET ANGELES", "c": "15EES0611R"}, {"i": 318, "n": "BERENICE JUAREZ", "c": "15EES0611R"}, {"i": 319, "n": "EDITH BEJARANO", "c": "15EES0611R"}, {"i": 320, "n": "ELVIA HERNANDEZ", "c": "15EES0611R"}, {"i": 321, "n": "ELVIRA RODRIGUEZ", "c": "15EES0611R"}, {"i": 322, "n": "ESPERANZA MARTINEZ", "c": "15EES0611R"}, {"i": 323, "n": "ESTELA HERNANDEZ", "c": "15EES0611R"}, {"i": 324, "n": "FELIPE ANGELES", "c": "15EES0611R"}, {"i": 325, "n": "GABRIELA MALDONADO", "c": "15EES0611R"}, {"i": 326, "n": "GRICELDA LOPEZ", "c": "15EES0611R"}, {"i": 327, "n": "ISAAC LOPEZ", "c": "15EES0611R"}, {"i": 328, "n": "ISIDRA GARCIA", "c": "15EES0611R"}, {"i": 329, "n": "IVONNE SANCHEZ", "c": "15EES0611R"}, {"i": 330, "n": "JAVIER ANGELES", "c": "15EES0611R"}, {"i": 331, "n": "JESSICA NAVARRO", "c": "15EES0611R"}, {"i": 332, "n": "LESLY ENRIQUEZ", "c": "15EES0611R"}, {"i": 333, "n": "MARI JIMENEZ", "c": "15EES0611R"}, {"i": 334, "n": "MARIA HERNANDEZ", "c": "15EES0611R"}, {"i": 335, "n": "MARIA SANTILLAN", "c": "15EES0611R"}, {"i": 336, "n": "MARTHA HERNANDEZ", "c": "15EES0611R"}, {"i": 337, "n": "MIGUEL PRADO", "c": "15EES0611R"}, {"i": 338, "n": "MOISES JUAREZ", "c": "15EES0611R"}, {"i": 339, "n": "NANCY MOCTEZUMA", "c": "15EES0611R"}, {"i": 340, "n": "PERLA HERNANDEZ", "c": "15EES0611R"}, {"i": 341, "n": "ROSARIO GODINEZ", "c": "15EES0611R"}, {"i": 342, "n": "SADIA VARELA", "c": "15EES0611R"}, {"i": 343, "n": "SANDRA GOMEZ", "c": "15EES0611R"}, {"i": 344, "n": "SIRENIA RAMIREZ", "c": "15EES0611R"}, {"i": 345, "n": "SONIA GRANADOS", "c": "15EES0611R"}, {"i": 346, "n": "THANYA MARTINEZ", "c": "15EES0611R"}, {"i": 347, "n": "ANA FONES", "c": "15EES0724U"}, {"i": 348, "n": "DIANA URIBE", "c": "15EES0724U"}, {"i": 349, "n": "IRMA GALVAN", "c": "15EES0724U"}, {"i": 350, "n": "RAYMUNDO LOPEZ", "c": "15EES0724U"}, {"i": 351, "n": "ANA CALVO", "c": "15EES0788E"}, {"i": 352, "n": "ANGELICA FLORES", "c": "15EES0788E"}, {"i": 353, "n": "ANITA SANTIAGO", "c": "15EES0788E"}, {"i": 354, "n": "ANTONIO MORALES", "c": "15EES0788E"}, {"i": 355, "n": "CATALINA JIMENEZ", "c": "15EES0788E"}, {"i": 356, "n": "DULCE RODRIGUEZ", "c": "15EES0788E"}, {"i": 357, "n": "ELIZABETH MIRANDA", "c": "15EES0788E"}, {"i": 358, "n": "FELISA DOMINGUEZ", "c": "15EES0788E"}, {"i": 359, "n": "FLORENCIA ACATECATL", "c": "15EES0788E"}, {"i": 360, "n": "GUADALUPE DEL ANGEL", "c": "15EES0788E"}, {"i": 361, "n": "JAZMIN PEREZ", "c": "15EES0788E"}, {"i": 362, "n": "JOSEFINA LASCARES", "c": "15EES0788E"}, {"i": 363, "n": "KARINA BAUTISTA", "c": "15EES0788E"}, {"i": 364, "n": "KARINA CORTES", "c": "15EES0788E"}, {"i": 365, "n": "LAURA GUTIERREZ", "c": "15EES0788E"}, {"i": 366, "n": "LEOCADIA CAMPOS", "c": "15EES0788E"}, {"i": 367, "n": "MAGALI REYES", "c": "15EES0788E"}, {"i": 368, "n": "MARIA AGUILAR", "c": "15EES0788E"}, {"i": 369, "n": "MARIA ENRIQUEZ", "c": "15EES0788E"}, {"i": 370, "n": "MARIA SANTOS", "c": "15EES0788E"}, {"i": 371, "n": "MARILYN LOPEZ", "c": "15EES0788E"}, {"i": 372, "n": "MARISOL LOPEZ", "c": "15EES0788E"}, {"i": 373, "n": "ROSA ZAVALA", "c": "15EES0788E"}, {"i": 374, "n": "SHARAI MARTINEZ", "c": "15EES0788E"}, {"i": 375, "n": "YAZMIN MEDINA", "c": "15EES0788E"}, {"i": 376, "n": "ADRIANA ANGELES", "c": "15EES0790T"}, {"i": 377, "n": "ANAID GARCIA", "c": "15EES0790T"}, {"i": 378, "n": "ARIANA HERNANDEZ", "c": "15EES0790T"}, {"i": 379, "n": "AUGUSTO GARCIA", "c": "15EES0790T"}, {"i": 380, "n": "CECILIA PINEDA", "c": "15EES0790T"}, {"i": 381, "n": "ERIKA MONTIEL", "c": "15EES0790T"}, {"i": 382, "n": "KATIA MONTIEL", "c": "15EES0790T"}, {"i": 383, "n": "KIMBERLY GARCIA", "c": "15EES0790T"}, {"i": 384, "n": "MARIA AMADOR", "c": "15EES0790T"}, {"i": 385, "n": "MARICRUZ DELGADILLO", "c": "15EES0790T"}, {"i": 386, "n": "MISAEEL RODRIGUEZ", "c": "15EES0790T"}, {"i": 387, "n": "MONICA COPCA", "c": "15EES0790T"}, {"i": 388, "n": "REYNA MENDOZA", "c": "15EES0790T"}, {"i": 389, "n": "VIRIDIANA VAZQUEZ", "c": "15EES0790T"}, {"i": 390, "n": "YARELI ESPINO", "c": "15EES0790T"}, {"i": 391, "n": "YOSELIN LEON", "c": "15EES0790T"}, {"i": 392, "n": "ELIZABETH REYES", "c": "15EES0805E"}, {"i": 393, "n": "ABIGAIL ELIZALDE", "c": "15EES0847D"}, {"i": 394, "n": "ADRIANA GOMEZ", "c": "15EES0847D"}, {"i": 395, "n": "ANA RODRIGUEZ", "c": "15EES0847D"}, {"i": 396, "n": "BERLIN MARTINEZ", "c": "15EES0847D"}, {"i": 397, "n": "CARLOS ALCANTARA", "c": "15EES0847D"}, {"i": 398, "n": "CECILIA NUÑEZ", "c": "15EES0847D"}, {"i": 399, "n": "CECILIA OLVERA", "c": "15EES0847D"}, {"i": 400, "n": "CINTHYA VIRAMONTES", "c": "15EES0847D"}, {"i": 401, "n": "CRISTHAL LAZCANO", "c": "15EES0847D"}, {"i": 402, "n": "DARCY RAMIREZ", "c": "15EES0847D"}, {"i": 403, "n": "DAYANET VAZQUEZ", "c": "15EES0847D"}, {"i": 404, "n": "EMI CASTRO", "c": "15EES0847D"}, {"i": 405, "n": "ESTEBAN LOPEZ", "c": "15EES0847D"}, {"i": 406, "n": "ESTELA LEGORRETA", "c": "15EES0847D"}, {"i": 407, "n": "FABIOLA MERINO", "c": "15EES0847D"}, {"i": 408, "n": "FATIMA MONTOYA", "c": "15EES0847D"}, {"i": 409, "n": "FERNANDO JUAREZ", "c": "15EES0847D"}, {"i": 410, "n": "FERNANDO RAMIREZ", "c": "15EES0847D"}, {"i": 411, "n": "GABRIEL OLGUIN", "c": "15EES0847D"}, {"i": 412, "n": "HILDA LARA", "c": "15EES0847D"}, {"i": 413, "n": "ILIANA BERNAL", "c": "15EES0847D"}, {"i": 414, "n": "JAQUELINE MERCADO", "c": "15EES0847D"}, {"i": 415, "n": "JESSICA PEREZ", "c": "15EES0847D"}, {"i": 416, "n": "JOSE RUIZ", "c": "15EES0847D"}, {"i": 417, "n": "JUANA DIAZ", "c": "15EES0847D"}, {"i": 418, "n": "JULIO GARCIA", "c": "15EES0847D"}, {"i": 419, "n": "LAURA GUZMAN", "c": "15EES0847D"}, {"i": 420, "n": "LAURA FRAUSTO", "c": "15EES0847D"}, {"i": 421, "n": "LAURA ESTRADA", "c": "15EES0847D"}, {"i": 422, "n": "LAURA TAPIA", "c": "15EES0847D"}, {"i": 423, "n": "LIDIA DE LA LUZ", "c": "15EES0847D"}, {"i": 424, "n": "MARIA VAZQUEZ", "c": "15EES0847D"}, {"i": 425, "n": "MIRIAM TRUJANO", "c": "15EES0847D"}, {"i": 426, "n": "NANCY MONTERO", "c": "15EES0847D"}, {"i": 427, "n": "NAYELI ZENDEJAS", "c": "15EES0847D"}, {"i": 428, "n": "NAYELLY JUAREZ", "c": "15EES0847D"}, {"i": 429, "n": "NORMA REYES", "c": "15EES0847D"}, {"i": 430, "n": "PABLO FLORENCIO", "c": "15EES0847D"}, {"i": 431, "n": "PATRICIA ROMANO", "c": "15EES0847D"}, {"i": 432, "n": "PEDRO AVILA", "c": "15EES0847D"}, {"i": 433, "n": "TERESITA ANGELES", "c": "15EES0847D"}, {"i": 434, "n": "VIRIDIANA NAVARRETE", "c": "15EES0847D"}, {"i": 435, "n": "YANETH ROSALES", "c": "15EES0847D"}, {"i": 436, "n": "ANA ANTUNEZ", "c": "15EES0897L"}, {"i": 437, "n": "CARLOS ESPINOZA", "c": "15EES0897L"}, {"i": 438, "n": "EDITH MANZANARES", "c": "15EES0897L"}, {"i": 439, "n": "ISARAI VEGA", "c": "15EES0897L"}, {"i": 440, "n": "ISRAEL REVELES", "c": "15EES0897L"}, {"i": 441, "n": "JESUS MARTINEZ", "c": "15EES0897L"}, {"i": 442, "n": "JUAN MORIN", "c": "15EES0897L"}, {"i": 443, "n": "JUANA VILLANUEVA", "c": "15EES0897L"}, {"i": 444, "n": "LUCIA TEPETITLAN", "c": "15EES0897L"}, {"i": 445, "n": "LUCILA OLVERA", "c": "15EES0897L"}, {"i": 446, "n": "MARIA CANO", "c": "15EES0897L"}, {"i": 447, "n": "MARIA VAZQUEZ", "c": "15EES0897L"}, {"i": 448, "n": "MARIO LOPEZ", "c": "15EES0897L"}, {"i": 449, "n": "MARISOL SALGADO", "c": "15EES0897L"}, {"i": 450, "n": "MAYRA CALZADA", "c": "15EES0897L"}, {"i": 451, "n": "MONICA DURAN", "c": "15EES0897L"}, {"i": 452, "n": "NALLELY MORENO", "c": "15EES0897L"}, {"i": 453, "n": "NANCY PEREZ", "c": "15EES0897L"}, {"i": 454, "n": "PAULA VALENTE", "c": "15EES0897L"}, {"i": 455, "n": "ROCIO VARGAS", "c": "15EES0897L"}, {"i": 456, "n": "SANDRA GARCIA", "c": "15EES0897L"}, {"i": 457, "n": "ALICIA GONZALEZ", "c": "15EES0935Y"}, {"i": 458, "n": "JESSICA HERNANDEZ", "c": "15EES0935Y"}, {"i": 459, "n": "MARIA ALBA", "c": "15EES0935Y"}, {"i": 460, "n": "REBECA CRUZ", "c": "15EES0935Y"}, {"i": 461, "n": "NATALY HERNANDEZ", "c": "15EES1035N"}, {"i": 462, "n": "HILDA GARCIA", "c": "15EES1067F"}, {"i": 463, "n": "JOSE HERNANDEZ", "c": "15EES1067F"}, {"i": 464, "n": "MARIA HIGUERA", "c": "15EES1067F"}, {"i": 465, "n": "MARIA GOMEZ", "c": "15EES1067F"}, {"i": 466, "n": "MARIA GUZMAN", "c": "15EES1067F"}, {"i": 467, "n": "MARIA VARGAS", "c": "15EES1067F"}, {"i": 468, "n": "MARIZON NAVARRO", "c": "15EES1067F"}, {"i": 469, "n": "MEZTLY MARQUEZ", "c": "15EES1067F"}, {"i": 470, "n": "SANDRA CASTILLA", "c": "15EES1067F"}, {"i": 471, "n": "VERONICA MONTES", "c": "15EES1067F"}, {"i": 472, "n": "CARMEN AYALA", "c": "15EES1158X"}, {"i": 473, "n": "JUAN HERRERA", "c": "15EES1158X"}, {"i": 474, "n": "MARIA PALMA", "c": "15EES1158X"}, {"i": 475, "n": "ALINE MORALES", "c": "15EES1247Q"}, {"i": 476, "n": "ARACELI OLMEDO", "c": "15EES1247Q"}, {"i": 477, "n": "CAFERI SOLIS", "c": "15EES1247Q"}, {"i": 478, "n": "CAROLINA GERVACIO", "c": "15EES1247Q"}, {"i": 479, "n": "CESAR GONZALEZ", "c": "15EES1247Q"}, {"i": 480, "n": "CLAUDIA VALDEZ", "c": "15EES1247Q"}, {"i": 481, "n": "DULCE GARCIA", "c": "15EES1247Q"}, {"i": 482, "n": "EDITH SANCHEZ", "c": "15EES1247Q"}, {"i": 483, "n": "ESTELA COLIN", "c": "15EES1247Q"}, {"i": 484, "n": "FABIAN GARCIA", "c": "15EES1247Q"}, {"i": 485, "n": "ILSE LOPEZ", "c": "15EES1247Q"}, {"i": 486, "n": "IRASEMA GARZA", "c": "15EES1247Q"}, {"i": 487, "n": "ISIS REYES", "c": "15EES1247Q"}, {"i": 488, "n": "ITZEL OROZCO", "c": "15EES1247Q"}, {"i": 489, "n": "IVAN OCHOA", "c": "15EES1247Q"}, {"i": 490, "n": "IVONNE LOPEZ", "c": "15EES1247Q"}, {"i": 491, "n": "JENNY GARCIA", "c": "15EES1247Q"}, {"i": 492, "n": "JESSICA ESCAREÑO", "c": "15EES1247Q"}, {"i": 493, "n": "JESUS GUZMAN", "c": "15EES1247Q"}, {"i": 494, "n": "JOSE PEREZ", "c": "15EES1247Q"}, {"i": 495, "n": "JUDITH ORTIZ", "c": "15EES1247Q"}, {"i": 496, "n": "LESLEY FIGUEROA", "c": "15EES1247Q"}, {"i": 497, "n": "LESLIE GUIZAR", "c": "15EES1247Q"}, {"i": 498, "n": "LESLY ARENAS", "c": "15EES1247Q"}, {"i": 499, "n": "LIZBETH CASTILLO", "c": "15EES1247Q"}, {"i": 500, "n": "LUCIA MENDOZA", "c": "15EES1247Q"}, {"i": 501, "n": "MARGARITA CABRERA", "c": "15EES1247Q"}, {"i": 502, "n": "MARIA HERNANDEZ", "c": "15EES1247Q"}, {"i": 503, "n": "MARIA SAMANO", "c": "15EES1247Q"}, {"i": 504, "n": "MAYKA RAMIREZ", "c": "15EES1247Q"}, {"i": 505, "n": "MAYRA QUINTERO", "c": "15EES1247Q"}, {"i": 506, "n": "NAYELI ROMERO", "c": "15EES1247Q"}, {"i": 507, "n": "NOEMI CASTILLO", "c": "15EES1247Q"}, {"i": 508, "n": "OCTAVIO RIVERA", "c": "15EES1247Q"}, {"i": 509, "n": "PIEDAD DIAZ", "c": "15EES1247Q"}, {"i": 510, "n": "SALOME HERNANDEZ", "c": "15EES1247Q"}, {"i": 511, "n": "SANDRA GARCIA", "c": "15EES1247Q"}, {"i": 512, "n": "SANDRA GARCIA", "c": "15EES1247Q"}, {"i": 513, "n": "SUSANA RUELAS", "c": "15EES1247Q"}, {"i": 514, "n": "VANESA TAPIA", "c": "15EES1247Q"}, {"i": 515, "n": "VERONICA REYES", "c": "15EES1247Q"}, {"i": 516, "n": "YOLANDA AVILA", "c": "15EES1247Q"}, {"i": 517, "n": "ALFREDO ROMERO", "c": "15EES1250D"}, {"i": 518, "n": "ALMA ALEMAN", "c": "15EES1250D"}, {"i": 519, "n": "ANA VICTORIA", "c": "15EES1250D"}, {"i": 520, "n": "ANA PINEDA", "c": "15EES1250D"}, {"i": 521, "n": "ANA AGUILAR", "c": "15EES1250D"}, {"i": 522, "n": "ANA GUTIERREZ", "c": "15EES1250D"}, {"i": 523, "n": "ANALIBNI ESQUIVEL", "c": "15EES1250D"}, {"i": 524, "n": "ANDREA FLORES", "c": "15EES1250D"}, {"i": 525, "n": "ARACELI HARO", "c": "15EES1250D"}, {"i": 526, "n": "ARACELI MARTINEZ", "c": "15EES1250D"}, {"i": 527, "n": "BLANCA MEJIA", "c": "15EES1250D"}, {"i": 528, "n": "BRENDA AGUILAR", "c": "15EES1250D"}, {"i": 529, "n": "BRENDA RIVERA", "c": "15EES1250D"}, {"i": 530, "n": "BRENDA RODRIGUEZ", "c": "15EES1250D"}, {"i": 531, "n": "CARLOS GARCIA", "c": "15EES1250D"}, {"i": 532, "n": "CECILIA MARTINEZ", "c": "15EES1250D"}, {"i": 533, "n": "CRISTINA RODRIGUEZ", "c": "15EES1250D"}, {"i": 534, "n": "CRISTINA CASTILLO", "c": "15EES1250D"}, {"i": 535, "n": "DALIA INFANTE", "c": "15EES1250D"}, {"i": 536, "n": "DALIA SANTANITA", "c": "15EES1250D"}, {"i": 537, "n": "DELIA DOMINGUEZ", "c": "15EES1250D"}, {"i": 538, "n": "DIANA GARCIA", "c": "15EES1250D"}, {"i": 539, "n": "EDITH RONQUILLO", "c": "15EES1250D"}, {"i": 540, "n": "ELIZABETH ZAVALA", "c": "15EES1250D"}, {"i": 541, "n": "ELVIA ARREDONDO", "c": "15EES1250D"}, {"i": 542, "n": "ERIKA SIERRA", "c": "15EES1250D"}, {"i": 543, "n": "ERIKA MARIN", "c": "15EES1250D"}, {"i": 544, "n": "ESMERALDA MEJIA", "c": "15EES1250D"}, {"i": 545, "n": "ESTEFANIA LOPEZ", "c": "15EES1250D"}, {"i": 546, "n": "GEORGINA GUTIERREZ", "c": "15EES1250D"}, {"i": 547, "n": "ITZEL ROBLES", "c": "15EES1250D"}, {"i": 548, "n": "JULIO VICHAO", "c": "15EES1250D"}, {"i": 549, "n": "KARLA SANTOS", "c": "15EES1250D"}, {"i": 550, "n": "LAURA CONTRERAS", "c": "15EES1250D"}, {"i": 551, "n": "LETICIA PEREZ", "c": "15EES1250D"}, {"i": 552, "n": "LUCILA TORRES", "c": "15EES1250D"}, {"i": 553, "n": "MA. MONTES", "c": "15EES1250D"}, {"i": 554, "n": "MARA DELGADILLO", "c": "15EES1250D"}, {"i": 555, "n": "MARIA ZAQUEROZ", "c": "15EES1250D"}, {"i": 556, "n": "MARIA ORTEGA", "c": "15EES1250D"}, {"i": 557, "n": "MARIA CORONA", "c": "15EES1250D"}, {"i": 558, "n": "MARIA MONTER", "c": "15EES1250D"}, {"i": 559, "n": "MARIA PEREZ", "c": "15EES1250D"}, {"i": 560, "n": "MARICARMEN PAREDES", "c": "15EES1250D"}, {"i": 561, "n": "MARICRUZ GARCIA", "c": "15EES1250D"}, {"i": 562, "n": "MARIEL ORTIZ", "c": "15EES1250D"}, {"i": 563, "n": "MIRIAM ROMERO", "c": "15EES1250D"}, {"i": 564, "n": "NANCY HIPOLITO", "c": "15EES1250D"}, {"i": 565, "n": "OSCAR GALINDO", "c": "15EES1250D"}, {"i": 566, "n": "PATRICIA LOZANO", "c": "15EES1250D"}, {"i": 567, "n": "PATRICIA SOTELO", "c": "15EES1250D"}, {"i": 568, "n": "RAQUEL PEREZ", "c": "15EES1250D"}, {"i": 569, "n": "ROSA FLORES", "c": "15EES1250D"}, {"i": 570, "n": "ROSA OVANDO", "c": "15EES1250D"}, {"i": 571, "n": "ROSARIO TORRES", "c": "15EES1250D"}, {"i": 572, "n": "ROSENDA PEREZ", "c": "15EES1250D"}, {"i": 573, "n": "SOFIA ESCOBEDO", "c": "15EES1250D"}, {"i": 574, "n": "VIRGINIA RIOS", "c": "15EES1250D"}, {"i": 575, "n": "YAZMIN DIAZ", "c": "15EES1250D"}, {"i": 576, "n": "ANABEL CRUZ", "c": "15EES1277K"}, {"i": 577, "n": "BLANCA VALENCIA", "c": "15EES1302T"}, {"i": 578, "n": "ESTELA ROJAS", "c": "15EES1302T"}, {"i": 579, "n": "GRISELDA VALENCIA", "c": "15EES1302T"}, {"i": 580, "n": "PATRICIA ALVAREZ", "c": "15EES1302T"}, {"i": 581, "n": "ANDREA GUTIERREZ", "c": "15EES1371P"}, {"i": 582, "n": "ANGELICA ARELLANO", "c": "15EES1371P"}, {"i": 583, "n": "BEATRIZ GUERRERO", "c": "15EES1371P"}, {"i": 584, "n": "CAROLINA VILLALON", "c": "15EES1371P"}, {"i": 585, "n": "KARIN HERNANDEZ", "c": "15EES1371P"}, {"i": 586, "n": "KARLA RIVERA", "c": "15EES1371P"}, {"i": 587, "n": "LEONILA CARRASCO", "c": "15EES1371P"}, {"i": 588, "n": "MARICELA CHIMAL", "c": "15EES1371P"}, {"i": 589, "n": "MARIEL VELAZQUEZ", "c": "15EES1371P"}, {"i": 590, "n": "MARTHA CERVANTES", "c": "15EES1371P"}, {"i": 591, "n": "MIRIAM ROSAS", "c": "15EES1371P"}, {"i": 592, "n": "NAYELI PEREZ", "c": "15EES1371P"}, {"i": 593, "n": "PALOMA SALAS", "c": "15EES1371P"}, {"i": 594, "n": "REBECA MENDOZA", "c": "15EES1371P"}, {"i": 595, "n": "RITA VAZQUEZ", "c": "15EES1371P"}], "e": {"15DST0093Q": "BENITO JUAREZ", "15DST0094P": "JOSE MARIA MORELOS Y PAVON", "15DST0185G": "FRIDA KAHLO CALDERON", "15DST0221V": "IGNACIO ALLENDE", "15DST0227P": "GABINO BARREDA", "15DTV0042X": "LAURO VILLAR", "15DTV0089R": "LIC. ADOLFO LOPEZ MATEOS", "15DTV0257X": "BENITO JUAREZ GARCIA", "15DTV0262I": "PENSADOR MEXICANO", "15DTV0327B": "MIGUEL HIDALGO Y COSTILLA", "15DTV0335K": "FRIDA KAHLO", "15DTV0360J": "NEZAHUALCOYOTL", "15EES0096U": "OFIC NO 0104 LIC. BENITO JUAREZ", "15EES0099R": "OFIC NO 0105 AÑO DE JUAREZ", "15EES0202N": "OFIC NO 0034 JOSE MA. MORELOS Y PAVON", "15EES0213T": "OFIC NO 0107 LIC. BENITO JUAREZ", "15EES0248I": "OFIC NO 0046 LIC. ADOLFO LOPEZ MATEOS", "15EES0470I": "OFIC NO 0391 JUAN ALDAMA", "15EES0608D": "OFIC NO 0303 FRAY SERVANDO TERESA DE MIER", "15EES0609C": "OFIC NO 0259 PROFR. CARLOS HANK GONZALEZ", "15EES0611R": "OFIC NO 0297 TRATADOS DE TENAYUCA", "15EES0724U": "OFIC NO 0046 LIC. ADOLFO LOPEZ MATEOS", "15EES0788E": "OFIC NO 0513 FRANCISCO I. MADERO", "15EES0790T": "OFIC NO 0105 AÑO DE JUAREZ", "15EES0805E": "OFIC NO 0259 PROFR. CARLOS HANK GONZALEZ", "15EES0847D": "OFIC NO 0568 JUAN RULFO", "15EES0897L": "OFIC NO 0119 LAURA MENDEZ DE CUENCA", "15EES0935Y": "OFIC NO 0568 JUAN RULFO", "15EES1035N": "OFIC NO 0693 JUANA DE ASBAJE", "15EES1067F": "OFIC NO 0297 TRATADOS DE TENAYUCA", "15EES1158X": "OFIC NO 0034 JOSE MA. MORELOS Y PAVON", "15EES1247Q": "OFIC NO 0837 PABLO LATAPI SARRE", "15EES1250D": "OFIC NO 0119 LAURA MENDEZ DE CUENCA", "15EES1277K": "OFIC NO 0104 LIC. BENITO JUAREZ", "15EES1302T": "OFIC NO 0878 JOSE VASCONCELOS", "15EES1371P": "OFIC NO 0925 PRAXEDIS ALONSO LOPEZ"}}</script>
+<script>
+// ════════ Datos ════════
+const DATA = JSON.parse(document.getElementById('d-conv').textContent);
+const ESCUELAS = DATA.e;
+const OP = 'rita_tultitlan_2026-10-30';
+const KEY_REG = 'sare1507_op_' + OP;
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ════════ Normalización de nombres y CURP ════════
+const PARTIC = new Set(['DA', 'DAS', 'DE', 'DEL', 'DER', 'DI', 'DIE', 'DD', 'EL', 'LA', 'LOS', 'LAS', 'LE', 'LES', 'MAC', 'MC', 'VAN', 'VON', 'Y']);
+const VOC = 'AEIOU';
+function limpia(s) {   // mayúsculas, sin acentos, Ñ conservada, solo letras
+  return String(s || '').toUpperCase().replace(/Ñ/g, '\u0001').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\u0001/g, 'Ñ')
+    .replace(/[^A-ZÑ ]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+const plano = s => limpia(s).replace(/Ñ/g, 'N');
+const sinPart = s => plano(s).split(' ').filter(w => w && !PARTIC.has(w));
+const MARIA = w => (w === 'MA' ? 'MARIA' : w === 'J' ? 'JOSE' : w);
+const vocalInt = w => { for (const c of w.slice(1)) if (VOC.includes(c)) return c; return 'X'; };
+const consInt = w => { for (const c of w.slice(1)) if (!VOC.includes(c)) return c; return 'X'; };
+const letra = c => (c === 'Ñ' ? 'X' : c);
+const CURP_RE = /[A-Z]{4}[0-9O]{6}[HMX][A-Z]{5}[A-Z0-9][0-9O]/;
+function normCurp(c) {
+  const s = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (s.length !== 18) return s;
+  const a = s.split(''); [4, 5, 6, 7, 8, 9, 16, 17].forEach(i => { if (a[i] === 'O') a[i] = '0'; });
+  return a.join('');
+}
+const curpOk = c => /^[A-Z]{4}\d{6}[HMX][A-Z]{5}[A-Z0-9]\d$/.test(c);
+function lev(a, b) {   // distancia de edición (errores de dedo en la lista)
+  if (Math.abs(a.length - b.length) > 2) return 9;
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+
+// Convocados: "NOMBRE APELLIDO" (solo primer nombre y primer apellido)
+const CONV = DATA.p.map(p => {
+  const w = limpia(p.n).split(' ');
+  const nom = MARIA(w[0].replace(/Ñ/g, 'N')), apRaw = w.slice(1).join(' ');
+  const ap = sinPart(apRaw).join(' '), apL = sinPart(apRaw)[0] || '';
+  const apCurp = limpia(apRaw).split(' ').filter(x => x && !PARTIC.has(x))[0] || '';
+  return { id: p.i, n: p.n, cct: p.c, esc: ESCUELAS[p.c] || '', nom, ap, apL, tk: new Set([nom, ...sinPart(apRaw)]),
+    // letras de la CURP que se pueden deducir: 1ª y 2ª (apellido paterno), 4ª y 16ª (nombre), 14ª (apellido)
+    f: apCurp ? { c0: letra(apCurp[0]), c1: vocalInt(apCurp), c13: consInt(apCurp) === 'Ñ' ? 'X' : consInt(apCurp),
+      c3: ['MARIA', 'JOSE'].includes(nom) ? null : nom[0], c15: ['MARIA', 'JOSE'].includes(nom) ? null : consInt(nom) } : null };
+});
+const POR_ID = new Map(CONV.map(c => [c.id, c]));
+{ const k = {}; CONV.forEach(c => { c.pos = (k[c.cct] = (k[c.cct] || 0) + 1); }); }   // número en la lista de su escuela
+const CCTS = [...new Set(CONV.map(c => c.cct))];
+
+// ════════ Registro de asistencia (por equipo) ════════
+let REG = [];
+try { REG = JSON.parse(localStorage.getItem(KEY_REG) || '[]'); } catch (e) { REG = []; }
+const guardarReg = () => { try { localStorage.setItem(KEY_REG, JSON.stringify(REG)); } catch (e) {} };
+const atendido = id => REG.find(r => r.id === id);
+const usuario = () => (SES && (SES.NOMBRE || SES.nombre)) || '';
+const horaTxt = ts => new Date(ts).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+// ════════ Lectura del código de la CURP ════════
+// QR de la CURP: CURP||AP_PATERNO|AP_MATERNO|NOMBRE(S)|SEXO|FECHA|ENTIDAD|...
+function firma(ap1, ap2, nom) {
+  const a1 = limpia(ap1).split(' ').filter(x => x && !PARTIC.has(x))[0] || '', a2 = limpia(ap2).split(' ').filter(x => x && !PARTIC.has(x))[0] || '';
+  const ns = limpia(nom).split(' ').filter(x => x && !PARTIC.has(x)); const n = ns.length > 1 && ['MARIA', 'MA', 'JOSE', 'J'].includes(ns[0]) ? ns[1] : (ns[0] || '');
+  if (!a1 || !n) return '';
+  return letra(a1[0]) + vocalInt(a1) + (a2 ? letra(a2[0]) : 'X') + letra(n[0]);
+}
+function leerCodigo(txt) {
+  const T = String(txt || '').toUpperCase(), m = T.match(CURP_RE);
+  const curp = m ? normCurp(m[0]) : '';
+  const p = String(txt || '').split('|').map(s => s.trim());
+  let datos = null;
+  if (curp && p.length >= 5) {
+    const ix = p.findIndex(x => normCurp(x) === curp);
+    const r = p.slice(ix + 1).filter((x, i) => i > 0 || x);   // brinca el campo vacío después de la CURP
+    const cand = [[p[2], p[3], p[4]], [r[0], r[1], r[2]], [p[1], p[2], p[3]]].filter(x => x[0] && x[2]);
+    const ok = cand.find(x => { const f = firma(x[0], x[1], x[2]); return f && (f === curp.slice(0, 4) || f.replace(/^(.)./, '$1X') === curp.slice(0, 4)); });
+    const x = ok || cand[0];
+    if (x) datos = { apPat: limpia(x[0]), apMat: limpia(x[1] || ''), nombre: limpia(x[2]), verificado: !!ok };
+  }
+  return { curp, datos };
+}
+
+// ════════ Motor de coincidencias ════════
+// nivel 3 = coincide nombre y apellido paterno · 2 = nombre y apellido materno / error de dedo · 1 = solo letras de la CURP
+function porPersona(curp, d) {
+  const out = new Map();
+  const pon = (c, nivel, motivo) => { const a = out.get(c.id); if (!a || a.nivel < nivel) out.set(c.id, { c, nivel, motivo }); };
+  if (d && d.nombre) {
+    const noms = plano(d.nombre).split(' ').map(MARIA).filter(Boolean);
+    const ap1 = sinPart(d.apPat).join(' '), ap2 = sinPart(d.apMat).join(' ');
+    const ap1L = sinPart(d.apPat)[0] || '', ap2L = sinPart(d.apMat)[0] || '';
+    CONV.forEach(c => {
+      const nomOk = noms.includes(c.nom), nomCasi = !nomOk && c.nom.length >= 4 && noms.some(n => n.length >= 4 && lev(n, c.nom) <= 1);
+      const ap1Ok = c.ap === ap1 || c.apL === ap1L, ap2Ok = !!ap2 && (c.ap === ap2 || c.apL === ap2L);
+      const ap1Casi = !ap1Ok && c.apL.length >= 4 && ap1L.length >= 4 && lev(c.apL, ap1L) <= 1;
+      if (nomOk && ap1Ok) pon(c, 3, 'Coinciden nombre y apellido paterno');
+      else if (nomOk && ap2Ok) pon(c, 2, 'Coincide el nombre, pero el apellido de la lista es el MATERNO');
+      else if (nomCasi && ap1Ok) pon(c, 2, 'Coincide el apellido; el nombre está escrito distinto en la lista');
+      else if (nomOk && ap1Casi) pon(c, 2, 'Coincide el nombre; el apellido está escrito distinto en la lista');
+    });
+  }
+  if (curpOk(curp) && !(d && d.nombre && d.verificado) && ![...out.values()].some(x => x.nivel === 3)) {   // sin nombre confiable en el código: letras de la CURP
+    CONV.forEach(c => {
+      const f = c.f; if (!f) return;
+      if (curp[0] !== f.c0 || (curp[1] !== f.c1 && curp[1] !== 'X') || curp[13] !== f.c13) return;
+      if (f.c3 && (curp[3] !== f.c3 || curp[15] !== f.c15)) return;
+      if (!f.c3 && curp[10] !== (c.nom === 'MARIA' ? 'M' : 'H')) return;   // MARÍA / JOSÉ: al menos el sexo debe corresponder
+      pon(c, 1, f.c3 ? 'Las letras de la CURP corresponden al nombre y apellido de la lista' : 'Las letras de la CURP corresponden al apellido de la lista (MARÍA/JOSÉ: el nombre no se puede comprobar)');
+    });
+  }
+  return [...out.values()].sort((a, b) => b.nivel - a.nivel || a.c.id - b.c.id);
+}
+function porNombre(q) {
+  const qt = plano(q).split(' ').filter(w => w && !PARTIC.has(w)).map(MARIA);
+  if (!qt.length) return [];
+  const res = [];
+  CONV.forEach(c => {
+    const todosEnConv = qt.every(t => c.tk.has(t)), convEnQuery = [...c.tk].every(t => qt.includes(t));
+    const prefijo = qt.every(t => [...c.tk].some(w => w.startsWith(t)));
+    if (convEnQuery) res.push({ c, nivel: 3, motivo: 'Nombre y apellido de la lista contenidos en la búsqueda' });
+    else if (todosEnConv) res.push({ c, nivel: qt.length >= 2 ? 3 : 1, motivo: qt.length >= 2 ? 'Coincide nombre y apellido' : 'Coincide una palabra; escribe nombre y apellido' });
+    else if (prefijo && qt.join('').length >= 3) res.push({ c, nivel: 1, motivo: 'Coincide el inicio de las palabras' });
+    else if (qt.length >= 2) {
+      const casi = [...c.tk].every(t => qt.some(w => w.length >= 4 && t.length >= 4 && lev(w, t) <= 1) || qt.includes(t));
+      if (casi) res.push({ c, nivel: 2, motivo: 'Nombre parecido (posible error de escritura)' });
+    }
+  });
+  return res.sort((a, b) => b.nivel - a.nivel || a.c.id - b.c.id);
+}
+
+// ════════ Resultados ════════
+let ULTIMA = null;   // { curp, datos, q }
+function buscar(texto) {
+  const t = String(texto || '').trim(); if (!t) return;
+  const { curp, datos } = leerCodigo(t);
+  if (curp && (curpOk(curp) || datos)) { ULTIMA = { curp, datos, q: '' }; mostrar(porPersona(curp, datos)); return; }
+  const c2 = normCurp(t); if (curpOk(c2)) { ULTIMA = { curp: c2, datos: null, q: '' }; mostrar(porPersona(c2, null)); return; }
+  if (plano(t).replace(/ /g, '').length < 3) return;
+  ULTIMA = { curp: '', datos: null, q: plano(t) }; mostrar(porNombre(t));
+}
+function mostrar(res) {
+  const U = ULTIMA, box = $('modal-box'), fuertes = res.filter(r => r.nivel === 3);
+  const lista = fuertes.length ? fuertes : res;
+  const nombreLeido = U.datos ? [U.datos.nombre, U.datos.apPat, U.datos.apMat].join(' ').replace(/\s+/g, ' ').trim() : '';
+  let h = '<div class="leido">';
+  if (U.curp) h += `<div>CURP: <b>${esc(U.curp)}</b>${curpOk(U.curp) ? '' : ' <span style="color:var(--rojo)">(formato incompleto)</span>'}</div>`;
+  if (nombreLeido) h += `<div>Nombre leído del código: <b>${esc(nombreLeido)}</b></div>`;
+  if (U.q) h += `<div>Búsqueda: <b>${esc(U.q)}</b></div>`;
+  if (U.curp && !nombreLeido) h += '<div style="font-size:.76rem;color:var(--muted);margin-top:4px">Sin nombre en el código: se compara con las letras de la CURP. Confirma el nombre con la identificación.</div>';
+  h += '</div>';
+  const previo = U.curp && REG.find(r => r.curp === U.curp);
+  if (previo) h += `<div class="aviso warn">⚠️ Esta CURP ya se registró a las <b>${horaTxt(previo.ts)}</b> por ${esc(previo.por)}${previo.id ? ` como <b>${esc(previo.n)}</b>` : ' como NO convocada'}.</div>`;
+  if (!lista.length) {
+    box.className = 'modal-content error';
+    $('modal-title').textContent = 'NO ESTÁ EN LA LISTA';
+    $('modal-sub').textContent = 'No coincide con ninguna persona convocada';
+    h += `<div class="aviso err">Esta persona <b>no aparece entre los ${CONV.length} convocados</b>. Verifica con su identificación que el nombre sea correcto${U.q ? ' y prueba solo con nombre y apellido paterno' : ''}.</div>`;
+    if (U.curp && curpOk(U.curp) && !previo) h += `<button class="btn btn-danger chico" type="button" id="btn-noconv" style="width:100%">Registrar que acudió sin estar convocada</button>`;
+  } else {
+    const n3 = fuertes.length;
+    box.className = 'modal-content ' + (n3 === 1 ? 'success' : 'warn');
+    $('modal-title').textContent = n3 === 1 ? '✅ PERSONA CONVOCADA' : n3 > 1 ? `⚠️ ${n3} PERSONAS POSIBLES` : '⚠️ COINCIDENCIA POR CONFIRMAR';
+    $('modal-sub').textContent = n3 === 1 ? 'Verifica la identificación oficial y registra la asistencia' : n3 > 1 ? 'Pregunta la escuela de su hijo(a) para elegir a la persona correcta' : 'Confirma nombre y escuela con la persona antes de registrar';
+    lista.slice(0, 25).forEach(r => {
+      const c = r.c, a = atendido(c.id);
+      h += `<div class="registro-card ${r.nivel === 3 ? 'exacta' : 'dudosa'}">
+        <span class="badge" style="background:${r.nivel === 3 ? 'var(--verde)' : 'var(--dorado)'}">${r.nivel === 3 ? 'CONVOCADO' : 'POR CONFIRMAR'}</span>
+        <div class="nombre">${esc(c.n)}</div>
+        <p><strong>CCT:</strong> ${esc(c.cct)} · <strong>Escuela:</strong> ${esc(c.esc)}</p>
+        <p style="font-size:.78rem;color:var(--muted)">No. ${c.pos} en la lista de su escuela · ${esc(r.motivo)}</p>
+        ${a ? `<div class="aviso ok">✅ Ya se registró su asistencia a las <b>${horaTxt(a.ts)}</b> (${esc(a.por)}).</div>`
+            : `<button class="btn btn-ok chico" type="button" data-asist="${c.id}" style="width:100%;margin-top:6px">✅ Registrar asistencia</button>`}
+      </div>`;
+    });
+    if (lista.length > 25) h += `<p class="docs">…y ${lista.length - 25} más. Escribe el nombre con apellido para acotar.</p>`;
+    h += '<p class="docs">Documentos: identificación oficial vigente, CURP y acta de nacimiento (madre, padre o tutor y estudiantes) y comprobante de domicilio no mayor a 6 meses.</p>';
+  }
+  $('modal-body').innerHTML = h;
+  $('modal-body').querySelectorAll('[data-asist]').forEach(b => b.onclick = () => registrar(+b.dataset.asist, b));
+  const bn = $('btn-noconv'); if (bn) bn.onclick = () => registrarNoConv(bn);
+  $('modal-bg').style.display = 'flex';
+  try { navigator.vibrate && navigator.vibrate(lista.length ? 80 : [60, 60, 60]); } catch (e) {}
+}
+function registrar(id, btn) {
+  const c = POR_ID.get(id); if (!c || atendido(id)) return;
+  const U = ULTIMA || {};
+  const nl = U.datos ? [U.datos.nombre, U.datos.apPat, U.datos.apMat].join(' ').replace(/\s+/g, ' ').trim() : '';
+  REG.push({ id, n: c.n, cct: c.cct, curp: U.curp || '', leido: nl, ts: Date.now(), por: usuario() });
+  guardarReg(); pintar();
+  btn.outerHTML = `<div class="aviso ok">✅ Asistencia registrada a las <b>${horaTxt(Date.now())}</b>.</div>`;
+}
+function registrarNoConv(btn) {
+  const U = ULTIMA || {}; if (!U.curp || REG.some(r => r.curp === U.curp)) return;
+  const nl = U.datos ? [U.datos.nombre, U.datos.apPat, U.datos.apMat].join(' ').replace(/\s+/g, ' ').trim() : '';
+  REG.push({ id: 0, n: nl || '(SIN NOMBRE)', cct: '', curp: U.curp, leido: nl, ts: Date.now(), por: usuario() });
+  guardarReg(); pintar();
+  btn.outerHTML = '<div class="aviso warn">Quedó anotada como persona NO convocada.</div>';
+}
+function cerrarModal() {
+  $('modal-bg').style.display = 'none';
+  if (camActiva) pausa = false;   // reanuda el escáner
+  else { $('q').value = ''; $('q').focus(); }
+}
+
+// ════════ Avance ════════
+let FILTRO = 'todos';
+function pintar() {
+  const ids = new Set(REG.filter(r => r.id).map(r => r.id)), at = ids.size, tot = CONV.length, pct = tot ? Math.round(at * 100 / tot) : 0;
+  $('st-at').textContent = at; $('st-tot').textContent = tot; $('st-at2').textContent = at; $('st-pend').textContent = tot - at;
+  $('st-no').textContent = REG.filter(r => !r.id).length; $('st-cct').textContent = CCTS.length; $('st-pct').textContent = pct + ' % de los convocados';
+  $('st-barra').style.width = pct + '%'; $('chip-total').textContent = '👥 ' + tot + ' convocados';
+  const abiertos = new Set([...document.querySelectorAll('#lista-cct details[open]')].map(d => d.dataset.cct));
+  let html = '';
+  CCTS.forEach(cct => {
+    const g = CONV.filter(c => c.cct === cct), a = g.filter(c => ids.has(c.id)).length;
+    const vis = g.filter(c => FILTRO === 'todos' || (FILTRO === 'ok') === ids.has(c.id));
+    if (!vis.length) return;
+    html += `<details class="cct" data-cct="${cct}"${abiertos.has(cct) ? ' open' : ''}><summary><span class="cct-nom"><code>${esc(cct)}</code>${esc(ESCUELAS[cct] || '')}</span><span class="cct-cnt">${a} / ${g.length}</span><span class="barra"><i style="width:${Math.round(a * 100 / g.length)}%"></i></span></summary><ul>
+      ${vis.map(c => { const r = atendido(c.id); return `<li class="${r ? 'ok' : ''}"><span class="num">${g.indexOf(c) + 1}.</span><span class="who">${esc(c.n)}</span>${r ? `<span class="hora">${horaTxt(r.ts)}</span>` : ''}</li>`; }).join('')}</ul></details>`;
+  });
+  $('lista-cct').innerHTML = html || '<div class="vacio">No hay personas con este filtro.</div>';
+  const filas = REG.slice().sort((a, b) => b.ts - a.ts);
+  $('reg-cnt').textContent = filas.length ? filas.length + ' registro(s)' : '';
+  $('reg-body').innerHTML = filas.length ? filas.map(r => `<tr><td>${horaTxt(r.ts)}</td><td>${r.id ? '<span class="tag ok">CONVOCADO</span> ' : '<span class="tag no">NO CONVOCADO</span> '}${esc(r.n)}${r.leido && r.leido !== r.n ? `<br><span style="color:var(--muted);font-size:.72rem">${esc(r.leido)}</span>` : ''}</td><td style="font-family:monospace">${esc(r.curp)}</td><td>${esc(r.cct)}</td><td style="font-size:.72rem">${esc(r.por)}</td></tr>`).join('')
+    : '<tr><td colspan="5" class="vacio">Aún no hay asistencias registradas en este equipo.</td></tr>';
+}
+
+// ════════ CSV ════════
+const CAB = ['NO_LISTA', 'NOMBRE_LISTA', 'CCT', 'ESCUELA', 'CURP', 'NOMBRE_LEIDO', 'FECHA_HORA', 'REGISTRO', 'TIPO'];
+const csvCampo = v => { const s = String(v == null ? '' : v); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+function descargarCSV() {
+  const f = d => { const x = new Date(d); const p = n => String(n).padStart(2, '0'); return `${p(x.getDate())}/${p(x.getMonth() + 1)}/${x.getFullYear()} ${p(x.getHours())}:${p(x.getMinutes())}:${p(x.getSeconds())}`; };
+  const filas = REG.slice().sort((a, b) => a.ts - b.ts).map(r => [r.id || '', r.n, r.cct, ESCUELAS[r.cct] || '', r.curp, r.leido, f(r.ts), r.por, r.id ? 'CONVOCADO' : 'NO CONVOCADO']);
+  const txt = '﻿' + [CAB, ...filas].map(l => l.map(csvCampo).join(',')).join('\r\n');
+  const u = (usuario() || 'equipo').split(' ').slice(-1)[0];
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' }));
+  a.download = `asistencia_rita_cetina_tultitlan_${u}_${new Date().toTimeString().slice(0, 5).replace(':', '')}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function partir(l) { const o = []; let cur = '', q = false; for (let i = 0; i < l.length; i++) { const c = l[i]; if (q) { if (c === '"') { if (l[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; } else if (c === '"') q = true; else if (c === ',') { o.push(cur); cur = ''; } else cur += c; } o.push(cur); return o; }
+async function unirCSV(file) {
+  const txt = (await file.text()).replace(/^﻿/, ''), ls = txt.split(/\r?\n/).filter(Boolean);
+  const h = partir(ls[0]); if (h[0] !== 'NO_LISTA') { alert('El archivo no es un CSV de asistencia de este operativo.'); return; }
+  let nuevos = 0;
+  ls.slice(1).forEach(l => {
+    const v = partir(l), id = +v[0] || 0, m = (v[6] || '').match(/(\d+)\/(\d+)\/(\d+) (\d+):(\d+):(\d+)/);
+    const ts = m ? new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5], +m[6]).getTime() : Date.now();
+    if (id ? REG.some(r => r.id === id) : (!v[4] || REG.some(r => r.curp === v[4]))) return;
+    if (id && !POR_ID.has(id)) return;
+    REG.push({ id, n: id ? POR_ID.get(id).n : v[1], cct: id ? POR_ID.get(id).cct : '', curp: v[4], leido: v[5], ts, por: v[7] }); nuevos++;
+  });
+  guardarReg(); pintar(); alert(`Se agregaron ${nuevos} registro(s). Los que ya estaban no se duplicaron.`);
+}
+
+// ════════ Escáner ════════
+let lector = null, camActiva = false, pausa = false, ultimoTxt = '', ultimoTs = 0;
+async function iniciarCam() {
+  if (!window.ZXing) { alert('No se pudo cargar el lector de códigos. Revisa la conexión y recarga la página.'); return; }
+  const hints = new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.PDF_417, ZXing.BarcodeFormat.CODE_128]);
+  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+  lector = new ZXing.BrowserMultiFormatReader(hints);
+  $('video-preview').hidden = false; $('btn-start').hidden = true; $('btn-stop').hidden = false;
+  camActiva = true; pausa = false;
+  try {
+    await lector.decodeFromConstraints({ video: { facingMode: 'environment' } }, 'video-preview', res => {
+      if (!res || pausa) return;
+      const t = res.getText();
+      if (t === ultimoTxt && Date.now() - ultimoTs < 4000 && $('modal-bg').style.display === 'flex') return;
+      const { curp } = leerCodigo(t); if (!curp) return;
+      ultimoTxt = t; ultimoTs = Date.now(); pausa = true; buscar(t);
+    });
+  } catch (e) { detenerCam(); alert('No se pudo abrir la cámara: ' + (e.message || e) + '. Revisa el permiso de cámara del navegador.'); }
+}
+function detenerCam() {
+  camActiva = false; pausa = false;
+  if (lector) { try { lector.reset(); } catch (e) {} lector = null; }
+  $('video-preview').hidden = true; $('btn-start').hidden = false; $('btn-stop').hidden = true;
+}
+
+// ════════ Eventos ════════
+$('btn-start').onclick = iniciarCam;
+$('btn-stop').onclick = detenerCam;
+$('btn-buscar').onclick = () => buscar($('q').value);
+$('btn-limpiar').onclick = () => { $('q').value = ''; $('q').focus(); };
+let _t = null;
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(_t); buscar($('q').value); } });
+$('q').addEventListener('input', () => {   // lector USB: escribe el QR completo y a veces no manda Enter
+  clearTimeout(_t); const v = $('q').value;
+  if (v.includes('|') && CURP_RE.test(v.toUpperCase())) _t = setTimeout(() => { buscar(v); $('q').value = ''; }, 350);
+  else if (curpOk(normCurp(v)) && v.replace(/\s/g, '').length === 18) _t = setTimeout(() => buscar(v), 250);
+});
+$('btn-cerrar-modal').onclick = cerrarModal;
+$('modal-bg').addEventListener('click', e => { if (e.target === $('modal-bg')) cerrarModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('modal-bg').style.display === 'flex') cerrarModal(); });
+document.querySelectorAll('.filtro').forEach(b => b.onclick = () => { FILTRO = b.dataset.f; document.querySelectorAll('.filtro').forEach(x => x.setAttribute('aria-pressed', String(x === b))); pintar(); });
+$('btn-abrir').onclick = () => { const ds = [...document.querySelectorAll('#lista-cct details')], abrir = ds.some(d => !d.open); ds.forEach(d => d.open = abrir); $('btn-abrir').textContent = abrir ? 'Cerrar todas' : 'Abrir todas'; };
+$('btn-csv').onclick = () => { if (!REG.length) { alert('Aún no hay registros para descargar.'); return; } descargarCSV(); };
+$('in-csv').onchange = e => { const f = e.target.files[0]; if (f) unirCSV(f); e.target.value = ''; };
+$('btn-imp').onclick = () => { document.querySelectorAll('#lista-cct details').forEach(d => d.open = true); window.print(); };
+$('btn-borrar').onclick = () => {
+  if (!REG.length) return;
+  const r = prompt(`Se borrarán ${REG.length} registro(s) de ESTE equipo. Descarga antes el CSV si lo necesitas.\nEscribe BORRAR para confirmar:`);
+  if (r && r.trim().toUpperCase() === 'BORRAR') { REG = []; guardarReg(); pintar(); }
+};
+function reloj() { const n = new Date(); $('clock-time').textContent = n.toLocaleTimeString('es-MX', { hour12: false }); $('clock-date').textContent = n.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' }); }
+setInterval(reloj, 1000); reloj();
+
+// ════════ Sesión (compatible con el Panel de herramientas) ════════
+const USUARIOS_AUTORIZADOS = [{"NOMBRE": "CERVANTES JIMENEZ JOSE ELIAS", "CUPO": "159415"}, {"NOMBRE": "NOH CRUZ JOSE EDUARDO", "CUPO": "1500585"}, {"NOMBRE": "BARRERA MARTINEZ GUSTAVO", "CUPO": "1500723"}, {"NOMBRE": "CARRASCO GALLARDO STEFANY", "CUPO": "1501080"}, {"NOMBRE": "HERNANDEZ GUEVARA ANDREA", "CUPO": "1501112"}, {"NOMBRE": "MARTINEZ MOISES CELINA", "CUPO": "1501166"}, {"NOMBRE": "GALVEZ GARCIA NESTOR ENRIQUE", "CUPO": "1501193"}, {"NOMBRE": "ORDAZ VERA OSCAR URIEL", "CUPO": "1501604"}, {"NOMBRE": "ORDAZ HERNANDEZ MARIA DEL ROCIO", "CUPO": "1501620"}, {"NOMBRE": "HERNANDEZ HERNANDEZ CLAUDIA LIZET", "CUPO": "1501623"}, {"NOMBRE": "CEDILLO GARCIA MIGUEL", "CUPO": "1501626"}, {"NOMBRE": "MARTINEZ ARELLANO ROSA CARMINA", "CUPO": "1501640"}, {"NOMBRE": "PUENTE MAGAÑA JESUS ALBERTO", "CUPO": "1501644"}, {"NOMBRE": "SANCHEZ BERNABE MARIA GUADALUPE BRENDA", "CUPO": "1501974"}, {"NOMBRE": "CUEVAS SANCHEZ EMMELY DANIELA", "CUPO": "1501975"}, {"NOMBRE": "ORNELAS HURTADO DANA KARLA", "CUPO": "1501976"}, {"NOMBRE": "POMPA VALDEZ ABRAHAM LEVI", "CUPO": "1501977"}, {"NOMBRE": "QUINTOS HERNANDEZ ELDA BERENICE", "CUPO": "1501981"}, {"NOMBRE": "OLVERA SANCHEZ ANA LAURA", "CUPO": "1501982"}, {"NOMBRE": "MAGAÑA ABURTO MARIA ANGELICA", "CUPO": "1501983"}, {"NOMBRE": "GONZALEZ AVILA BERSAIN", "CUPO": "1501985"}, {"NOMBRE": "SANCHEZ BELTRAN MAYRA SUET", "CUPO": "1501986"}, {"NOMBRE": "LUNA VELAZQUEZ LUCIA", "CUPO": "1501987"}, {"NOMBRE": "RIVERA GONZALEZ ANDREA PATRICIA", "CUPO": "1501989"}, {"NOMBRE": "GONZALEZ LINDA NOHEMI JAZMIN", "CUPO": "1501991"}, {"NOMBRE": "RAMIREZ CRUZ ERICKA YESSENIA", "CUPO": "1502176"}, {"NOMBRE": "MARTINEZ SOSA MICHELLE", "CUPO": "1502177"}, {"NOMBRE": "SILVETI PEREZ ROCIO", "CUPO": "1502178"}, {"NOMBRE": "RAMIREZ CRUZ RUTH PAOLA", "CUPO": "1502179"}, {"NOMBRE": "PACHECO RAMIREZ DULCE JOCABET", "CUPO": "1502180"}, {"NOMBRE": "ESCOBAR NABOR EMMA NAZARAHI", "CUPO": "1502210"}, {"NOMBRE": "LIRA ESPINOZA PATRICIA ALEJANDRA", "CUPO": "1502220"}, {"NOMBRE": "MORALES ESCOBAR JANETH JOSELYN", "CUPO": "1502229"}, {"NOMBRE": "GONZALEZ CLEMENTE LAURA ANDREA", "CUPO": "1502290"}, {"NOMBRE": "GONZALEZ VARGAS GABRIEL YOSEF ARNALDO", "CUPO": "1502291"}, {"NOMBRE": "MARTINEZ SANDOVAL JUAN CARLOS", "CUPO": "1502292"}, {"NOMBRE": "MENDOZA ALVARADO DIANA ARELI", "CUPO": "1502293"}, {"NOMBRE": "PONCE NIEVES BRYAN", "CUPO": "1502294"}, {"NOMBRE": "REYES VAZQUEZ NORMA ANGELICA", "CUPO": "1502295"}, {"NOMBRE": "RUBIO VALADEZ FERNANDA ESTEFANIA", "CUPO": "1502296"}, {"NOMBRE": "SALAZAR MARTINEZ GUADALUPE ABIGAIL", "CUPO": "1502297"}];
+const SESSION_KEY = 'sare1507_sesion', TTL = 8 * 60 * 60 * 1000;
+let SES = null;
+const normU = t => String(t || '').toUpperCase().trim().replace(/\s+/g, ' ').normalize('NFD').replace(/[̀-ͯ]/g, '');
+function getSesion() {
+  try { const s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); if (s && s.NOMBRE && (!s.ts || Date.now() - s.ts < TTL)) return s; } catch (e) {}
+  try { const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); if (s && s.NOMBRE && s.expira && Date.now() < s.expira) return s; } catch (e) {}
+  return null;
+}
+function entrar(s) { SES = s; $('login-overlay-sare').style.display = 'none'; $('usr').hidden = false; $('usr-nom').textContent = s.NOMBRE || s.nombre; pintar(); }
+function pedirLogin() { $('login-overlay-sare').style.display = 'flex'; $('usr').hidden = true; }
+$('login-form-sare').addEventListener('submit', e => {
+  e.preventDefault();
+  const n = normU($('login-nombre-sare').value), c = $('login-cupo-sare').value.trim();
+  const u = USUARIOS_AUTORIZADOS.find(x => normU(x.NOMBRE) === n && String(x.CUPO) === c);
+  if (!u) { $('login-error-sare').style.display = 'block'; return; }
+  $('login-error-sare').style.display = 'none';
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ NOMBRE: u.NOMBRE, CUPO: u.CUPO, ts: Date.now() })); } catch (x) {}
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify({ NOMBRE: u.NOMBRE, CUPO: u.CUPO, expira: Date.now() + TTL })); } catch (x) {}
+  entrar(u);
+});
+$('usr-salir').onclick = () => { try { sessionStorage.removeItem(SESSION_KEY); localStorage.removeItem(SESSION_KEY); } catch (e) {} detenerCam(); pedirLogin(); };
+const S0 = getSesion(); if (S0) entrar(S0); else pedirLogin();
+</script>
+</body>
+</html>
