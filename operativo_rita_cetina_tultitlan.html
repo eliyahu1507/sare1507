@@ -28,7 +28,16 @@ button { font-family: inherit; }
 
 .hero { background: linear-gradient(135deg, var(--guinda-o) 0%, var(--guinda) 55%, var(--guinda-d) 100%); color: var(--blanco); padding: 26px 32px 22px; position: relative; overflow: hidden; }
 .hero::before { content: ''; position: absolute; right: -60px; top: -60px; width: 280px; height: 280px; background: radial-gradient(circle, rgba(200,150,42,0.18) 0%, transparent 70%); pointer-events: none; }
-.hero-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.hero-top { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 18px; }
+.hero-brand { align-self: start; }
+/* letrero de requisitos (mismo texto e íconos de la convocatoria) */
+.requisitos { justify-self: center; max-width: 430px; width: 100%; background: rgba(255,255,255,0.10); border: 1.5px solid rgba(232,184,75,0.55); border-radius: 14px; padding: 12px 16px; position: relative; z-index: 1; }
+.requisitos h2 { font-family: 'Montserrat', sans-serif; font-size: .78rem; font-weight: 800; color: var(--dorado-l); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 7px; }
+.requisitos ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.requisitos li { font-size: .8rem; line-height: 1.35; display: flex; gap: 7px; }
+.requisitos li::before { content: '✅'; flex-shrink: 0; }
+.requisitos li b { font-weight: 700; }
+@media (max-width: 900px) { .hero-top { grid-template-columns: 1fr auto; } .requisitos { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; max-width: none; } }
 .hero-brand { display: flex; align-items: center; gap: 12px; }
 .hero-brand-icon { width: 44px; height: 44px; border-radius: 10px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
 .hero-brand-text { font-size: 0.7rem; opacity: 0.75; letter-spacing: 0.5px; }
@@ -196,6 +205,15 @@ footer strong { color: var(--dorado-l); }
         <div class="hero-brand-text"><strong>Beca Rita Cetina · ¡Educar es Transformar!</strong></div>
       </div>
     </div>
+    <section class="requisitos" aria-labelledby="req-tit">
+      <h2 id="req-tit">📋 No olvides llevar la siguiente documentación:</h2>
+      <ul>
+        <li><span><b>Identificación oficial vigente</b> (original y copia)</span></li>
+        <li><span><b>CURP</b> de madre, padre o tutor y estudiantes</span></li>
+        <li><span><b>Acta de nacimiento</b> de madre, padre o tutor y estudiantes</span></li>
+        <li><span><b>Comprobante de domicilio</b> (no mayor a 6 meses)</span></li>
+      </ul>
+    </section>
     <div class="hero-clock">
       <div class="hero-clock-time" id="clock-time">00:00:00</div>
       <div class="hero-clock-date" id="clock-date"></div>
