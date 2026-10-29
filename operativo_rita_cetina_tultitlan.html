@@ -24,6 +24,7 @@ button { font-family: inherit; }
 .top-bar { background: #1a0a10; color: rgba(255,255,255,0.75); font-size: 0.68rem; padding: 5px 20px; display: flex; align-items: center; gap: 14px; letter-spacing: 0.3px; flex-wrap: wrap; }
 .top-bar span { opacity: 0.55; }
 .top-bar .usr { opacity: 1; margin-left: auto; display: flex; gap: 10px; align-items: center; color: #fff; font-weight: 600; }
+.top-bar .usr .apoyo { background: var(--dorado); color: #1a0a10; border-radius: 6px; padding: 2px 8px; font-size: .66rem; font-weight: 800; }
 .top-bar .usr button { background: rgba(255,255,255,.15); border: none; color: #fff; border-radius: 6px; padding: 3px 9px; font-size: .68rem; cursor: pointer; font-weight: 600; }
 
 .hero { background: linear-gradient(135deg, var(--guinda-o) 0%, var(--guinda) 55%, var(--guinda-d) 100%); color: var(--blanco); padding: 26px 32px 22px; position: relative; overflow: hidden; }
@@ -187,8 +188,12 @@ footer strong { color: var(--dorado-l); }
     <form id="login-form-sare" autocomplete="off">
       <label for="login-nombre-sare">Nombre completo</label>
       <input id="login-nombre-sare" type="text" placeholder="APELLIDO PATERNO APELLIDO MATERNO NOMBRE(S)" autocomplete="off">
-      <label for="login-cupo-sare">CUPO / Número de empleado</label>
+      <label for="login-cupo-sare" id="lbl-cupo">CUPO / Número de empleado</label>
       <input id="login-cupo-sare" type="text" inputmode="numeric" placeholder="Ej. 1500585" autocomplete="off">
+      <div id="apoyo-campos" hidden>
+        <label for="login-verifica">Tu nombre completo (quien verifica)</label>
+        <input id="login-verifica" type="text" placeholder="NOMBRE Y APELLIDOS" autocomplete="off" style="text-transform:uppercase">
+      </div>
       <div id="login-error-sare">⚠️ Nombre o CUPO incorrectos. Verifica e intenta de nuevo.</div>
       <button type="submit">Ingresar</button>
     </form>
@@ -198,7 +203,7 @@ footer strong { color: var(--dorado-l); }
 
 <div class="top-bar">
   <span>MX GOBIERNO DE MÉXICO</span><span>|</span><span>SECRETARÍA DE EDUCACIÓN PÚBLICA</span><span>|</span><span>COORDINACIÓN NACIONAL DE BECAS PARA EL BIENESTAR</span>
-  <div class="usr" id="usr" hidden><b id="usr-nom"></b><button id="usr-salir" type="button">Cerrar sesión</button></div>
+  <div class="usr" id="usr" hidden><span class="apoyo" id="usr-apoyo" hidden>APOYO · SOLO ESTE OPERATIVO</span><b id="usr-nom"></b><button id="usr-salir" type="button">Cerrar sesión</button></div>
 </div>
 
 <div class="hero">
@@ -642,7 +647,7 @@ $('btn-csv').onclick = () => { if (!REG.length) { alert('Aún no hay registros p
 $('in-csv').onchange = e => { const f = e.target.files[0]; if (f) unirCSV(f); e.target.value = ''; };
 $('btn-imp').onclick = () => { document.querySelectorAll('#lista-cct details').forEach(d => d.open = true); window.print(); };
 $('btn-borrar').onclick = () => {
-  if (!REG.length) return;
+  if (!REG.length || esApoyo()) return;
   const r = prompt(`Se borrarán ${REG.length} registro(s) de ESTE equipo. Descarga antes el CSV si lo necesitas.\nEscribe BORRAR para confirmar:`);
   if (r && r.trim().toUpperCase() === 'BORRAR') { REG = []; guardarReg(); pintar(); }
 };
@@ -650,29 +655,72 @@ function reloj() { const n = new Date(); $('clock-time').textContent = n.toLocal
 setInterval(reloj, 1000); reloj();
 
 // ════════ Sesión (compatible con el Panel de herramientas) ════════
-const USUARIOS_AUTORIZADOS = [{"NOMBRE": "CERVANTES JIMENEZ JOSE ELIAS", "CUPO": "159415"}, {"NOMBRE": "NOH CRUZ JOSE EDUARDO", "CUPO": "1500585"}, {"NOMBRE": "BARRERA MARTINEZ GUSTAVO", "CUPO": "1500723"}, {"NOMBRE": "CARRASCO GALLARDO STEFANY", "CUPO": "1501080"}, {"NOMBRE": "HERNANDEZ GUEVARA ANDREA", "CUPO": "1501112"}, {"NOMBRE": "MARTINEZ MOISES CELINA", "CUPO": "1501166"}, {"NOMBRE": "GALVEZ GARCIA NESTOR ENRIQUE", "CUPO": "1501193"}, {"NOMBRE": "ORDAZ VERA OSCAR URIEL", "CUPO": "1501604"}, {"NOMBRE": "ORDAZ HERNANDEZ MARIA DEL ROCIO", "CUPO": "1501620"}, {"NOMBRE": "HERNANDEZ HERNANDEZ CLAUDIA LIZET", "CUPO": "1501623"}, {"NOMBRE": "CEDILLO GARCIA MIGUEL", "CUPO": "1501626"}, {"NOMBRE": "MARTINEZ ARELLANO ROSA CARMINA", "CUPO": "1501640"}, {"NOMBRE": "PUENTE MAGAÑA JESUS ALBERTO", "CUPO": "1501644"}, {"NOMBRE": "SANCHEZ BERNABE MARIA GUADALUPE BRENDA", "CUPO": "1501974"}, {"NOMBRE": "CUEVAS SANCHEZ EMMELY DANIELA", "CUPO": "1501975"}, {"NOMBRE": "ORNELAS HURTADO DANA KARLA", "CUPO": "1501976"}, {"NOMBRE": "POMPA VALDEZ ABRAHAM LEVI", "CUPO": "1501977"}, {"NOMBRE": "QUINTOS HERNANDEZ ELDA BERENICE", "CUPO": "1501981"}, {"NOMBRE": "OLVERA SANCHEZ ANA LAURA", "CUPO": "1501982"}, {"NOMBRE": "MAGAÑA ABURTO MARIA ANGELICA", "CUPO": "1501983"}, {"NOMBRE": "GONZALEZ AVILA BERSAIN", "CUPO": "1501985"}, {"NOMBRE": "SANCHEZ BELTRAN MAYRA SUET", "CUPO": "1501986"}, {"NOMBRE": "LUNA VELAZQUEZ LUCIA", "CUPO": "1501987"}, {"NOMBRE": "RIVERA GONZALEZ ANDREA PATRICIA", "CUPO": "1501989"}, {"NOMBRE": "GONZALEZ LINDA NOHEMI JAZMIN", "CUPO": "1501991"}, {"NOMBRE": "RAMIREZ CRUZ ERICKA YESSENIA", "CUPO": "1502176"}, {"NOMBRE": "MARTINEZ SOSA MICHELLE", "CUPO": "1502177"}, {"NOMBRE": "SILVETI PEREZ ROCIO", "CUPO": "1502178"}, {"NOMBRE": "RAMIREZ CRUZ RUTH PAOLA", "CUPO": "1502179"}, {"NOMBRE": "PACHECO RAMIREZ DULCE JOCABET", "CUPO": "1502180"}, {"NOMBRE": "ESCOBAR NABOR EMMA NAZARAHI", "CUPO": "1502210"}, {"NOMBRE": "LIRA ESPINOZA PATRICIA ALEJANDRA", "CUPO": "1502220"}, {"NOMBRE": "MORALES ESCOBAR JANETH JOSELYN", "CUPO": "1502229"}, {"NOMBRE": "GONZALEZ CLEMENTE LAURA ANDREA", "CUPO": "1502290"}, {"NOMBRE": "GONZALEZ VARGAS GABRIEL YOSEF ARNALDO", "CUPO": "1502291"}, {"NOMBRE": "MARTINEZ SANDOVAL JUAN CARLOS", "CUPO": "1502292"}, {"NOMBRE": "MENDOZA ALVARADO DIANA ARELI", "CUPO": "1502293"}, {"NOMBRE": "PONCE NIEVES BRYAN", "CUPO": "1502294"}, {"NOMBRE": "REYES VAZQUEZ NORMA ANGELICA", "CUPO": "1502295"}, {"NOMBRE": "RUBIO VALADEZ FERNANDA ESTEFANIA", "CUPO": "1502296"}, {"NOMBRE": "SALAZAR MARTINEZ GUADALUPE ABIGAIL", "CUPO": "1502297"}];
+const USUARIOS_AUTORIZADOS = [{"NOMBRE": "CERVANTES JIMENEZ JOSE ELIAS", "CUPO": "159415"}, {"NOMBRE": "NOH CRUZ JOSE EDUARDO", "CUPO": "1500585"}, {"NOMBRE": "ESCARCEGA DIAZ MARIA GUADALUPE", "CUPO": "1500678"}, {"NOMBRE": "BARRERA MARTINEZ GUSTAVO", "CUPO": "1500723"}, {"NOMBRE": "CARRASCO GALLARDO STEFANY", "CUPO": "1501080"}, {"NOMBRE": "HERNANDEZ GUEVARA ANDREA", "CUPO": "1501112"}, {"NOMBRE": "MARTINEZ MOISES CELINA", "CUPO": "1501166"}, {"NOMBRE": "GALVEZ GARCIA NESTOR ENRIQUE", "CUPO": "1501193"}, {"NOMBRE": "ORDAZ VERA OSCAR URIEL", "CUPO": "1501604"}, {"NOMBRE": "ORDAZ HERNANDEZ MARIA DEL ROCIO", "CUPO": "1501620"}, {"NOMBRE": "HERNANDEZ HERNANDEZ CLAUDIA LIZET", "CUPO": "1501623"}, {"NOMBRE": "CEDILLO GARCIA MIGUEL", "CUPO": "1501626"}, {"NOMBRE": "MARTINEZ ARELLANO ROSA CARMINA", "CUPO": "1501640"}, {"NOMBRE": "PUENTE MAGAÑA JESUS ALBERTO", "CUPO": "1501644"}, {"NOMBRE": "SANCHEZ BERNABE MARIA GUADALUPE BRENDA", "CUPO": "1501974"}, {"NOMBRE": "CUEVAS SANCHEZ EMMELY DANIELA", "CUPO": "1501975"}, {"NOMBRE": "ORNELAS HURTADO DANA KARLA", "CUPO": "1501976"}, {"NOMBRE": "POMPA VALDEZ ABRAHAM LEVI", "CUPO": "1501977"}, {"NOMBRE": "QUINTOS HERNANDEZ ELDA BERENICE", "CUPO": "1501981"}, {"NOMBRE": "OLVERA SANCHEZ ANA LAURA", "CUPO": "1501982"}, {"NOMBRE": "MAGAÑA ABURTO MARIA ANGELICA", "CUPO": "1501983"}, {"NOMBRE": "GONZALEZ AVILA BERSAIN", "CUPO": "1501985"}, {"NOMBRE": "SANCHEZ BELTRAN MAYRA SUET", "CUPO": "1501986"}, {"NOMBRE": "LUNA VELAZQUEZ LUCIA", "CUPO": "1501987"}, {"NOMBRE": "RIVERA GONZALEZ ANDREA PATRICIA", "CUPO": "1501989"}, {"NOMBRE": "GONZALEZ LINDA NOHEMI JAZMIN", "CUPO": "1501991"}, {"NOMBRE": "RAMIREZ CRUZ ERICKA YESSENIA", "CUPO": "1502176"}, {"NOMBRE": "MARTINEZ SOSA MICHELLE", "CUPO": "1502177"}, {"NOMBRE": "SILVETI PEREZ ROCIO", "CUPO": "1502178"}, {"NOMBRE": "RAMIREZ CRUZ RUTH PAOLA", "CUPO": "1502179"}, {"NOMBRE": "PACHECO RAMIREZ DULCE JOCABET", "CUPO": "1502180"}, {"NOMBRE": "ESCOBAR NABOR EMMA NAZARAHI", "CUPO": "1502210"}, {"NOMBRE": "LIRA ESPINOZA PATRICIA ALEJANDRA", "CUPO": "1502220"}, {"NOMBRE": "MORALES ESCOBAR JANETH JOSELYN", "CUPO": "1502229"}, {"NOMBRE": "GONZALEZ CLEMENTE LAURA ANDREA", "CUPO": "1502290"}, {"NOMBRE": "GONZALEZ VARGAS GABRIEL YOSEF ARNALDO", "CUPO": "1502291"}, {"NOMBRE": "MARTINEZ SANDOVAL JUAN CARLOS", "CUPO": "1502292"}, {"NOMBRE": "MENDOZA ALVARADO DIANA ARELI", "CUPO": "1502293"}, {"NOMBRE": "PONCE NIEVES BRYAN", "CUPO": "1502294"}, {"NOMBRE": "REYES VAZQUEZ NORMA ANGELICA", "CUPO": "1502295"}, {"NOMBRE": "RUBIO VALADEZ FERNANDA ESTEFANIA", "CUPO": "1502296"}, {"NOMBRE": "SALAZAR MARTINEZ GUADALUPE ABIGAIL", "CUPO": "1502297"}];
 const SESSION_KEY = 'sare1507_sesion', TTL = 8 * 60 * 60 * 1000;
+// Usuario de apoyo: solo entra a ESTE operativo; nunca recibe la sesión del personal (sare1507_sesion),
+// así el resto de las herramientas del panel no lo reconocen. Válido hasta el 30/10/2026 a las 23:59.
+const APOYO = { NOMBRE: 'USUARIO DE APOYO', claves: ['291026', '29102642'], vence: new Date(2026, 9, 31, 0, 0, 0).getTime(), KEY: 'sare1507_apoyo' };
 let SES = null;
-const normU = t => String(t || '').toUpperCase().trim().replace(/\s+/g, ' ').normalize('NFD').replace(/[̀-ͯ]/g, '');
+const esApoyo = () => !!(SES && SES.rol === 'apoyo');
+const normU = t => String(t || '').toUpperCase().trim().replace(/\s+/g, ' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const leerJ = (st, k) => { try { return JSON.parse(st.getItem(k) || 'null'); } catch (e) { return null; } };
+const quitar = k => { try { sessionStorage.removeItem(k); } catch (e) {} try { localStorage.removeItem(k); } catch (e) {} };
 function getSesion() {
-  try { const s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); if (s && s.NOMBRE && (!s.ts || Date.now() - s.ts < TTL)) return s; } catch (e) {}
-  try { const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); if (s && s.NOMBRE && s.expira && Date.now() < s.expira) return s; } catch (e) {}
+  const a = leerJ(sessionStorage, APOYO.KEY) || leerJ(localStorage, APOYO.KEY);
+  if (a && a.rol === 'apoyo') { if (Date.now() < Math.min(a.expira || 0, APOYO.vence)) return a; quitar(APOYO.KEY); }
+  const s = leerJ(sessionStorage, SESSION_KEY); if (s && s.NOMBRE && (!s.ts || Date.now() - s.ts < TTL)) return s;
+  const l = leerJ(localStorage, SESSION_KEY); if (l && l.NOMBRE && l.expira && Date.now() < l.expira) return l;
   return null;
 }
-function entrar(s) { SES = s; $('login-overlay-sare').style.display = 'none'; $('usr').hidden = false; $('usr-nom').textContent = s.NOMBRE || s.nombre; pintar(); }
+function entrar(s) {
+  SES = s; $('login-overlay-sare').style.display = 'none'; $('usr').hidden = false;
+  $('usr-nom').textContent = s.rol === 'apoyo' ? s.verifica : (s.NOMBRE || s.nombre);
+  $('usr-apoyo').hidden = s.rol !== 'apoyo';
+  $('btn-borrar').hidden = s.rol === 'apoyo';   // el apoyo no puede borrar el registro del día
+  pintar();
+}
 function pedirLogin() { $('login-overlay-sare').style.display = 'flex'; $('usr').hidden = true; }
+const errLogin = t => { $('login-error-sare').textContent = t; $('login-error-sare').style.display = 'block'; };
+$('login-nombre-sare').addEventListener('input', () => {
+  const ap = normU($('login-nombre-sare').value) === APOYO.NOMBRE;
+  $('apoyo-campos').hidden = !ap; $('lbl-cupo').textContent = ap ? 'Contraseña' : 'CUPO / Número de empleado';
+});
 $('login-form-sare').addEventListener('submit', e => {
   e.preventDefault();
   const n = normU($('login-nombre-sare').value), c = $('login-cupo-sare').value.trim();
+  if (n === APOYO.NOMBRE) {
+    if (!APOYO.claves.includes(c)) return errLogin('⚠️ Contraseña incorrecta.');
+    if (Date.now() >= APOYO.vence) return errLogin('⚠️ El acceso de apoyo ya venció (era válido solo para el operativo del 30 de octubre).');
+    const v = normU($('login-verifica').value);
+    if (v.split(' ').length < 2) { $('apoyo-campos').hidden = false; $('login-verifica').focus(); return errLogin('⚠️ Escribe tu nombre completo: queda anotado en cada asistencia que registres.'); }
+    quitar(SESSION_KEY);   // en este equipo se cierra cualquier sesión del personal de la SARE
+    const ses = { rol: 'apoyo', NOMBRE: 'APOYO: ' + v, verifica: v, expira: Math.min(Date.now() + 14 * 3600 * 1000, APOYO.vence) };
+    try { sessionStorage.setItem(APOYO.KEY, JSON.stringify(ses)); localStorage.setItem(APOYO.KEY, JSON.stringify(ses)); } catch (x) {}
+    $('login-error-sare').style.display = 'none'; return entrar(ses);
+  }
   const u = USUARIOS_AUTORIZADOS.find(x => normU(x.NOMBRE) === n && String(x.CUPO) === c);
-  if (!u) { $('login-error-sare').style.display = 'block'; return; }
+  if (!u) return errLogin('⚠️ Nombre o CUPO incorrectos. Verifica e intenta de nuevo.');
   $('login-error-sare').style.display = 'none';
+  quitar(APOYO.KEY);
   try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ NOMBRE: u.NOMBRE, CUPO: u.CUPO, ts: Date.now() })); } catch (x) {}
   try { localStorage.setItem(SESSION_KEY, JSON.stringify({ NOMBRE: u.NOMBRE, CUPO: u.CUPO, expira: Date.now() + TTL })); } catch (x) {}
   entrar(u);
 });
-$('usr-salir').onclick = () => { try { sessionStorage.removeItem(SESSION_KEY); localStorage.removeItem(SESSION_KEY); } catch (e) {} detenerCam(); pedirLogin(); };
-const S0 = getSesion(); if (S0) entrar(S0); else pedirLogin();
+$('usr-salir').onclick = () => {
+  if (esApoyo() && REG.length && !confirm('Antes de salir, ¿ya descargaste el CSV de asistencia de este equipo? Los registros se quedan guardados aquí, pero el supervisor los necesita.')) return;
+  quitar(SESSION_KEY); quitar(APOYO.KEY); detenerCam(); $('login-form-sare').reset(); $('apoyo-campos').hidden = true; pedirLogin();
+};
+const PRE = leerJ(sessionStorage, 'sare1507_apoyo_pre'); quitar('sare1507_apoyo_pre');   // viene del panel con la contraseña de apoyo ya validada
+const preOk = PRE && Date.now() - PRE.ts < 5 * 60 * 1000;
+if (preOk) quitar(SESSION_KEY);   // equipo compartido: no heredar la sesión de otra persona
+const S0 = getSesion(); if (S0 && !(preOk && S0.rol !== 'apoyo')) entrar(S0); else {
+  pedirLogin();
+  const pre = preOk ? PRE : null;
+  if (pre) {
+    $('login-nombre-sare').value = APOYO.NOMBRE; $('login-cupo-sare').value = pre.c; $('login-nombre-sare').dispatchEvent(new Event('input'));
+    setTimeout(() => $('login-verifica').focus(), 50);
+  }
+}
 </script>
 </body>
 </html>

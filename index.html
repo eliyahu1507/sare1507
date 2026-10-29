@@ -454,6 +454,14 @@
     document.getElementById('app-content').style.display = 'none';
   }
 
+  // ── Usuario de apoyo (operativo Tultitlán 30/10/2026): NO entra al panel; se le envía directo a su operativo ──
+  var APOYO = { nombre:'USUARIO DE APOYO', claves:['291026','29102642'], vence:new Date(2026,9,31,0,0,0).getTime(), pagina:'operativo_rita_cetina_tultitlan.html' };
+  function apoyoActivo(){
+    try { var a = JSON.parse(sessionStorage.getItem('sare1507_apoyo') || localStorage.getItem('sare1507_apoyo') || 'null');
+      return !!(a && a.rol === 'apoyo' && Date.now() < Math.min(a.expira || 0, APOYO.vence)); } catch(e){ return false; }
+  }
+  if(apoyoActivo() && !getSesion()){ location.replace(APOYO.pagina); return; }
+
   // Al cargar: si ya hay sesión activa (cualquier formato), entrar directo
   var sesionActiva = getSesion();
   if(sesionActiva){
@@ -465,6 +473,13 @@
     var nombreInput = normalizar(document.getElementById('login-nombre').value);
     var cupoInput   = (document.getElementById('login-cupo').value||'').trim();
     var errorBox    = document.getElementById('login-error');
+
+    if(nombreInput === APOYO.nombre){
+      // Acceso de apoyo: valida la contraseña y lo manda al operativo, donde se identifica con su nombre
+      if(APOYO.claves.indexOf(cupoInput) >= 0 && Date.now() < APOYO.vence){ sessionStorage.removeItem(SESSION_KEY); try { localStorage.removeItem(SESSION_KEY); } catch(x){} sessionStorage.setItem('sare1507_apoyo_pre', JSON.stringify({ c: cupoInput, ts: Date.now() })); location.replace(APOYO.pagina); }
+      else { errorBox.style.display = 'block'; }
+      return;
+    }
 
     var encontrado = USUARIOS_AUTORIZADOS.find(function(u){
       return normalizar(u.NOMBRE) === nombreInput && String(u.CUPO).trim() === cupoInput;
