@@ -755,7 +755,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
 const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '26-oct-26 V';
+const APP_VERSION = '30-oct-26 W';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -1182,7 +1182,19 @@ let _lectura = { cod: '', t: 0 };
 let _ultimoAceptado = { cod: '', t: 0 };   // último sobre aceptado (para ignorarlo si sigue en cámara)
 let dupLog = [];                            // duplicados propios: solo informativo, no se exportan
 let _ultimoAvisoDudoso = 0;
-function limpiarCodigo(txt){ return String(txt || '').replace(/\s+/g, '').replace(/^[^0-9]+|[^0-9]+$/g, '').trim(); }
+// Limpia lo que entrega la cámara o la pistola USB: espacios, guiones, prefijos del lector (]C1, letras),
+// letra O por cero o I/L por uno (pistolas con distribución de teclado distinta o captura a mano).
+// Si trae cifras de más, se queda con las 16 que pasan el dígito verificador (solo si hay una).
+// Nunca "inventa" dígitos: una lectura incompleta sigue siendo dudosa y no se cuenta.
+function limpiarCodigo(txt){
+  const s = String(txt || '').toUpperCase().replace(/[OQ]/g, '0').replace(/[IL|]/g, '1').replace(/\D/g, '');
+  if (s.length > 16) {
+    const hall = [];
+    for (let i = 0; i + 16 <= s.length; i++) { const c = s.substr(i, 16); if (tarjetaValida(c) && !hall.includes(c)) hall.push(c); }
+    if (hall.length === 1) return hall[0];
+  }
+  return s;
+}
 function tarjetaValida(num){
   const s = String(num || '');
   if (!/^\d{16}$/.test(s)) return false;
@@ -2867,7 +2879,7 @@ function lecturaUSB(txt){
 }
 function _procesarBufferUSB(){
   const c = _kb.buf; _kb.buf = '';
-  if (c.replace(/\D/g, '').length >= 12) lecturaUSB(c);
+  if (limpiarCodigo(c).length >= 12) lecturaUSB(c);
 }
 document.addEventListener('keydown', e => {
   if (modoEntrada !== 'usb') return;
