@@ -298,7 +298,7 @@ function pintar(){
   const versiones = {}; ops.forEach(o => { if (o.version) versiones[o.version] = (versiones[o.version] || 0) + 1; });
   const verMayor = Object.keys(versiones).sort((a, b) => versiones[b] - versiones[a])[0];
   $('ops').innerHTML = ops.length ? ops.map(o => {
-    const lim = o.lim || (datos.modo === 'REAL' ? 700 : 20);
+    const lim = o.lim || (datos.modo === 'REAL' ? 700 : 30);
     const pct = o.comp ? 100 : Math.min(100, Math.round(o.n / lim * 100));
     const est = o.estadoCaja ? ` · ${esc(o.estadoCaja)}` : '';
     const ult = (o.ultimos || []).map(([num, c], i, arr) => {

@@ -753,9 +753,9 @@ let scanActivo = false;
 let feedbackTimer = null;
 
 // Lógica de cajas
-// ⚙️ SOBRES POR CAJA — 700 en operativo real. 20 = MODO PRUEBA (oficina).
-const TARJETAS_POR_CAJA = 20;
-const APP_VERSION = '30-oct-26 W';
+// ⚙️ SOBRES POR CAJA — 700 en operativo real. 30 = MODO PRUEBA (demo en oficina).
+const TARJETAS_POR_CAJA = 30;
+const APP_VERSION = '05-nov-26 X';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -1973,7 +1973,7 @@ function iniciarComplemento(nc, codigo){
   fb.textContent = `➕ COMPLEMENTO de la caja #${nc}: escanea los sobres que llegaron después`;
   if (codigo) { _ultimoAceptado = { cod: '', t: 0 }; procesarEscaneo(codigo); }
 }
-// Sin señal, los 20 (700) sobres de la caja aún no están verificados por la hoja: alguno podría
+// Sin señal, los 30 (700) sobres de la caja aún no están verificados por la hoja: alguno podría
 // ser de otro operador y la caja NO estaría llena. El complemento se habilita cuando todo se confirmó.
 function sinConfirmarEnCaja(nc){ return registros.filter(r => !r.dup && !r.comp && r.caja === nc && r.sync !== 'ok').length; }
 function pedirComplementoCajaLlena(){
@@ -2080,7 +2080,7 @@ function actualizarContadores() {
 }
 
 // ── Sobres faltantes: dónde hay un salto de numeración fuera de lo común (SARE 1507) ──
-// items: [{ tar: '5515…', cons: 345 }] de UNA caja (sin complemento). esperado: 700 (o 20 en prueba).
+// items: [{ tar: '5515…', cons: 345 }] de UNA caja (sin complemento). esperado: 700 (o 30 en prueba).
 // opc.anterior / opc.siguiente: último número de la caja anterior y primero de la siguiente (opcional).
 function analizarFaltantes(items, esperado, opc) {
   opc = opc || {};
