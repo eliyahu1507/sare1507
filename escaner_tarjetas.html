@@ -755,7 +755,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 30 = MODO PRUEBA (demo en oficina).
 const TARJETAS_POR_CAJA = 30;
-const APP_VERSION = '05-nov-26 Y';
+const APP_VERSION = '05-nov-26 Z';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -1483,7 +1483,7 @@ async function enviarPendientes(){
   if (!pend.length) { renderSync(); return; }
   _syncEnVuelo = true; renderSync();
   try {
-    const j = await llamarCentral({ accion: 'registrar', limite: TARJETAS_POR_CAJA, items: pend.map(r => ({ num: r.num, caja: r.caja, hora: r.ts, tipo: r.comp ? 'COMPLEMENTO' : 'NORMAL', forzado: r.forzado ? 1 : 0 })) });
+    const j = await llamarCentral({ accion: 'registrar', limite: TARJETAS_POR_CAJA, items: pend.map(r => ({ num: r.num, caja: r.caja, hora: r.ts, tipo: r.comp ? 'COMPLEMENTO' : 'NORMAL', forzado: r.forzado ? 1 : 0 })) }, 30000);   // espera su turno en la hoja (hasta 25 s) sin darse por perdido
     const porNum = {}; (j.resultados || []).forEach(x => { porNum[x.num] = x; });
     const rechazados = [], sospechosos = [], fueraNom = [];
     pend.forEach(r => {
