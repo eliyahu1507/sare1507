@@ -755,7 +755,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 30 = MODO PRUEBA (demo en oficina).
 const TARJETAS_POR_CAJA = 30;
-const APP_VERSION = '05-nov-26 X';
+const APP_VERSION = '05-nov-26 Y';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -1485,11 +1485,12 @@ async function enviarPendientes(){
   try {
     const j = await llamarCentral({ accion: 'registrar', limite: TARJETAS_POR_CAJA, items: pend.map(r => ({ num: r.num, caja: r.caja, hora: r.ts, tipo: r.comp ? 'COMPLEMENTO' : 'NORMAL', forzado: r.forzado ? 1 : 0 })) });
     const porNum = {}; (j.resultados || []).forEach(x => { porNum[x.num] = x; });
-    const rechazados = [], sospechosos = [];
+    const rechazados = [], sospechosos = [], fueraNom = [];
     pend.forEach(r => {
       const x = porNum[r.num]; if (!x) return;
       if (x.estado === 'ok') {
         r.sync = 'ok'; if (x.consecutivo) r.consec = x.consecutivo;
+        if (x.nom) { r.nom = x.nom; if (x.cct) r.cct = x.cct; if (x.nom === 'no') fueraNom.push(r); }   // cotejo con el nominal de la hoja central
         if (prefijoCaja(r.caja) === String(r.num).slice(0, 9)) guardarPrefijo(String(r.num).slice(0, 8));   // remesa confirmada por 3+ sobres
         return;
       }
@@ -1516,6 +1517,14 @@ async function enviarPendientes(){
       if (nc === cajaActual && enComplemento && !contarComp(nc)) enComplemento = false;
     });
     if (reabiertas.length) { persistirSesion(); actualizarContadores(); }
+    if (fueraNom.length && !rechazados.length) {
+      beepDUP(); if (navigator.vibrate) navigator.vibrate([200, 80, 200, 80, 200]);
+      const fb = document.getElementById('scan-feedback');
+      fb.className = 'scan-feedback err';
+      fb.textContent = `⚠️ ${fueraNom.length === 1 ? 'El sobre ' + fueraNom[0].num + ' NO viene' : fueraNom.length + ' sobres NO vienen'} en el nominal de ${procesoSesion || 'este proceso'}: apártalo(s) y avisa al supervisor`;
+      clearTimeout(feedbackTimer);
+      feedbackTimer = setTimeout(() => { fb.className = 'scan-feedback idle'; fb.textContent = 'Apunta al código de barras del sobre…'; }, 7000);
+    }
     if (sospechosos.length && !rechazados.length) {
       beepDUP();
       const fb = document.getElementById('scan-feedback');
@@ -2543,7 +2552,7 @@ function renderLista() {
     lista.innerHTML = [...registros].reverse().map((r, i) =>
       `<div class="scan-item ${r.dup ? 'dup' : ''}">
         <div class="scan-item-num">${r.num}</div>
-        <div class="scan-item-meta">Caja #${r.caja}${r.comp ? ' ➕' : ''}<br>${r.ts}${r.otro ? '<br>⛔ OTRO: ' + r.otro : r.invalido ? '<br>⛔ INVÁLIDO' : (r.dup ? '<br>⚠️ DUP' : '')}</div>
+        <div class="scan-item-meta">Caja #${r.caja}${r.comp ? ' ➕' : ''}<br>${r.ts}${r.otro ? '<br>⛔ OTRO: ' + r.otro : r.invalido ? '<br>⛔ INVÁLIDO' : (r.dup ? '<br>⚠️ DUP' : r.nom === 'no' ? '<br>⚠️ NO VIENE EN EL NOMINAL' : r.cct ? '<br>🏫 ' + r.cct : '')}</div>
       </div>`
     ).join('');
   }
