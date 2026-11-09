@@ -698,13 +698,10 @@ function resaltarCoincidencia(texto, query) {
 
 /* ══════════════════════════════════════════════════
    1. CARGA DEL NOMINAL
-   La DB del BRCU usa: d-basica, d-buems, d-jef
    Estructura: [{nombre,cct,municipio,nivel,fecha,
-                  beneficiarios:[{n,o}]}]
-   NO hay campo CURP — la búsqueda es por nombre.
+                  beneficiarios:[{n,o}]}]  (se arma con los convocados del día de la app de entrega)
 ══════════════════════════════════════════════════ */
 
-const NOMINAL_URL = 'https://eliyahu1507.github.io/sare1507/operativo_BRCU_SECUNDARIA_sare1507.html';
 
 let DB = { basica: [], buems: [], jef: [] };
 
@@ -726,23 +723,36 @@ function setNominalStatus(texto, color) {
   if (el) { el.textContent = texto; el.style.color = color; }
 }
 
+// El padrón ya NO viene escrito en ninguna página: se toma de los convocados del día que descargó
+// la app "Operativo entrega de tarjetas" (entrega_tarjetas.html) en este mismo celular, con la clave del operativo.
+function padronDesdeEntrega() {
+  let ses = null, paq = null;
+  try { ses = JSON.parse(localStorage.getItem('ent_sesion')); } catch (e) {}
+  if (!ses || !ses.fecha) return null;
+  try { paq = JSON.parse(localStorage.getItem('ent_paq_' + ses.fecha)); } catch (e) {}
+  if (!paq || !paq.cols || !paq.filas) return null;
+  const ix = {}; paq.cols.forEach((c, i) => { ix[c] = i; });
+  const progDe = p => { p = String(p || '').toUpperCase(); return p === 'JEF' ? 'jef' : (p === 'BRCU' || p === 'BRC') ? 'basica' : 'buems'; };
+  const nivelDe = p => { p = String(p || '').toUpperCase(); return p === 'BRCU' ? 'PRIMARIA' : p === 'BRC' ? 'SECUNDARIA' : p === 'JEF' ? 'JEF' : 'BUEMS'; };
+  const db = { basica: [], buems: [], jef: [] }, esc = {};
+  paq.filas.forEach(f => {
+    const prog = progDe(f[ix.PROGRAMA]), k = prog + '|' + f[ix.CCT];
+    if (!esc[k]) { esc[k] = { nombre: f[ix.ESCUELA], cct: f[ix.CCT], municipio: f[ix.MUNICIPIO], nivel: nivelDe(f[ix.PROGRAMA]), fecha: paq.fecha, programa: String(f[ix.PROGRAMA] || ''), beneficiarios: [] }; db[prog].push(esc[k]); }
+    esc[k].beneficiarios.push({ n: f[ix.NOMBRE], o: '' });
+  });
+  return { db, fecha: paq.fecha, total: paq.filas.length };
+}
 async function cargarNominal() {
-  setNominalStatus('\u23F3 Cargando padr\xF3n\u2026', '#888');
-  try {
-    const resp = await fetch(NOMINAL_URL, { cache: 'no-store' });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const html = await resp.text();
-    const total = poblarDB(html);
-    if (!total) throw new Error('Padr\xF3n vac\xEDo');
+  const p = padronDesdeEntrega();
+  if (p) {
+    DB = p.db;
     document.getElementById('bloque-cargar-archivo').style.display = 'none';
-    setNominalStatus('\u2713 Padr\xF3n listo: ' + total.toLocaleString('es-MX') + ' beneficiarios', 'var(--verde)');
+    setNominalStatus('✓ Convocados del ' + p.fecha.split('-').reverse().join('/') + ': ' + p.total.toLocaleString('es-MX') + ' beneficiarios', 'var(--verde)');
     return;
-  } catch(e) {
-    console.warn('[SARE1507] Fetch autom\xE1tico fall\xF3:', e.message);
-    document.getElementById('fetch-status').textContent =
-      '\u26A0 Carga autom\xE1tica no disponible. Usa el bot\xF3n de arriba.';
-    setNominalStatus('Selecciona el archivo BRCU para cargar el padr\xF3n completo', '#888');
   }
+  document.getElementById('fetch-status').innerHTML =
+    '⚠ Primero abre <a href="entrega_tarjetas.html" style="color:inherit;font-weight:700">Operativo entrega de tarjetas</a> en este celular y entra con la clave del operativo: ah\xED se descargan los convocados del d\xEDa.';
+  setNominalStatus('Sin padr\xF3n: abre primero el Operativo entrega de tarjetas', '#B3261E');
 }
 
 cargarNominal();

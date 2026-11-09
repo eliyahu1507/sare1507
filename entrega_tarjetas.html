@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#6B1C3E">
+<title>Operativo entrega de tarjetas · SARE 1507</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- Lector de códigos para celulares sin lector nativo (iPhone): primero la copia del propio sitio -->
+<script src="zxing.min.js"></script>
+<style>
+:root{
+  --guinda:#6B1C3E; --guinda-o:#4A0E29; --guinda-c:#8B2550; --dorado:#C8962A; --dorado-s:#F5E6C0;
+  --verde:#1A7A3A; --verde-bg:#E3F6E9; --rojo:#B3261E; --rojo-bg:#FBE9E7; --ambar:#9A5B00; --ambar-bg:#FFF2D6;
+  --azul:#1559A8; --azul-bg:#E6EFFA; --gris:#E6DFE1; --gris-bg:#F6F3F4; --texto:#2B2224; --muted:#6E6266; --blanco:#fff;
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--gris-bg);color:var(--texto);font-family:'Open Sans',system-ui,sans-serif;font-size:15px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.wrap{max-width:760px;margin:0 auto;padding:0 max(14px,env(safe-area-inset-left)) 0 max(14px,env(safe-area-inset-right))}
+header.top{background:linear-gradient(135deg,var(--guinda-o),var(--guinda) 60%,var(--guinda-c));color:#fff;padding:calc(10px + env(safe-area-inset-top)) 0 10px;position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(60,10,30,.25)}
+header.top .wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tit{font-family:Montserrat,sans-serif;font-weight:900;font-size:1rem;line-height:1.15;flex:1;min-width:180px}
+.tit small{display:block;font-weight:700;font-size:.7rem;color:#F0D9A6;letter-spacing:.04em}
+.sync{font-family:Montserrat,sans-serif;font-weight:800;font-size:.7rem;border-radius:999px;padding:4px 10px;background:rgba(255,255,255,.15);white-space:nowrap}
+.sync.ok{background:#1A7A3A}.sync.pend{background:#C26A00}.sync.off{background:#8E1E16}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:none}
+nav.tabs button{flex:0 0 auto;border:0;background:rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:7px 13px;font-family:Montserrat,sans-serif;font-weight:800;font-size:.76rem}
+nav.tabs button[aria-selected=true]{background:#fff;color:var(--guinda)}
+main{padding:14px 0 90px}
+.card{background:#fff;border:1px solid var(--gris);border-radius:var(--r);padding:14px;margin-bottom:12px}
+h2{font-family:Montserrat,sans-serif;font-weight:900;font-size:1.1rem;color:var(--guinda);margin-bottom:6px}
+h3{font-family:Montserrat,sans-serif;font-weight:800;font-size:.92rem;margin-bottom:6px}
+.muted{color:var(--muted);font-size:.85rem}
+label.lbl{display:block;font-family:Montserrat,sans-serif;font-weight:800;font-size:.75rem;color:var(--muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+.inp{width:100%;border:2px solid var(--gris);border-radius:12px;padding:12px 13px;font-size:1.05rem;background:#fff}
+.inp:focus{outline:none;border-color:var(--guinda)}
+.inp.big{font-size:1.2rem;font-weight:700;letter-spacing:.02em}
+.fila{display:flex;gap:8px;align-items:stretch}
+.fila .inp{flex:1;min-width:0}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-family:Montserrat,sans-serif;font-weight:800;font-size:.92rem;background:var(--gris);color:var(--texto)}
+.btn.prim{background:var(--guinda);color:#fff}.btn.ok{background:var(--verde);color:#fff}.btn.mal{background:var(--rojo);color:#fff}
+.btn.full{width:100%;display:block;margin-top:10px}
+.btn.xl{font-size:1.15rem;padding:18px}
+.btn:disabled{opacity:.5}
+.btn-cam{min-width:58px;font-size:1.3rem;padding:0 14px;background:var(--dorado);color:var(--guinda-o)}
+.roles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.rol{border:2px solid var(--gris);background:#fff;border-radius:14px;padding:14px 10px;text-align:center;font-family:Montserrat,sans-serif;font-weight:800}
+.rol span{display:block;font-size:1.8rem;margin-bottom:4px}
+.rol small{display:block;font-weight:600;font-family:'Open Sans',system-ui,sans-serif;font-size:.72rem;color:var(--muted);margin-top:3px}
+.rol[aria-pressed=true]{border-color:var(--guinda);background:var(--dorado-s)}
+.rol:disabled{opacity:.45}
+.res{border-radius:16px;padding:16px;margin:12px 0;border:2px solid}
+.res .t{font-family:Montserrat,sans-serif;font-weight:900;font-size:1.25rem;line-height:1.2}
+.res .n{font-family:Montserrat,sans-serif;font-weight:800;font-size:1.05rem;margin-top:8px}
+.res p{margin-top:4px;font-size:.92rem}
+.res.ok{background:var(--verde-bg);border-color:var(--verde);color:#0F4D24}
+.res.mal{background:var(--rojo-bg);border-color:var(--rojo);color:#6E1510}
+.res.aviso{background:var(--ambar-bg);border-color:#D08A1A;color:#5C3600}
+.res.info{background:var(--azul-bg);border-color:var(--azul);color:#0D3B73}
+.ubic{display:flex;gap:10px;margin-top:10px}
+.ubic div{flex:1;background:#fff;border-radius:12px;padding:8px;text-align:center;border:1px solid rgba(0,0,0,.08)}
+.ubic b{display:block;font-family:Montserrat,sans-serif;font-weight:900;font-size:1.7rem;color:var(--guinda);line-height:1.1}
+.ubic small{font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.kpi{background:#fff;border:1px solid var(--gris);border-radius:12px;padding:10px;text-align:center}
+.kpi b{display:block;font-family:Montserrat,sans-serif;font-weight:900;font-size:1.45rem;color:var(--guinda)}
+.kpi small{font-size:.7rem;color:var(--muted);font-weight:700}
+.kpi.alerta b{color:var(--rojo)}
+.lista{display:flex;flex-direction:column;gap:6px}
+.it{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;background:#fff;border:1px solid var(--gris);border-radius:12px;padding:9px 11px}
+.it .cj{font-family:Montserrat,sans-serif;font-weight:900;color:var(--guinda);text-align:center;line-height:1.1;min-width:52px}
+.it .cj small{display:block;font-size:.65rem;color:var(--muted)}
+.it .nm{font-weight:700;font-size:.88rem;overflow:hidden;text-overflow:ellipsis}
+.it .sub{font-size:.75rem;color:var(--muted)}
+.chip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:.68rem;font-weight:800;font-family:Montserrat,sans-serif;white-space:nowrap}
+.c-ok{background:var(--verde-bg);color:var(--verde)}.c-mal{background:var(--rojo-bg);color:var(--rojo)}.c-av{background:var(--ambar-bg);color:var(--ambar)}.c-in{background:var(--azul-bg);color:var(--azul)}.c-gr{background:var(--gris);color:var(--muted)}
+.causales{display:grid;grid-template-columns:1fr;gap:6px;margin-top:8px}
+.causal{border:2px solid var(--gris);background:#fff;border-radius:12px;padding:11px;text-align:left;font-weight:700;font-size:.9rem}
+.causal[aria-pressed=true]{border-color:var(--rojo);background:var(--rojo-bg)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--gris);vertical-align:top}
+th{font-family:Montserrat,sans-serif;font-size:.68rem;text-transform:uppercase;color:var(--muted)}
+.tabla{overflow-x:auto;background:#fff;border:1px solid var(--gris);border-radius:12px}
+td.num,th.num{text-align:right}
+.dif-ok{color:var(--verde);font-weight:800}.dif-mal{color:var(--rojo);font-weight:800}
+.vacio{text-align:center;color:var(--muted);padding:16px;font-size:.88rem}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#2B2224;color:#fff;border-radius:12px;padding:11px 16px;font-weight:700;font-size:.88rem;max-width:92vw;z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.toast.mal{background:var(--rojo)}
+.cam{position:fixed;inset:0;background:#000;z-index:50;display:flex;flex-direction:column}
+.cam video{flex:1;width:100%;object-fit:cover;min-height:0}
+.cam .linea{position:absolute;left:8%;right:8%;top:50%;height:3px;background:#ff3b3b;box-shadow:0 0 8px #f00}
+.cam .marco{position:absolute;left:50%;top:50%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px}
+.cam .barra{background:rgba(0,0,0,.85);color:#fff;padding:12px max(14px,env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:center}
+.cam .barra .msg{flex:1;font-weight:700;font-size:.9rem}
+.cam .ult{position:absolute;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));border-radius:12px;padding:10px 12px;font-family:Montserrat,sans-serif;font-weight:800;font-size:.9rem;display:none}
+[hidden]{display:none!important}
+.pie{font-size:.72rem;color:var(--muted);text-align:center;margin-top:20px}
+.cal-dia{border-left:4px solid var(--dorado);padding-left:10px;margin:12px 0}
+.mini{font-size:.75rem}
+@media (max-width:420px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="tit"><small id="h-sub">SARE 1507 · Becas para el Bienestar</small>Operativo entrega de tarjetas</div>
+    <span class="sync" id="h-sync" hidden>—</span>
+  </div>
+  <div class="wrap"><nav class="tabs" id="tabs" hidden></nav></div>
+</header>
+
+<main class="wrap" id="main">
+  <!-- ═════ ACCESO ═════ -->
+  <section id="v-acceso" hidden>
+    <div class="card">
+      <h2>Entrar al operativo</h2>
+      <p class="muted" id="acc-quien"></p>
+      <div id="acc-paso1">
+        <label class="lbl" for="acc-clave">Clave del operativo</label>
+        <input class="inp big" id="acc-clave" inputmode="numeric" autocomplete="off" placeholder="La da el supervisor">
+        <div id="acc-url-box" hidden>
+          <label class="lbl" for="acc-url">URL de la hoja de entrega (solo la primera vez)</label>
+          <input class="inp" id="acc-url" placeholder="https://script.google.com/macros/s/…/exec">
+        </div>
+        <button class="btn prim full" id="acc-entrar">Continuar</button>
+      </div>
+      <div id="acc-paso2" hidden>
+        <label class="lbl">¿Qué vas a hacer hoy?</label>
+        <div class="roles" id="acc-roles">
+          <button class="rol" data-rol="FILTRO" aria-pressed="false"><span>🪪</span>Filtro de CURP<small>Recibe y escanea la CURP</small></button>
+          <button class="rol" data-rol="BUSQUEDA" aria-pressed="false"><span>🔎</span>Búsqueda<small>Localiza y escanea la tarjeta</small></button>
+          <button class="rol" data-rol="MESA" aria-pressed="false"><span>🤝</span>Mesa de atención<small>Revisa documentos y entrega</small></button>
+          <button class="rol" data-rol="SUPERVISOR" aria-pressed="false"><span>📊</span>Supervisor<small>Avance y cuadre</small></button>
+        </div>
+        <div id="acc-mesa-box" hidden>
+          <label class="lbl" for="acc-mesa">Número de mesa</label>
+          <input class="inp big" id="acc-mesa" inputmode="numeric" placeholder="Ej. 3">
+        </div>
+        <label class="lbl" for="acc-fecha">Día del operativo</label>
+        <select class="inp" id="acc-fecha"></select>
+        <p class="muted mini" id="acc-fecha-info" style="margin-top:6px"></p>
+        <button class="btn prim full xl" id="acc-iniciar">Descargar convocados e iniciar</button>
+      </div>
+      <p class="muted mini" id="acc-msg" style="margin-top:10px"></p>
+    </div>
+  </section>
+
+  <!-- ═════ FILTRO ═════ -->
+  <section id="v-FILTRO" hidden>
+    <div class="card">
+      <h2>🪪 Filtro de CURP</h2>
+      <div class="fila">
+        <input class="inp big" id="f-inp" autocomplete="off" autocapitalize="characters" placeholder="Escanea o escribe CURP o nombre">
+        <button class="btn btn-cam" data-cam="curp" aria-label="Escanear con cámara">📷</button>
+      </div>
+      <div id="f-res"></div>
+      <div id="f-coin" class="lista"></div>
+    </div>
+    <div class="kpis" id="f-kpis"></div>
+    <div class="card" style="margin-top:12px"><h3>Últimas consultas</h3><div class="lista" id="f-log"></div></div>
+  </section>
+
+  <!-- ═════ BÚSQUEDA ═════ -->
+  <section id="v-BUSQUEDA" hidden>
+    <div class="card">
+      <h2>🔎 Búsqueda de tarjetas</h2>
+      <p class="muted mini">Escanea la tarjeta encontrada para mandarla a mesa. También puedes escanear la CURP para ver la caja.</p>
+      <div class="fila" style="margin-top:8px">
+        <input class="inp big" id="b-inp" autocomplete="off" inputmode="numeric" placeholder="Escanea la tarjeta o la CURP">
+        <button class="btn btn-cam" data-cam="tarjeta" aria-label="Escanear con cámara">📷</button>
+      </div>
+      <div id="b-res"></div>
+    </div>
+    <div class="kpis" id="b-kpis"></div>
+    <div class="card" style="margin-top:12px"><h3>Por buscar <span class="chip c-in" id="b-n-pend">0</span></h3><p class="muted mini">Pasaron filtro: ordenados por caja y consecutivo.</p><div class="lista" id="b-pend" style="margin-top:8px"></div></div>
+    <div class="card"><h3>Devueltas por mesa (en resguardo) <span class="chip c-mal" id="b-n-dev">0</span></h3><p class="muted mini">Si el becario o tutor regresa con sus documentos, pasa otra vez por filtro y aparece arriba.</p><div class="lista" id="b-dev" style="margin-top:8px"></div></div>
+  </section>
+
+  <!-- ═════ MESA ═════ -->
+  <section id="v-MESA" hidden>
+    <div class="card">
+      <h2>🤝 Mesa de atención <span id="m-num"></span></h2>
+      <div class="fila">
+        <input class="inp big" id="m-inp" autocomplete="off" inputmode="numeric" placeholder="Escanea la tarjeta">
+        <button class="btn btn-cam" data-cam="tarjeta" aria-label="Escanear con cámara">📷</button>
+      </div>
+      <div id="m-res"></div>
+      <div id="m-acc" hidden>
+        <button class="btn ok full xl" id="m-entregar">✅ ENTREGAR TARJETA</button>
+        <button class="btn mal full" id="m-noentregar">↩ No se entrega: regresar a búsqueda</button>
+        <div id="m-causales" hidden>
+          <label class="lbl">Causal</label>
+          <div class="causales" id="m-causal-list"></div>
+          <input class="inp" id="m-nota" placeholder="Nota (opcional)" style="margin-top:8px">
+          <button class="btn mal full" id="m-confirmar-dev">Registrar como NO ENTREGADA</button>
+        </div>
+        <button class="btn full" id="m-cancelar">Cancelar</button>
+      </div>
+    </div>
+    <div class="kpis" id="m-kpis"></div>
+    <div class="card" style="margin-top:12px"><h3>Mis entregas de hoy</h3><p class="muted mini">Al cierre, este número debe coincidir con tus expedientes.</p><div class="lista" id="m-log" style="margin-top:8px"></div></div>
+  </section>
+
+  <!-- ═════ SUPERVISOR ═════ -->
+  <section id="v-SUPERVISOR" hidden>
+    <div class="card">
+      <h2>📊 Avance y cuadre</h2>
+      <p class="muted mini" id="s-act">—</p>
+      <button class="btn prim full" id="s-actualizar">Actualizar</button>
+    </div>
+    <div class="kpis" id="s-kpis"></div>
+    <div class="card" style="margin-top:12px">
+      <h3>Entregadas por operador</h3>
+      <p class="muted mini">Escribe cuántos expedientes contó cada operador: la diferencia sale sola.</p>
+      <div class="tabla" style="margin-top:8px"><table><thead><tr><th>Operador · mesa</th><th class="num">Sistema</th><th class="num">Conteo físico</th><th class="num">Dif.</th></tr></thead><tbody id="s-ops"></tbody></table></div>
+    </div>
+    <div class="card"><h3>⚠️ En mesa sin resolver <span class="chip c-mal" id="s-n-mesa">0</span></h3><p class="muted mini">Salieron de búsqueda y no se entregaron ni regresaron: son las que hay que buscar si no cuadra.</p><div class="lista" id="s-mesa" style="margin-top:8px"></div></div>
+    <div class="card"><h3>Devueltas (no entregadas) <span class="chip c-av" id="s-n-dev">0</span></h3><div class="lista" id="s-dev"></div></div>
+    <div class="card"><h3>Pasaron filtro y siguen en búsqueda <span class="chip c-in" id="s-n-bus">0</span></h3><div class="lista" id="s-bus"></div></div>
+    <div class="card">
+      <h3>Anular una entrega</h3>
+      <p class="muted mini">Solo si se registró por error. La tarjeta queda como NO ENTREGADA (en resguardo).</p>
+      <input class="inp" id="s-anular-t" inputmode="numeric" placeholder="Número de tarjeta" style="margin-top:8px">
+      <input class="inp" id="s-anular-m" placeholder="Motivo" style="margin-top:8px">
+      <button class="btn mal full" id="s-anular">Anular entrega</button>
+    </div>
+  </section>
+
+  <!-- ═════ CONSULTA ═════ -->
+  <section id="v-CONSULTA" hidden>
+    <div class="card">
+      <h2>Consultar</h2>
+      <div class="fila">
+        <input class="inp" id="c-inp" autocomplete="off" placeholder="CURP, nombre o tarjeta">
+        <button class="btn btn-cam" data-cam="curp" aria-label="Escanear con cámara">📷</button>
+      </div>
+      <div id="c-res" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <!-- ═════ CALENDARIO ═════ -->
+  <section id="v-CALENDARIO" hidden>
+    <div class="card"><h2>Calendario de entrega</h2><p class="muted mini">Escuelas por día, con la caja donde están sus tarjetas.</p><div id="cal-lista"></div></div>
+  </section>
+
+  <!-- ═════ SESIÓN ═════ -->
+  <section id="v-SESION" hidden>
+    <div class="card">
+      <h2>Mi sesión</h2>
+      <div id="ses-datos" class="muted"></div>
+      <button class="btn full" id="ses-sync">🔄 Sincronizar ahora</button>
+      <button class="btn full" id="ses-rol">Cambiar de función o de día</button>
+      <button class="btn mal full" id="ses-salir">Cerrar sesión y borrar datos de este celular</button>
+      <p class="muted mini" style="margin-top:10px">Al cerrar sesión se borran del celular los datos de los convocados. Lo que ya se envió queda en la hoja central.</p>
+    </div>
+  </section>
+  <p class="pie" id="pie"></p>
+</main>
+
+<div class="cam" id="cam" hidden>
+  <video id="cam-video" playsinline muted></video>
+  <div class="linea" id="cam-linea"></div>
+  <div class="marco" id="cam-marco" hidden></div>
+  <div class="ult" id="cam-ult"></div>
+  <div class="barra">
+    <div class="msg" id="cam-msg">Abriendo cámara…</div>
+    <button class="btn" id="cam-luz" hidden>🔦</button>
+    <button class="btn prim" id="cam-cerrar">Cerrar</button>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════════
+//  CONFIGURACIÓN
+// ════════════════════════════════════════════════════════════
+const APP_VERSION = '08-nov-26 A';
+const URL_ENTREGA_FIJA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';     // ← URL de la aplicación web de la hoja de entrega (termina en /exec)
+const CLAVE_APP = 'sare1507-0803a849ee47';
+const SUPERVISORES = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ' };
+const ROLES = { FILTRO: '🪪 Filtro', BUSQUEDA: '🔎 Búsqueda', MESA: '🤝 Mesa', SUPERVISOR: '📊 Supervisor' };
+const E = { BUSQUEDA: 'EN BUSQUEDA', MESA: 'EN MESA', ENTREGADA: 'ENTREGADA', DEVUELTA: 'DEVUELTA' };
+const SYNC_MS = 8000;
+
+// ════════════════════════════════════════════════════════════
+//  UTILIDADES
+// ════════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+const lsDel = k => { try { localStorage.removeItem(k); } catch (e) {} };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = s => String(s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z0-9Ñ ]/g, ' ').replace(/Ñ/g, 'N').replace(/\s+/g, ' ').trim();
+const hoyISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const horaAhora = () => new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+function fechaLarga(f) { if (!f) return ''; const p = f.split('-').map(Number), d = new Date(p[0], p[1] - 1, p[2]); return DIAS[d.getDay()] + ' ' + p[2] + ' de ' + MESES[p[1] - 1]; }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function vibrar(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+let _ac = null;
+function beep(ok) {
+  try {
+    _ac = _ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = _ac.createOscillator(), g = _ac.createGain();
+    o.frequency.value = ok ? 1150 : 330; o.type = ok ? 'sine' : 'square';
+    g.gain.value = .12; o.connect(g); g.connect(_ac.destination); o.start(); o.stop(_ac.currentTime + (ok ? .12 : .45));
+  } catch (e) {}
+}
+let _toastT = 0;
+function toast(msg, mal) { const t = $('toast'); t.textContent = msg; t.className = 'toast' + (mal ? ' mal' : ''); t.hidden = false; clearTimeout(_toastT); _toastT = setTimeout(() => { t.hidden = true; }, mal ? 6000 : 3000); }
+// Tarjeta: 16 dígitos con dígito verificador (Luhn). Limpia O/I y extrae los 16 válidos si vienen datos de más.
+function tarjetaValida(s) { s = String(s || ''); if (!/^\d{16}$/.test(s)) return false; let t = 0; for (let i = 0; i < 16; i++) { let d = +s[15 - i]; if (i % 2) { d *= 2; if (d > 9) d -= 9; } t += d; } return t % 10 === 0; }
+function limpiarTarjeta(txt) {
+  const s = String(txt || '').toUpperCase().replace(/[OQ]/g, '0').replace(/[IL|]/g, '1').replace(/\D/g, '');
+  if (s.length > 16) { const h = []; for (let i = 0; i + 16 <= s.length; i++) { const c = s.substr(i, 16); if (tarjetaValida(c) && !h.includes(c)) h.push(c); } if (h.length === 1) return h[0]; }
+  return s;
+}
+// CURP dentro de cualquier texto (QR del documento: "CURP|…", URL, o tecleada)
+function extraerCurp(txt) {
+  const u = String(txt || '').toUpperCase().replace(/Ñ/g, 'X');
+  const m = u.match(/[A-Z]{4}[0-9O]{6}[HMX][A-Z]{5}[A-Z0-9][0-9O]/);
+  if (!m) return '';
+  const c = m[0].split(''); [4, 5, 6, 7, 8, 9, 17].forEach(i => { if (c[i] === 'O') c[i] = '0'; });
+  return c.join('');
+}
+
+// ════════════════════════════════════════════════════════════
+//  ESTADO DE LA APP
+// ════════════════════════════════════════════════════════════
+let URL_ENTREGA = URL_ENTREGA_FIJA || lsGet('ent_url', '');
+let USUARIO = null;         // del panel SARE 1507 { NOMBRE, CUPO }
+let SES = lsGet('ent_sesion', null);   // { claveOp, rol, mesa, fecha, op, cupo }
+let LOGIN = lsGet('ent_login', null);  // calendario y causales
+let PAQ = null;             // { fecha, filas, byT, byC }
+let EST = {};               // tarjeta → estado
+let COLA = lsGet('ent_cola', []);
+let CURSOR = 1;
+let LOG = [];               // mis acciones
+let _rolElegido = '', _syncEnCurso = false, _syncError = '', _ultSync = 0, _vista = '';
+
+// Mismo acceso que los demás módulos: la sesión que crea el panel SARE 1507 al entrar con nombre y CUPO
+// (solo el personal autorizado de la oficina). Sin esa sesión la app manda al panel.
+function leerUsuario() {
+  for (const st of [sessionStorage, localStorage]) {
+    try {
+      const s = JSON.parse(st.getItem('sare1507_sesion'));
+      if (s && s.NOMBRE && s.CUPO && s.rol !== 'apoyo' && (!s.expira || Date.now() < s.expira) && (!s.ts || Date.now() - s.ts < 8 * 3600e3)) return s;
+    } catch (e) {}
+  }
+  return null;
+}
+const esSupervisor = () => !!(USUARIO && SUPERVISORES[String(USUARIO.CUPO || '').trim()]);
+const kPaq = f => 'ent_paq_' + f, kEst = f => 'ent_est_' + f, kLog = () => 'ent_log_' + (SES ? SES.fecha + '_' + SES.rol : '');
+
+// ════════════════════════════════════════════════════════════
+//  COMUNICACIÓN CON LA HOJA CENTRAL
+// ════════════════════════════════════════════════════════════
+async function llamar(payload, ms) {
+  if (!URL_ENTREGA) throw new Error('Falta la URL de la hoja de entrega');
+  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), ms || 20000);
+  try {
+    const cuerpo = Object.assign({ clave: CLAVE_APP, claveOp: SES ? SES.claveOp : '', op: SES ? SES.op : '', cupo: USUARIO ? USUARIO.CUPO : '',
+      rol: SES ? SES.rol : '', mesa: SES ? SES.mesa : '', fecha: SES ? SES.fecha : '', version: APP_VERSION }, payload);
+    const r = await fetch(URL_ENTREGA, { method: 'POST', body: JSON.stringify(cuerpo), signal: ctrl.signal, redirect: 'follow' });
+    const j = await r.json();
+    if (!j.ok && j.error === 'CLAVE_OPERATIVO') { const e = new Error(j.mensaje); e.clave = true; throw e; }
+    if (!j.ok) throw new Error(j.error || 'Error de la hoja');
+    return j;
+  } finally { clearTimeout(t); }
+}
+
+// ════════════════════════════════════════════════════════════
+//  PAQUETE DEL DÍA (convocados) Y ESTADOS
+// ════════════════════════════════════════════════════════════
+function armarPaquete(p) {
+  const ix = {}; p.cols.forEach((c, i) => { ix[c] = i; });
+  const byT = {}, byC = {}, lista = [];
+  p.filas.forEach(f => {
+    const r = { t: String(f[ix.TARJETA] || ''), c: String(f[ix.CURP] || ''), n: f[ix.NOMBRE], cct: f[ix.CCT], esc: f[ix.ESCUELA], mun: f[ix.MUNICIPIO],
+      caja: f[ix.CAJA], cons: f[ix.CONSECUTIVO], rec: f[ix.RECEPCION], prog: f[ix.PROGRAMA], id: f[ix.ID] };
+    r.nn = norm(r.n);
+    if (r.t) byT[r.t] = r; if (r.c) byC[r.c] = r; lista.push(r);
+  });
+  return { fecha: p.fecha, lista, byT, byC };
+}
+function cargarLocal() {
+  const p = lsGet(kPaq(SES.fecha), null);
+  if (!p) return false;
+  PAQ = armarPaquete(p);
+  const e = lsGet(kEst(SES.fecha), null);
+  EST = e ? e.est : (p.estados || {}); CURSOR = e ? e.cursor : (p.cursor || 1);
+  LOG = lsGet(kLog(), []);
+  return true;
+}
+function guardarEstado() { lsSet(kEst(SES.fecha), { est: EST, cursor: CURSOR }); lsSet('ent_cola', COLA); }
+function guardarLog() { if (LOG.length > 400) LOG = LOG.slice(-400); lsSet(kLog(), LOG); }
+async function descargarPaquete(fecha) {
+  const p = await llamar({ accion: 'paquete', fecha }, 45000);
+  // Se guardan solo los convocados de ese día; los de otros días se borran del celular
+  Object.keys(localStorage).forEach(k => { if (/^ent_(paq|est)_/.test(k) && !k.endsWith(fecha)) lsDel(k); });
+  if (!lsSet(kPaq(fecha), p)) toast('El celular no tiene espacio para guardar la lista: funcionará solo con señal', true);
+  lsSet(kEst(fecha), { est: p.estados || {}, cursor: p.cursor || 1 });
+  return p;
+}
+
+// Registrar un evento: se aplica de inmediato en el celular y se envía en segundo plano
+function registrar(evento, r, detalle) {
+  const ev = { id: uid(), evento, tarjeta: r ? r.t : '', curp: r ? r.c : '', detalle: detalle || '', hora: horaAhora(),
+               rol: SES.rol, op: SES.op, mesa: SES.mesa, fecha: SES.fecha };
+  COLA.push(ev);
+  if (r && r.t) {
+    const nuevo = { FILTRO_OK: (EST[r.t] && EST[r.t].e === E.MESA) ? E.MESA : E.BUSQUEDA, A_MESA: E.MESA, ENTREGADA: E.ENTREGADA, DEVUELTA: E.DEVUELTA, ANULAR_ENTREGA: E.DEVUELTA }[evento];
+    if (nuevo) {
+      const x = { e: nuevo, ev: evento, d: detalle || '', op: SES.op, m: SES.mesa, h: ev.hora, pend: 1 };
+      if (nuevo === E.ENTREGADA) { x.eop = SES.op; x.em = SES.mesa; x.eh = ev.hora; }
+      EST[r.t] = x;
+    }
+  }
+  guardarEstado();
+  pintarSync();
+  setTimeout(sincronizar, 50);
+  return ev;
+}
+
+async function sincronizar() {
+  if (_syncEnCurso || !SES || !URL_ENTREGA) return;
+  _syncEnCurso = true;
+  try {
+    // 1) Enviar lo pendiente, agrupado por quién lo hizo (por si se cambió de función con pendientes)
+    while (COLA.length) {
+      const g = COLA[0], lote = COLA.filter(e => e.rol === g.rol && e.op === g.op && e.mesa === g.mesa && e.fecha === g.fecha).slice(0, 50);
+      const j = await llamar({ accion: 'eventos', rol: g.rol, op: g.op, mesa: g.mesa, fecha: g.fecha, eventos: lote }, 30000);
+      const ids = new Set(lote.map(e => e.id));
+      (j.resultados || []).forEach(x => {
+        if (x.tarjeta && x.estado) EST[x.tarjeta] = x.estado;
+        if (!x.ok && x.msg) {
+          const r = PAQ && PAQ.byT[x.tarjeta];
+          toast('⛔ ' + (r ? r.n + ': ' : '') + x.msg, true); beep(false); vibrar([200, 100, 200]);
+          LOG.push({ h: horaAhora(), t: x.tarjeta, n: r ? r.n : '', tipo: 'mal', txt: 'No se registró: ' + x.msg }); guardarLog();
+        }
+      });
+      COLA = COLA.filter(e => !ids.has(e.id));
+      guardarEstado();
+    }
+    // 2) Traer lo que hicieron los demás
+    const s = await llamar({ accion: 'estados', cursor: CURSOR }, 20000);
+    Object.keys(s.cambios || {}).forEach(t => { if (!COLA.some(e => e.tarjeta === t)) EST[t] = s.cambios[t]; });
+    CURSOR = s.cursor || CURSOR;
+    guardarEstado();
+    _syncError = ''; _ultSync = Date.now();
+  } catch (e) {
+    _syncError = e.clave ? 'clave' : (e.message || 'sin conexión');
+    if (e.clave) { toast('La clave del operativo cambió: vuelve a entrar', true); }
+  } finally {
+    _syncEnCurso = false;
+    pintarSync();
+    refrescarVista();
+  }
+}
+function pintarSync() {
+  const el = $('h-sync'); if (!SES) { el.hidden = true; return; }
+  el.hidden = false;
+  if (_syncError && COLA.length) { el.className = 'sync off'; el.textContent = '🔴 Sin señal · ' + COLA.length + ' por enviar'; }
+  else if (_syncError) { el.className = 'sync off'; el.textContent = '🔴 Sin señal'; }
+  else if (COLA.length) { el.className = 'sync pend'; el.textContent = '🟠 Enviando ' + COLA.length; }
+  else { el.className = 'sync ok'; el.textContent = '🟢 Al día'; }
+}
+
+// ════════════════════════════════════════════════════════════
+//  NAVEGACIÓN
+// ════════════════════════════════════════════════════════════
+function pestañas() {
+  const t = [[SES.rol, ROLES[SES.rol]], ['CONSULTA', 'Consultar'], ['CALENDARIO', 'Calendario'], ['SESION', '⚙️ Sesión']];
+  $('tabs').innerHTML = t.map(([k, l]) => `<button data-v="${k}" aria-selected="false">${l}</button>`).join('');
+  $('tabs').hidden = false;
+  $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => ver(b.dataset.v));
+}
+function ver(v) {
+  _vista = v;
+  document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== 'v-' + v; });
+  $('tabs').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.v === v));
+  window.scrollTo(0, 0);
+  refrescarVista();
+  if (v === 'CALENDARIO') pintarCalendario();
+  if (v === 'SUPERVISOR' && !_cuadre) actualizarCuadre();
+  const foco = { FILTRO: 'f-inp', BUSQUEDA: 'b-inp', MESA: 'm-inp', CONSULTA: 'c-inp' }[v];
+  if (foco && !matchMedia('(pointer:coarse)').matches) setTimeout(() => $(foco).focus(), 50);
+}
+function refrescarVista() {
+  if (!SES || !PAQ) return;
+  if (_vista === 'FILTRO') pintarFiltro();
+  else if (_vista === 'BUSQUEDA') pintarBusqueda();
+  else if (_vista === 'MESA') pintarMesa();
+  else if (_vista === 'SUPERVISOR') pintarSupervisorLocal();
+  else if (_vista === 'SESION') pintarSesion();
+}
+function cabecera() {
+  $('h-sub').textContent = `${ROLES[SES.rol]}${SES.rol === 'MESA' ? ' ' + SES.mesa : ''} · ${fechaLarga(SES.fecha)} · ${SES.op.split(' ').slice(0, 2).join(' ')}`;
+  $('pie').textContent = `v${APP_VERSION} · ${PAQ ? PAQ.lista.length + ' convocados' : ''}`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  ACCESO
+// ════════════════════════════════════════════════════════════
+function mostrarAcceso(paso) {
+  document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== 'v-acceso'; });
+  $('tabs').hidden = true; $('h-sync').hidden = true;
+  $('acc-quien').innerHTML = USUARIO ? `Hola <b>${esc(USUARIO.NOMBRE)}</b>.` : '';
+  $('acc-url-box').hidden = !!URL_ENTREGA_FIJA;
+  if (!URL_ENTREGA_FIJA) $('acc-url').value = URL_ENTREGA || '';
+  $('acc-paso1').hidden = paso === 2; $('acc-paso2').hidden = paso !== 2;
+  if (paso === 2) prepararPaso2();
+}
+function prepararPaso2() {
+  document.querySelectorAll('#acc-roles .rol').forEach(b => {
+    b.disabled = b.dataset.rol === 'SUPERVISOR' && !esSupervisor();
+    b.setAttribute('aria-pressed', b.dataset.rol === _rolElegido);
+    b.onclick = () => { _rolElegido = b.dataset.rol; prepararPaso2(); };
+  });
+  $('acc-mesa-box').hidden = _rolElegido !== 'MESA';
+  const sel = $('acc-fecha'), hoy = hoyISO(), dias = (LOGIN && LOGIN.calendario) || [];
+  if (!sel.options.length) {
+    sel.innerHTML = dias.map(d => `<option value="${d.fecha}">${fechaLarga(d.fecha)} · ${d.escuelas.reduce((a, e) => a + e.convocados, 0)} convocados</option>`).join('') ||
+      '<option value="">No hay fechas en el calendario</option>';
+    sel.value = dias.some(d => d.fecha === hoy) ? hoy : (dias.find(d => d.fecha > hoy) || dias[dias.length - 1] || {}).fecha || '';
+    sel.onchange = infoFecha;
+  }
+  infoFecha();
+}
+function infoFecha() {
+  const d = ((LOGIN && LOGIN.calendario) || []).find(x => x.fecha === $('acc-fecha').value);
+  $('acc-fecha-info').textContent = d ? d.escuelas.length + ' escuelas: ' + d.escuelas.map(e => e.cct).join(', ') : '';
+  if (d && d.fecha !== hoyISO()) $('acc-fecha-info').textContent += ' · ⚠️ No es la fecha de hoy.';
+}
+$('acc-entrar').onclick = async () => {
+  const clave = $('acc-clave').value.trim();
+  if (!URL_ENTREGA_FIJA) { URL_ENTREGA = $('acc-url').value.trim(); lsSet('ent_url', URL_ENTREGA); }
+  if (!clave) { $('acc-msg').textContent = 'Escribe la clave del operativo.'; return; }
+  $('acc-msg').textContent = '⏳ Verificando…'; $('acc-entrar').disabled = true;
+  try {
+    SES = { claveOp: clave, op: USUARIO.NOMBRE.toUpperCase(), cupo: USUARIO.CUPO };
+    LOGIN = await llamar({ accion: 'login' }, 30000);
+    lsSet('ent_login', LOGIN);
+    $('acc-msg').textContent = `✅ Nominal en la hoja: ${LOGIN.total.toLocaleString('es-MX')} registros (${Object.keys(LOGIN.programas).join(', ')}).`;
+    $('acc-fecha').innerHTML = '';
+    mostrarAcceso(2);
+  } catch (e) { SES = null; $('acc-msg').textContent = '⛔ ' + (e.name === 'AbortError' ? 'Sin respuesta de la hoja: revisa la señal.' : e.message); }
+  finally { $('acc-entrar').disabled = false; }
+};
+$('acc-iniciar').onclick = async () => {
+  if (!_rolElegido) { $('acc-msg').textContent = 'Elige qué vas a hacer.'; return; }
+  const mesa = $('acc-mesa').value.trim();
+  if (_rolElegido === 'MESA' && !mesa) { $('acc-msg').textContent = 'Escribe tu número de mesa.'; return; }
+  const fecha = $('acc-fecha').value;
+  if (!fecha) { $('acc-msg').textContent = 'No hay día del operativo en el calendario.'; return; }
+  if (COLA.length && SES && SES.rol && (SES.rol !== _rolElegido)) { await sincronizar(); if (COLA.length) { $('acc-msg').textContent = '⚠️ Hay ' + COLA.length + ' movimientos sin enviar: busca señal antes de cambiar de función.'; return; } }
+  $('acc-msg').textContent = '⏳ Descargando convocados…'; $('acc-iniciar').disabled = true;
+  try {
+    SES = Object.assign({}, SES, { rol: _rolElegido, mesa: _rolElegido === 'MESA' ? mesa : '', fecha });
+    const p = lsGet(kPaq(fecha), null) && SES.fecha === fecha && navigator.onLine === false ? null : await descargarPaquete(fecha);
+    lsSet('ent_sesion', SES);
+    if (!cargarLocal() && p) { PAQ = armarPaquete(p); EST = p.estados || {}; CURSOR = p.cursor || 1; }
+    arrancar();
+  } catch (e) { $('acc-msg').textContent = '⛔ ' + (e.clave ? e.message : e.name === 'AbortError' ? 'La descarga tardó demasiado: busca mejor señal.' : e.message); }
+  finally { $('acc-iniciar').disabled = false; }
+};
+function arrancar() {
+  pestañas(); cabecera(); pintarSync();
+  ver(SES.rol);
+  sincronizar();
+}
+
+// ════════════════════════════════════════════════════════════
+//  TARJETA DE RESULTADO
+// ════════════════════════════════════════════════════════════
+function ubicacion(r) {
+  return `<div class="ubic"><div><small>Caja</small><b>${esc(r.caja || '—')}</b></div><div><small>Consecutivo</small><b>${esc(r.cons || '—')}</b></div></div>`;
+}
+function datos(r) { return `<div class="n">${esc(r.n)}</div><p>${esc(r.c)} · ${esc(r.cct)}<br>${esc(r.esc)}</p>`; }
+function textoEstado(x) {
+  if (!x) return '';
+  if (x.e === E.ENTREGADA) return `Entregada por ${esc(x.eop || x.op)}${x.em ? ' (mesa ' + esc(x.em) + ')' : ''} · ${esc(x.eh || x.h)}`;
+  if (x.e === E.MESA) return `En mesa desde ${esc(x.h)}`;
+  if (x.e === E.BUSQUEDA) return `En búsqueda desde ${esc(x.h)}`;
+  if (x.e === E.DEVUELTA) return `No entregada: ${esc(x.d)} (${esc(x.op)}${x.m ? ', mesa ' + esc(x.m) : ''})`;
+  return '';
+}
+function chipEstado(x) {
+  if (!x) return '<span class="chip c-gr">Sin movimiento</span>';
+  const c = { [E.ENTREGADA]: 'c-ok', [E.MESA]: 'c-in', [E.BUSQUEDA]: 'c-av', [E.DEVUELTA]: 'c-mal' }[x.e] || 'c-gr';
+  return `<span class="chip ${c}">${esc(x.e === E.DEVUELTA ? 'NO ENTREGADA' : x.e)}</span>`;
+}
+// Búsqueda de nombre dentro de los convocados del día (todas las palabras)
+function buscarNombre(q) {
+  const t = norm(q).split(' ').filter(w => w.length > 1);
+  if (!t.length) return [];
+  return PAQ.lista.filter(r => t.every(w => (' ' + r.nn + ' ').includes(' ' + w) )).slice(0, 25);
+}
+
+// ════════════════════════════════════════════════════════════
+//  1) FILTRO DE CURP
+// ════════════════════════════════════════════════════════════
+async function filtrar(texto) {
+  const curp = extraerCurp(texto), box = $('f-res'); $('f-coin').innerHTML = '';
+  if (!curp) {
+    const t = limpiarTarjeta(texto);
+    if (tarjetaValida(t) && PAQ.byT[t]) return evaluarFiltro(PAQ.byT[t]);
+    const l = buscarNombre(texto);
+    if (!l.length) { box.innerHTML = `<div class="res mal"><div class="t">No encontré "${esc(texto)}"</div><p>Escanea la CURP o escribe nombre y apellidos como aparecen en el documento.</p></div>`; beep(false); return; }
+    box.innerHTML = `<p class="muted" style="margin:10px 0 6px">${l.length} coincidencia(s) en los convocados de hoy. Toca para revisar:</p>`;
+    $('f-coin').innerHTML = l.map(r => `<button class="it" data-t="${r.t}" style="text-align:left"><div class="cj">${esc(r.caja)}<small>#${esc(r.cons)}</small></div><div><div class="nm">${esc(r.n)}</div><div class="sub">${esc(r.c)} · ${esc(r.cct)}</div></div>${chipEstado(EST[r.t])}</button>`).join('');
+    $('f-coin').querySelectorAll('button').forEach(b => b.onclick = () => { $('f-coin').innerHTML = ''; evaluarFiltro(PAQ.byT[b.dataset.t]); });
+    return;
+  }
+  const r = PAQ.byC[curp];
+  if (r) return evaluarFiltro(r);
+  // No está en los convocados del día: preguntar a la hoja su fecha
+  box.innerHTML = `<div class="res info"><div class="t">⏳ ${esc(curp)}</div><p>No está en los convocados de hoy. Consultando su fecha…</p></div>`;
+  let j = null;
+  try { j = await llamar({ accion: 'consulta', curp }, 12000); } catch (e) { j = null; }
+  let html, motivo;
+  if (!j) { motivo = 'NO CONVOCADO HOY: sin señal para ver su fecha'; html = `<div class="res mal"><div class="t">⛔ NO ESTÁ CONVOCADO HOY</div><p>${esc(curp)}<br>No hay señal para consultar su fecha. Regrésale la CURP o vuelve a intentar.</p></div>`; }
+  else if (!j.encontrado) { motivo = 'NO ESTA EN EL NOMINAL'; html = `<div class="res mal"><div class="t">⛔ NO ESTÁ EN EL NOMINAL</div><p>${esc(curp)}<br>No hay tarjeta para esta CURP en este operativo. Regrésale la CURP.</p></div>`; }
+  else if (j.estado && j.estado.e === E.ENTREGADA) { motivo = 'YA ENTREGADA'; html = `<div class="res mal"><div class="t">⛔ SU TARJETA YA SE ENTREGÓ</div><div class="n">${esc(j.nombre)}</div><p>${textoEstado(j.estado)}</p></div>`; }
+  else if (j.recepcion !== 'RECIBIDA') { motivo = 'TARJETA NO RECIBIDA'; html = `<div class="res mal"><div class="t">⛔ SU TARJETA NO LLEGÓ</div><div class="n">${esc(j.nombre)}</div><p>${esc(j.cct)} · ${esc(j.escuela)}</p></div>`; }
+  else { motivo = 'OTRA FECHA: ' + (j.fechaTexto || 'sin fecha'); html = `<div class="res mal"><div class="t">⛔ CONVOCADO PARA OTRA FECHA</div><div class="n">${esc(j.nombre)}</div><p>${esc(j.cct)} · ${esc(j.escuela)}</p><p style="font-size:1.05rem;margin-top:8px"><b>Su fecha: ${esc(j.fechaTexto || 'aún sin fecha')}</b>${j.horario ? ' · ' + esc(j.horario) : ''}${j.sede ? '<br>Sede: ' + esc(j.sede) : ''}</p></div>`; }
+  box.innerHTML = html; beep(false); vibrar([200, 80, 200]);
+  registrar('FILTRO_RECHAZO', { t: '', c: curp }, motivo);
+  LOG.push({ h: horaAhora(), n: j && j.nombre ? j.nombre : curp, tipo: 'mal', txt: motivo }); guardarLog(); pintarFiltro();
+}
+function evaluarFiltro(r) {
+  const x = EST[r.t], box = $('f-res');
+  let html, ok = false, motivo = '';
+  if (r.rec !== 'RECIBIDA') { motivo = 'TARJETA NO RECIBIDA'; html = `<div class="res mal"><div class="t">⛔ SU TARJETA NO LLEGÓ</div>${datos(r)}<p>Está convocado hoy, pero su tarjeta no se recibió. Avisa al supervisor.</p></div>`; }
+  else if (x && x.e === E.ENTREGADA) { motivo = 'YA ENTREGADA'; html = `<div class="res mal"><div class="t">⛔ YA SE ENTREGÓ</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; }
+  else if (x && (x.e === E.BUSQUEDA || x.e === E.MESA)) { html = `<div class="res aviso"><div class="t">⚠️ YA PASÓ POR FILTRO</div>${datos(r)}<p>${textoEstado(x)}. No hace falta registrarla otra vez.</p>${ubicacion(r)}</div>`; }
+  else {
+    ok = true;
+    const regreso = x && x.e === E.DEVUELTA;
+    html = `<div class="res ok"><div class="t">✅ PASA A BÚSQUEDA${regreso ? ' (REGRESÓ)' : ''}</div>${datos(r)}${regreso ? `<p><b>Antes no se entregó: ${esc(x.d)}.</b> Verifica que ya traiga lo que faltaba.</p>` : ''}${ubicacion(r)}<p class="mini" style="margin-top:8px">Anota caja y consecutivo en la CURP y pásala a búsqueda.</p></div>`;
+  }
+  box.innerHTML = html;
+  if (ok) { beep(true); vibrar(80); registrar('FILTRO_OK', r); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'ok', txt: `Pasa · caja ${r.caja} #${r.cons}` }); }
+  else if (motivo) { beep(false); vibrar([200, 80, 200]); registrar('FILTRO_RECHAZO', r, motivo); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'mal', txt: motivo }); }
+  else beep(false);
+  guardarLog(); pintarFiltro();
+}
+function pintarFiltro() {
+  const mios = LOG.filter(l => l.tipo === 'ok').length, rech = LOG.filter(l => l.tipo === 'mal').length;
+  $('f-kpis').innerHTML = kpi(PAQ.lista.length, 'Convocados hoy') + kpi(mios, 'Pasaron (yo)') + kpi(rech, 'Regresadas (yo)');
+  $('f-log').innerHTML = LOG.slice(-15).reverse().map(l => `<div class="it"><div class="cj" style="font-size:.75rem">${esc(l.h.slice(0, 5))}</div><div><div class="nm">${esc(l.n)}</div><div class="sub">${esc(l.txt)}</div></div><span class="chip ${l.tipo === 'ok' ? 'c-ok' : 'c-mal'}">${l.tipo === 'ok' ? 'PASA' : 'NO'}</span></div>`).join('') || '<div class="vacio">Aún no hay consultas.</div>';
+}
+const kpi = (v, t, alerta) => `<div class="kpi${alerta ? ' alerta' : ''}"><b>${Number(v).toLocaleString('es-MX')}</b><small>${t}</small></div>`;
+
+// ════════════════════════════════════════════════════════════
+//  2) BÚSQUEDA
+// ════════════════════════════════════════════════════════════
+function buscarTarjeta(texto) {
+  const box = $('b-res'), curp = extraerCurp(texto);
+  if (curp) {
+    const r = PAQ.byC[curp];
+    if (!r) { box.innerHTML = `<div class="res mal"><div class="t">⛔ No está convocado hoy</div><p>${esc(curp)}</p></div>`; beep(false); return; }
+    box.innerHTML = `<div class="res info"><div class="t">🔎 Buscar esta tarjeta</div>${datos(r)}${ubicacion(r)}<p class="mini" style="margin-top:6px">${chipEstado(EST[r.t])} ${textoEstado(EST[r.t])}</p><p class="mini">Al encontrarla, escanéala para mandarla a mesa.</p></div>`;
+    return;
+  }
+  const t = limpiarTarjeta(texto);
+  if (!tarjetaValida(t)) { box.innerHTML = `<div class="res mal"><div class="t">Lectura no válida</div><p>${esc(texto)} no es un número de tarjeta de 16 dígitos. Vuelve a escanear.</p></div>`; beep(false); return; }
+  const r = PAQ.byT[t], x = r ? EST[t] : null;
+  if (!r) { box.innerHTML = `<div class="res mal"><div class="t">⛔ ESTA TARJETA NO ES DE HOY</div><p>…${esc(t.slice(-8))}. No está en los convocados de este día: regrésala a su caja.</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
+  if (x && x.e === E.ENTREGADA) { box.innerHTML = `<div class="res mal"><div class="t">⛔ YA SE ENTREGÓ</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
+  if (x && x.e === E.MESA) { box.innerHTML = `<div class="res aviso"><div class="t">⚠️ YA ESTABA EN MESA</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; beep(false); return; }
+  const sinFiltro = !x || x.e !== E.BUSQUEDA;
+  registrar('A_MESA', r);
+  box.innerHTML = `<div class="res ok"><div class="t">✅ A MESA</div>${datos(r)}${sinFiltro ? `<p><b>⚠️ ${x && x.e === E.DEVUELTA ? 'Era una devuelta: confirma que el titular regresó con sus documentos.' : 'No pasó por filtro: confirma que la persona está en la fila.'}</b></p>` : ''}</div>`;
+  beep(true); vibrar(80);
+  LOG.push({ h: horaAhora(), t, n: r.n, tipo: 'ok', txt: 'A mesa' }); guardarLog(); pintarBusqueda();
+}
+function filaTarjeta(r, x, extra) {
+  return `<div class="it"><div class="cj">${esc(r.caja)}<small>#${esc(r.cons)}</small></div><div><div class="nm">${esc(r.n)}</div><div class="sub">${esc(r.cct)} · ${extra || textoEstado(x)}</div></div>${chipEstado(x)}</div>`;
+}
+function pintarBusqueda() {
+  const pend = [], dev = []; let mesa = 0, ent = 0;
+  PAQ.lista.forEach(r => { const x = EST[r.t]; if (!x) return;
+    if (x.e === E.BUSQUEDA) pend.push(r); else if (x.e === E.DEVUELTA) dev.push(r); else if (x.e === E.MESA) mesa++; else if (x.e === E.ENTREGADA) ent++; });
+  const orden = (a, b) => (+a.caja || 999) - (+b.caja || 999) || (+a.cons || 0) - (+b.cons || 0);
+  pend.sort(orden); dev.sort(orden);
+  $('b-kpis').innerHTML = kpi(pend.length, 'Por buscar', pend.length > 15) + kpi(mesa, 'En mesa') + kpi(ent, 'Entregadas');
+  $('b-n-pend').textContent = pend.length; $('b-n-dev').textContent = dev.length;
+  $('b-pend').innerHTML = pend.map(r => filaTarjeta(r, EST[r.t])).join('') || '<div class="vacio">Nada pendiente.</div>';
+  $('b-dev').innerHTML = dev.map(r => filaTarjeta(r, EST[r.t])).join('') || '<div class="vacio">Ninguna.</div>';
+}
+
+// ════════════════════════════════════════════════════════════
+//  3) MESA DE ATENCIÓN
+// ════════════════════════════════════════════════════════════
+let _mesaR = null, _causal = '';
+function mesaEscanear(texto) {
+  const box = $('m-res'); cerrarMesa(true);
+  let t = limpiarTarjeta(texto);
+  const curp = extraerCurp(texto);
+  if (curp && PAQ.byC[curp]) t = PAQ.byC[curp].t;
+  if (!tarjetaValida(t)) { box.innerHTML = `<div class="res mal"><div class="t">Lectura no válida</div><p>Escanea el código de la tarjeta.</p></div>`; beep(false); return; }
+  const r = PAQ.byT[t], x = r ? EST[t] : null;
+  if (!r) { box.innerHTML = `<div class="res mal"><div class="t">⛔ ESTA TARJETA NO ES DE HOY</div><p>…${esc(t.slice(-8))}. Regrésala a búsqueda.</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
+  if (x && x.e === E.ENTREGADA) { box.innerHTML = `<div class="res mal"><div class="t">⛔ YA SE ENTREGÓ</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
+  _mesaR = r;
+  const aviso = !x || x.e !== E.MESA ? `<p><b>⚠️ ${x && x.e === E.DEVUELTA ? 'Esta tarjeta estaba como NO ENTREGADA (' + esc(x.d) + '): confirma que ya trae lo que faltaba.' : 'Búsqueda no la registró: avisa para que la escaneen.'}</b></p>` : '';
+  box.innerHTML = `<div class="res info"><div class="t">Revisa documentos</div><div class="n" style="font-size:1.3rem">${esc(r.n)}</div><p style="font-size:1.05rem"><b>CURP: ${esc(r.c)}</b></p><p>${esc(r.cct)} · ${esc(r.esc)}<br>Tarjeta …${esc(r.t.slice(-8))} · ${esc(r.prog)}</p>${aviso}</div>`;
+  $('m-acc').hidden = false; $('m-causales').hidden = true; _causal = '';
+  beep(true);
+}
+function cerrarMesa(silencio) { _mesaR = null; $('m-acc').hidden = true; $('m-causales').hidden = true; if (!silencio) $('m-res').innerHTML = ''; }
+$('m-entregar').onclick = () => {
+  const r = _mesaR; if (!r) return;
+  registrar('ENTREGADA', r);
+  LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'ok', txt: 'Entregada' }); guardarLog();
+  $('m-res').innerHTML = `<div class="res ok"><div class="t">✅ ENTREGADA</div><div class="n">${esc(r.n)}</div><p>Guarda el expediente en tu paquete.</p></div>`;
+  cerrarMesa(true); beep(true); vibrar(120); pintarMesa(); $('m-inp').focus();
+};
+$('m-noentregar').onclick = () => {
+  $('m-causales').hidden = false;
+  const lista = (LOGIN && LOGIN.causales) || ['FALTA IDENTIFICACION OFICIAL', 'FALTA CURP', 'NO ES EL TUTOR O BECARIO REGISTRADO', 'DOCUMENTOS INCOMPLETOS O ILEGIBLES', 'OTRO'];
+  $('m-causal-list').innerHTML = lista.map(c => `<button class="causal" data-c="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('');
+  $('m-causal-list').querySelectorAll('button').forEach(b => b.onclick = () => { _causal = b.dataset.c; $('m-causal-list').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+};
+$('m-confirmar-dev').onclick = () => {
+  const r = _mesaR; if (!r) return;
+  if (!_causal) { toast('Elige la causal', true); return; }
+  const nota = $('m-nota').value.trim(), det = _causal + (nota ? ': ' + nota : '');
+  registrar('DEVUELTA', r, det);
+  LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'mal', txt: 'No entregada · ' + det }); guardarLog();
+  $('m-res').innerHTML = `<div class="res aviso"><div class="t">↩ NO ENTREGADA</div><div class="n">${esc(r.n)}</div><p>${esc(det)}<br><b>Regresa la tarjeta a búsqueda.</b> Si vuelve con sus documentos hoy, pasa otra vez por filtro.</p></div>`;
+  $('m-nota').value = ''; cerrarMesa(true); beep(false); pintarMesa();
+};
+$('m-cancelar').onclick = () => cerrarMesa(false);
+function pintarMesa() {
+  $('m-num').textContent = SES.mesa ? '· Mesa ' + SES.mesa : '';
+  // Mis entregas: por el estado actual (si un supervisor anuló una, ya no cuenta)
+  const mias = PAQ.lista.filter(r => { const x = EST[r.t]; return x && x.e === E.ENTREGADA && (x.eop || x.op) === SES.op && String(x.em || x.m || '') === String(SES.mesa); });
+  const devs = LOG.filter(l => l.tipo === 'mal').length;
+  $('m-kpis').innerHTML = kpi(mias.length, 'Entregadas por mí') + kpi(devs, 'No entregadas (yo)') + kpi(COLA.length, 'Por enviar', COLA.length > 0);
+  $('m-log').innerHTML = mias.slice().reverse().map((r, i) => `<div class="it"><div class="cj">${mias.length - i}</div><div><div class="nm">${esc(r.n)}</div><div class="sub">${esc(r.c)} · ${esc((EST[r.t].eh || EST[r.t].h || '').slice(-8))}</div></div><span class="chip c-ok">ENTREGADA</span></div>`).join('') || '<div class="vacio">Aún no entregas tarjetas.</div>';
+}
+
+// ════════════════════════════════════════════════════════════
+//  4) SUPERVISOR
+// ════════════════════════════════════════════════════════════
+let _cuadre = null;
+function contarLocal() {
+  const c = { conv: PAQ.lista.length, rec: 0, bus: 0, mesa: 0, ent: 0, dev: 0 };
+  PAQ.lista.forEach(r => { if (r.rec === 'RECIBIDA') c.rec++; const x = EST[r.t]; if (!x) return;
+    if (x.e === E.BUSQUEDA) c.bus++; else if (x.e === E.MESA) c.mesa++; else if (x.e === E.ENTREGADA) c.ent++; else if (x.e === E.DEVUELTA) c.dev++; });
+  return c;
+}
+function pintarSupervisorLocal() {
+  const c = contarLocal(), pct = c.rec ? Math.round(c.ent * 100 / c.rec) : 0;
+  $('s-kpis').innerHTML = kpi(c.conv, 'Convocados') + kpi(c.ent, 'Entregadas · ' + pct + '%') + kpi(c.rec - c.ent, 'Quedan en resguardo') +
+    kpi(c.bus, 'En búsqueda') + kpi(c.mesa, 'En mesa', c.mesa > 0) + kpi(c.dev, 'No entregadas');
+  if (_cuadre) pintarCuadre();
+}
+async function actualizarCuadre() {
+  $('s-act').textContent = '⏳ Consultando la hoja…';
+  await sincronizar();
+  try { _cuadre = await llamar({ accion: 'cuadre', detalle: 1 }, 30000); $('s-act').textContent = 'Actualizado a las ' + horaAhora() + ' · ' + fechaLarga(_cuadre.fecha); pintarSupervisorLocal(); }
+  catch (e) { $('s-act').textContent = '⛔ ' + e.message + ' (se muestran los datos de este celular)'; }
+}
+function pintarCuadre() {
+  const c = _cuadre, fis = lsGet('ent_fisico_' + SES.fecha, {});
+  const ops = Object.keys(c.porOperador).sort();
+  $('s-ops').innerHTML = ops.map(k => {
+    const f = fis[k], d = f === undefined || f === '' ? '' : Number(f) - c.porOperador[k];
+    return `<tr><td>${esc(k)}</td><td class="num">${c.porOperador[k]}</td><td class="num"><input class="inp" data-k="${esc(k)}" inputmode="numeric" value="${f == null ? '' : esc(f)}" style="width:80px;padding:6px;text-align:right"></td><td class="num ${d === '' ? '' : d === 0 ? 'dif-ok' : 'dif-mal'}">${d === '' ? '' : d === 0 ? '✓' : (d > 0 ? '+' : '') + d}</td></tr>`;
+  }).join('') + `<tr><td><b>TOTAL</b></td><td class="num"><b>${c.entregadas}</b></td><td class="num"><b>${ops.reduce((a, k) => a + (Number(fis[k]) || 0), 0) || ''}</b></td><td></td></tr>`;
+  $('s-ops').querySelectorAll('input').forEach(i => i.onchange = () => { const f = lsGet('ent_fisico_' + SES.fecha, {}); f[i.dataset.k] = i.value.trim(); lsSet('ent_fisico_' + SES.fecha, f); pintarCuadre(); });
+  const filaC = x => `<div class="it"><div class="cj">${esc(x.caja)}<small>#${esc(x.cons)}</small></div><div><div class="nm">${esc(x.nombre)}</div><div class="sub">…${esc(String(x.tarjeta).slice(-8))} · ${esc(x.cct)} · ${esc(x.detalle || '')} ${esc(x.op)}${x.mesa ? ' · mesa ' + esc(x.mesa) : ''} · ${esc(x.hora)}</div></div></div>`;
+  $('s-n-mesa').textContent = c.enMesa.length; $('s-mesa').innerHTML = c.enMesa.map(filaC).join('') || '<div class="vacio">✅ Ninguna: todo lo que salió de búsqueda está resuelto.</div>';
+  $('s-n-dev').textContent = c.devueltas.length; $('s-dev').innerHTML = c.devueltas.map(filaC).join('') || '<div class="vacio">Ninguna.</div>';
+  $('s-n-bus').textContent = c.enBusqueda.length; $('s-bus').innerHTML = c.enBusqueda.map(filaC).join('') || '<div class="vacio">Ninguna.</div>';
+}
+$('s-actualizar').onclick = actualizarCuadre;
+$('s-anular').onclick = () => {
+  const t = limpiarTarjeta($('s-anular-t').value), m = $('s-anular-m').value.trim();
+  const r = PAQ.byT[t];
+  if (!r) { toast('Esa tarjeta no está en los convocados de este día', true); return; }
+  if (!EST[t] || EST[t].e !== E.ENTREGADA) { toast('Esa tarjeta no está entregada', true); return; }
+  if (!m) { toast('Escribe el motivo', true); return; }
+  if (!confirm(`¿Anular la entrega de ${r.n}?`)) return;
+  registrar('ANULAR_ENTREGA', r, m); $('s-anular-t').value = ''; $('s-anular-m').value = '';
+  toast('Entrega anulada: la tarjeta queda en resguardo'); setTimeout(actualizarCuadre, 2500);
+};
+
+// ════════════════════════════════════════════════════════════
+//  CONSULTA Y CALENDARIO
+// ════════════════════════════════════════════════════════════
+async function consultar(texto) {
+  const box = $('c-res'), curp = extraerCurp(texto), t = limpiarTarjeta(texto);
+  let l = [];
+  if (curp) l = PAQ.byC[curp] ? [PAQ.byC[curp]] : [];
+  else if (tarjetaValida(t)) l = PAQ.byT[t] ? [PAQ.byT[t]] : [];
+  else l = buscarNombre(texto);
+  if (l.length) { box.innerHTML = '<div class="lista">' + l.map(r => filaTarjeta(r, EST[r.t], esc(r.c) + ' · ' + (textoEstado(EST[r.t]) || 'sin movimiento'))).join('') + '</div>'; return; }
+  if (!curp && !tarjetaValida(t)) { box.innerHTML = '<div class="vacio">Sin coincidencias en los convocados de este día. Para otros días, consulta por CURP o tarjeta.</div>'; return; }
+  box.innerHTML = '<div class="vacio">⏳ Consultando la hoja…</div>';
+  try {
+    const j = await llamar({ accion: 'consulta', curp, tarjeta: curp ? '' : t }, 12000);
+    box.innerHTML = !j.encontrado ? '<div class="res mal"><div class="t">No está en el nominal</div></div>' :
+      `<div class="res info"><div class="t">${esc(j.fechaTexto ? 'Convocado el ' + j.fechaTexto : 'Aún sin fecha')}</div><div class="n">${esc(j.nombre)}</div><p>${esc(j.curp)} · ${esc(j.cct)}<br>${esc(j.escuela)}<br>Tarjeta: ${esc(j.recepcion)} ${j.estado ? '· ' + textoEstado(j.estado) : ''}</p></div>`;
+  } catch (e) { box.innerHTML = '<div class="vacio">Sin señal para consultar otros días.</div>'; }
+}
+function pintarCalendario() {
+  const dias = (LOGIN && LOGIN.calendario) || [];
+  $('cal-lista').innerHTML = dias.map(d => `<div class="cal-dia"><h3>${esc(fechaLarga(d.fecha))} · ${d.escuelas.reduce((a, e) => a + e.convocados, 0)} convocados</h3>
+    <div class="tabla"><table><thead><tr><th>CCT / escuela</th><th class="num">Tarjetas</th><th>Cajas (consecutivos)</th></tr></thead><tbody>${d.escuelas.map(e =>
+      `<tr><td><b>${esc(e.cct)}</b><br><span class="mini">${esc(e.escuela)} · ${esc(e.municipio)}${e.sede ? ' · Sede: ' + esc(e.sede) : ''}</span></td><td class="num">${e.tarjetas}</td><td class="mini">${esc(e.cajas)}</td></tr>`).join('')}</tbody></table></div></div>`).join('') ||
+    '<div class="vacio">El calendario aún no tiene fechas.</div>';
+}
+function pintarSesion() {
+  $('ses-datos').innerHTML = `<p><b>${esc(SES.op)}</b><br>${ROLES[SES.rol]}${SES.mesa ? ' · mesa ' + esc(SES.mesa) : ''}<br>${fechaLarga(SES.fecha)} · ${PAQ.lista.length} convocados descargados<br>Por enviar: ${COLA.length}${_ultSync ? ' · última sincronización ' + new Date(_ultSync).toLocaleTimeString('es-MX') : ''}</p>`;
+}
+$('ses-sync').onclick = () => { sincronizar(); toast('Sincronizando…'); };
+$('ses-rol').onclick = () => { _rolElegido = SES.rol; $('acc-fecha').innerHTML = ''; mostrarAcceso(2); };
+$('ses-salir').onclick = async () => {
+  if (COLA.length) { await sincronizar(); if (COLA.length && !confirm(`Hay ${COLA.length} movimientos SIN ENVIAR. Si cierras ahora se pierden. ¿Cerrar de todos modos?`)) return; }
+  Object.keys(localStorage).forEach(k => { if (/^ent_/.test(k) && k !== 'ent_url') lsDel(k); });
+  SES = null; PAQ = null; EST = {}; COLA = []; LOGIN = null; location.reload();
+};
+
+// ════════════════════════════════════════════════════════════
+//  ENTRADA DE TEXTO (teclado o escáner de mano USB/Bluetooth: escribe y da Enter)
+// ════════════════════════════════════════════════════════════
+function conEnter(id, fn) {
+  $(id).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = $(id).value.trim(); if (v) { $(id).value = ''; fn(v); } } });
+}
+conEnter('f-inp', filtrar); conEnter('b-inp', buscarTarjeta); conEnter('m-inp', mesaEscanear); conEnter('c-inp', consultar);
+$('c-inp').addEventListener('input', () => { const v = $('c-inp').value.trim(); if (v.length >= 4 && !/\d{6}/.test(v)) consultar(v); });
+
+// ════════════════════════════════════════════════════════════
+//  CÁMARA: QR/PDF417 de la CURP o código de barras de la tarjeta
+// ════════════════════════════════════════════════════════════
+const FMT = { curp: ['qr_code', 'pdf417', 'code_128', 'code_39', 'data_matrix'], tarjeta: ['code_128', 'code_39', 'itf', 'codabar', 'code_93'] };
+const ZXF = { qr_code: 'QR_CODE', pdf417: 'PDF_417', code_128: 'CODE_128', code_39: 'CODE_39', data_matrix: 'DATA_MATRIX', itf: 'ITF', codabar: 'CODABAR', code_93: 'CODE_93' };
+let _cam = { modo: '', stream: null, det: null, zx: null, loop: 0, cv: null, ult: '', ultT: 0, rep: { c: '', n: 0, t: 0 } };
+function destinoCam() { return { FILTRO: filtrar, BUSQUEDA: buscarTarjeta, MESA: mesaEscanear, CONSULTA: consultar }[_vista]; }
+async function asegurarZXing() {
+  if (window.ZXing) return true;
+  for (const src of ['zxing.min.js?r=' + Date.now(), 'https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js']) {
+    const ok = await new Promise(res => { const s = document.createElement('script'); const t = setTimeout(() => res(false), 20000); s.onload = () => { clearTimeout(t); res(!!window.ZXing); }; s.onerror = () => { clearTimeout(t); res(false); }; s.src = src; document.head.appendChild(s); });
+    if (ok) return true;
+  }
+  return false;
+}
+async function abrirCamara(modo) {
+  _cam.modo = modo; $('cam').hidden = false; $('cam-msg').textContent = 'Abriendo cámara…'; $('cam-ult').style.display = 'none';
+  $('cam-linea').hidden = modo !== 'tarjeta'; $('cam-marco').hidden = modo === 'tarjeta';
+  try {
+    _cam.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+    const v = $('cam-video'); v.srcObject = _cam.stream; await v.play();
+  } catch (e) { $('cam-msg').textContent = '📷 No se pudo abrir la cámara: permite el acceso o usa el escáner de mano.'; return; }
+  _cam.det = null; _cam.zx = null;
+  if ('BarcodeDetector' in window) {
+    try { const sop = await BarcodeDetector.getSupportedFormats(); const f = FMT[modo].filter(x => sop.includes(x)); if (f.length) _cam.det = new BarcodeDetector({ formats: f }); } catch (e) {}
+  }
+  if (!_cam.det) {
+    if (!(await asegurarZXing())) { $('cam-msg').textContent = '📶 No cargó el lector de la cámara por la señal. Usa el escáner de mano o busca WiFi.'; return; }
+    const h = new Map(); h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, FMT[modo].map(f => ZXing.BarcodeFormat[ZXF[f]]).filter(x => x !== undefined)); h.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    _cam.zx = new ZXing.MultiFormatReader(); _cam.zx.setHints(h);
+  }
+  try { const tr = _cam.stream.getVideoTracks()[0], cap = tr.getCapabilities ? tr.getCapabilities() : {};
+    if (cap.focusMode && cap.focusMode.includes('continuous')) tr.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+    $('cam-luz').hidden = !cap.torch; } catch (e) {}
+  $('cam-msg').textContent = modo === 'tarjeta' ? 'Pon el código de barras de la tarjeta sobre la línea roja' : 'Centra el QR de la CURP en el recuadro';
+  ciclo();
+}
+async function ciclo() {
+  if ($('cam').hidden) return;
+  const v = $('cam-video');
+  if (v.readyState >= 2) {
+    let txt = '';
+    try {
+      if (_cam.det) { const r = await _cam.det.detect(v); if (r && r.length) txt = r[0].rawValue; }
+      else if (_cam.zx) {
+        const W = v.videoWidth, H = v.videoHeight, franja = _cam.modo === 'tarjeta';
+        const bh = franja ? Math.round(H * .5) : H, by = Math.round((H - bh) / 2);
+        _cam.cv = _cam.cv || document.createElement('canvas'); _cam.cv.width = W; _cam.cv.height = bh;
+        _cam.cv.getContext('2d', { willReadFrequently: true }).drawImage(v, 0, by, W, bh, 0, 0, W, bh);
+        try { txt = _cam.zx.decodeWithState(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(_cam.cv)))).getText(); } catch (e) { txt = ''; }
+      }
+    } catch (e) {}
+    if (txt) leidoCam(txt);
+  }
+  _cam.loop = setTimeout(ciclo, _cam.det ? 120 : 60);
+}
+function leidoCam(txt) {
+  const ahora = Date.now();
+  let cod = txt;
+  if (_cam.modo === 'tarjeta') {
+    const c = extraerCurp(txt);
+    if (!c) { cod = limpiarTarjeta(txt); if (!tarjetaValida(cod)) return; }
+    // Con el lector de respaldo se confirma con 2 lecturas iguales (una lectura borrosa puede dar otro número)
+    if (_cam.zx && !c) { if (_cam.rep.c === cod && ahora - _cam.rep.t < 2000) { _cam.rep.n++; } else _cam.rep = { c: cod, n: 1, t: ahora }; _cam.rep.t = ahora; if (_cam.rep.n < 2) return; }
+  }
+  if (cod === _cam.ult && ahora - _cam.ultT < 3500) return;     // el mismo código sigue frente a la cámara
+  _cam.ult = cod; _cam.ultT = ahora;
+  const fn = destinoCam(); if (fn) fn(cod);
+  // Se queda abierta para el siguiente; muestra arriba el resultado
+  setTimeout(() => {
+    const sec = { FILTRO: 'f-res', BUSQUEDA: 'b-res', MESA: 'm-res', CONSULTA: 'c-res' }[_vista], el = sec && $(sec).querySelector('.res');
+    const u = $('cam-ult');
+    if (el) { u.className = 'ult res ' + [...el.classList].filter(c => c !== 'res').join(' '); u.innerHTML = el.querySelector('.t').outerHTML + (el.querySelector('.n') ? el.querySelector('.n').outerHTML : ''); u.style.display = 'block'; }
+    if (_vista === 'MESA' && _mesaR) cerrarCamara();      // en mesa hay que revisar documentos: se cierra
+  }, 200);
+}
+function cerrarCamara() {
+  clearTimeout(_cam.loop); $('cam').hidden = true;
+  if (_cam.stream) _cam.stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
+  _cam.stream = null; _cam.ult = '';
+}
+document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => abrirCamara(b.dataset.cam));
+$('cam-cerrar').onclick = cerrarCamara;
+let _luz = false;
+$('cam-luz').onclick = () => { try { _luz = !_luz; _cam.stream.getVideoTracks()[0].applyConstraints({ advanced: [{ torch: _luz }] }); } catch (e) {} };
+
+// ════════════════════════════════════════════════════════════
+//  INICIO
+// ════════════════════════════════════════════════════════════
+(function inicio() {
+  USUARIO = leerUsuario();
+  if (!USUARIO) {
+    document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== 'v-acceso'; });
+    $('v-acceso').innerHTML = '<div class="card"><h2>Entra desde el panel SARE 1507</h2><p class="muted">Para usar esta aplicación inicia sesión con tu nombre y CUPO en el panel.</p><a class="btn prim full" href="index.html" style="text-align:center;text-decoration:none">Ir al panel</a></div>';
+    return;
+  }
+  pintarCalendario();
+  if (SES && SES.rol && SES.op === USUARIO.NOMBRE.toUpperCase() && cargarLocal()) {
+    if (SES.fecha !== hoyISO()) toast('Ojo: la sesión es del ' + fechaLarga(SES.fecha), true);
+    arrancar();
+  } else { if (SES && SES.op !== USUARIO.NOMBRE.toUpperCase()) { SES = null; } mostrarAcceso(1); }
+  setInterval(sincronizar, SYNC_MS);
+  window.addEventListener('online', sincronizar);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) sincronizar(); });
+})();
+</script>
+</body>
+</html>
