@@ -314,7 +314,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '09-nov-26 A';
+const APP_VERSION = '09-nov-26 B';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 const SUPERVISORES = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ' };
@@ -444,7 +444,7 @@ async function buscarEnIndice(curp) {
   const i = IDX.m.get(await sha12(curp));
   if (i == null) return { encontrado: false };
   const cct = IDX.ccts[IDX.c[i]], e = (LOGIN && LOGIN.escuelas && LOGIN.escuelas[cct]) || {};
-  return { encontrado: true, fecha: IDX.fechas[IDX.f[i]], cct, escuela: e.escuela || '', municipio: e.municipio || '', sede: e.sede || '', horario: e.horario || '', recibida: !!IDX.r[i] };
+  return { encontrado: true, fecha: IDX.fechas[IDX.f[i]], cct, escuela: e.escuela || '', municipio: e.municipio || '', sede: e.sede || '', horario: e.horario || '', cita: e.cita || '', recibida: !!IDX.r[i] };
 }
 function cargarLocal() {
   const p = lsGet(kPaq(SES.fecha), null);
@@ -532,14 +532,15 @@ function pintarMiniCal() {
     const tot = d.escuelas.reduce((a, e) => a + e.convocados, 0), pr = {};
     d.escuelas.forEach(e => { pr[e.programa] = (pr[e.programa] || 0) + e.convocados; });
     return `<button class="chip-dia${d.fecha === hoy ? ' hoy' : ''}${d.fecha === sel ? ' sel' : ''}" data-f="${d.fecha}"><span class="f">${esc(fechaCorta(d.fecha))}</span><span class="r">${fmt(tot)} total · ${d.escuelas.length} CCT</span>
-      <span class="p">${Object.keys(pr).map(k => `<span class="${k === 'BRCU' || k === 'BRC' ? 'basica' : k === 'JEF' ? 'jef' : ''}">${esc(k === 'BUEEMS' ? 'BU' : k)} ${fmt(pr[k])}</span>`).join('')}</span>${d.fecha === hoy ? '<span class="h">HOY</span>' : ''}</button>`;
+      <span class="p">${Object.keys(pr).map(k => `<span class="${k === 'BRCU' || k === 'BRC' ? 'basica' : k === 'JEF' ? 'jef' : ''}">${esc(k === 'BUEEMS' ? 'BU' : k)} ${pr[k] ? fmt(pr[k]) : 's/d'}</span>`).join('')}</span>${d.fecha === hoy ? '<span class="h">HOY</span>' : ''}</button>`;
   }).join('');
   $('minical').querySelectorAll('button').forEach(b => b.onclick = () => verDia(b.dataset.f));
 }
 function verDia(f) {
   const d = ((LOGIN && LOGIN.calendario) || []).find(x => x.fecha === f); if (!d) return;
   abrirModal('📅 ' + fechaLarga(f), d.escuelas.length + ' escuelas · ' + fmt(d.escuelas.reduce((a, e) => a + e.convocados, 0)) + ' convocados',
-    '<div class="lista">' + d.escuelas.map(e => `<div class="it" style="grid-template-columns:minmax(0,1fr) auto"><div>${cctHtml(e.cct)}<div class="esc-nom">${esc(e.escuela)} · ${esc(e.municipio)}</div>${e.sede || e.horario ? `<div class="sub">${esc(e.sede)}${e.sede && e.horario ? ' · ' : ''}${esc(e.horario)}</div>` : ''}</div><div style="text-align:right"><b style="font-family:Montserrat;font-size:1.1rem;color:var(--guinda)">${fmt(e.tarjetas)}</b><div class="sub">tarjetas</div></div></div>`).join('') + '</div>');
+    (d.escuelas[0] && d.escuelas[0].sede ? `<p class="esc-nom" style="margin:0 0 10px">📍 ${esc(d.escuelas[0].sede)} · ${esc(d.escuelas[0].horario)}</p>` : '') +
+    '<div class="lista">' + d.escuelas.slice().sort((a, b) => (a.cita || '').localeCompare(b.cita || '') || b.convocados - a.convocados).map(e => `<div class="it" style="grid-template-columns:minmax(0,1fr) auto"><div>${cctHtml(e.cct)} <span class="chip c-in">${esc(e.programa)}</span>${e.cita ? ` <span class="chip c-av">🕘 ${esc(e.cita)} h</span>` : ''}<div class="esc-nom">${esc(e.escuela)} · ${esc(e.municipio)}</div></div><div style="text-align:right">${e.pendiente ? '<span class="chip c-mal">Sin datos aún</span>' : `<b style="font-family:Montserrat,sans-serif;font-size:1.1rem;color:var(--guinda)">${fmt(e.tarjetas)}</b><div class="sub">tarjetas</div>`}</div></div>`).join('') + '</div>');
 }
 function abrirModal(t, s, html) { $('modal-t').textContent = t; $('modal-s').textContent = s; $('modal-b').innerHTML = html; $('modal').hidden = false; }
 $('modal-x').onclick = () => { $('modal').hidden = true; };
@@ -694,7 +695,7 @@ async function filtrar(texto) {
   }
   else if (!j.recibida) { motivo = 'TARJETA NO RECIBIDA'; html = `<div class="res mal"><div class="t">⛔ SU TARJETA NO LLEGÓ</div>${cctLinea({ cct: j.cct, esc: j.escuela, mun: j.municipio })}</div>`; }
   else { motivo = 'OTRA FECHA: ' + (j.fecha ? fechaLarga(j.fecha) : 'sin fecha');
-    html = `<div class="res mal"><div class="t">⛔ CONVOCADO PARA OTRA FECHA</div><div class="fecha-big">📅 ${esc(j.fecha ? fechaLarga(j.fecha).toUpperCase() : 'AÚN SIN FECHA')}</div>${j.horario || j.sede ? `<p><b>${esc(j.horario)}${j.sede ? ' · ' + esc(j.sede) : ''}</b></p>` : ''}${cctLinea({ cct: j.cct, esc: j.escuela, mun: j.municipio })}<p class="hint" style="color:inherit">Dile qué día le toca y regrésale la CURP.</p></div>`; }
+    html = `<div class="res mal"><div class="t">⛔ CONVOCADO PARA OTRA FECHA</div><div class="fecha-big">📅 ${esc(j.fecha ? fechaLarga(j.fecha).toUpperCase() : 'AÚN SIN FECHA')}${j.cita ? ' · ' + esc(j.cita) + ' H' : ''}</div>${j.sede ? `<p><b>📍 ${esc(j.sede)}</b></p>` : ''}${cctLinea({ cct: j.cct, esc: j.escuela, mun: j.municipio })}<p class="hint" style="color:inherit">Dile qué día le toca y regrésale la CURP.</p></div>`; }
   box.innerHTML = html; beep(false); vibrar([200, 80, 200]);
   registrar('FILTRO_RECHAZO', { t: '', c: curp }, motivo);
   LOG.push({ h: horaAhora(), n: lc.nombre || curp, tipo: 'mal', txt: motivo }); guardarLog(); pintarFiltro();
@@ -887,7 +888,7 @@ async function consultar(texto) {
     if (PAQ.byC[lc.curp]) { box.innerHTML = '<div class="lista">' + fila(PAQ.byC[lc.curp]) + '</div>'; return; }
     const j = await buscarEnIndice(lc.curp);
     box.innerHTML = !j ? '<div class="vacio">Sin el calendario completo en el celular: vuelve a entrar con señal.</div>' : !j.encontrado ? '<div class="res mal"><div class="t">No está en el nominal</div></div>' :
-      `<div class="res info"><div class="t">${j.fecha ? 'Convocado el ' + esc(fechaLarga(j.fecha)) : 'Aún sin fecha'}</div>${j.horario || j.sede ? `<p><b>${esc(j.horario)}${j.sede ? ' · ' + esc(j.sede) : ''}</b></p>` : ''}${cctLinea({ cct: j.cct, esc: j.escuela, mun: j.municipio })}<p>Tarjeta: ${j.recibida ? 'recibida' : 'NO RECIBIDA'}</p></div>`;
+      `<div class="res info"><div class="t">${j.fecha ? 'Convocado el ' + esc(fechaLarga(j.fecha)) + (j.cita ? ' · ' + esc(j.cita) + ' h' : '') : 'Aún sin fecha'}</div>${j.sede ? `<p><b>📍 ${esc(j.sede)}</b></p>` : ''}${cctLinea({ cct: j.cct, esc: j.escuela, mun: j.municipio })}<p>Tarjeta: ${j.recibida ? 'recibida' : 'NO RECIBIDA'}</p></div>`;
     return;
   }
   if (tarjetaValida(t)) { box.innerHTML = PAQ.byT[t] ? '<div class="lista">' + fila(PAQ.byT[t]) + '</div>' : '<div class="vacio">Esa tarjeta no es de los convocados de este día.</div>'; return; }
