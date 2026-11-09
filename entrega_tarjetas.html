@@ -196,8 +196,6 @@ td.num,th.num{text-align:right}
           <label class="lbl" for="acc-fecha">Día del operativo</label>
           <select class="main-input" id="acc-fecha" style="width:100%"></select>
           <p class="hint" id="acc-fecha-info"></p>
-          <label class="lbl" for="acc-mesa">Número de mesa (solo mesa de atención)</label>
-          <input class="main-input" id="acc-mesa" inputmode="numeric" placeholder="Ej. 3" style="width:100%">
           <label class="lbl">Elige tu función: se descargan los convocados y empiezas</label>
           <div class="roles" id="acc-roles">
             <button class="rol" data-rol="FILTRO"><span>🪪</span>Filtro de CURP<small>Recibe y escanea la CURP</small></button>
@@ -274,7 +272,7 @@ td.num,th.num{text-align:right}
       <div class="card-b"><button class="btn prim full" id="s-actualizar" style="margin-top:0">Actualizar</button></div></div>
     <div class="kpis" id="s-kpis"></div>
     <div class="card"><div class="card-h"><span class="e">🧮</span><div><h2>Entregadas por operador</h2><small>Escribe lo que contó cada uno: la diferencia sale sola</small></div></div>
-      <div class="tabla"><table><thead><tr><th>Operador · mesa</th><th class="num">Sistema</th><th class="num">Conteo físico</th><th class="num">Dif.</th></tr></thead><tbody id="s-ops"></tbody></table></div></div>
+      <div class="tabla"><table><thead><tr><th>Operador</th><th class="num">Sistema</th><th class="num">Conteo físico</th><th class="num">Dif.</th></tr></thead><tbody id="s-ops"></tbody></table></div></div>
     <div class="card"><div class="card-h"><span class="e">⚠️</span><div><h2>En mesa sin resolver <span id="s-n-mesa"></span></h2><small>Salieron de búsqueda y no se entregaron ni regresaron</small></div></div><div class="card-b lista" id="s-mesa"></div></div>
     <div class="card"><div class="card-h"><span class="e">↩</span><div><h2>No entregadas <span id="s-n-dev"></span></h2></div></div><div class="card-b lista" id="s-dev"></div></div>
     <div class="card"><div class="card-h"><span class="e">🔎</span><div><h2>Pasaron filtro y siguen en búsqueda <span id="s-n-bus"></span></h2></div></div><div class="card-b lista" id="s-bus"></div></div>
@@ -314,7 +312,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '09-nov-26 B';
+const APP_VERSION = '09-nov-26 C';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 const SUPERVISORES = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ' };
@@ -573,7 +571,7 @@ function refrescarVista() {
   else if (_vista === 'SUPERVISOR') pintarSupervisorLocal(); else if (_vista === 'SESION') pintarSesion();
 }
 function cabecera() {
-  $('b-rol').hidden = false; $('b-rol').textContent = ROLES[SES.rol] + (SES.rol === 'MESA' ? ' ' + SES.mesa : '');
+  $('b-rol').hidden = false; $('b-rol').textContent = ROLES[SES.rol];
   $('b-dia').hidden = false; $('b-dia').textContent = '📅 ' + fechaLarga(SES.fecha);
   $('h-sub').textContent = SES.op + (SES.fecha !== hoyISO() ? ' · ⚠️ día distinto a hoy' : '');
   $('pie').textContent = `v${APP_VERSION} · ${PAQ ? fmt(PAQ.lista.length) + ' convocados descargados' : ''}`;
@@ -595,7 +593,6 @@ function prepararPaso2() {
   sel.innerHTML = dias.map(d => `<option value="${d.fecha}">${fechaLarga(d.fecha)} · ${fmt(d.escuelas.reduce((a, e) => a + e.convocados, 0))} convocados</option>`).join('') || '<option value="">No hay fechas en el calendario</option>';
   sel.value = (SES && SES.fecha && dias.some(d => d.fecha === SES.fecha)) ? SES.fecha : dias.some(d => d.fecha === hoy) ? hoy : ((dias.find(d => d.fecha > hoy) || dias[dias.length - 1] || {}).fecha || '');
   sel.onchange = infoFecha; infoFecha();
-  if (SES && SES.mesa) $('acc-mesa').value = SES.mesa;
   document.querySelectorAll('#acc-roles .rol').forEach(b => { b.disabled = b.dataset.rol === 'SUPERVISOR' && !esSupervisor(); b.onclick = () => iniciarRol(b.dataset.rol); });
 }
 function infoFecha() {
@@ -617,14 +614,13 @@ $('acc-entrar').onclick = async () => {
   finally { $('acc-entrar').disabled = false; }
 };
 async function iniciarRol(rol) {
-  const mesa = $('acc-mesa').value.trim(), fecha = $('acc-fecha').value;
-  if (rol === 'MESA' && !mesa) { $('acc-msg').textContent = '✏️ Escribe tu número de mesa y vuelve a tocar "Mesa de atención".'; $('acc-mesa').focus(); return; }
+  const fecha = $('acc-fecha').value;
   if (!fecha) { $('acc-msg').textContent = 'No hay día del operativo en el calendario.'; return; }
   if (COLA.length && SES && SES.rol && SES.rol !== rol) { await sincronizar(); if (COLA.length) { $('acc-msg').textContent = '⚠️ Hay ' + COLA.length + ' movimientos sin enviar: busca señal antes de cambiar de función.'; return; } }
   document.querySelectorAll('#acc-roles .rol').forEach(b => { b.disabled = true; });
   $('acc-msg').textContent = '⏳ Descargando convocados y calendario…';
   try {
-    SES = Object.assign({}, SES, { rol, mesa: rol === 'MESA' ? mesa : '', fecha });
+    SES = Object.assign({}, SES, { rol, mesa: '', fecha });   // en mesa el operador se identifica por su nombre del panel
     try { await descargar(fecha); }
     catch (e) { if (e.clave || !lsGet(kPaq(fecha), null)) throw e; toast('Sin señal: se usa la lista que ya tenía el celular', true); }
     lsSet('ent_sesion', SES);
@@ -823,9 +819,9 @@ $('m-confirmar-dev').onclick = () => {
   $('m-nota').value = ''; cerrarMesa(true); beep(false); pintarMesa();
 };
 $('m-cancelar').onclick = () => cerrarMesa(false);
-function misEntregas() { return PAQ.lista.filter(r => { const x = EST[r.t]; return x && x.e === E.ENTREGADA && (x.eop || x.op) === SES.op && String(x.em || x.m || '') === String(SES.mesa); }); }
+function misEntregas() { return PAQ.lista.filter(r => { const x = EST[r.t]; return x && x.e === E.ENTREGADA && (x.eop || x.op) === SES.op; }); }
 function pintarMesa() {
-  $('m-num').textContent = SES.mesa ? '· Mesa ' + SES.mesa : '';
+  $('m-num').textContent = '· ' + SES.op;
   const mias = misEntregas(), devs = LOG.filter(l => l.tipo === 'mal').length;
   $('m-kpis').innerHTML = kpi(mias.length, 'Entregadas por mí') + kpi(devs, 'Devueltas (yo)') + kpi(COLA.length, 'Por enviar', COLA.length > 0);
   $('m-log').innerHTML = mias.slice().reverse().map((r, i) => `<div class="it"><div><div class="nm">${mias.length - i}. ${esc(r.n)}</div><div class="sub">${esc(r.c)} · ${esc(r.cct)} · ${esc(String(EST[r.t].eh || EST[r.t].h || '').slice(-8))}</div></div><button class="btn borde" data-quitar="${r.t}" style="padding:5px 9px;font-size:.7rem">Quitar</button></div>`).join('') || '<div class="vacio">Aún no entregas tarjetas.</div>';
