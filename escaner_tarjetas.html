@@ -8,7 +8,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>SARE 1507 — Escáner de Tarjetas</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+<!-- Lector de códigos para celulares sin lector nativo (iPhone): primero la copia del propio sitio, si no, de internet -->
+<script src="zxing.min.js"></script>
+<script>if (!window.ZXing) document.write('<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"><\/script>');</script>
 
 <style>
 body.ocupado #screen-login .btn-primary{opacity:.55}
@@ -603,7 +605,8 @@ footer strong { color: var(--dorado-l); }
     <div id="modal-caja-info" style="display:none;font-size:0.78rem;
       font-family:'Montserrat',sans-serif;font-weight:700;margin-bottom:10px;
       padding:8px 12px;background:var(--gris);border-radius:8px;text-align:center"></div>
-    <input type="number" id="inp-nueva-caja" class="input-field" placeholder="Número de caja" min="1" style="margin-bottom:16px;text-align:center;font-size:1.3rem;font-weight:700">
+    <input type="number" id="inp-nueva-caja" class="input-field" placeholder="Número de caja" min="1" style="margin-bottom:6px;text-align:center;font-size:1.3rem;font-weight:700">
+    <div id="mcc-sig-info" style="font-size:.78rem;line-height:1.4;color:#555;text-align:center;margin-bottom:14px;min-height:1em"></div>
     <div class="modal-btns">
       <button class="btn btn-primary" onclick="confirmarCambioCaja()">✅ Confirmar cambio</button>
       <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
@@ -618,7 +621,8 @@ footer strong { color: var(--dorado-l); }
     <div class="modal-body" id="mc-body"></div>
     <label class="field-label" style="text-align:center">Número de la siguiente caja</label>
     <input type="number" id="mc-siguiente" class="input-field" inputmode="numeric" min="1"
-      style="margin-bottom:16px;text-align:center;font-size:1.3rem;font-weight:700">
+      style="margin-bottom:6px;text-align:center;font-size:1.3rem;font-weight:700">
+    <div id="mc-sig-info" style="font-size:.78rem;line-height:1.4;color:#555;text-align:center;margin-bottom:14px;min-height:1em"></div>
     <div class="modal-btns" id="mc-btns"></div>
   </div>
 
@@ -755,7 +759,7 @@ let feedbackTimer = null;
 // Lógica de cajas
 // ⚙️ SOBRES POR CAJA — 700 en operativo real. 30 = MODO PRUEBA (demo en oficina).
 const TARJETAS_POR_CAJA = 700;
-const APP_VERSION = '06-nov-26 A';
+const APP_VERSION = '07-nov-26 A';
 let totalCajas = 0;          // 0 = no configurado
 let tarjetasUltimaCaja = 0;  // (ya no se usa; se conserva por compatibilidad)
 let cajasEstado = {};        // { numCaja: 'completa' | 'parcial' }
@@ -942,7 +946,7 @@ function toggleUltimaCaja(){}
 function iniciarSesion(){ return enUnaVez(_iniciarSesion); }
 async function _iniciarSesion() {
   const nom = document.getElementById('inp-operador').value.trim().toUpperCase();
-  const caja = parseInt(document.getElementById('inp-caja').value);
+  let caja = parseInt(document.getElementById('inp-caja').value);
   if (!_procesoElegido) {
     alert('Elige el PROCESO de las cajas: BRCU, BRC, BUEEMS o JEF.');
     return;
@@ -963,8 +967,10 @@ async function _iniciarSesion() {
   enComplemento = false; compEstado = {};
   // ¿Dejó cajas abiertas en otro celular o en una sesión que se perdió? → continuar donde se quedó
   if (await ofrecerContinuarDesdeHoja()) return;
+  _cajaElegida = null;
   const libre = await confirmarCajaLibre(caja);
   if (!libre) { operador = ''; procesoSesion = ''; return; }
+  if (_cajaElegida) { caja = _cajaElegida; _cajaElegida = null; }
   setTimeout(probarCentral, 300);
   cajaActual = caja;
   cajasUsadas.add(caja);
@@ -1061,6 +1067,21 @@ async function crearDetectorNativo(){
     return fm.length ? new BarcodeDetector({ formats: fm }) : null;
   } catch (e) { return null; }
 }
+// Si la librería no cargó al abrir la página (señal débil), se intenta otra vez antes de usar la cámara
+function cargarScript(src, ms){
+  return new Promise(res => {
+    const sc = document.createElement('script'); let fin = false;
+    const t = setTimeout(() => { if (!fin) { fin = true; res(false); } }, ms);
+    sc.onload = () => { if (!fin) { fin = true; clearTimeout(t); res(!!window.ZXing); } };
+    sc.onerror = () => { if (!fin) { fin = true; clearTimeout(t); res(false); } };
+    sc.src = src; document.head.appendChild(sc);
+  });
+}
+async function asegurarZXing(){
+  if (window.ZXing) return true;
+  if (await cargarScript('zxing.min.js?r=' + Date.now(), 20000)) return true;
+  return await cargarScript('https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js', 20000);
+}
 function crearZXing(){
   const hints = new Map();
   hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formatosABuscar().map(f => ZXing.BarcodeFormat[ZX_FMT[f]]));
@@ -1148,7 +1169,16 @@ async function activarCamara() {
     return;
   }
   _detector = await crearDetectorNativo();
-  if (!_detector) _zx = crearZXing();
+  if (!_detector) {
+    if (!window.ZXing) { fb.textContent = 'Cargando el lector de la cámara (señal lenta)…'; }
+    if (!(await asegurarZXing())) {
+      detenerNativo(); zxingReader = null; arrancarScanner();
+      fb.className = 'scan-feedback err';
+      fb.textContent = '📶 No se pudo cargar el lector de la cámara por la señal. Busca mejor señal o WiFi y toca "Activar cámara", o usa ⌨️ Escáner USB.';
+      return;
+    }
+    _zx = crearZXing();
+  }
   _motor = _detector ? 'nativo' : 'zxing';
   zxingReader = { reset(){ detenerNativo(); } };     // el resto de la app lo trata como "cámara activa"
   prepararPista();
@@ -1625,26 +1655,31 @@ function aplicarRecuperacion(){
   const fb = document.getElementById('scan-feedback');
   fb.className = 'scan-feedback ok'; fb.textContent = `📂 Se cargaron ${n} sobre(s) tuyos de la caja #${cajaActual}. Continúa escaneando.`;
 }
-function preguntarCajaOcupada(nc, otros, propioCompleta){
+let _cajaElegida = null;   // si el operador acepta la caja libre que sugiere la hoja, aquí queda el número
+function preguntarCajaOcupada(nc, otros, propioCompleta, libre){
   return new Promise(resolve => {
-    const liberables = otros.filter(o => o.estado !== 'COMPLETA');
-    const completa = propioCompleta || otros.some(o => o.estado === 'COMPLETA');
+    const libera = o => o.liberable !== undefined ? o.liberable : o.estado !== 'COMPLETA';
+    const liberables = otros.filter(libera);
+    const cerradaPorOtro = otros.some(o => o.estado === 'COMPLETA' || o.estado === 'INCOMPLETA');
+    const completa = propioCompleta || cerradaPorOtro;
     const lista = otros.map(o => `<div style="padding:6px 0;border-bottom:1px solid var(--gris)">👤 <strong>${o.op}</strong><br>
-        <span style="font-size:.8rem">${o.n} sobre(s) · caja <strong>${o.estado || 'ABIERTA'}</strong></span></div>`).join('');
+        <span style="font-size:.8rem">${o.n} sobre(s) · caja <strong>${o.estado || 'ABIERTA'}</strong>${o.motivo ? ' · ' + o.motivo : ''}</span></div>`).join('');
     document.getElementById('mco-title').textContent = !otros.length
       ? `Ya completaste la caja ${procesoSesion} #${nc}`
-      : `La caja ${procesoSesion} #${nc} ya tiene sobres de otro operador`;
+      : `La caja ${procesoSesion} #${nc} ya la tiene otro operador`;
     document.getElementById('mco-body').innerHTML = lista +
-      (completa ? `<p style="margin-top:10px;font-size:.82rem;color:#0d47a1">➕ Si llegaron <strong>más sobres para esta misma caja</strong> después de completarla, agrégalos como <strong>COMPLEMENTO</strong>: quedan marcados y su consecutivo sigue después del último.</p>` : '') +
+      (otros.length && libre ? `<p style="margin-top:10px;font-size:.85rem;color:#1b5e20"><strong>Lo normal es que te hayan dado otra caja:</strong> revisa la etiqueta de tu caja física. La siguiente caja libre es la <strong>#${libre}</strong>.</p>` : '') +
+      (completa ? `<p style="margin-top:10px;font-size:.82rem;color:#0d47a1">➕ Si tienes <strong>sobres de esta misma caja</strong> que llegaron después o que faltaron, agrégalos como <strong>COMPLEMENTO</strong>: su consecutivo sigue después del último.</p>` : '') +
       (!otros.length ? '' : liberables.length
-        ? `<p style="margin-top:10px;font-size:.82rem">Si ese operador <strong>ya no está trabajando esta caja</strong> (su celular falló o se salió), libera sus sobres para que tú escanees la caja completa.</p>`
-        : `<p style="margin-top:10px;font-size:.82rem;color:var(--rojo)"><strong>Esa caja ya está COMPLETA.</strong> Verifica el número de la caja física.</p>`);
+        ? `<p style="margin-top:10px;font-size:.82rem">Ese operador lleva más de 20 minutos sin enviar sobres de esta caja. Solo si <strong>ya no la está trabajando</strong> (su celular falló o se salió), libera sus sobres para que tú escanees la caja completa.</p>`
+        : `<p style="margin-top:10px;font-size:.82rem;color:var(--rojo)"><strong>Sus sobres están protegidos:</strong> no se pueden liberar porque la caja ya se cerró o se sigue escaneando.</p>`);
     const btns = document.getElementById('mco-btns');
     btns.innerHTML = '';
     const boton = (txt, cls, val) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.innerHTML = txt;
       b.onclick = () => { cerrarModal(); resolve(val); }; btns.appendChild(b); };
+    if (otros.length && libre) boton(`📦 Usar la caja libre #${libre}`, 'btn-success', 'libre:' + libre);
     if (completa) boton(`➕ Agregar COMPLEMENTO a la caja #${nc}`, 'btn-primary', 'complemento');
-    if (liberables.length) boton(`🔓 Liberar ${liberables.reduce((a, o) => a + o.n, 0)} sobre(s) y escanear la caja completa`, 'btn-primary', 'liberar');
+    if (liberables.length) boton(`🔓 Liberar ${liberables.reduce((a, o) => a + o.n, 0)} sobre(s) y escanear la caja completa`, 'btn-secondary', 'liberar');
     if (otros.length) boton('Es otra caja física con el mismo número — continuar', 'btn-secondary', 'continuar');
     boton('Cancelar y corregir el número', 'btn-secondary', 'cancelar');
     abrirModal('modal-caja-ocupada');
@@ -1655,7 +1690,7 @@ function preguntarCajaOcupada(nc, otros, propioCompleta){
 async function confirmarCajaLibre(nc){
   if (centralActiva()) {
     let j = null;
-    try { j = await llamarCentral({ accion: 'caja', caja: nc }, 8000); } catch (e) { j = null; }
+    try { j = await llamarCentral({ accion: 'caja', caja: nc, limite: TARJETAS_POR_CAJA }, 8000); } catch (e) { j = null; }
     if (j) {
       const otros = (j.otros || []).filter(o => o.n > 0);
       const propioCompleta = (contarCaja(nc) > 0 && estadoCaja(nc) === 'completa') || (j.propio && j.propio.estado === 'COMPLETA');
@@ -1676,16 +1711,23 @@ async function confirmarCajaLibre(nc){
           if (!otros.length) return true;
         }
       }
+      if (!otros.length && !propioCompleta && j.apartada && j.libre && !(j.propio && j.propio.n)) {
+        if (!confirm(`La caja #${nc} se le acaba de asignar a ${j.apartada}.\n\n¿Tú tienes FÍSICAMENTE la caja #${nc}?\n\nAceptar = sí, es mía, seguir con la #${nc}.\nCancelar = usar la caja libre #${j.libre}.`)) {
+          _cajaElegida = j.libre; return await confirmarCajaLibre(j.libre);
+        }
+        return true;
+      }
       if (!otros.length && !propioCompleta) return true;
-      const r = await preguntarCajaOcupada(nc, otros, propioCompleta);
+      const r = await preguntarCajaOcupada(nc, otros, propioCompleta, j.libre);
       if (r === 'cancelar') return false;
+      if (String(r).indexOf('libre:') === 0) { _cajaElegida = Number(String(r).slice(6)); return await confirmarCajaLibre(_cajaElegida); }
       if (r === 'continuar') return true;
       if (r === 'complemento') return 'complemento';
       // Liberar los sobres de los operadores con caja no completa
       let total = 0;
       try {
-        for (const o of otros.filter(o => o.estado !== 'COMPLETA')) {
-          const x = await llamarCentral({ accion: 'liberar', caja: nc, opLiberar: o.op }, 15000);
+        for (const o of otros.filter(o => o.liberable !== undefined ? o.liberable : o.estado !== 'COMPLETA')) {
+          const x = await llamarCentral({ accion: 'liberar', caja: nc, opLiberar: o.op, limite: TARJETAS_POR_CAJA }, 15000);
           total += x.liberados || 0;
           (x.nums || []).forEach(n => { delete otrosSobres[n]; });
         }
@@ -2376,6 +2418,23 @@ function verFaltantes(){
   abrirModal('modal-faltantes');
 }
 
+// ── Siguiente caja LIBRE según la hoja central (que nadie más tenga ni tenga apartada) ──
+async function sugerirCajaLibre(inputId, infoId){
+  const inp = document.getElementById(inputId), info = document.getElementById(infoId);
+  if (info) info.innerHTML = '';
+  if (!centralActiva()) return;
+  const antes = inp.value;
+  if (info) info.textContent = '⏳ Buscando la siguiente caja libre…';
+  let j = null;
+  try { j = await llamarCentral({ accion: 'siguiente_caja' }, 8000); } catch (e) { j = null; }
+  if (!j || !j.caja) { if (info) info.textContent = ''; return; }
+  if (inp.value === antes) inp.value = j.caja;     // si ya escribió otro número, no se lo cambia
+  const otros = (j.enProceso || []).filter(x => !x.mio);
+  if (info) info.innerHTML = `✅ Caja libre sugerida: <strong>#${j.caja}</strong> (queda apartada para ti).` +
+    (otros.length ? `<br>En proceso: ${otros.map(x => `#${x.caja} ${x.op.split(' ')[0]} (${x.n})`).join(' · ')}` : '') +
+    `<br>Si te entregan otra caja, escribe el número de su etiqueta.`;
+}
+
 // ── Terminar caja ──
 // auto=true cuando se llega a 700 durante el escaneo
 let _modalCajaAbierto = false;
@@ -2383,6 +2442,7 @@ function abrirCerrarCaja(auto, codigoRechazado){
   const n = contarCaja(cajaActual);
   const sig = Math.max(...cajasOrdenadas(), cajaActual) + 1;
   document.getElementById('mc-siguiente').value = sig;
+  sugerirCajaLibre('mc-siguiente', 'mc-sig-info');
   document.getElementById('mc-num').textContent = n;
   const title = document.getElementById('mc-title'), body = document.getElementById('mc-body'),
         icon = document.getElementById('mc-icon'), btns = document.getElementById('mc-btns');
@@ -2443,10 +2503,12 @@ async function enUnaVez(fn){
 }
 function cerrarCaja(estado){ return enUnaVez(() => _cerrarCaja(estado)); }
 async function _cerrarCaja(estado){
-  const sig = parseInt(document.getElementById('mc-siguiente').value);
+  let sig = parseInt(document.getElementById('mc-siguiente').value);
   if (!sig || sig < 1) { alert('Escribe el número de la siguiente caja.'); return; }
   const origen = cajaActual;
+  _cajaElegida = null;
   const libre = sig !== origen ? await confirmarCajaLibre(sig) : true;
+  if (_cajaElegida) { sig = _cajaElegida; _cajaElegida = null; }
   if (!libre || cajaActual !== origen) return;
   if (estado === 'complemento') cerrarComplementoActual();
   else if (estado) { cajasEstado[cajaActual] = estado; avisarCierreCaja(cajaActual, estado); }
@@ -2486,6 +2548,7 @@ async function irACaja(nc){
 // ══════════════════════════════════════════
 function abrirCambiarCaja() {
   document.getElementById('inp-nueva-caja').value = Math.max(...cajasOrdenadas(), cajaActual) + 1;
+  sugerirCajaLibre('inp-nueva-caja', 'mcc-sig-info');
   const infoEl = document.getElementById('modal-caja-info');
   const n = contarCaja(cajaActual);
   infoEl.style.display = 'block';
@@ -2509,11 +2572,13 @@ function asegurarCierreCajaActual(){
 
 function confirmarCambioCaja(){ return enUnaVez(_confirmarCambioCaja); }
 async function _confirmarCambioCaja() {
-  const nueva = parseInt(document.getElementById('inp-nueva-caja').value);
+  let nueva = parseInt(document.getElementById('inp-nueva-caja').value);
   if (!nueva || nueva < 1) { alert('Número de caja inválido.'); return; }
   if (nueva === cajaActual && !enComplemento && estadoCaja(nueva) !== 'completa') { cerrarModal(); return; }
   if (!asegurarCierreCajaActual()) return;
+  _cajaElegida = null;
   const libre = await confirmarCajaLibre(nueva);
+  if (_cajaElegida) { nueva = _cajaElegida; _cajaElegida = null; }
   if (!libre) return;
   if (libre === 'complemento') { iniciarComplemento(nueva); return; }
   cajaActual = nueva;

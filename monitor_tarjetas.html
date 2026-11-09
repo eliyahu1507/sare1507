@@ -253,7 +253,7 @@ async function cargar(){
 }
 
 const PRIOR = { 'CAJA COMPARTIDA': 0, 'MISMO SOBRE 2 VECES': 1, 'LECTURA DUDOSA': 2, 'RECHAZO': 3, 'LIBERADO': 4 };
-const CLASE = { 'CAJA COMPARTIDA': 'err', 'MISMO SOBRE 2 VECES': 'err', 'NO VIENE EN EL NOMINAL': 'err', 'LECTURA DUDOSA': 'warn', 'RECHAZO': 'warn', 'LIBERADO': 'info' };
+const CLASE = { 'CAJA COMPARTIDA': 'err', 'MISMO SOBRE 2 VECES': 'err', 'NO VIENE EN EL NOMINAL': 'err', 'LECTURA DUDOSA': 'warn', 'RECHAZO': 'warn', 'LIBERADO': 'info', 'INTENTO DE LIBERAR': 'warn' };
 function claveAl(a){ return [a.tipo, a.proceso, a.caja, a.op, a.detalle].join('|'); }
 
 function estadoOp(o){
