@@ -337,7 +337,7 @@ td.num,th.num{text-align:right}
         <div class="res info" style="margin-bottom:12px"><div class="t">🧮 Conteo al final del día</div>
           <p><b>Durante la atención no uses la app:</b> revisa documentos, llena el acuse y la APK, y guarda el expediente en tu paquete.</p>
           <p><b>Si no cumple:</b> regresa la tarjeta a búsqueda con la causal anotada; búsqueda la registra.</p>
-          <p><b>Al cierre:</b> escanea la CURP (o la tarjeta) de cada expediente. Cada una queda como ENTREGADA al instante.</p></div>
+          <p><b>Al cierre:</b> escanea la CURP del becario (o la tarjeta) de cada expediente. Cada una queda como ENTREGADA al instante.</p></div>
         <p class="hint" id="m-modo-txt" hidden></p>
         <button class="btn-scan-big" data-cam="ambos" id="m-cam" data-continuo="1"><span class="ic">📷</span><span class="tx"><b>CONTAR MIS EXPEDIENTES</b><small>Escanea la CURP de cada expediente · la cámara se queda abierta</small></span></button>
         <div class="vc" data-vc></div><div class="scan-status" data-st></div>
@@ -414,7 +414,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '10-nov-26 F';
+const APP_VERSION = '10-nov-26 H';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 const SUPERVISORES = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ', '1501991': 'GONZALEZ LINDA NOHEMI JAZMIN' };
@@ -973,7 +973,7 @@ function mesaEscanear(texto) {
   else if (tarjetaValida(t)) r = PAQ.byT[t] || null;
   else { const l = buscarNombre(texto); if (l.length) return listaCoincidencias('m-coin', l, texto, mesaMostrar);
     box.innerHTML = `<div class="res mal"><div class="t">Sin resultados</div><p>Escanea la tarjeta o la CURP.</p></div>`; beep(false); return; }
-  if (!r) { box.innerHTML = `<div class="res mal"><div class="t">⛔ NO ES DE HOY</div><p>${curp ? esc(curp) + ' no está' : '…' + esc(t.slice(-8)) + ' no está'} en los convocados de este día. Regrésala a búsqueda.</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
+  if (!r) { box.innerHTML = `<div class="res mal"><div class="t">⛔ NO ESTÁ EN LOS CONVOCADOS DE HOY</div><p>${curp ? esc(curp) : '…' + esc(t.slice(-8))} no está en la lista de este día.</p><p>Revisa que el expediente sea de hoy; si la CURP no lee bien, prueba con el número de tarjeta o el nombre, y avisa al supervisor.</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
   mesaMostrar(r);
 }
 function mesaMostrar(r) {
