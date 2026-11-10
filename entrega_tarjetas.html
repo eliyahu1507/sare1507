@@ -220,6 +220,7 @@ td.num,th.num{text-align:right}
 }
 .mode-btn{padding:11px 10px;font-size:.8rem}
 @media print{body>*:not(#print-area){display:none!important}#print-area{display:block}@page{size:letter landscape;margin:9mm}}
+.ses-rap{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
 .vacio{text-align:center;color:#999;padding:14px;font-size:.84rem}
 .modal-ov{position:fixed;inset:0;background:rgba(74,14,41,.6);z-index:70;display:flex;align-items:center;justify-content:center;padding:14px}
 .modal{background:#fff;border-radius:14px;width:100%;max-width:640px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(74,14,41,.35)}
@@ -392,7 +393,9 @@ td.num,th.num{text-align:right}
     <div class="card"><div class="card-h"><span class="e">⚙️</span><div><h2>Mi sesión</h2></div></div>
       <div class="card-b"><div id="ses-datos"></div>
         <button class="btn full" id="ses-sync">🔄 Sincronizar ahora</button>
+        <div id="ses-rapido"></div>
         <button class="btn full" id="ses-rol">Cambiar de función o de día</button>
+        <button class="btn full" id="ses-bajar">⬇️ Volver a descargar la lista del día</button>
         <button class="btn mal full" id="ses-salir">Cerrar sesión y borrar datos de este celular</button>
         <p class="hint">Al cerrar sesión se borran del celular los convocados. Lo enviado queda en la hoja central.</p></div></div>
   </section>
@@ -411,7 +414,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '10-nov-26 E';
+const APP_VERSION = '10-nov-26 F';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 const SUPERVISORES = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ', '1501991': 'GONZALEZ LINDA NOHEMI JAZMIN' };
@@ -564,10 +567,17 @@ function cargarLocal() {
   LOG = lsGet(kLog(), []);
   return true;
 }
+// ¿Ya está en el celular la lista de ese día, bajada hoy y con el calendario completo? Entonces no hace falta volver a bajarla:
+// lo que hicieron los demás llega solo con la sincronización (cada 8 s, solo los cambios).
+function datosLocalesListos(fecha) {
+  const p = lsGet(kPaq(fecha), null);
+  return !!(p && p._ts && new Date(p._ts).toDateString() === new Date().toDateString() && lsGet('ent_idx', null));
+}
 function guardarEstado() { lsSet(kEst(SES.fecha), { est: EST, cursor: CURSOR }); lsSet('ent_cola', COLA); }
 function guardarLog() { if (LOG.length > 500) LOG = LOG.slice(-500); lsSet(kLog(), LOG); }
 async function descargar(fecha) {
   const [p, ix] = await Promise.all([llamar({ accion: 'paquete', fecha }, 45000), llamar({ accion: 'indice' }, 45000).catch(() => null)]);
+  p._ts = Date.now();                       // cuándo se bajó: si es de hoy, cambiar de función no vuelve a descargar
   Object.keys(localStorage).forEach(k => { if (/^ent_(paq|est)_/.test(k) && !k.endsWith(fecha)) lsDel(k); });
   if (!lsSet(kPaq(fecha), p)) toast('El celular no tiene espacio para guardar la lista: funcionará solo con señal', true);
   if (!lsGet(kEst(fecha), null)) lsSet(kEst(fecha), { est: p.estados || {}, cursor: p.cursor || 1 });
@@ -723,21 +733,26 @@ $('acc-entrar').onclick = async () => {
   } catch (e) { SES = null; $('acc-msg').textContent = '⛔ ' + (e.name === 'AbortError' ? 'Sin respuesta de la hoja: revisa la señal.' : e.message); }
   finally { $('acc-entrar').disabled = false; }
 };
-async function iniciarRol(rol) {
-  const fecha = $('acc-fecha').value;
+async function iniciarRol(rol, fechaDirecta) {
+  const fecha = fechaDirecta || $('acc-fecha').value;
   if (!fecha) { $('acc-msg').textContent = 'No hay día del operativo en el calendario.'; return; }
   if (!rolPermitido(rol)) { $('acc-msg').textContent = '⛔ Esa función es solo para el personal autorizado.'; return; }
-  if (COLA.length && SES && SES.rol && SES.rol !== rol) { await sincronizar(); if (COLA.length) { $('acc-msg').textContent = '⚠️ Hay ' + COLA.length + ' movimientos sin enviar: busca señal antes de cambiar de función.'; return; } }
+  const local = datosLocalesListos(fecha);
+  // Con la lista ya en el celular, lo pendiente se sigue enviando en segundo plano (cada movimiento guarda su función); si hay que descargar, primero se envía
+  if (!local && COLA.length && SES && SES.rol && SES.rol !== rol) { await sincronizar(); if (COLA.length) { $('acc-msg').textContent = '⚠️ Hay ' + COLA.length + ' movimientos sin enviar: busca señal antes de cambiar de función.'; return; } }
   document.querySelectorAll('#acc-roles .rol').forEach(b => { b.disabled = true; });
-  $('acc-msg').textContent = '⏳ Descargando convocados y calendario…';
+  $('acc-msg').textContent = local ? '⚡ Lista del día ya descargada: cambiando de función…' : '⏳ Descargando convocados y calendario…';
   try {
     SES = Object.assign({}, SES, { rol, mesa: '', fecha });   // en mesa el operador se identifica por su nombre del panel
-    try { await descargar(fecha); }
-    catch (e) { if (e.clave || !lsGet(kPaq(fecha), null)) throw e; toast('Sin señal: se usa la lista que ya tenía el celular', true); }
+    if (!local) {
+      try { await descargar(fecha); }
+      catch (e) { if (e.clave || !lsGet(kPaq(fecha), null)) throw e; toast('Sin señal: se usa la lista que ya tenía el celular', true); }
+    }
+    _cuadre = null;
     lsSet('ent_sesion', SES);
     if (!cargarLocal()) throw new Error('No se pudo guardar la lista en el celular');
     arrancar();
-  } catch (e) { $('acc-msg').textContent = '⛔ ' + (e.clave ? e.message : e.name === 'AbortError' ? 'La descarga tardó demasiado: busca mejor señal.' : e.message); prepararPaso2(); }
+  } catch (e) { const m = '⛔ ' + (e.clave ? e.message : e.name === 'AbortError' ? 'La descarga tardó demasiado: busca mejor señal.' : e.message); $('acc-msg').textContent = m; toast(m, true); prepararPaso2(); }
 }
 function arrancar() { pestañas(); cabecera(); pintarMiniCal(); pintarSync(); pintarStats(); ver(SES.rol); sincronizar(); }
 
@@ -1077,10 +1092,21 @@ async function consultar(texto) {
   box.innerHTML = l.length ? `<p class="hint" style="margin-bottom:6px">${l.length} coincidencia(s) hoy</p><div class="lista">${l.map(fila).join('')}</div>` : '<div class="vacio">Sin coincidencias en los convocados de este día. Para otros días, consulta por CURP.</div>';
 }
 function pintarSesion() {
+  const otros = ['FILTRO', 'BUSQUEDA', 'MESA', 'SUPERVISOR'].filter(r => r !== SES.rol && rolPermitido(r));
+  const p = lsGet(kPaq(SES.fecha), null);
+  $('ses-rapido').innerHTML = (otros.length ? `<label class="lbl">Cambiar rápido de función (mismo día)</label><div class="ses-rap">${otros.map(r => `<button class="btn borde" data-rap="${r}">${ROLES[r]}</button>`).join('')}</div>` : '') +
+    `<p class="hint">${p && p._ts ? '📦 Lista del día descargada a las ' + new Date(p._ts).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) + (datosLocalesListos(SES.fecha) ? ': cambiar de función es inmediato.' : '.') : '📦 Lista del día sin hora de descarga.'}</p>`;
+  $('ses-rapido').querySelectorAll('[data-rap]').forEach(b => b.onclick = () => iniciarRol(b.dataset.rap, SES.fecha));
   $('ses-datos').innerHTML = `<p><b>${esc(SES.op)}</b><br>${ROLES[SES.rol]}${SES.mesa ? ' · mesa ' + esc(SES.mesa) : ''}<br>${esc(fechaLarga(SES.fecha))} · ${fmt(PAQ.lista.length)} convocados descargados<br>Calendario completo: ${IDX ? fmt(IDX.m.size) + ' CURP' : 'no descargado'}<br>Por enviar: ${COLA.length}${_ultSync ? ' · última sincronización ' + new Date(_ultSync).toLocaleTimeString('es-MX') : ''}</p>`;
 }
 $('ses-sync').onclick = () => { sincronizar(); toast('Sincronizando…'); };
 $('ses-rol').onclick = () => mostrarAcceso(2);
+$('ses-bajar').onclick = async () => {
+  const b = $('ses-bajar'); b.disabled = true; b.textContent = '⏳ Descargando…';
+  try { await sincronizar(); await descargar(SES.fecha); cargarLocal(); pintarStats(); pintarMiniCal(); refrescarVista(); toast('✅ Lista del día actualizada'); }
+  catch (e) { toast('⛔ ' + (e.name === 'AbortError' ? 'Sin respuesta: revisa la señal' : e.message), true); }
+  finally { b.disabled = false; b.textContent = '⬇️ Volver a descargar la lista del día'; pintarSesion(); }
+};
 $('ses-salir').onclick = async () => {
   if (COLA.length) { await sincronizar(); if (COLA.length && !confirm(`Hay ${COLA.length} movimientos SIN ENVIAR. Si cierras ahora se pierden. ¿Cerrar de todos modos?`)) return; }
   Object.keys(localStorage).forEach(k => { if (/^ent_/.test(k)) lsDel(k); });
