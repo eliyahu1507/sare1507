@@ -180,7 +180,8 @@ td.num,th.num{text-align:right}
 .docs-pide ul{list-style:none;padding:0;margin:4px 0 0;display:flex;flex-wrap:wrap;gap:4px 6px}.docs-pide li{background:#fff;border:1px solid var(--gris);border-radius:999px;padding:2px 9px;font-weight:700;font-size:.74rem}
 @media (min-width:1440px){
   .lay{display:grid;grid-template-columns:minmax(200px,250px) minmax(0,1000px) minmax(200px,250px);justify-content:center;gap:18px;padding:0 14px}
-  .lay>main{margin:0;width:100%}
+  .lay>main{margin:0;width:100%;grid-column:2;grid-row:1}
+  .lay>.docs-side:first-child{grid-column:1;grid-row:1}.lay>.docs-side:last-child{grid-column:3;grid-row:1}
   body.con-docs .docs-side{display:block;position:sticky;top:14px;align-self:start;margin-top:16px}
   body.con-docs .docs-mini{display:none}
 }
@@ -414,7 +415,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '10-nov-26 H';
+const APP_VERSION = '10-nov-26 I';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 const SUPERVISORES = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ', '1501991': 'GONZALEZ LINDA NOHEMI JAZMIN' };
