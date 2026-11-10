@@ -157,6 +157,51 @@ td.num,th.num{text-align:right}
 .etq-p table{font-size:9.5pt}.etq-p td,.etq-p th{padding:3px 7px}.etq-p th{font-size:8pt;color:#333;background:#f2e9ec}.etq-p td{border-bottom:1px solid #ccc}
 .etq-p .c{font-family:'JetBrains Mono',Consolas,monospace;font-weight:800;font-size:11pt;white-space:nowrap}
 .etq-p .pie{font-size:8.5pt;color:#555;margin-top:8px}
+/* ── Documentos para recibir la tarjeta (díptico BUEMS) ── */
+.lay{display:block}
+.docs-side{display:none}
+.docs{background:#fff;border-radius:14px;box-shadow:0 2px 14px var(--sombra);overflow:hidden;font-size:.82rem}
+.docs-h{background:linear-gradient(135deg,var(--guinda-o),var(--guinda));color:#fff;padding:10px 14px;border-bottom:3px solid var(--dorado);font-family:Montserrat,sans-serif}
+.docs-h b{display:block;font-size:.95rem;font-weight:900;letter-spacing:.2px}.docs-h small{font-size:.7rem;opacity:.88}
+.docs-b{padding:10px 14px 12px}
+.docs h4{font-family:Montserrat,sans-serif;font-size:.8rem;font-weight:900;color:var(--guinda);margin:8px 0 2px;text-transform:uppercase;letter-spacing:.3px}
+.docs h5{font-size:.72rem;font-weight:800;font-style:italic;color:var(--texto-s);margin:6px 0 2px}
+.docs ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.docs li{display:flex;gap:6px;align-items:flex-start;line-height:1.3}.docs li::before{content:'✓';font-weight:900;color:var(--verde);flex:0 0 auto}
+.docs li small{display:block;color:#777;font-size:.7rem}
+.docs .beca{background:var(--dorado-s);border-left:4px solid var(--dorado);border-radius:8px;padding:8px 10px;margin-top:10px}
+.docs .beca li{display:block;padding-left:12px;position:relative}.docs .beca li::before{content:'•';color:var(--guinda);position:absolute;left:0}
+.chica-bg{background:url("data:image/webp;base64,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") center bottom/contain no-repeat}
+.docs-chica{display:block;width:150px;height:195px;margin:0 auto -6px;filter:drop-shadow(0 6px 10px rgba(74,14,41,.18))}
+.docs-mini{margin-bottom:14px}.docs-mini>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--guinda-o),var(--guinda));color:#fff;border-radius:12px;padding:8px 14px;font-family:Montserrat,sans-serif;font-weight:800;font-size:.8rem;border-bottom:3px solid var(--dorado)}
+.docs-mini>summary::-webkit-details-marker{display:none}.docs-mini>summary .mini-ch{display:block;flex:0 0 auto;width:44px;height:57px;margin:-14px 0 -8px}.docs-mini>summary::after{content:'▾';margin-left:auto;transition:transform .2s}.docs-mini[open]>summary::after{transform:rotate(180deg)}
+.docs-mini .docs{border-radius:0 0 14px 14px;margin-top:-6px}.docs-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 16px}
+.docs-pide{margin-top:8px;background:rgba(255,255,255,.7);border-radius:8px;padding:7px 10px;font-size:.8rem}.docs-pide b{font-family:Montserrat,sans-serif;font-size:.72rem;text-transform:uppercase}
+.docs-pide ul{list-style:none;padding:0;margin:4px 0 0;display:flex;flex-wrap:wrap;gap:4px 6px}.docs-pide li{background:#fff;border:1px solid var(--gris);border-radius:999px;padding:2px 9px;font-weight:700;font-size:.74rem}
+@media (min-width:1440px){
+  .lay{display:grid;grid-template-columns:minmax(200px,250px) minmax(0,1000px) minmax(200px,250px);justify-content:center;gap:18px;padding:0 14px}
+  .lay>main{margin:0;width:100%}
+  body.con-docs .docs-side{display:block;position:sticky;top:14px;align-self:start;margin-top:16px}
+  body.con-docs .docs-mini{display:none}
+}
+/* ── Botones de función en 3D ── */
+.roles{gap:12px;perspective:900px}
+.rol{position:relative;padding:16px 10px 14px;border:2px solid #eadde3;background:linear-gradient(180deg,#fff,#faf5f7);border-radius:18px;box-shadow:0 6px 0 #e3d3da,0 10px 22px var(--sombra);transform-style:preserve-3d;transition:transform .22s cubic-bezier(.2,.8,.3,1.3),box-shadow .22s,border-color .2s;cursor:pointer}
+.rol span{display:grid;place-items:center;width:78px;height:78px;margin:0 auto 8px;font-size:2.7rem;line-height:1;border-radius:50%;background:radial-gradient(circle at 32% 28%,#fff 0,#f5e6c0 38%,#e5b94e 100%);box-shadow:inset -6px -8px 14px rgba(154,91,0,.28),inset 5px 6px 10px rgba(255,255,255,.9),0 8px 14px rgba(74,14,41,.22);transform:translateZ(26px);text-shadow:0 4px 6px rgba(0,0,0,.18)}
+.rol::after{content:'Toca para entrar ›';display:block;margin-top:8px;font-size:.66rem;font-weight:800;letter-spacing:.4px;color:var(--guinda);opacity:.75}
+.rol:not(:disabled):hover,.rol:not(:disabled):focus-visible{transform:translateY(-4px) rotateX(8deg) rotateY(-6deg);border-color:var(--dorado);box-shadow:0 10px 0 #e3d3da,0 18px 30px rgba(74,14,41,.22)}
+.rol:not(:disabled):active{transform:translateY(4px);box-shadow:0 2px 0 #e3d3da,0 4px 10px var(--sombra)}
+.rol:disabled{opacity:.45;filter:grayscale(.8);box-shadow:0 3px 0 #eee}.rol:disabled::after{content:'🔒 Solo personal autorizado';color:#999}
+.rol:disabled span{background:radial-gradient(circle at 32% 28%,#fff,#e6e6e6 60%,#cfcfcf);box-shadow:none}
+@media (prefers-reduced-motion:no-preference){
+  .rol:not(:disabled) span{animation:flota 3.2s ease-in-out infinite}
+  .rol:nth-child(2) span{animation-delay:-.8s}.rol:nth-child(3) span{animation-delay:-1.6s}.rol:nth-child(4) span{animation-delay:-2.4s}
+  .rol:not(:disabled):hover span{animation:salta .55s ease}
+  @keyframes flota{0%,100%{transform:translateZ(26px) translateY(0) rotate(0)}50%{transform:translateZ(26px) translateY(-6px) rotate(-4deg)}}
+  @keyframes salta{0%{transform:translateZ(26px) scale(1)}40%{transform:translateZ(40px) scale(1.14) rotate(6deg)}100%{transform:translateZ(26px) scale(1)}}
+}
+.tab .i{font-size:1.45rem;transition:transform .2s}.tab[aria-selected=true] .i{transform:scale(1.12)}
+.mode-btn{padding:11px 10px;font-size:.8rem}
 @media print{body>*:not(#print-area){display:none!important}#print-area{display:block}@page{size:letter landscape;margin:9mm}}
 .vacio{text-align:center;color:#999;padding:14px;font-size:.84rem}
 .modal-ov{position:fixed;inset:0;background:rgba(74,14,41,.6);z-index:70;display:flex;align-items:center;justify-content:center;padding:14px}
@@ -194,6 +239,9 @@ td.num,th.num{text-align:right}
   <div class="elab">✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong></div>
 </header>
 
+<div class="lay">
+<aside class="docs-side" aria-label="Documentos para recibir la tarjeta (menores de edad)"><div class="docs-chica chica-bg" role="img" aria-label="Estudiante señalando los documentos"></div><div class="docs"><div class="docs-h"><b>Para recibir tu tarjeta</b><small>necesitarás estos documentos</small></div><div class="docs-b"><h4>Si eres menor de edad</h4><h5>Estudiante</h5><ul><li>Acta de nacimiento</li><li>CURP</li><li><span>Comprobante de domicilio<small>máximo 6 meses</small></span></li></ul>
+        <h5>De tu madre, padre, tutora o tutor</h5><ul><li><span>Identificación oficial<small>original y copia</small></span></li><li>Acta de nacimiento</li><li>CURP</li></ul></div></div></aside>
 <main>
   <nav class="tabs" id="tabs" hidden></nav>
 
@@ -221,6 +269,8 @@ td.num,th.num{text-align:right}
         <p class="hint" id="acc-msg" style="font-size:.85rem;color:var(--texto-s)"></p>
       </div>
     </div>
+    <details class="docs-mini"><summary><span class="chica-bg mini-ch" aria-hidden="true"></span>📄 Documentos para recibir la tarjeta</summary><div class="docs"><div class="docs-b"><div class="docs-cols"><div><h4>Si eres menor de edad</h4><h5>Estudiante</h5><ul><li>Acta de nacimiento</li><li>CURP</li><li><span>Comprobante de domicilio<small>máximo 6 meses</small></span></li></ul>
+        <h5>De tu madre, padre, tutora o tutor</h5><ul><li><span>Identificación oficial<small>original y copia</small></span></li><li>Acta de nacimiento</li><li>CURP</li></ul></div><div><h4>Si eres mayor de edad</h4><h5>Estudiante</h5><ul><li><span>Identificación oficial<small>original y copia</small></span></li><li>Acta de nacimiento</li><li>CURP</li><li><span>Comprobante de domicilio<small>máximo 6 meses</small></span></li></ul></div></div><div class="beca"><h4 style="margin-top:0">¿Cómo recibes tu beca?</h4><ul><li>El depósito se realiza <b>cada dos meses</b> en tu tarjeta bancaria durante el ciclo escolar.</li><li><b>No hay depósitos</b> en julio ni agosto por periodo vacacional.</li><li>Consulta el <b>Calendario de Pagos</b> en la página y redes oficiales.</li></ul></div></div></div></details>
   </section>
 
   <!-- ═════ FILTRO ═════ -->
@@ -235,11 +285,13 @@ td.num,th.num{text-align:right}
       </div></div>
     <div class="kpis" id="f-kpis"></div>
     <div class="card"><div class="card-h"><span class="e">🕘</span><div><h2>Últimas consultas</h2></div></div><div class="card-b"><div class="lista" id="f-log"></div></div></div>
+    <details class="docs-mini"><summary><span class="chica-bg mini-ch" aria-hidden="true"></span>📄 Documentos para recibir la tarjeta</summary><div class="docs"><div class="docs-b"><div class="docs-cols"><div><h4>Si eres menor de edad</h4><h5>Estudiante</h5><ul><li>Acta de nacimiento</li><li>CURP</li><li><span>Comprobante de domicilio<small>máximo 6 meses</small></span></li></ul>
+        <h5>De tu madre, padre, tutora o tutor</h5><ul><li><span>Identificación oficial<small>original y copia</small></span></li><li>Acta de nacimiento</li><li>CURP</li></ul></div><div><h4>Si eres mayor de edad</h4><h5>Estudiante</h5><ul><li><span>Identificación oficial<small>original y copia</small></span></li><li>Acta de nacimiento</li><li>CURP</li><li><span>Comprobante de domicilio<small>máximo 6 meses</small></span></li></ul></div></div><div class="beca"><h4 style="margin-top:0">¿Cómo recibes tu beca?</h4><ul><li>El depósito se realiza <b>cada dos meses</b> en tu tarjeta bancaria durante el ciclo escolar.</li><li><b>No hay depósitos</b> en julio ni agosto por periodo vacacional.</li><li>Consulta el <b>Calendario de Pagos</b> en la página y redes oficiales.</li></ul></div></div></div></details>
   </section>
 
   <!-- ═════ BÚSQUEDA ═════ -->
   <section id="v-BUSQUEDA" hidden>
-    <div class="card"><div class="card-h"><span class="e">🔎</span><div><h2>Búsqueda de tarjetas</h2><small>Escanea la tarjeta encontrada para mandarla a mesa</small></div></div>
+    <div class="card"><div class="card-h"><span class="e">🔎</span><div><h2>Búsqueda de tarjetas</h2><small>Escanea la tarjeta para mandarla a mesa · si mesa la regresa, escanéala para registrar la causal</small></div></div>
       <div class="card-b">
         <button class="btn-scan-big" data-cam="ambos" data-continuo="1"><span class="ic">💳</span><span class="tx"><b>ESCANEAR TARJETA</b><small>La cámara se queda abierta para la siguiente</small></span></button>
         <div class="vc" data-vc></div><div class="scan-status" data-st></div>
@@ -262,14 +314,14 @@ td.num,th.num{text-align:right}
 
   <!-- ═════ MESA ═════ -->
   <section id="v-MESA" hidden>
-    <div class="card"><div class="card-h"><span class="e">🤝</span><div><h2>Mesa de atención <span id="m-num"></span></h2><small>Escanea la tarjeta o la CURP</small></div></div>
+    <div class="card"><div class="card-h"><span class="e">🤝</span><div><h2>Mesa de atención <span id="m-num"></span></h2><small>Registro con el conteo al final del día</small></div></div>
       <div class="card-b">
-        <div class="mode-row">
-          <button class="mode-btn" data-modo="entrega" aria-pressed="true">🤝 Entrega en el momento</button>
-          <button class="mode-btn" data-modo="conteo" aria-pressed="false">🧮 Conteo al final del día</button>
-        </div>
-        <p class="hint" id="m-modo-txt" style="margin:-4px 0 10px"></p>
-        <button class="btn-scan-big" data-cam="ambos" id="m-cam"><span class="ic">📷</span><span class="tx"><b>ESCANEAR TARJETA O CURP</b><small>Toca aquí para abrir la cámara</small></span></button>
+        <div class="res info" style="margin-bottom:12px"><div class="t">🧮 Conteo al final del día</div>
+          <p><b>Durante la atención no uses la app:</b> revisa documentos, llena el acuse y la APK, y guarda el expediente en tu paquete.</p>
+          <p><b>Si no cumple:</b> regresa la tarjeta a búsqueda con la causal anotada; búsqueda la registra.</p>
+          <p><b>Al cierre:</b> escanea la CURP (o la tarjeta) de cada expediente. Cada una queda como ENTREGADA al instante.</p></div>
+        <p class="hint" id="m-modo-txt" hidden></p>
+        <button class="btn-scan-big" data-cam="ambos" id="m-cam" data-continuo="1"><span class="ic">📷</span><span class="tx"><b>CONTAR MIS EXPEDIENTES</b><small>Escanea la CURP de cada expediente · la cámara se queda abierta</small></span></button>
         <div class="vc" data-vc></div><div class="scan-status" data-st></div>
         <div class="search-row"><input class="main-input" id="m-inp" autocomplete="off" placeholder="Tarjeta, CURP o nombre…"><button class="btn prim" data-buscar="m-inp">BUSCAR</button></div>
         <div id="m-res"></div><div id="m-coin" class="lista"></div>
@@ -286,7 +338,9 @@ td.num,th.num{text-align:right}
         </div>
       </div></div>
     <div class="kpis" id="m-kpis"></div>
-    <div class="card"><div class="card-h"><span class="e">🗂️</span><div><h2>Mis entregas de hoy</h2><small>Este número debe coincidir con tus expedientes</small></div></div><div class="card-b"><div class="lista" id="m-log"></div></div></div>
+    <div class="card"><div class="card-h"><span class="e">🗂️</span><div><h2>Mis expedientes contados</h2><small>Este número debe coincidir con los expedientes de tu paquete</small></div></div><div class="card-b"><div class="lista" id="m-log"></div></div></div>
+    <details class="docs-mini"><summary><span class="chica-bg mini-ch" aria-hidden="true"></span>📄 Documentos para recibir la tarjeta</summary><div class="docs"><div class="docs-b"><div class="docs-cols"><div><h4>Si eres menor de edad</h4><h5>Estudiante</h5><ul><li>Acta de nacimiento</li><li>CURP</li><li><span>Comprobante de domicilio<small>máximo 6 meses</small></span></li></ul>
+        <h5>De tu madre, padre, tutora o tutor</h5><ul><li><span>Identificación oficial<small>original y copia</small></span></li><li>Acta de nacimiento</li><li>CURP</li></ul></div><div><h4>Si eres mayor de edad</h4><h5>Estudiante</h5><ul><li><span>Identificación oficial<small>original y copia</small></span></li><li>Acta de nacimiento</li><li>CURP</li><li><span>Comprobante de domicilio<small>máximo 6 meses</small></span></li></ul></div></div><div class="beca"><h4 style="margin-top:0">¿Cómo recibes tu beca?</h4><ul><li>El depósito se realiza <b>cada dos meses</b> en tu tarjeta bancaria durante el ciclo escolar.</li><li><b>No hay depósitos</b> en julio ni agosto por periodo vacacional.</li><li>Consulta el <b>Calendario de Pagos</b> en la página y redes oficiales.</li></ul></div></div></div></details>
   </section>
 
   <!-- ═════ SUPERVISOR ═════ -->
@@ -327,6 +381,8 @@ td.num,th.num{text-align:right}
   </section>
   <p class="pie" id="pie"></p>
 </main>
+<aside class="docs-side" aria-label="Documentos para recibir la tarjeta (mayores de edad)"><div class="docs"><div class="docs-h"><b>Para recibir tu tarjeta</b><small>necesitarás estos documentos</small></div><div class="docs-b"><h4>Si eres mayor de edad</h4><h5>Estudiante</h5><ul><li><span>Identificación oficial<small>original y copia</small></span></li><li>Acta de nacimiento</li><li>CURP</li><li><span>Comprobante de domicilio<small>máximo 6 meses</small></span></li></ul><div class="beca"><h4 style="margin-top:0">¿Cómo recibes tu beca?</h4><ul><li>El depósito se realiza <b>cada dos meses</b> en tu tarjeta bancaria durante el ciclo escolar.</li><li><b>No hay depósitos</b> en julio ni agosto por periodo vacacional.</li><li>Consulta el <b>Calendario de Pagos</b> en la página y redes oficiales.</li></ul></div></div></div></aside>
+</div>
 <div id="print-area" aria-hidden="true"></div>
 
 <div class="modal-ov" id="modal" hidden><div class="modal"><div class="modal-h"><h2 id="modal-t"></h2><small id="modal-s"></small><button class="modal-x" id="modal-x" aria-label="Cerrar">✕</button></div><div class="modal-b" id="modal-b"></div></div></div>
@@ -338,7 +394,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '10-nov-26 B';
+const APP_VERSION = '10-nov-26 D';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 const SUPERVISORES = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ', '1501991': 'GONZALEZ LINDA NOHEMI JAZMIN' };
@@ -391,6 +447,13 @@ function leerCodigoCurp(txt) {
   return { curp: c.join(''), nombre: p.length >= 5 ? [fix(p[4]), fix(p[2]), fix(p[3])].filter(Boolean).join(' ') : '' };
 }
 const extraerCurp = t => (leerCodigoCurp(t) || {}).curp || '';
+// Documentos que debe traer, según la edad (díptico BUEMS)
+function docsPara(curp) {
+  const d = datosCurp(curp || ''); if (!d) return '';
+  const l = d.edad < 18 ? ['Acta de nacimiento', 'CURP', 'Comprobante de domicilio (≤ 6 meses)', 'Tutor: identificación oficial (original y copia)', 'Tutor: acta de nacimiento', 'Tutor: CURP']
+    : ['Identificación oficial (original y copia)', 'Acta de nacimiento', 'CURP', 'Comprobante de domicilio (≤ 6 meses)'];
+  return `<div class="docs-pide"><b>📄 Documentos · ${d.edad < 18 ? 'menor de edad: estudiante y tutor' : 'mayor de edad'}</b><ul>${l.map(x => `<li>${x}</li>`).join('')}</ul></div>`;
+}
 function datosCurp(curp) {
   try { const yy = +curp.slice(4, 6), mm = +curp.slice(6, 8), dd = +curp.slice(8, 10), hoy = new Date();
     const yyyy = /\d/.test(curp[16]) ? 1900 + yy : 2000 + yy; let edad = hoy.getFullYear() - yyyy; if (hoy < new Date(hoy.getFullYear(), mm - 1, dd)) edad--;
@@ -422,7 +485,7 @@ let SES = lsGet('ent_sesion', null);   // { claveOp, rol, mesa, fecha, op, cupo 
 let LOGIN = lsGet('ent_login', null);  // calendario, escuelas y causales
 let IDX = null;                        // índice de todo el nominal (CURP cifrada → fecha y CCT)
 let PAQ = null, EST = {}, COLA = lsGet('ent_cola', []), CURSOR = 1, LOG = [];
-let _syncEnCurso = false, _syncError = '', _ultSync = 0, _vista = '', _modoMesa = lsGet('ent_modo_mesa', 'entrega');
+let _syncEnCurso = false, _syncError = '', _ultSync = 0, _vista = '', _modoMesa = 'conteo';   // decisión 10-nov: mesa solo registra con el conteo al final del día
 
 // Mismo acceso que los demás módulos: la sesión que crea el panel SARE 1507 al entrar con nombre y CUPO
 function leerUsuario() {
@@ -587,7 +650,7 @@ function pestañas() {
 }
 function ver(v) {
   detenerCam();
-  _vista = v;
+  _vista = v; document.body.classList.toggle('con-docs', v === 'FILTRO' || v === 'MESA');
   document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== 'v-' + v; });
   $('tabs').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.v === v));
   refrescarVista();
@@ -611,7 +674,7 @@ function cabecera() {
 //  ACCESO: clave → día → función (al elegirla se descarga y empieza)
 // ════════════════════════════════════════════════════════════
 function mostrarAcceso(paso) {
-  detenerCam();
+  detenerCam(); document.body.classList.add('con-docs');
   document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== 'v-acceso'; });
   $('tabs').hidden = true;
   $('acc-quien').textContent = USUARIO ? 'Hola ' + USUARIO.NOMBRE : '';
@@ -735,7 +798,7 @@ function evaluarFiltro(r) {
   else if (x && x.e === E.ENTREGADA) { motivo = 'YA ENTREGADA'; html = `<div class="res mal"><div class="t">⛔ YA SE ENTREGÓ</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; }
   else if (x && (x.e === E.BUSQUEDA || x.e === E.MESA)) { html = `<div class="res aviso"><div class="t">⚠️ YA PASÓ POR FILTRO</div>${datos(r, true)}<p>${textoEstado(x)}. No hace falta registrarla otra vez.</p></div>`; }
   else { ok = true; const regreso = x && x.e === E.DEVUELTA;
-    html = `<div class="res ok"><div class="t">✅ PASA A BÚSQUEDA${regreso ? ' (REGRESÓ)' : ''}</div>${datos(r, true)}${regreso ? `<p><b>Antes no se entregó: ${esc(x.d)}.</b> Verifica que ya traiga lo que faltaba.</p>` : ''}<p class="hint" style="color:inherit;margin-top:8px">✏️ Anota la CCT en la copia de la CURP y pásala a búsqueda.</p></div>`; }
+    html = `<div class="res ok"><div class="t">✅ PASA A BÚSQUEDA${regreso ? ' (REGRESÓ)' : ''}</div>${datos(r, true)}${regreso ? `<p><b>Antes no se entregó: ${esc(x.d)}.</b> Verifica que ya traiga lo que faltaba.</p>` : ''}${docsPara(r.c)}<p class="hint" style="color:inherit;margin-top:8px">✏️ Anota la CCT en la copia de la CURP y pásala a búsqueda.</p></div>`; }
   box.innerHTML = html;
   if (ok) { beep(true); vibrar(80); registrar('FILTRO_OK', r); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'ok', txt: 'Pasa · ' + r.cct }); }
   else if (motivo) { beep(false); vibrar([200, 80, 200]); registrar('FILTRO_RECHAZO', r, motivo); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'mal', txt: motivo }); }
@@ -764,12 +827,32 @@ function buscarTarjeta(texto) {
   const r = PAQ.byT[t], x = r ? EST[t] : null;
   if (!r) { box.innerHTML = `<div class="res mal"><div class="t">⛔ ESTA TARJETA NO ES DE HOY</div><p>…${esc(t.slice(-8))}: no está en los convocados de este día. Regrésala a su CCT.</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
   if (x && x.e === E.ENTREGADA) { box.innerHTML = `<div class="res mal"><div class="t">⛔ YA SE ENTREGÓ</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
-  if (x && x.e === E.MESA) { box.innerHTML = `<div class="res aviso"><div class="t">⚠️ YA ESTABA EN MESA</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; beep(false); return; }
+  if (x && x.e === E.MESA) { devolucionMesa(r); return; }
   const sinFiltro = !x || x.e !== E.BUSQUEDA;
   registrar('A_MESA', r);
   box.innerHTML = `<div class="res ok"><div class="t">✅ A MESA</div>${datos(r)}${sinFiltro ? `<p><b>⚠️ ${x && x.e === E.DEVUELTA ? 'Era una no entregada: confirma que el titular regresó con sus documentos.' : 'No pasó por filtro: confirma que la persona está en la fila.'}</b></p>` : ''}</div>`;
   beep(true); vibrar(80);
   LOG.push({ h: horaAhora(), t, n: r.n, tipo: 'ok', txt: 'A mesa' }); guardarLog(); pintarBusqueda();
+}
+// Mesa regresó la tarjeta sin entregar (no cumplió documentos): búsqueda registra la causal y la tarjeta vuelve a la caja
+function devolucionMesa(r) {
+  const box = $('b-res'), x = EST[r.t];
+  const lista = (LOGIN && LOGIN.causales) || ['FALTA IDENTIFICACION OFICIAL', 'FALTA CURP', 'NO ES EL TUTOR O BECARIO REGISTRADO', 'DOCUMENTOS INCOMPLETOS O ILEGIBLES', 'OTRO'];
+  box.innerHTML = `<div class="res aviso"><div class="t">↩ REGRESÓ DE MESA</div>${datos(r)}<p>${textoEstado(x)}. Si mesa la regresa porque no cumplió, elige la causal y regístrala como NO ENTREGADA. Si fue por error, déjala en mesa.</p>
+    <label class="lbl">Causal</label><div class="causales" id="b-causales">${lista.map(c => `<button class="causal" data-c="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('')}</div>
+    <input class="main-input" id="b-dev-nota" placeholder="Nota (opcional)" style="width:100%;margin-top:8px">
+    <button class="btn mal full" id="b-dev-ok">Registrar como NO ENTREGADA</button><button class="btn full" id="b-dev-no">Dejarla en mesa</button></div>`;
+  let causal = '';
+  box.querySelectorAll('.causal').forEach(b => b.onclick = () => { causal = b.dataset.c; box.querySelectorAll('.causal').forEach(y => y.setAttribute('aria-pressed', y === b)); });
+  $('b-dev-no').onclick = () => { box.innerHTML = ''; };
+  $('b-dev-ok').onclick = () => {
+    if (!causal) { toast('Elige la causal', true); return; }
+    const nota = $('b-dev-nota').value.trim(), det = causal + (nota ? ': ' + nota : '');
+    registrar('DEVUELTA', r, det); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'mal', txt: 'No entregada · ' + det }); guardarLog();
+    box.innerHTML = `<div class="res aviso"><div class="t">↩ NO ENTREGADA · DE VUELTA EN LA CAJA</div><div class="n">${esc(r.n)}</div><p>${esc(det)}<br>Guárdala en el paquete de ${esc(r.cct)}. Si regresa hoy con sus documentos, pasa otra vez por filtro.</p></div>`;
+    pintarBusqueda();
+  };
+  beep(false);
 }
 // Lista agrupada por CCT (así están acomodadas las tarjetas)
 function porCct(lista, extra) {
@@ -805,7 +888,7 @@ function pintarCaja() {
   $('b-caja').innerHTML = l.map(x => `<tr><td>${cctHtml(x.cct)}</td><td class="num">${fmt(x.tar)}</td><td class="num">${fmt(x.ent)}</td><td class="num${x.mesa ? ' pend-n' : ''}">${fmt(x.mesa)}</td><td class="num"><b>${fmt(x.pend.length)}</b></td></tr>`).join('') +
     `<tr><td><b>TOTAL</b></td><td class="num"><b>${fmt(t.tar)}</b></td><td class="num"><b>${fmt(t.ent)}</b></td><td class="num"><b>${fmt(t.mesa)}</b></td><td class="num"><b>${fmt(t.caja)}</b></td></tr>`;
   const cont = lsGet('ent_corte_' + SES.fecha, {});
-  $('b-corte-av').innerHTML = t.mesa ? `<div class="res aviso" style="margin-bottom:10px"><div class="t">⚠️ ${t.mesa} en mesa sin resolver</div><p>Antes del corte, que mesa las entregue o las regrese a búsqueda; si no, cuentan como fuera de la caja.</p></div>`
+  $('b-corte-av').innerHTML = t.mesa ? `<div class="res aviso" style="margin-bottom:10px"><div class="t">⚠️ ${t.mesa} en mesa sin resolver</div><p>Antes del corte, que cada mesa haga su conteo de expedientes y que búsqueda registre las tarjetas que mesa regresó; si no, cuentan como fuera de la caja.</p></div>`
     : _corteGuardado ? `<div class="res ok" style="margin-bottom:10px"><div class="t">✅ Corte guardado ${esc(_corteGuardado)}</div><p>Si vuelves a contar, guárdalo otra vez: queda el último.</p></div>` : '';
   $('b-corte').innerHTML = l.map(x => { const v = cont[x.cct], d = v === undefined || v === '' ? '' : Number(v) - x.pend.length;
     return `<tr><td>${cctHtml(x.cct)}</td><td class="num"><b>${fmt(x.pend.length)}</b></td><td class="num"><input class="main-input" data-cct="${esc(x.cct)}" inputmode="numeric" value="${v == null ? '' : esc(v)}" style="width:76px;min-width:0;padding:6px;text-align:right"></td><td class="num ${d === '' ? '' : d === 0 ? 'dif-ok' : 'dif-mal'}">${d === '' ? '' : d === 0 ? '✓' : (d > 0 ? '+' : '') + d}</td><td><button class="btn borde" data-ver="${esc(x.cct)}" style="padding:4px 8px;font-size:.68rem">Ver</button></td></tr>`; }).join('');
@@ -850,16 +933,7 @@ document.querySelectorAll('[data-etq]').forEach(b => b.onclick = () => imprimirE
 //  3) MESA DE ATENCIÓN — en el momento (revisa y entrega/devuelve) o conteo al final (cada CURP o tarjeta = entregada)
 // ════════════════════════════════════════════════════════════
 let _mesaR = null, _causal = '';
-function modoMesa(m) {
-  _modoMesa = m; lsSet('ent_modo_mesa', m); cerrarMesa(false);
-  document.querySelectorAll('.mode-btn').forEach(b => b.setAttribute('aria-pressed', b.dataset.modo === m));
-  $('m-modo-txt').textContent = m === 'conteo'
-    ? '🧮 Cada CURP o tarjeta que escanees queda como ENTREGADA al instante. Úsalo al final del día con tus expedientes. La cámara se queda abierta.'
-    : '🤝 Escanea, revisa documentos y elige Entregar o Devolver a búsqueda.';
-  $('m-cam').dataset.continuo = m === 'conteo' ? '1' : '';
-  $('m-cam').querySelector('small').textContent = m === 'conteo' ? 'La cámara se queda abierta para el siguiente expediente' : 'Toca aquí para abrir la cámara';
-}
-document.querySelectorAll('.mode-btn').forEach(b => b.onclick = () => modoMesa(b.dataset.modo));
+function modoMesa() { _modoMesa = 'conteo'; cerrarMesa(false); $('m-cam').dataset.continuo = '1'; }
 function mesaEscanear(texto) {
   const box = $('m-res'); cerrarMesa(true); $('m-coin').innerHTML = '';
   let r = null; const curp = extraerCurp(texto), t = limpiarTarjeta(texto);
@@ -874,7 +948,11 @@ function mesaMostrar(r) {
   const box = $('m-res'), x = EST[r.t];
   if (x && x.e === E.ENTREGADA) { box.innerHTML = `<div class="res mal"><div class="t">⛔ YA SE ENTREGÓ</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
   if (_modoMesa === 'conteo') {
-    if (x && x.e === E.DEVUELTA) { box.innerHTML = `<div class="res aviso"><div class="t">⚠️ ESTABA COMO NO ENTREGADA</div>${datos(r)}<p>${textoEstado(x)}. Si sí se entregó, cambia a "Entrega en el momento" y regístrala ahí.</p></div>`; beep(false); return; }
+    if (x && x.e === E.DEVUELTA) {
+      box.innerHTML = `<div class="res aviso"><div class="t">⚠️ ESTABA COMO NO ENTREGADA</div>${datos(r)}<p>${textoEstado(x)}.</p><p><b>Si tienes su expediente con acuse firmado, sí se entregó:</b> confírmalo. Si no, sepáralo y avisa a búsqueda.</p><button class="btn ok full" id="m-conf-dev">✅ Sí se entregó: registrar</button></div>`;
+      $('m-conf-dev').onclick = () => { registrar('ENTREGADA', r, 'ENTREGADA EN CONTEO (ESTABA COMO NO ENTREGADA)'); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'ok', txt: 'Entregada (conteo, estaba devuelta)' }); guardarLog();
+        box.innerHTML = `<div class="res ok"><div class="t">✅ CONTADA COMO ENTREGADA</div><div class="n">${esc(r.n)}</div><p>${cctHtml(r.cct)}</p></div>`; beep(true); pintarMesa(); };
+      beep(false); return; }
     registrar('ENTREGADA', r);
     LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'ok', txt: 'Entregada (conteo)' }); guardarLog();
     box.innerHTML = `<div class="res ok"><div class="t">✅ CONTADA COMO ENTREGADA</div><div class="n">${esc(r.n)}</div><p>${cctHtml(r.cct)}</p></div>`;
@@ -883,7 +961,7 @@ function mesaMostrar(r) {
   _mesaR = r;
   const d = datosCurp(r.c);
   const aviso = !x || x.e !== E.MESA ? `<p><b>⚠️ ${x && x.e === E.DEVUELTA ? 'Estaba como NO ENTREGADA (' + esc(x.d) + '): confirma que ya trae lo que faltaba.' : 'Búsqueda no la registró: avisa para que la escaneen.'}</b></p>` : '';
-  box.innerHTML = `<div class="res info"><div class="t">Revisa documentos</div><div class="n" style="font-size:1.3rem">${esc(r.n)}</div><p style="font-size:1.05rem"><b>CURP: ${esc(r.c)}</b></p>${d ? `<p>${d.sexo === 'HOMBRE' ? '👨' : '👩'} ${d.sexo} · 🎂 ${d.nac} · <b>${d.edad} años${d.edad < 18 ? ' · MENOR DE EDAD: documentos del tutor' : ''}</b></p>` : ''}${cctLinea(r)}<p class="sub">Tarjeta …${esc(r.t.slice(-8))} · ${esc(r.prog)}</p>${aviso}</div>`;
+  box.innerHTML = `<div class="res info"><div class="t">Revisa documentos</div><div class="n" style="font-size:1.3rem">${esc(r.n)}</div><p style="font-size:1.05rem"><b>CURP: ${esc(r.c)}</b></p>${d ? `<p>${d.sexo === 'HOMBRE' ? '👨' : '👩'} ${d.sexo} · 🎂 ${d.nac} · <b>${d.edad} años${d.edad < 18 ? ' · MENOR DE EDAD: documentos del tutor' : ''}</b></p>` : ''}${cctLinea(r)}<p class="sub">Tarjeta …${esc(r.t.slice(-8))} · ${esc(r.prog)}</p>${docsPara(r.c)}${aviso}</div>`;
   $('m-acc').hidden = false; $('m-causales').hidden = true; _causal = '';
   beep(true);
 }
@@ -913,7 +991,7 @@ function misEntregas() { return PAQ.lista.filter(r => { const x = EST[r.t]; retu
 function pintarMesa() {
   $('m-num').textContent = '· ' + SES.op;
   const mias = misEntregas(), devs = LOG.filter(l => l.tipo === 'mal').length;
-  $('m-kpis').innerHTML = kpi(mias.length, 'Entregadas por mí') + kpi(devs, 'Devueltas (yo)') + kpi(COLA.length, 'Por enviar', COLA.length > 0);
+  $('m-kpis').innerHTML = kpi(mias.length, 'Expedientes contados') + kpi(COLA.length, 'Por enviar', COLA.length > 0);
   $('m-log').innerHTML = mias.slice().reverse().map((r, i) => `<div class="it"><div><div class="nm">${mias.length - i}. ${esc(r.n)}</div><div class="sub">${esc(r.c)} · ${esc(r.cct)} · ${esc(String(EST[r.t].eh || EST[r.t].h || '').slice(-8))}</div></div><button class="btn borde" data-quitar="${r.t}" style="padding:5px 9px;font-size:.7rem">Quitar</button></div>`).join('') || '<div class="vacio">Aún no entregas tarjetas.</div>';
   $('m-log').querySelectorAll('[data-quitar]').forEach(b => b.onclick = () => {
     const r = PAQ.byT[b.dataset.quitar];
@@ -1104,7 +1182,7 @@ document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => abrirCam(
   }
   $('u-nombre').textContent = USUARIO.NOMBRE;
   if (SES && SES.op !== USUARIO.NOMBRE.toUpperCase()) { SES = null; lsDel('ent_sesion'); }
-  pintarMiniCal(); modoMesa(_modoMesa);
+  pintarMiniCal(); modoMesa();
   if (SES && SES.rol && !rolPermitido(SES.rol)) { SES.rol = ''; lsSet('ent_sesion', SES); }
   if (SES && SES.rol && cargarLocal()) { if (SES.fecha !== hoyISO()) toast('Ojo: la sesión es del ' + fechaLarga(SES.fecha), true); arrancar(); }
   else if (SES && SES.claveOp && LOGIN) mostrarAcceso(2);
