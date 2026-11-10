@@ -200,7 +200,24 @@ td.num,th.num{text-align:right}
   @keyframes flota{0%,100%{transform:translateZ(26px) translateY(0) rotate(0)}50%{transform:translateZ(26px) translateY(-6px) rotate(-4deg)}}
   @keyframes salta{0%{transform:translateZ(26px) scale(1)}40%{transform:translateZ(40px) scale(1.14) rotate(6deg)}100%{transform:translateZ(26px) scale(1)}}
 }
-.tab .i{font-size:1.45rem;transition:transform .2s}.tab[aria-selected=true] .i{transform:scale(1.12)}
+.tabs{perspective:700px}
+.tab{transition:background .2s,color .2s;cursor:pointer}
+.tab .i{display:grid;place-items:center;width:46px;height:46px;font-size:1.55rem;line-height:1;border-radius:50%;margin-bottom:3px;background:radial-gradient(circle at 32% 28%,#fff 0,#f5e6c0 40%,#e5b94e 100%);box-shadow:inset -4px -6px 10px rgba(154,91,0,.28),inset 4px 5px 8px rgba(255,255,255,.9),0 5px 10px rgba(74,14,41,.2);text-shadow:0 3px 5px rgba(0,0,0,.18);transition:transform .25s cubic-bezier(.2,.8,.3,1.3)}
+.tab[aria-selected=true] .i{background:radial-gradient(circle at 32% 28%,#fff 0,#ffe9a8 40%,#c8962a 100%);box-shadow:inset -4px -6px 10px rgba(74,14,41,.3),inset 4px 5px 8px rgba(255,255,255,.8),0 0 0 3px rgba(229,185,78,.45),0 6px 14px rgba(0,0,0,.3)}
+.tab:hover .i,.tab:focus-visible .i{transform:translateY(-3px) rotateX(10deg) rotateY(-8deg) scale(1.08)}
+.tab:active .i{transform:translateY(2px) scale(.95)}
+.btn-scan-big .ic{display:grid;place-items:center;width:58px;height:58px;flex:0 0 auto;border-radius:50%;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.55),rgba(255,255,255,.12) 60%,rgba(0,0,0,.08));box-shadow:inset -4px -6px 10px rgba(0,0,0,.25),inset 3px 4px 8px rgba(255,255,255,.35),0 6px 12px rgba(0,0,0,.25)}
+.card-h .e{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:50%;font-size:1.25rem;background:radial-gradient(circle at 32% 28%,#fff 0,#f5e6c0 40%,#e5b94e 100%);box-shadow:inset -3px -4px 8px rgba(154,91,0,.28),inset 3px 3px 6px rgba(255,255,255,.9),0 3px 8px rgba(0,0,0,.25)}
+@media (prefers-reduced-motion:no-preference){
+  .tab:not([aria-selected=true]) .i{animation:flota-t 3.4s ease-in-out infinite}
+  .tab:nth-child(2) .i{animation-delay:-1.1s}.tab:nth-child(3) .i{animation-delay:-2.2s}
+  .tab:hover .i{animation:none}
+  .tab[aria-selected=true] .i{animation:elige .45s ease}
+  .btn-scan-big:not(.activo) .ic{animation:pulso 2.6s ease-in-out infinite}
+  @keyframes flota-t{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-5deg)}}
+  @keyframes elige{0%{transform:scale(.85)}60%{transform:scale(1.15) rotate(6deg)}100%{transform:scale(1)}}
+  @keyframes pulso{0%,100%{transform:scale(1);box-shadow:inset -4px -6px 10px rgba(0,0,0,.25),inset 3px 4px 8px rgba(255,255,255,.35),0 6px 12px rgba(0,0,0,.25),0 0 0 0 rgba(229,185,78,.55)}55%{transform:scale(1.07) rotate(-4deg);box-shadow:inset -4px -6px 10px rgba(0,0,0,.25),inset 3px 4px 8px rgba(255,255,255,.35),0 6px 12px rgba(0,0,0,.25),0 0 0 10px rgba(229,185,78,0)}}
+}
 .mode-btn{padding:11px 10px;font-size:.8rem}
 @media print{body>*:not(#print-area){display:none!important}#print-area{display:block}@page{size:letter landscape;margin:9mm}}
 .vacio{text-align:center;color:#999;padding:14px;font-size:.84rem}
@@ -394,7 +411,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '10-nov-26 D';
+const APP_VERSION = '10-nov-26 E';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 const SUPERVISORES = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ', '1501991': 'GONZALEZ LINDA NOHEMI JAZMIN' };
@@ -649,7 +666,7 @@ function pestañas() {
   $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => ver(b.dataset.v));
 }
 function ver(v) {
-  detenerCam();
+  try { detenerCam(); } catch (e) { console.error(e); }
   _vista = v; document.body.classList.toggle('con-docs', v === 'FILTRO' || v === 'MESA');
   document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== 'v-' + v; });
   $('tabs').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.v === v));
@@ -674,7 +691,7 @@ function cabecera() {
 //  ACCESO: clave → día → función (al elegirla se descarga y empieza)
 // ════════════════════════════════════════════════════════════
 function mostrarAcceso(paso) {
-  detenerCam(); document.body.classList.add('con-docs');
+  try { detenerCam(); } catch (e) { console.error(e); } document.body.classList.add('con-docs');
   document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== 'v-acceso'; });
   $('tabs').hidden = true;
   $('acc-quien').textContent = USUARIO ? 'Hola ' + USUARIO.NOMBRE : '';
@@ -1099,7 +1116,7 @@ async function abrirCam(btn) {
   if (CAM.btn === btn) { detenerCam(); return; }
   detenerCam();
   CAM.btn = btn; CAM.modo = btn.dataset.cam; CAM.continuo = !!btn.dataset.continuo;
-  const vc = btn.parentNode.querySelector('[data-vc]'), v = $('cam-video');
+  const vc = btn.parentNode.querySelector('[data-vc]'), v = videoCam();
   vc.innerHTML = ''; v.hidden = false; vc.appendChild(v);
   vc.insertAdjacentHTML('beforeend', `<div class="ov"><div class="fr"></div>${CAM.modo === 'ambos' ? '<div class="ln"></div>' : ''}</div><button class="luz" hidden>🔦</button>`);
   vc.classList.add('active'); btn.classList.add('activo');
@@ -1122,17 +1139,25 @@ async function abrirCam(btn) {
   estadoCam(CAM.modo === 'curp' ? '🔍 Apunta al QR o código de barras de la CURP…' : '🔍 Apunta al código de la tarjeta o al QR de la CURP…');
   ciclo();
 }
+// El <video> de la cámara es uno solo: se presta al recuadro del módulo y SIEMPRE regresa al <body> antes de limpiar el recuadro
+function videoCam() {
+  let v = $('cam-video');
+  if (!v) { v = document.createElement('video'); v.id = 'cam-video'; v.setAttribute('playsinline', ''); v.muted = true; v.hidden = true; document.body.appendChild(v); }
+  return v;
+}
 function detenerCam() {
   clearTimeout(CAM.loop);
   if (CAM.stream) CAM.stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
-  if (CAM.btn) { const b = CAM.btn.querySelector('b'); if (b.dataset.t) b.textContent = b.dataset.t; CAM.btn.classList.remove('activo');
-    const vc = CAM.btn.parentNode.querySelector('[data-vc]'); vc.classList.remove('active'); vc.innerHTML = ''; }
-  const v = $('cam-video'); v.hidden = true; document.body.appendChild(v);
+  const v = videoCam();
+  try { v.pause(); v.srcObject = null; } catch (e) {}
+  v.hidden = true; document.body.appendChild(v);          // primero se rescata el video…
+  if (CAM.btn) { const b = CAM.btn.querySelector('b'); if (b && b.dataset.t) b.textContent = b.dataset.t; CAM.btn.classList.remove('activo');
+    const vc = CAM.btn.parentNode.querySelector('[data-vc]'); if (vc) { vc.classList.remove('active'); vc.innerHTML = ''; } }   // …y luego se limpia el recuadro
   CAM.stream = null; CAM.btn = null; CAM.ult = '';
 }
 async function ciclo() {
   if (!CAM.stream) return;
-  const v = $('cam-video');
+  const v = videoCam();
   if (v.readyState >= 2) {
     let txt = '';
     try {
