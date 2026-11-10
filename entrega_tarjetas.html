@@ -144,6 +144,20 @@ th{font-family:Montserrat,sans-serif;font-size:.64rem;text-transform:uppercase;c
 td.num,th.num{text-align:right}
 .tabla{overflow-x:auto}
 .dif-ok{color:var(--verde);font-weight:800}.dif-mal{color:var(--rojo);font-weight:800}
+.pend-n{color:var(--rojo);font-weight:800}
+.etq-btn{display:flex;gap:8px;flex-wrap:wrap}
+#print-area{display:none}
+.etq-p{font-family:'Open Sans',Arial,sans-serif;color:#111;border:4px solid #6B1C3E;border-radius:10px;padding:12px 16px}
+.etq-p+.etq-p{page-break-before:always;break-before:page}
+.etq-p .eh{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:3px solid #C8962A;padding-bottom:10px;margin-bottom:10px}
+.etq-p .ins{font-family:Montserrat,sans-serif;font-weight:800;font-size:9pt;letter-spacing:.08em;color:#6B1C3E}
+.etq-p .dia{font-family:Montserrat,sans-serif;font-weight:900;font-size:26pt;line-height:1.05;color:#6B1C3E;text-transform:uppercase}
+.etq-p .sede{font-family:Montserrat,sans-serif;font-weight:700;font-size:11pt;margin-top:6px}
+.etq-p .tot{font-family:Montserrat,sans-serif;font-weight:900;font-size:22pt;text-align:center;border:2px solid #6B1C3E;border-radius:8px;padding:6px 12px;white-space:nowrap}.etq-p .tot small{display:block;font-size:8pt;font-weight:700}
+.etq-p table{font-size:9.5pt}.etq-p td,.etq-p th{padding:3px 7px}.etq-p th{font-size:8pt;color:#333;background:#f2e9ec}.etq-p td{border-bottom:1px solid #ccc}
+.etq-p .c{font-family:'JetBrains Mono',Consolas,monospace;font-weight:800;font-size:11pt;white-space:nowrap}
+.etq-p .pie{font-size:8.5pt;color:#555;margin-top:8px}
+@media print{body>*:not(#print-area){display:none!important}#print-area{display:block}@page{size:letter landscape;margin:9mm}}
 .vacio{text-align:center;color:#999;padding:14px;font-size:.84rem}
 .modal-ov{position:fixed;inset:0;background:rgba(74,14,41,.6);z-index:70;display:flex;align-items:center;justify-content:center;padding:14px}
 .modal{background:#fff;border-radius:14px;width:100%;max-width:640px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(74,14,41,.35)}
@@ -199,7 +213,7 @@ td.num,th.num{text-align:right}
           <label class="lbl">Elige tu función: se descargan los convocados y empiezas</label>
           <div class="roles" id="acc-roles">
             <button class="rol" data-rol="FILTRO"><span>🪪</span>Filtro de CURP<small>Recibe y escanea la CURP</small></button>
-            <button class="rol" data-rol="BUSQUEDA"><span>🔎</span>Búsqueda<small>Localiza y escanea la tarjeta</small></button>
+            <button class="rol" data-rol="BUSQUEDA"><span>🔎</span>Búsqueda<small>Localiza la tarjeta y hace el corte de caja · personal autorizado</small></button>
             <button class="rol" data-rol="MESA"><span>🤝</span>Mesa de atención<small>Revisa documentos y entrega</small></button>
             <button class="rol" data-rol="SUPERVISOR"><span>📊</span>Supervisor<small>Avance y cuadre</small></button>
           </div>
@@ -235,6 +249,15 @@ td.num,th.num{text-align:right}
     <div class="kpis" id="b-kpis"></div>
     <div class="card"><div class="card-h"><span class="e">📋</span><div><h2>Por buscar <span id="b-n-pend"></span></h2><small>Pasaron filtro · agrupadas por CCT</small></div></div><div class="card-b" id="b-pend"></div></div>
     <div class="card"><div class="card-h"><span class="e">↩</span><div><h2>No entregadas (en resguardo) <span id="b-n-dev"></span></h2><small>Si regresan con sus documentos, pasan otra vez por filtro</small></div></div><div class="card-b" id="b-dev"></div></div>
+    <div class="card"><div class="card-h"><span class="e">📦</span><div><h2>Caja del día por CCT</h2><small>Se actualiza sola con los escaneos de búsqueda y mesa</small></div></div>
+      <div class="tabla"><table><thead><tr><th>CCT</th><th class="num">Tarjetas</th><th class="num">Entregadas</th><th class="num">En mesa</th><th class="num">En caja</th></tr></thead><tbody id="b-caja"></tbody></table></div>
+      <div class="card-b" style="padding-top:8px"><p class="hint">En caja = tarjetas − entregadas − en mesa. Las devueltas regresan a la caja y ya están contadas ahí.</p></div></div>
+    <div class="card"><div class="card-h"><span class="e">✅</span><div><h2>Corte de caja</h2><small>Al cierre: cuenta los sobres de cada CCT y escribe cuántos hay</small></div></div>
+      <div class="card-b" style="padding-bottom:0"><div id="b-corte-av"></div></div>
+      <div class="tabla"><table><thead><tr><th>CCT</th><th class="num">Deben quedar</th><th class="num">Contadas</th><th class="num">Dif.</th><th></th></tr></thead><tbody id="b-corte"></tbody></table></div>
+      <div class="card-b"><input class="main-input" id="b-corte-nota" placeholder="Nota del corte (opcional)" style="width:100%"><button class="btn prim full" id="b-corte-guardar">Guardar corte en la hoja</button><p class="hint" id="b-corte-msg"></p></div></div>
+    <div class="card"><div class="card-h"><span class="e">🏷️</span><div><h2>Etiquetas de las cajas</h2><small>Una por día, con las CCT que se atienden</small></div></div>
+      <div class="card-b etq-btn"><button class="btn borde" data-etq="todas">🖨️ Imprimir las etiquetas de todos los días</button><button class="btn borde" data-etq="dia">🖨️ Solo la de este día</button></div></div>
   </section>
 
   <!-- ═════ MESA ═════ -->
@@ -276,6 +299,8 @@ td.num,th.num{text-align:right}
     <div class="card"><div class="card-h"><span class="e">⚠️</span><div><h2>En mesa sin resolver <span id="s-n-mesa"></span></h2><small>Salieron de búsqueda y no se entregaron ni regresaron</small></div></div><div class="card-b lista" id="s-mesa"></div></div>
     <div class="card"><div class="card-h"><span class="e">↩</span><div><h2>No entregadas <span id="s-n-dev"></span></h2></div></div><div class="card-b lista" id="s-dev"></div></div>
     <div class="card"><div class="card-h"><span class="e">🔎</span><div><h2>Pasaron filtro y siguen en búsqueda <span id="s-n-bus"></span></h2></div></div><div class="card-b lista" id="s-bus"></div></div>
+    <div class="card"><div class="card-h"><span class="e">🏷️</span><div><h2>Etiquetas de las cajas</h2><small>Una por día, con las CCT que se atienden</small></div></div>
+      <div class="card-b etq-btn"><button class="btn borde" data-etq="todas">🖨️ Imprimir las etiquetas de todos los días</button><button class="btn borde" data-etq="dia">🖨️ Solo la de este día</button></div></div>
     <div class="card"><div class="card-h"><span class="e">✖</span><div><h2>Anular una entrega</h2><small>Solo si se registró por error: queda en resguardo</small></div></div>
       <div class="card-b"><input class="main-input" id="s-anular-t" placeholder="Tarjeta o CURP" style="width:100%"><input class="main-input" id="s-anular-m" placeholder="Motivo" style="width:100%;margin-top:8px"><button class="btn mal full" id="s-anular">Anular entrega</button></div></div>
   </section>
@@ -302,6 +327,7 @@ td.num,th.num{text-align:right}
   </section>
   <p class="pie" id="pie"></p>
 </main>
+<div id="print-area" aria-hidden="true"></div>
 
 <div class="modal-ov" id="modal" hidden><div class="modal"><div class="modal-h"><h2 id="modal-t"></h2><small id="modal-s"></small><button class="modal-x" id="modal-x" aria-label="Cerrar">✕</button></div><div class="modal-b" id="modal-b"></div></div></div>
 <div class="toast" id="toast" hidden></div>
@@ -312,10 +338,12 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '09-nov-26 C';
+const APP_VERSION = '10-nov-26 A';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 const SUPERVISORES = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ' };
+// Búsqueda (y corte de caja): solo este personal
+const BUSQUEDA_AUT = { '1501991': 'GONZALEZ LINDA NOHEMI JAZMIN', '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ' };
 const ROLES = { FILTRO: '🪪 Filtro', BUSQUEDA: '🔎 Búsqueda', MESA: '🤝 Mesa', SUPERVISOR: '📊 Supervisor' };
 const E = { BUSQUEDA: 'EN BUSQUEDA', MESA: 'EN MESA', ENTREGADA: 'ENTREGADA', DEVUELTA: 'DEVUELTA' };
 const SYNC_MS = 8000;
@@ -405,6 +433,8 @@ function leerUsuario() {
   return null;
 }
 const esSupervisor = () => !!(USUARIO && SUPERVISORES[String(USUARIO.CUPO || '').trim()]);
+const esBusqueda = () => !!(USUARIO && BUSQUEDA_AUT[String(USUARIO.CUPO || '').trim()]);
+const rolPermitido = rol => rol === 'SUPERVISOR' ? esSupervisor() : rol === 'BUSQUEDA' ? esBusqueda() : true;
 const kPaq = f => 'ent_paq_' + f, kEst = f => 'ent_est_' + f, kLog = () => 'ent_log_' + (SES ? SES.fecha + '_' + SES.rol : '');
 
 // ════════════════════════════════════════════════════════════
@@ -593,7 +623,7 @@ function prepararPaso2() {
   sel.innerHTML = dias.map(d => `<option value="${d.fecha}">${fechaLarga(d.fecha)} · ${fmt(d.escuelas.reduce((a, e) => a + e.convocados, 0))} convocados</option>`).join('') || '<option value="">No hay fechas en el calendario</option>';
   sel.value = (SES && SES.fecha && dias.some(d => d.fecha === SES.fecha)) ? SES.fecha : dias.some(d => d.fecha === hoy) ? hoy : ((dias.find(d => d.fecha > hoy) || dias[dias.length - 1] || {}).fecha || '');
   sel.onchange = infoFecha; infoFecha();
-  document.querySelectorAll('#acc-roles .rol').forEach(b => { b.disabled = b.dataset.rol === 'SUPERVISOR' && !esSupervisor(); b.onclick = () => iniciarRol(b.dataset.rol); });
+  document.querySelectorAll('#acc-roles .rol').forEach(b => { b.disabled = !rolPermitido(b.dataset.rol); b.onclick = () => iniciarRol(b.dataset.rol); });
 }
 function infoFecha() {
   const d = ((LOGIN && LOGIN.calendario) || []).find(x => x.fecha === $('acc-fecha').value);
@@ -616,6 +646,7 @@ $('acc-entrar').onclick = async () => {
 async function iniciarRol(rol) {
   const fecha = $('acc-fecha').value;
   if (!fecha) { $('acc-msg').textContent = 'No hay día del operativo en el calendario.'; return; }
+  if (!rolPermitido(rol)) { $('acc-msg').textContent = '⛔ Esa función es solo para el personal autorizado.'; return; }
   if (COLA.length && SES && SES.rol && SES.rol !== rol) { await sincronizar(); if (COLA.length) { $('acc-msg').textContent = '⚠️ Hay ' + COLA.length + ' movimientos sin enviar: busca señal antes de cambiar de función.'; return; } }
   document.querySelectorAll('#acc-roles .rol').forEach(b => { b.disabled = true; });
   $('acc-msg').textContent = '⏳ Descargando convocados y calendario…';
@@ -754,7 +785,66 @@ function pintarBusqueda() {
   $('b-n-pend').textContent = '(' + pend.length + ')'; $('b-n-dev').textContent = '(' + dev.length + ')';
   $('b-pend').innerHTML = porCct(pend, r => 'Pasó filtro ' + (EST[r.t].h || '').slice(-8, -3)) || '<div class="vacio">Nada pendiente.</div>';
   $('b-dev').innerHTML = porCct(dev, r => EST[r.t].d) || '<div class="vacio">Ninguna.</div>';
+  pintarCaja();
 }
+
+// ── Caja del día y corte de caja ──
+function cajaPorCct() {
+  const m = {};
+  PAQ.lista.forEach(r => {
+    const x = (m[r.cct] = m[r.cct] || { cct: r.cct, esc: r.esc, tar: 0, ent: 0, mesa: 0, dev: 0, pend: [] });
+    if (r.rec !== 'RECIBIDA') return;
+    x.tar++; const s = EST[r.t];
+    if (s && s.e === E.ENTREGADA) x.ent++; else if (s && s.e === E.MESA) x.mesa++; else { if (s && s.e === E.DEVUELTA) x.dev++; x.pend.push(r); }
+  });
+  return Object.keys(m).sort().map(k => m[k]);
+}
+let _corteGuardado = null;
+function pintarCaja() {
+  const l = cajaPorCct(), t = l.reduce((a, x) => ({ tar: a.tar + x.tar, ent: a.ent + x.ent, mesa: a.mesa + x.mesa, caja: a.caja + x.pend.length }), { tar: 0, ent: 0, mesa: 0, caja: 0 });
+  $('b-caja').innerHTML = l.map(x => `<tr><td>${cctHtml(x.cct)}</td><td class="num">${fmt(x.tar)}</td><td class="num">${fmt(x.ent)}</td><td class="num${x.mesa ? ' pend-n' : ''}">${fmt(x.mesa)}</td><td class="num"><b>${fmt(x.pend.length)}</b></td></tr>`).join('') +
+    `<tr><td><b>TOTAL</b></td><td class="num"><b>${fmt(t.tar)}</b></td><td class="num"><b>${fmt(t.ent)}</b></td><td class="num"><b>${fmt(t.mesa)}</b></td><td class="num"><b>${fmt(t.caja)}</b></td></tr>`;
+  const cont = lsGet('ent_corte_' + SES.fecha, {});
+  $('b-corte-av').innerHTML = t.mesa ? `<div class="res aviso" style="margin-bottom:10px"><div class="t">⚠️ ${t.mesa} en mesa sin resolver</div><p>Antes del corte, que mesa las entregue o las regrese a búsqueda; si no, cuentan como fuera de la caja.</p></div>`
+    : _corteGuardado ? `<div class="res ok" style="margin-bottom:10px"><div class="t">✅ Corte guardado ${esc(_corteGuardado)}</div><p>Si vuelves a contar, guárdalo otra vez: queda el último.</p></div>` : '';
+  $('b-corte').innerHTML = l.map(x => { const v = cont[x.cct], d = v === undefined || v === '' ? '' : Number(v) - x.pend.length;
+    return `<tr><td>${cctHtml(x.cct)}</td><td class="num"><b>${fmt(x.pend.length)}</b></td><td class="num"><input class="main-input" data-cct="${esc(x.cct)}" inputmode="numeric" value="${v == null ? '' : esc(v)}" style="width:76px;min-width:0;padding:6px;text-align:right"></td><td class="num ${d === '' ? '' : d === 0 ? 'dif-ok' : 'dif-mal'}">${d === '' ? '' : d === 0 ? '✓' : (d > 0 ? '+' : '') + d}</td><td><button class="btn borde" data-ver="${esc(x.cct)}" style="padding:4px 8px;font-size:.68rem">Ver</button></td></tr>`; }).join('');
+  $('b-corte').querySelectorAll('input').forEach(i => i.onchange = () => { const c = lsGet('ent_corte_' + SES.fecha, {}); c[i.dataset.cct] = i.value.replace(/\D/g, ''); lsSet('ent_corte_' + SES.fecha, c); pintarCaja(); });
+  $('b-corte').querySelectorAll('[data-ver]').forEach(b => b.onclick = () => {
+    const x = cajaPorCct().find(y => y.cct === b.dataset.ver); if (!x) return;
+    abrirModal('Deben quedar en la caja · ' + x.cct, x.pend.length + ' sobres · ' + x.esc,
+      '<div class="lista">' + x.pend.slice().sort((a, c) => a.n.localeCompare(c.n)).map(r => `<div class="it"><div><div class="nm">${esc(r.n)}</div><div class="sub">Tarjeta …${esc(r.t.slice(-8))}${EST[r.t] && EST[r.t].e === E.DEVUELTA ? ' · devuelta: ' + esc(EST[r.t].d || '') : ''}</div></div></div>`).join('') + '</div>' || '<div class="vacio">Ninguna: todo se entregó.</div>');
+  });
+}
+$('b-corte-guardar').onclick = async () => {
+  const cont = lsGet('ent_corte_' + SES.fecha, {}), l = cajaPorCct(), falt = l.filter(x => cont[x.cct] === undefined || cont[x.cct] === '');
+  if (falt.length && !confirm(`Faltan ${falt.length} CCT por contar. ¿Guardar así? Las que no cuentes quedan en blanco.`)) return;
+  $('b-corte-msg').textContent = '⏳ Enviando movimientos pendientes y guardando…'; $('b-corte-guardar').disabled = true;
+  try {
+    await sincronizar();
+    if (COLA.length) throw new Error('Hay ' + COLA.length + ' movimientos sin enviar: busca señal y vuelve a intentar');
+    const r = await llamar({ accion: 'corte', nota: $('b-corte-nota').value.trim(), cortes: l.map(x => ({ cct: x.cct, contadas: cont[x.cct] === undefined ? '' : cont[x.cct] })) }, 30000);
+    _corteGuardado = 'a las ' + horaAhora() + ' por ' + SES.op;
+    const dif = r.filas.filter(x => x.diferencia !== '' && x.diferencia !== 0);
+    $('b-corte-msg').textContent = `✅ Guardado en la pestaña "Cortes": ${r.filas.length} CCT · ${fmt(r.pendientes)} deben quedar en caja` + (dif.length ? ` · ⚠️ ${dif.length} con diferencia` : ' · todo cuadra') + '.';
+    pintarCaja();
+  } catch (e) { $('b-corte-msg').textContent = '⛔ ' + (e.name === 'AbortError' ? 'Sin respuesta de la hoja: revisa la señal.' : e.message); }
+  finally { $('b-corte-guardar').disabled = false; }
+};
+
+// ── Etiquetas de las cajas: una por día, con las CCT que se atienden (sin datos personales) ──
+function imprimirEtiquetas(soloDia) {
+  const dias = ((LOGIN && LOGIN.calendario) || []).filter(d => !soloDia || d.fecha === SES.fecha);
+  if (!dias.length) { toast('No hay calendario en el celular: vuelve a entrar con señal', true); return; }
+  $('print-area').innerHTML = dias.map(d => {
+    const l = d.escuelas.slice().sort((a, b) => (a.cita || '').localeCompare(b.cita || '') || a.cct.localeCompare(b.cct)), tot = l.reduce((a, e) => a + (e.tarjetas || 0), 0), s = l[0] || {};
+    return `<div class="etq-p"><div class="eh"><div><div class="ins">SARE 1507 · ENTREGA DE TARJETAS · BECAS PARA EL BIENESTAR</div><div class="dia">${esc(fechaLarga(d.fecha))}</div><div class="sede">📍 ${esc(s.sede || '')}${s.horario ? ' · ' + esc(s.horario) : ''}</div></div><div class="tot">${fmt(tot)}<small>TARJETAS · ${l.length} CCT</small></div></div>
+      <table><thead><tr><th>CCT</th><th>Escuela</th><th>Programa</th><th>Cita</th><th class="num">Tarjetas</th></tr></thead><tbody>${l.map(e => `<tr><td class="c">${esc(e.cct)}</td><td>${esc(e.escuela)}</td><td>${esc(e.programa)}</td><td>${esc(e.cita || '')}</td><td class="num">${fmt(e.tarjetas || 0)}</td></tr>`).join('')}</tbody></table>
+      <div class="pie">Dentro: un paquete por CCT. Al cierre, búsqueda hace el corte de caja en la app y la caja regresa a la oficina con las pendientes.</div></div>`;
+  }).join('');
+  setTimeout(() => window.print(), 150);
+}
+document.querySelectorAll('[data-etq]').forEach(b => b.onclick = () => imprimirEtiquetas(b.dataset.etq === 'dia'));
 
 // ════════════════════════════════════════════════════════════
 //  3) MESA DE ATENCIÓN — en el momento (revisa y entrega/devuelve) o conteo al final (cada CURP o tarjeta = entregada)
@@ -1015,6 +1105,7 @@ document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => abrirCam(
   $('u-nombre').textContent = USUARIO.NOMBRE;
   if (SES && SES.op !== USUARIO.NOMBRE.toUpperCase()) { SES = null; lsDel('ent_sesion'); }
   pintarMiniCal(); modoMesa(_modoMesa);
+  if (SES && SES.rol && !rolPermitido(SES.rol)) { SES.rol = ''; lsSet('ent_sesion', SES); }
   if (SES && SES.rol && cargarLocal()) { if (SES.fecha !== hoyISO()) toast('Ojo: la sesión es del ' + fechaLarga(SES.fecha), true); arrancar(); }
   else if (SES && SES.claveOp && LOGIN) mostrarAcceso(2);
   else mostrarAcceso(1);
