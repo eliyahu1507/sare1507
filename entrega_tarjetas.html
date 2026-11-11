@@ -415,7 +415,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '10-nov-26 I';
+const APP_VERSION = '11-nov-26 A';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 const SUPERVISORES = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ', '1501991': 'GONZALEZ LINDA NOHEMI JAZMIN' };
@@ -784,6 +784,18 @@ function buscarNombre(q) {
   if (!t.length) return [];
   return PAQ.lista.filter(r => t.every(w => (' ' + r.nn + ' ').includes(' ' + w))).slice(0, 30);
 }
+// Si no está en los convocados del día, se busca por nombre en todo el nominal (en línea). Regresa null si no hubo respuesta.
+async function nombreEnNominal(q) {
+  try { return await llamar({ accion: 'nombre', q }, 12000); } catch (e) { return null; }
+}
+function listaNominal(boxId, j, q, fn) {
+  $(boxId).innerHTML = `<div class="res aviso"><div class="t">⚠️ No es de los convocados del ${esc(fechaLarga(SES.fecha))}</div><p>Encontré ${j.lista.length}${j.lista.length >= 15 ? ' o más' : ''} en el nominal con ese nombre. Toca para ver su fecha:</p></div>` +
+    j.lista.map((r, k) => `<button class="it" data-k="${k}"><div><div class="nm">${marcar(r.nombre, q)}</div><div class="sub">${esc(r.curp)} · ${r.recepcion === 'RECIBIDA' ? (r.fechaTexto ? '📅 ' + esc(r.fechaTexto) : 'sin fecha') : 'TARJETA NO RECIBIDA'}</div>${cctHtml(r.cct)}</div><span class="chip c-av">OTRO DÍA</span></button>`).join('');
+  $(boxId).querySelectorAll('button[data-k]').forEach(b => b.onclick = () => { $(boxId).innerHTML = ''; fn(j.lista[+b.dataset.k].curp); });
+}
+const msgSinNombre = (texto, j) => !j ? `No está en los convocados del ${esc(fechaLarga(SES.fecha))} y no se pudo buscar en los demás días (sin señal). Usa la CURP.`
+  : j.corto ? `No está en los convocados del ${esc(fechaLarga(SES.fecha))}. Para buscar en los demás días escribe nombre y al menos un apellido, o usa la CURP.`
+  : `No encontré "${esc(texto)}" en todo el nominal. Revisa cómo se escribe o usa la CURP.`;
 function listaCoincidencias(boxId, l, q, fn) {
   $(boxId).innerHTML = `<p class="hint" style="margin:10px 0 6px">${l.length} coincidencia(s) en los convocados del día. Toca para revisar:</p>` +
     l.map(r => `<button class="it" data-t="${r.t}"><div><div class="nm">${marcar(r.n, q)}</div><div class="sub">${esc(r.c)}</div>${cctHtml(r.cct)}</div>${chipEstado(EST[r.t])}</button>`).join('');
@@ -800,7 +812,12 @@ async function filtrar(texto) {
     const t = limpiarTarjeta(texto);
     if (tarjetaValida(t) && PAQ.byT[t]) return evaluarFiltro(PAQ.byT[t]);
     const l = buscarNombre(texto);
-    if (!l.length) { box.innerHTML = `<div class="res mal"><div class="t">Sin resultados</div><p>No encontré "${esc(texto)}" en los convocados de hoy. Para otros días usa la CURP.</p></div>`; beep(false); return; }
+    if (!l.length) {
+      box.innerHTML = '<div class="vacio">🔎 No es de este día; buscando en todo el nominal…</div>';
+      const j = await nombreEnNominal(texto);
+      if (j && j.lista && j.lista.length) { box.innerHTML = ''; return listaNominal('f-coin', j, texto, curp => filtrar(curp)); }
+      box.innerHTML = `<div class="res mal"><div class="t">Sin resultados</div><p>${msgSinNombre(texto, j)}</p></div>`; beep(false); return;
+    }
     box.innerHTML = ''; return listaCoincidencias('f-coin', l, texto, evaluarFiltro);
   }
   const curp = lc.curp; cajaCurp('f-curp', curp, lc.nombre);
@@ -1090,7 +1107,11 @@ async function consultar(texto) {
   }
   if (tarjetaValida(t)) { box.innerHTML = PAQ.byT[t] ? '<div class="lista">' + fila(PAQ.byT[t]) + '</div>' : '<div class="vacio">Esa tarjeta no es de los convocados de este día.</div>'; return; }
   const l = buscarNombre(texto);
-  box.innerHTML = l.length ? `<p class="hint" style="margin-bottom:6px">${l.length} coincidencia(s) hoy</p><div class="lista">${l.map(fila).join('')}</div>` : '<div class="vacio">Sin coincidencias en los convocados de este día. Para otros días, consulta por CURP.</div>';
+  if (l.length) { box.innerHTML = `<p class="hint" style="margin-bottom:6px">${l.length} coincidencia(s) hoy</p><div class="lista">${l.map(fila).join('')}</div>`; return; }
+  box.innerHTML = '<div class="vacio">🔎 No es de este día; buscando en todo el nominal…</div>';
+  const j = await nombreEnNominal(texto);
+  if (j && j.lista && j.lista.length) { box.innerHTML = '<div id="c-coin"></div>'; return listaNominal('c-coin', j, texto, curp => consultar(curp)); }
+  box.innerHTML = `<div class="vacio">${msgSinNombre(texto, j)}</div>`;
 }
 function pintarSesion() {
   const otros = ['FILTRO', 'BUSQUEDA', 'MESA', 'SUPERVISOR'].filter(r => r !== SES.rol && rolPermitido(r));
