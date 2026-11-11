@@ -1,0 +1,269 @@
+<title>¿Traes todo para tu tarjeta?</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Noto+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: una columna tipo "hoja de ventanilla" — selector arriba, checklist por persona, datos del acuse, orden del expediente; semáforo fijo abajo */
+:root{
+  --guinda:#691c32; --guinda-2:#8a2443; --dorado:#bc955c; --verde:#235b4e; --rojo:#b3261e;
+  --bg:#f6f3ef; --card:#ffffff; --fg:#231c1f; --mute:#6b5f63; --line:#e3dbd5; --soft:#f1e9e2; --ok-bg:#e6f0ec; --warn-bg:#fbf1e3;
+  --ff-d:'Montserrat',system-ui,sans-serif; --ff-b:'Noto Sans',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --guinda:#d77a95; --guinda-2:#e597ad; --dorado:#d8b583; --verde:#6cc0a6; --rojo:#ff8a80;
+  --bg:#171214; --card:#221a1d; --fg:#f2eaec; --mute:#b5a6ab; --line:#3a2e32; --soft:#2b2125; --ok-bg:#183029; --warn-bg:#33281a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --guinda:#d77a95; --guinda-2:#e597ad; --dorado:#d8b583; --verde:#6cc0a6; --rojo:#ff8a80;
+  --bg:#171214; --card:#221a1d; --fg:#f2eaec; --mute:#b5a6ab; --line:#3a2e32; --soft:#2b2125; --ok-bg:#183029; --warn-bg:#33281a; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--ff-b);font-size:16px;line-height:1.5;margin:0}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 120px;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--ff-d);text-wrap:balance;margin:0}
+header.top{display:flex;flex-direction:column;gap:6px;padding-bottom:4px;border-bottom:3px solid var(--dorado)}
+.eyebrow{font:700 12px/1.2 var(--ff-d);letter-spacing:.12em;text-transform:uppercase;color:var(--dorado)}
+h1{font-size:clamp(26px,6vw,34px);color:var(--guinda);font-weight:800;line-height:1.1}
+.lead{color:var(--mute);margin:0}
+section.blk{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+section.blk>h2{font-size:19px;color:var(--fg);display:flex;align-items:center;gap:10px}
+.n{flex:none;width:28px;height:28px;border-radius:50%;background:var(--guinda);color:#fff;font:800 14px/28px var(--ff-d);text-align:center}
+.q{display:flex;flex-direction:column;gap:8px}
+.q>p{margin:0;font-weight:700}
+.seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.seg button{font:600 15px/1.25 var(--ff-b);text-align:left;padding:12px 14px;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+.seg button small{display:block;font-weight:400;color:var(--mute);font-size:13px}
+.seg button[aria-pressed="true"]{border-color:var(--guinda);background:var(--soft)}
+.seg button:focus-visible,.chk:focus-within,summary:focus-visible{outline:3px solid var(--dorado);outline-offset:2px}
+.aviso{background:var(--warn-bg);border-radius:10px;padding:10px 12px;font-size:14px}
+.grupo{display:flex;flex-direction:column;gap:8px}
+.grupo h3{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--guinda)}
+.chk{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.chk input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--verde)}
+.chk .t{font-weight:700}
+.chk .t .tag{font:600 11px/1 var(--ff-d);letter-spacing:.05em;text-transform:uppercase;padding:3px 6px;border-radius:5px;background:var(--soft);color:var(--mute);margin-left:6px;vertical-align:2px;white-space:nowrap}
+.chk .d{font-size:14px;color:var(--mute);margin-top:2px}
+.chk.ok{background:var(--ok-bg);border-color:transparent}
+details{font-size:14px;margin-top:6px}
+summary{cursor:pointer;color:var(--guinda-2);font-weight:600}
+details ul{margin:6px 0 0;padding-left:20px}
+details li{margin:2px 0}
+.ej{font-family:ui-monospace,Menlo,monospace;background:var(--soft);padding:1px 5px;border-radius:4px;font-size:13px}
+ol.exp{margin:0;padding:0;list-style:none;counter-reset:e;display:flex;flex-direction:column;gap:6px}
+ol.exp li{counter-increment:e;display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:baseline}
+ol.exp li::before{content:counter(e);font:800 15px var(--ff-d);color:var(--dorado);text-align:right}
+.ruta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.paso{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.paso b{font-family:var(--ff-d);color:var(--verde)}
+.paso span{font-size:14px;color:var(--mute)}
+.sedes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.sede{border-left:4px solid var(--dorado);padding:4px 0 4px 12px}
+.sede b{display:block;font-family:var(--ff-d)}
+.sede span{font-size:14px;color:var(--mute)}
+.fuente{font-size:12px;color:var(--mute);margin:0}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:5}
+.bar .in{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.luz{flex:none;width:18px;height:18px;border-radius:50%;background:var(--rojo)}
+.bar.listo .luz{background:var(--verde)}
+.bar .txt{flex:1;min-width:0;font-size:14px}
+.bar .txt b{display:block;font-family:var(--ff-d);font-size:15px}
+.meter{height:6px;background:var(--soft);border-radius:4px;overflow:hidden;margin-top:4px}
+.meter i{display:block;height:100%;background:var(--verde);width:0;transition:width .25s}
+.bar button{flex:none;font:600 13px var(--ff-b);border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:8px 10px;cursor:pointer}
+@media (prefers-reduced-motion:reduce){.meter i{transition:none}}
+@media print{.bar,.seg,details summary{display:none}details>*{display:block}section.blk{break-inside:avoid;border:1px solid #999}.wrap{padding-block:0}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Entrega de tarjetas · Becas Benito Juárez · SARE 1507</span>
+    <h1>¿Traes todo para recibir tu tarjeta?</h1>
+    <p class="lead">Contesta 3 preguntas, palomea lo que traes y revisa los datos que te van a pedir. Si todo está en verde, pasa al filtro.</p>
+  </header>
+
+  <section class="blk" aria-labelledby="h1s">
+    <h2 id="h1s"><span class="n">1</span>Tu caso</h2>
+    <div class="q">
+      <p>¿De qué beca es la tarjeta?</p>
+      <div class="seg" data-k="prog">
+        <button type="button" id="b-prog-bueems" data-v="bueems" aria-pressed="true">Beca Benito Juárez<small>Educación Media Superior (bachillerato)</small></button>
+        <button type="button" id="b-prog-jef" data-v="jef" aria-pressed="false">Jóvenes Escribiendo el Futuro<small>Educación Superior</small></button>
+      </div>
+    </div>
+    <div class="q">
+      <p>¿Qué edad tiene hoy el o la estudiante?</p>
+      <div class="seg" data-k="edad">
+        <button type="button" id="b-edad-m15" data-v="m15" aria-pressed="false">Menos de 15 años<small>Aún no se fabrica su tarjeta</small></button>
+        <button type="button" id="b-edad-menor" data-v="menor" aria-pressed="true">15 a 17 años<small>Viene con quien lo registró</small></button>
+        <button type="button" id="b-edad-mayor" data-v="mayor" aria-pressed="false">18 años o más<small>Viene solo/a</small></button>
+      </div>
+    </div>
+    <div class="q" id="q-acomp">
+      <p>¿Quién lo acompaña?</p>
+      <div class="seg" data-k="acomp">
+        <button type="button" id="b-acomp-padre" data-v="padre" aria-pressed="true">Mamá o papá<small>Aparece en su acta de nacimiento</small></button>
+        <button type="button" id="b-acomp-tutor" data-v="tutor" aria-pressed="false">Otra persona como tutor/a<small>Abuelos, tíos, hermanos mayores u otra persona a cargo</small></button>
+      </div>
+      <p class="aviso"><b>Debe venir la misma persona que quedó registrada como madre, padre o tutor cuando se solicitó la beca.</b> Si viene otra persona, no se puede entregar la tarjeta.</p>
+    </div>
+  </section>
+
+  <section class="blk" id="s-m15" hidden>
+    <h2>Todavía no se entrega tu tarjeta</h2>
+    <p style="margin:0">La tarjeta de la Beca Benito Juárez <b>se fabrica cuando el o la estudiante cumple 15 años</b>. Si aún no los cumple, en este operativo no hay tarjeta para recogerla.</p>
+    <p class="aviso">Cuando cumpla 15 años, <b>mantente al pendiente del aviso de tu escuela</b>: ella te avisará cuando nuestra oficina tenga tu tarjeta lista para entregarse. Normalmente esto sucede <b>entre enero y marzo</b>. Mientras, puedes ir juntando los documentos.</p>
+  </section>
+
+  <div id="flujo" style="display:contents">
+  <section class="blk" aria-labelledby="h2s">
+    <h2 id="h2s"><span class="n">2</span>Documentos: original y copia</h2>
+    <p class="aviso">Trae cada documento <b>en original y una copia</b>. La copia se queda en tu expediente; el original solo se revisa y se te regresa. Si falta un documento, la tarjeta no se puede entregar.</p>
+    <div id="docs"></div>
+  </section>
+
+  <section class="blk" aria-labelledby="h3s">
+    <h2 id="h3s"><span class="n">3</span>Datos que te van a pedir para el acuse</h2>
+    <p class="lead" style="font-size:14px">Tráelos anotados en un papel o en tu celular. El operador de mesa los escribe en el acuse y ustedes solo firman; si los traen a la mano, todo es más rápido. <b>Guarda tu acuse</b>: con él puedes cobrar tu beca si pierdes la tarjeta o te la roban.</p>
+    <div id="datos"></div>
+  </section>
+
+  <section class="blk" aria-labelledby="h4s">
+    <h2 id="h4s"><span class="n">4</span>Ordena tus copias así</h2>
+    <p class="lead" style="font-size:14px">Junta las copias en este orden, sin grapas. Los originales tenlos a la mano por separado.</p>
+    <ol class="exp" id="orden"></ol>
+  </section>
+
+  <section class="blk" aria-labelledby="h5s">
+    <h2 id="h5s"><span class="n">5</span>Qué pasa al llegar</h2>
+    <div class="ruta">
+      <div class="paso"><b>Filtro</b><span>Te piden la <b>CURP del/la estudiante</b> para confirmar que su tarjeta está lista y que le toca recibirla ese día. Revisan tus documentos y te dicen a qué mesa pasar.</span></div>
+      <div class="paso"><b>Mesa de atención</b><span>Cotejan originales, el operador llena el acuse con tus datos, firmas y recibes tu tarjeta.</span></div>
+      <div class="paso"><b>Antes de irte</b><span>Revisa que tu nombre en la tarjeta sea correcto y guarda tu copia del acuse.</span></div>
+    </div>
+    <p class="aviso"><b>Ven solo el día que te convocaron.</b> Las tarjetas se entregan con una programación por escuela y por día; si vienes otro día, tu tarjeta no estará disponible.</p>
+    <div class="sedes">
+      <div class="sede"><b>Deportivo Las Américas</b><span>Ecatepec de Morelos</span></div>
+      <div class="sede"><b>Parque San Lorenzo</b><span>Coacalco de Berriozábal</span></div>
+    </div>
+    <p class="aviso">El trámite es <b>gratuito</b>. Nadie te puede cobrar ni pedir tu NIP.</p>
+  </section>
+  </div>
+
+  <p class="fuente" id="fuente">Requisitos conforme al Anexo 3 de las Reglas de Operación 2026 del Programa Beca Universal de Educación Media Superior Benito Juárez (Acuerdo 36/12/25) y al díptico del operativo.</p>
+</div>
+
+<div class="bar" id="bar" role="status" aria-live="polite">
+  <div class="in">
+    <span class="luz" aria-hidden="true"></span>
+    <div class="txt"><b id="bar-t">Te faltan documentos</b><span id="bar-s"></span><div class="meter"><i id="bar-m"></i></div></div>
+    <button type="button" id="b-reset">Empezar de nuevo</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  /* ===== Listas oficiales (Anexo 3, RO 2026 BUEEMS) ===== */
+  const ID_MAYOR = ['Credencial para votar (INE) vigente','Pasaporte vigente','Cartilla del Servicio Militar Nacional','Documento migratorio (si naciste en el extranjero)','Credencial vigente con fotografía de servicio médico público (IMSS, ISSSTE…)','Credencial vigente con fotografía de jubilado/a o pensionado/a','Constancia de autoridad local (ver características)'];
+  const ID_TUTOR = ['Credencial para votar (INE) vigente','Pasaporte vigente','Cartilla del Servicio Militar Nacional','Certificado de Matrícula Consular','Tarjeta Única de Identidad Militar','Documento migratorio (si nació en el extranjero)','Credencial vigente con fotografía de servicio médico público','Credencial vigente con fotografía de jubilado/a o pensionado/a','Credencial del INAPAM','Constancia de autoridad local (ver características)','Otra identificación nacional aceptada por la CNBV'];
+  const CONSTANCIA = ['Expedida hace 6 meses o menos','Nombre completo y fecha de nacimiento de quien la tramita','Domicilio completo','Fotografía y firma o huella','Nombre, firma y sello de la autoridad que la emite'];
+  const DOMICILIO = ['Recibo de luz, agua o predial','Recibo de gas: <b>completo, con el talón de pago</b>. En Ecatepec y Coacalco el encabezado trae mal el código postal; la dirección correcta viene en el talón','Recibo de teléfono fijo (no sirve el de celular)','Recibo de Izzi o Totalplay <b>solo si incluye servicio de teléfono</b>; si es solo internet o TV, no sirve','Estado de cuenta bancario','Constancia de domicilio o de residencia de la autoridad local (con fotografía, firma o huella, sello y máximo 6 meses)'];
+
+  const lista = (t, a) => `<details><summary>${t}</summary><ul>${a.map(x => `<li>${x}</li>`).join('')}</ul></details>`;
+
+  /* ===== Documentos por caso ===== */
+  const D = {
+    actaE:  {t:'Acta de nacimiento', d:'Del/la estudiante. Legible y sin tachaduras.', o:'Acta de nacimiento del/la estudiante'},
+    curpE:  {t:'CURP', d:'Del/la estudiante. Impresa del portal oficial (gob.mx/curp), actualizada.', o:'CURP del/la estudiante'},
+    domE:   {t:'Comprobante de domicilio', tag:'máx. 6 meses', d:'Con la dirección donde vive el/la estudiante. <b>Si es de gas, trae el recibo completo con talón.</b> Izzi o Totalplay solo si tiene teléfono.', x:lista('¿Cuáles sirven?', DOMICILIO), o:'Comprobante de domicilio'},
+    idM:    {t:'Identificación oficial vigente', tag:'con foto', d:'Del/la estudiante.', x:lista('¿Cuáles sirven?', ID_MAYOR) + lista('Si es constancia de autoridad local, debe tener', CONSTANCIA), o:'Identificación oficial del/la estudiante'},
+    idA:    {t:'Identificación oficial vigente', tag:'con foto', d:'De quien acompaña: la persona registrada como madre, padre o tutor en la solicitud de la beca.', x:lista('¿Cuáles sirven?', ID_TUTOR) + lista('Si es constancia de autoridad local, debe tener', CONSTANCIA), o:'Identificación oficial de quien acompaña'},
+    actaA:  {t:'Acta de nacimiento', d:'De quien acompaña. Su nombre debe coincidir con el de su identificación.', o:'Acta de nacimiento de quien acompaña'},
+    curpA:  {t:'CURP', d:'De quien acompaña. Impresa del portal oficial (gob.mx/curp), actualizada.', o:'CURP de quien acompaña'},
+    carta:  {t:'Carta bajo protesta de decir verdad', tag:'solo original', d:'Formato del anexo de las Reglas de Operación, con nombre completo y firma del tutor/a. Declara que la mamá o el papá dejaron al menor bajo su cuidado.', x:'<details><summary>¿Tienes documento de tutela de un juez o del DIF?</summary><ul><li>Si existe una resolución de autoridad que te nombra tutor/a, tráela también en original y copia.</li></ul></details>', o:'Carta bajo protesta (original)'},
+  };
+
+  /* ===== Datos del acuse ===== */
+  const DAT = {
+    telE:  {t:'Celular del/la estudiante', d:'10 dígitos.'},
+    nomA:  {t:'Nombre completo de quien acompaña', d:'Nombre(s), primer y segundo apellido, como en su identificación.'},
+    par:   {t:'Parentesco con el/la estudiante', d:'Madre, padre, abuela, tío, hermana…'},
+    telA:  {t:'Celular de quien acompaña', d:'10 dígitos. Va en el recuadro de la cuenta bancaria para adolescentes.'},
+    ocup:  {t:'Ocupación de quien acompaña', d:'Por ejemplo: comerciante, empleada, hogar.'},
+    idTipoA:{t:'Tipo y número de su identificación', d:'Si es INE: el número que aparece en el reverso después de <span class="ej">IDMEX</span>. Trae la identificación a la mano.'},
+    idTipoM:{t:'Tipo y número de tu identificación', d:'Si es INE: el número que aparece en el reverso después de <span class="ej">IDMEX</span>.'},
+    mailA: {t:'Correo electrónico de quien acompaña', d:'Uno que revise. Va en el recuadro de la cuenta bancaria para adolescentes.'},
+    mailM: {t:'Tu correo electrónico personal', d:'Uno que revises. Las Reglas de Operación piden que lo tengas.'},
+    benef: {t:'Persona beneficiaria en caso de fallecimiento', d:'Mayor de edad: nombre completo, parentesco y celular (10 dígitos).'},
+    dom:   {t:'Domicilio completo de quien acompaña', d:'Es un dato nuevo: va en el recuadro de la cuenta bancaria para adolescentes (Debicuenta). Anótalo así:', x:'<details open><summary>Partes del domicilio</summary><ul><li>Tipo y nombre de la calle (calle, avenida, cerrada…)</li><li>Número exterior y, si hay, interior</li><li>Colonia, fraccionamiento o barrio</li><li><b>Código postal</b></li><li>Localidad y municipio</li><li>Entidad (Estado de México)</li><li>Opcional: entre qué calles</li></ul></details>'},
+  };
+
+  const S = {prog:'bueems', edad:'menor', acomp:'padre'};
+  let marcados = new Set();
+  try { const g = JSON.parse(localStorage.getItem('req_tarjeta') || 'null'); if (g) { Object.assign(S, g.S || {}); marcados = new Set(g.m || []); } } catch (e) {}
+  const guardar = () => { try { localStorage.setItem('req_tarjeta', JSON.stringify({S, m:[...marcados]})); } catch (e) {} };
+
+  const NOM_ACOMP = {padre:'Mamá o papá', tutor:'Tutor o tutora'};
+  const caso = () => {
+    if (S.edad === 'mayor') return {
+      docs:[['Estudiante', ['idM','actaE','curpE','domE']]],
+      datos:['telE','idTipoM','mailM','benef'],
+      orden:['idM','actaE','curpE','domE']};
+    const tutor = S.acomp !== 'padre';
+    return {
+      docs:[[NOM_ACOMP[S.acomp], tutor ? ['idA','actaA','curpA','carta'] : ['idA','actaA','curpA']], ['Estudiante', ['actaE','curpE','domE']]],
+      datos:['telE','nomA','par','ocup','idTipoA','dom','telA','mailA','benef'],
+      orden:['idA','actaA','curpA','domE','actaE','curpE', ...(tutor ? ['carta'] : [])]};
+  };
+
+  const chk = (key, it) => {
+    const on = marcados.has(key);
+    return `<label class="chk${on ? ' ok' : ''}" for="c-${key}"><input type="checkbox" id="c-${key}" data-key="${key}"${on ? ' checked' : ''}><div><div class="t">${it.t}${it.tag ? `<span class="tag">${it.tag}</span>` : ''}</div><div class="d">${it.d}</div>${it.x || ''}</div></label>`;
+  };
+
+  let llaves = [];
+  function pintar() {
+    if (S.prog === 'jef' && S.edad === 'm15') S.edad = 'menor';
+    if (!NOM_ACOMP[S.acomp]) S.acomp = 'padre';
+    document.getElementById('b-edad-m15').hidden = S.prog === 'jef';
+    document.getElementById('b-edad-menor').firstChild.textContent = S.prog === 'jef' ? 'Menos de 18 años' : '15 a 17 años';
+    document.querySelectorAll('.seg').forEach(s => s.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(S[s.dataset.k] === b.dataset.v))));
+    const m15 = S.edad === 'm15';
+    document.getElementById('q-acomp').hidden = S.edad !== 'menor';
+    document.getElementById('s-m15').hidden = !m15;
+    document.getElementById('flujo').hidden = m15;
+    document.getElementById('bar').hidden = m15;
+    const c = caso();
+    llaves = [];
+    document.getElementById('docs').innerHTML = c.docs.map(([g, ks]) => `<div class="grupo"><h3>${g}</h3>${ks.map(k => { const key = 'd-' + S.edad + '-' + S.acomp + '-' + k; llaves.push(key); return chk(key, D[k]); }).join('')}</div>`).join('');
+    document.getElementById('datos').innerHTML = `<div class="grupo">${c.datos.map(k => { const key = 'a-' + S.edad + '-' + k; llaves.push(key); return chk(key, DAT[k]); }).join('')}</div>`;
+    document.getElementById('orden').innerHTML = c.orden.map(k => `<li>${D[k].o}</li>`).join('');
+    document.getElementById('fuente').innerHTML = S.prog === 'jef'
+      ? 'Requisitos conforme al Anexo 3 de las Reglas de Operación 2026 del Programa Jóvenes Escribiendo el Futuro (Acuerdo 33/12/25) y a los criterios del operativo.'
+      : 'Requisitos conforme al Anexo 3 de las Reglas de Operación 2026 del Programa Beca Universal de Educación Media Superior Benito Juárez (Acuerdo 36/12/25) y al díptico del operativo.';
+    semaforo();
+  }
+
+  function semaforo() {
+    const tot = llaves.length, hechos = llaves.filter(k => marcados.has(k)).length;
+    const fd = llaves.filter(k => k.startsWith('d-') && !marcados.has(k)).length;
+    const fa = llaves.filter(k => k.startsWith('a-') && !marcados.has(k)).length;
+    const bar = document.getElementById('bar');
+    bar.classList.toggle('listo', hechos === tot);
+    document.getElementById('bar-t').textContent = hechos === tot ? 'Listo: pasa al filtro' : fd ? `Te ${fd === 1 ? 'falta 1 documento' : `faltan ${fd} documentos`}` : 'Documentos completos';
+    document.getElementById('bar-s').textContent = hechos === tot ? 'Ten tus originales y copias a la mano.' : fa ? `${fa} ${fa === 1 ? 'dato pendiente' : 'datos pendientes'} para el acuse` : 'Datos del acuse completos';
+    document.getElementById('bar-m').style.width = (tot ? hechos / tot * 100 : 0) + '%';
+  }
+
+  document.querySelectorAll('.seg').forEach(s => s.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    S[s.dataset.k] = b.dataset.v; guardar(); pintar();
+  }));
+  document.addEventListener('change', e => {
+    const k = e.target.dataset && e.target.dataset.key; if (!k) return;
+    e.target.checked ? marcados.add(k) : marcados.delete(k);
+    e.target.closest('.chk').classList.toggle('ok', e.target.checked);
+    guardar(); semaforo();
+  });
+  document.getElementById('b-reset').addEventListener('click', () => { marcados.clear(); guardar(); pintar(); window.scrollTo({top:0}); });
+  pintar();
+})();
+</script>
