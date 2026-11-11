@@ -310,7 +310,7 @@ td.num,th.num{text-align:right}
 
   <!-- ═════ BÚSQUEDA ═════ -->
   <section id="v-BUSQUEDA" hidden>
-    <div class="card"><div class="card-h"><span class="e">🔎</span><div><h2>Búsqueda de tarjetas</h2><small>Escanea la tarjeta para mandarla a mesa · si mesa la regresa, escanéala para registrar la causal</small></div></div>
+    <div class="card"><div class="card-h"><span class="e">🔎</span><div><h2>Búsqueda de tarjetas</h2><small>Escanea para mandarla a mesa · si mesa la regresa, escanéala en ese momento, elige la causal y va a la canasta especial</small></div></div>
       <div class="card-b">
         <button class="btn-scan-big" data-cam="ambos" data-continuo="1"><span class="ic">💳</span><span class="tx"><b>ESCANEAR TARJETA</b><small>La cámara se queda abierta para la siguiente</small></span></button>
         <div class="vc" data-vc></div><div class="scan-status" data-st></div>
@@ -319,7 +319,7 @@ td.num,th.num{text-align:right}
       </div></div>
     <div class="kpis" id="b-kpis"></div>
     <div class="card"><div class="card-h"><span class="e">📋</span><div><h2>Por buscar <span id="b-n-pend"></span></h2><small>Pasaron filtro · agrupadas por CCT</small></div></div><div class="card-b" id="b-pend"></div></div>
-    <div class="card"><div class="card-h"><span class="e">↩</span><div><h2>No entregadas (en resguardo) <span id="b-n-dev"></span></h2><small>Si regresan con sus documentos, pasan otra vez por filtro</small></div></div><div class="card-b" id="b-dev"></div></div>
+    <div class="card"><div class="card-h"><span class="e">↩</span><div><h2>Canasta especial <span id="b-n-dev"></span></h2><small>Regresadas de mesa por documentos · salen cuando el titular vuelve a pasar por filtro</small></div></div><div class="card-b" id="b-dev"></div></div>
     <div class="card"><div class="card-h"><span class="e">📦</span><div><h2>Caja del día por CCT</h2><small>Se actualiza sola con los escaneos de búsqueda y mesa</small></div></div>
       <div class="tabla"><table><thead><tr><th>CCT</th><th class="num">Tarjetas</th><th class="num">Entregadas</th><th class="num">En mesa</th><th class="num">En caja</th></tr></thead><tbody id="b-caja"></tbody></table></div>
       <div class="card-b" style="padding-top:8px"><p class="hint">En caja = tarjetas − entregadas − en mesa. Las devueltas regresan a la caja y ya están contadas ahí.</p></div></div>
@@ -415,7 +415,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '11-nov-26 A';
+const APP_VERSION = '11-nov-26 B';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 const SUPERVISORES = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ', '1501991': 'GONZALEZ LINDA NOHEMI JAZMIN' };
@@ -848,9 +848,9 @@ function evaluarFiltro(r) {
   else if (x && x.e === E.ENTREGADA) { motivo = 'YA ENTREGADA'; html = `<div class="res mal"><div class="t">⛔ YA SE ENTREGÓ</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; }
   else if (x && (x.e === E.BUSQUEDA || x.e === E.MESA)) { html = `<div class="res aviso"><div class="t">⚠️ YA PASÓ POR FILTRO</div>${datos(r, true)}<p>${textoEstado(x)}. No hace falta registrarla otra vez.</p></div>`; }
   else { ok = true; const regreso = x && x.e === E.DEVUELTA;
-    html = `<div class="res ok"><div class="t">✅ PASA A BÚSQUEDA${regreso ? ' (REGRESÓ)' : ''}</div>${datos(r, true)}${regreso ? `<p><b>Antes no se entregó: ${esc(x.d)}.</b> Verifica que ya traiga lo que faltaba.</p>` : ''}${docsPara(r.c)}<p class="hint" style="color:inherit;margin-top:8px">✏️ Anota la CCT en la copia de la CURP y pásala a búsqueda.</p></div>`; }
+    html = `<div class="res ok"><div class="t">✅ PASA A BÚSQUEDA${regreso ? ' (REGRESÓ)' : ''}</div>${datos(r, true)}${regreso ? `<p><b>Antes no se entregó: ${esc(x.d)}.</b> Verifica que ya traiga lo que faltaba. Su tarjeta está en la <b>canasta especial</b> de búsqueda.</p>` : ''}${docsPara(r.c)}<p class="hint" style="color:inherit;margin-top:8px">✏️ Anota la CCT en la copia de la CURP y pásala a búsqueda.</p></div>`; }
   box.innerHTML = html;
-  if (ok) { beep(true); vibrar(80); registrar('FILTRO_OK', r); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'ok', txt: 'Pasa · ' + r.cct }); }
+  if (ok) { beep(true); vibrar(80); registrar('FILTRO_OK', r, x && x.e === E.DEVUELTA ? 'REGRESO DE CANASTA' : ''); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'ok', txt: 'Pasa · ' + r.cct }); }
   else if (motivo) { beep(false); vibrar([200, 80, 200]); registrar('FILTRO_RECHAZO', r, motivo); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'mal', txt: motivo }); }
   else beep(false);
   guardarLog(); pintarFiltro();
@@ -878,17 +878,30 @@ function buscarTarjeta(texto) {
   if (!r) { box.innerHTML = `<div class="res mal"><div class="t">⛔ ESTA TARJETA NO ES DE HOY</div><p>…${esc(t.slice(-8))}: no está en los convocados de este día. Regrésala a su CCT.</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
   if (x && x.e === E.ENTREGADA) { box.innerHTML = `<div class="res mal"><div class="t">⛔ YA SE ENTREGÓ</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
   if (x && x.e === E.MESA) { devolucionMesa(r); return; }
-  const sinFiltro = !x || x.e !== E.BUSQUEDA;
-  registrar('A_MESA', r);
-  box.innerHTML = `<div class="res ok"><div class="t">✅ A MESA</div>${datos(r)}${sinFiltro ? `<p><b>⚠️ ${x && x.e === E.DEVUELTA ? 'Era una no entregada: confirma que el titular regresó con sus documentos.' : 'No pasó por filtro: confirma que la persona está en la fila.'}</b></p>` : ''}</div>`;
+  if (x && x.e === E.DEVUELTA) { salidaCanasta(r); return; }
+  aMesa(r, x);
+}
+function aMesa(r, x) {
+  const sinFiltro = !x || (x.e !== E.BUSQUEDA && x.e !== E.DEVUELTA), deCanasta = x && (x.e === E.DEVUELTA || /CANASTA/.test(x.d || ''));
+  registrar('A_MESA', r, deCanasta ? 'SALE DE CANASTA' : '');
+  $('b-res').innerHTML = `<div class="res ok"><div class="t">✅ A MESA${deCanasta ? ' · SALE DE LA CANASTA ESPECIAL' : ''}</div>${datos(r)}${sinFiltro ? '<p><b>⚠️ No pasó por filtro: confirma que la persona está en la fila.</b></p>' : ''}</div>`;
   beep(true); vibrar(80);
-  LOG.push({ h: horaAhora(), t, n: r.n, tipo: 'ok', txt: 'A mesa' }); guardarLog(); pintarBusqueda();
+  LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'ok', txt: deCanasta ? 'A mesa (de canasta)' : 'A mesa' }); guardarLog(); pintarBusqueda();
+}
+// Tarjeta que está en la canasta especial y se volvió a escanear sin que el titular pasara otra vez por filtro
+function salidaCanasta(r) {
+  const box = $('b-res'), x = EST[r.t];
+  box.innerHTML = `<div class="res aviso"><div class="t">🧺 ESTÁ EN LA CANASTA ESPECIAL</div>${datos(r)}<p>No se entregó: <b>${esc(x.d || 'sin causal')}</b>.<br>Todavía no vuelve a pasar por filtro.</p>
+    <button class="btn prim full" id="b-can-mesa">Ya trae lo que faltaba: mandar a mesa</button><button class="btn full" id="b-can-queda">Sigue en la canasta</button></div>`;
+  $('b-can-mesa').onclick = () => aMesa(r, x);
+  $('b-can-queda').onclick = () => { box.innerHTML = ''; };
+  beep(false); vibrar([120, 60, 120]);
 }
 // Mesa regresó la tarjeta sin entregar (no cumplió documentos): búsqueda registra la causal y la tarjeta vuelve a la caja
 function devolucionMesa(r) {
   const box = $('b-res'), x = EST[r.t];
   const lista = (LOGIN && LOGIN.causales) || ['FALTA IDENTIFICACION OFICIAL', 'FALTA CURP', 'NO ES EL TUTOR O BECARIO REGISTRADO', 'DOCUMENTOS INCOMPLETOS O ILEGIBLES', 'OTRO'];
-  box.innerHTML = `<div class="res aviso"><div class="t">↩ REGRESÓ DE MESA</div>${datos(r)}<p>${textoEstado(x)}. Si mesa la regresa porque no cumplió, elige la causal y regístrala como NO ENTREGADA. Si fue por error, déjala en mesa.</p>
+  box.innerHTML = `<div class="res aviso"><div class="t">↩ REGRESÓ DE MESA</div>${datos(r)}<p>${textoEstado(x)}. Mesa la regresó porque no cumplió: elige la causal y va a la <b>canasta especial</b>. Si fue por error, déjala en mesa.</p>
     <label class="lbl">Causal</label><div class="causales" id="b-causales">${lista.map(c => `<button class="causal" data-c="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('')}</div>
     <input class="main-input" id="b-dev-nota" placeholder="Nota (opcional)" style="width:100%;margin-top:8px">
     <button class="btn mal full" id="b-dev-ok">Registrar como NO ENTREGADA</button><button class="btn full" id="b-dev-no">Dejarla en mesa</button></div>`;
@@ -899,7 +912,7 @@ function devolucionMesa(r) {
     if (!causal) { toast('Elige la causal', true); return; }
     const nota = $('b-dev-nota').value.trim(), det = causal + (nota ? ': ' + nota : '');
     registrar('DEVUELTA', r, det); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'mal', txt: 'No entregada · ' + det }); guardarLog();
-    box.innerHTML = `<div class="res aviso"><div class="t">↩ NO ENTREGADA · DE VUELTA EN LA CAJA</div><div class="n">${esc(r.n)}</div><p>${esc(det)}<br>Guárdala en el paquete de ${esc(r.cct)}. Si regresa hoy con sus documentos, pasa otra vez por filtro.</p></div>`;
+    box.innerHTML = `<div class="res aviso"><div class="t">🧺 NO ENTREGADA · A LA CANASTA ESPECIAL</div><div class="n">${esc(r.n)}</div><p>${esc(det)}<br>Ponla en la <b>canasta especial</b>, no en la caja de ${esc(r.cct)}. Si regresa con sus documentos, pasa por filtro y de aquí la sacas para mesa.</p></div>`;
     pintarBusqueda();
   };
   beep(false);
@@ -914,10 +927,10 @@ function pintarBusqueda() {
   const pend = [], dev = []; let mesa = 0, ent = 0;
   PAQ.lista.forEach(r => { const x = EST[r.t]; if (!x) return;
     if (x.e === E.BUSQUEDA) pend.push(r); else if (x.e === E.DEVUELTA) dev.push(r); else if (x.e === E.MESA) mesa++; else if (x.e === E.ENTREGADA) ent++; });
-  $('b-kpis').innerHTML = kpi(pend.length, 'Por buscar', pend.length > 15) + kpi(mesa, 'En mesa') + kpi(ent, 'Entregadas');
+  $('b-kpis').innerHTML = kpi(pend.length, 'Por buscar', pend.length > 15) + kpi(mesa, 'En mesa') + kpi(dev.length, 'En canasta') + kpi(ent, 'Entregadas');
   $('b-n-pend').textContent = '(' + pend.length + ')'; $('b-n-dev').textContent = '(' + dev.length + ')';
-  $('b-pend').innerHTML = porCct(pend, r => 'Pasó filtro ' + (EST[r.t].h || '').slice(-8, -3)) || '<div class="vacio">Nada pendiente.</div>';
-  $('b-dev').innerHTML = porCct(dev, r => EST[r.t].d) || '<div class="vacio">Ninguna.</div>';
+  $('b-pend').innerHTML = porCct(pend, r => (/CANASTA/.test(EST[r.t].d || '') ? '🧺 Sácala de la canasta especial · regresó ' : 'Pasó filtro ') + (EST[r.t].h || '').slice(-8, -3)) || '<div class="vacio">Nada pendiente.</div>';
+  $('b-dev').innerHTML = porCct(dev, r => (EST[r.t].h || '').slice(-8, -3) + ' · ' + (EST[r.t].d || 'sin causal')) || '<div class="vacio">La canasta está vacía.</div>';
   pintarCaja();
 }
 
@@ -938,8 +951,9 @@ function pintarCaja() {
   $('b-caja').innerHTML = l.map(x => `<tr><td>${cctHtml(x.cct)}</td><td class="num">${fmt(x.tar)}</td><td class="num">${fmt(x.ent)}</td><td class="num${x.mesa ? ' pend-n' : ''}">${fmt(x.mesa)}</td><td class="num"><b>${fmt(x.pend.length)}</b></td></tr>`).join('') +
     `<tr><td><b>TOTAL</b></td><td class="num"><b>${fmt(t.tar)}</b></td><td class="num"><b>${fmt(t.ent)}</b></td><td class="num"><b>${fmt(t.mesa)}</b></td><td class="num"><b>${fmt(t.caja)}</b></td></tr>`;
   const cont = lsGet('ent_corte_' + SES.fecha, {});
-  $('b-corte-av').innerHTML = t.mesa ? `<div class="res aviso" style="margin-bottom:10px"><div class="t">⚠️ ${t.mesa} en mesa sin resolver</div><p>Antes del corte, que cada mesa haga su conteo de expedientes y que búsqueda registre las tarjetas que mesa regresó; si no, cuentan como fuera de la caja.</p></div>`
-    : _corteGuardado ? `<div class="res ok" style="margin-bottom:10px"><div class="t">✅ Corte guardado ${esc(_corteGuardado)}</div><p>Si vuelves a contar, guárdalo otra vez: queda el último.</p></div>` : '';
+  const enCanasta = PAQ.lista.filter(r => EST[r.t] && EST[r.t].e === E.DEVUELTA).length;
+  $('b-corte-av').innerHTML = (enCanasta ? `<div class="res info" style="margin-bottom:10px"><div class="t">🧺 ${enCanasta} en la canasta especial</div><p>Antes de contar, regrésalas a la caja de su CCT: ya están incluidas en "Deben quedar".</p></div>` : '') + (t.mesa ? `<div class="res aviso" style="margin-bottom:10px"><div class="t">⚠️ ${t.mesa} en mesa sin resolver</div><p>Antes del corte, que cada mesa haga su conteo de expedientes y que búsqueda registre las tarjetas que mesa regresó; si no, cuentan como fuera de la caja.</p></div>`
+    : _corteGuardado ? `<div class="res ok" style="margin-bottom:10px"><div class="t">✅ Corte guardado ${esc(_corteGuardado)}</div><p>Si vuelves a contar, guárdalo otra vez: queda el último.</p></div>` : '');
   $('b-corte').innerHTML = l.map(x => { const v = cont[x.cct], d = v === undefined || v === '' ? '' : Number(v) - x.pend.length;
     return `<tr><td>${cctHtml(x.cct)}</td><td class="num"><b>${fmt(x.pend.length)}</b></td><td class="num"><input class="main-input" data-cct="${esc(x.cct)}" inputmode="numeric" value="${v == null ? '' : esc(v)}" style="width:76px;min-width:0;padding:6px;text-align:right"></td><td class="num ${d === '' ? '' : d === 0 ? 'dif-ok' : 'dif-mal'}">${d === '' ? '' : d === 0 ? '✓' : (d > 0 ? '+' : '') + d}</td><td><button class="btn borde" data-ver="${esc(x.cct)}" style="padding:4px 8px;font-size:.68rem">Ver</button></td></tr>`; }).join('');
   $('b-corte').querySelectorAll('input').forEach(i => i.onchange = () => { const c = lsGet('ent_corte_' + SES.fecha, {}); c[i.dataset.cct] = i.value.replace(/\D/g, ''); lsSet('ent_corte_' + SES.fecha, c); pintarCaja(); });
