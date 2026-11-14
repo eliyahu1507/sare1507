@@ -423,7 +423,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '14-nov-26 D';
+const APP_VERSION = '14-nov-26 E';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -598,7 +598,7 @@ async function descargar(fecha) {
 
 // Un movimiento se aplica en el celular al momento y se envía en segundo plano
 function registrar(evento, r, detalle) {
-  const ev = { id: uid(), evento, tarjeta: r ? r.t : '', curp: r ? r.c : '', detalle: detalle || '', hora: horaAhora(), rol: SES.rol, op: SES.op, mesa: SES.mesa, fecha: SES.fecha };
+  const ev = { id: uid(), evento, tarjeta: r ? r.t : '', curp: r ? r.c : '', detalle: detalle || '', hora: horaAhora(), dia: hoyISO(), rol: SES.rol, op: SES.op, mesa: SES.mesa, fecha: SES.fecha };
   COLA.push(ev);
   if (r && r.t) {
     const nuevo = { FILTRO_OK: (EST[r.t] && EST[r.t].e === E.MESA) ? E.MESA : E.BUSQUEDA, A_MESA: E.MESA, ENTREGADA: E.ENTREGADA, DEVUELTA: E.DEVUELTA, ANULAR_ENTREGA: E.DEVUELTA }[evento];
