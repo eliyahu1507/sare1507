@@ -298,7 +298,7 @@ td.num,th.num{text-align:right}
       <div class="card-b">
         <button class="btn-scan-big" data-cam="curp" data-continuo="1"><span class="ic">📷</span><span class="tx"><b>ESCANEAR CURP</b><small>La cámara se queda abierta para la siguiente persona</small></span></button>
         <div class="vc" data-vc></div><div class="scan-status" data-st></div>
-        <div class="search-row"><input class="main-input" id="f-inp" autocomplete="off" autocapitalize="characters" placeholder="CURP o apellido y nombre…"><button class="btn prim" data-buscar="f-inp">BUSCAR</button><button class="btn borde" data-limpiar="f">Limpiar</button></div>
+        <div class="search-row"><input class="main-input" id="f-inp" autocomplete="off" autocapitalize="characters" placeholder="CURP de 18 caracteres…"><button class="btn prim" data-buscar="f-inp">BUSCAR</button><button class="btn borde" data-limpiar="f">Limpiar</button></div>
         <p class="hint">💡 También funciona con escáner de mano: escanea y se busca solo.</p>
         <button class="btn borde full" id="f-req" style="margin:2px 0 8px">📲 Requisitos para tutores y becarios · QR y WhatsApp</button>
         <button class="btn borde full" data-dudas style="margin:0 0 8px">📘 Dudas de documentos: constancias, CURP, copias, extranjeros</button>
@@ -370,9 +370,9 @@ td.num,th.num{text-align:right}
   <section id="v-SUPERVISOR" hidden>
     <div class="card"><div class="card-h"><span class="e">📊</span><div><h2>Avance y cuadre</h2><small id="s-act">—</small></div></div>
       <div class="card-b"><button class="btn prim full" id="s-actualizar" style="margin-top:0">Actualizar</button></div></div>
-    <div class="kpis" id="s-kpis"></div>
+    <div class="kpis" id="s-kpis"></div><div id="s-sede"></div>
     <div class="card"><div class="card-h"><span class="e">🧮</span><div><h2>Entregadas por operador</h2><small>Escribe lo que contó cada uno: la diferencia sale sola</small></div></div>
-      <div class="tabla"><table><thead><tr><th>Operador</th><th class="num">Sistema</th><th class="num">Conteo físico</th><th class="num">Dif.</th></tr></thead><tbody id="s-ops"></tbody></table></div></div>
+      <div class="tabla"><table><thead><tr><th>Operador</th><th class="num">Sistema</th><th class="num">Conteo físico</th><th class="num">Dif.</th></tr></thead><tbody id="s-ops"></tbody></table></div><button class="btn ok full" id="s-fis-guardar" hidden>💾 Guardar conteo físico en la hoja</button><p class="hint" id="s-fis-msg"></p></div>
     <div class="card"><div class="card-h"><span class="e">⚠️</span><div><h2>En mesa sin resolver <span id="s-n-mesa"></span></h2><small>Salieron de búsqueda y no se entregaron ni regresaron</small></div></div><div class="card-b lista" id="s-mesa"></div></div>
     <div class="card"><div class="card-h"><span class="e">↩</span><div><h2>No entregadas <span id="s-n-dev"></span></h2></div></div><div class="card-b lista" id="s-dev"></div></div>
     <div class="card"><div class="card-h"><span class="e">🔎</span><div><h2>Pasaron filtro y siguen en búsqueda <span id="s-n-bus"></span></h2></div></div><div class="card-b lista" id="s-bus"></div></div>
@@ -421,7 +421,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '13-nov-26 A';
+const APP_VERSION = '14-nov-26 A';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -662,11 +662,34 @@ function pintarMiniCal() {
   }).join('');
   $('minical').querySelectorAll('button').forEach(b => b.onclick = () => verDia(b.dataset.f));
 }
+// 14-nov: al tocar un día ya atendido se ve cuántas se entregaron y cuántas faltan de cada CCT (consulta ligera a la hoja, con señal)
+let _avance = null;
+async function cargarAvance() {
+  if (_avance && Date.now() - _avance.t < 60000) return _avance.d;
+  const d = await llamar({ accion: 'avance' }, 20000); if (!d || !d.ok) throw new Error((d && d.error) || 'sin datos');
+  _avance = { t: Date.now(), d }; return d;
+}
 function verDia(f) {
   const d = ((LOGIN && LOGIN.calendario) || []).find(x => x.fecha === f); if (!d) return;
-  abrirModal('📅 ' + fechaLarga(f), d.escuelas.length + ' escuelas · ' + fmt(d.escuelas.reduce((a, e) => a + e.convocados, 0)) + ' convocados',
-    (d.escuelas[0] && d.escuelas[0].sede ? `<p class="esc-nom" style="margin:0 0 10px">📍 ${esc(d.escuelas[0].sede)} · ${esc(d.escuelas[0].horario)}</p>` : '') +
-    '<div class="lista">' + d.escuelas.slice().sort((a, b) => (a.cita || '').localeCompare(b.cita || '') || b.convocados - a.convocados).map(e => `<div class="it" style="grid-template-columns:minmax(0,1fr) auto"><div>${cctHtml(e.cct)} <span class="chip c-in">${esc(e.programa)}</span>${e.cita ? ` <span class="chip c-av">🕘 ${esc(e.cita)} h</span>` : ''}<div class="esc-nom">${esc(e.escuela)} · ${esc(e.municipio)}</div></div><div style="text-align:right">${e.pendiente ? '<span class="chip c-mal">Sin datos aún</span>' : `<b style="font-family:Montserrat,sans-serif;font-size:1.1rem;color:var(--guinda)">${fmt(e.tarjetas)}</b><div class="sub">tarjetas</div>`}</div></div>`).join('') + '</div>');
+  const atendido = f <= hoyISO();
+  const pinta = av => {
+    const dia = av && av.dias && av.dias[f];
+    abrirModal('📅 ' + fechaLarga(f), d.escuelas.length + ' escuelas · ' + fmt(d.escuelas.reduce((a, e) => a + e.convocados, 0)) + ' convocados',
+      (d.escuelas[0] && d.escuelas[0].sede ? `<p class="esc-nom" style="margin:0 0 10px">📍 ${esc(d.escuelas[0].sede)} · ${esc(d.escuelas[0].horario)}</p>` : '') +
+      (!atendido ? '' : dia ? `<div class="res ok" style="margin:0 0 10px"><div class="t">✅ ${fmt(dia.ent)} entregadas · ${fmt(dia.rec - dia.ent)} pendientes</div><p>De ${fmt(dia.rec)} tarjetas de los convocados de este día (${dia.rec ? Math.round(dia.ent * 100 / dia.rec) : 0}%). Ese día en sede se entregaron ${fmt(dia.sede)}${dia.otros ? ', ' + fmt(dia.otros) + ' de otros días' : ''}.</p><p class="hint" style="color:inherit">Datos de la hoja a las ${esc(String(av.hora).slice(-8, -3))}</p></div>`
+        : av ? '' : '<p class="hint" id="cal-av">⏳ Consultando entregas en la hoja…</p>') +
+      '<div class="lista">' + d.escuelas.slice().sort((a, b) => (a.cita || '').localeCompare(b.cita || '') || b.convocados - a.convocados).map(e => {
+        const x = av && av.cct && av.cct[e.cct];
+        const der = e.pendiente ? '<span class="chip c-mal">Sin datos aún</span>'
+          : atendido && x ? `<b style="font-family:Montserrat,sans-serif;font-size:1.1rem;color:var(--ok, #1E6B52)">${fmt(x.e)}</b><div class="sub">entregadas</div><b style="font-family:Montserrat,sans-serif;font-size:1rem;color:${x.r - x.e ? 'var(--guinda)' : 'var(--texto-s)'}">${fmt(x.r - x.e)}</b><div class="sub">pendientes</div>`
+          : `<b style="font-family:Montserrat,sans-serif;font-size:1.1rem;color:var(--guinda)">${fmt(e.tarjetas)}</b><div class="sub">tarjetas</div>`;
+        return `<div class="it" style="grid-template-columns:minmax(0,1fr) auto"><div>${cctHtml(e.cct)} <span class="chip c-in">${esc(e.programa)}</span>${e.cita ? ` <span class="chip c-av">🕘 ${esc(e.cita)} h</span>` : ''}<div class="esc-nom">${esc(e.escuela)} · ${esc(e.municipio)}</div></div><div style="text-align:right">${der}</div></div>`;
+      }).join('') + '</div>');
+  };
+  pinta(atendido && _avance ? _avance.d : null);
+  if (!atendido) return;
+  cargarAvance().then(av => { if (!$('modal').hidden && $('modal-t').textContent === '📅 ' + fechaLarga(f)) pinta(av); })
+    .catch(() => { const p = $('cal-av'); if (p) p.textContent = '📶 Sin señal: no se pudieron consultar las entregas de este día.'; });
 }
 function abrirModal(t, s, html) { $('modal-t').textContent = t; $('modal-s').textContent = s; $('modal-b').innerHTML = html; $('modal').hidden = false; }
 $('modal-x').onclick = () => { $('modal').hidden = true; };
@@ -901,17 +924,10 @@ function avisoEdad(curp) {
 }
 async function filtrar(texto) {
   const lc = leerCodigoCurp(texto), box = $('f-res'); $('f-coin').innerHTML = ''; $('f-curp').innerHTML = '';
+  // 14-nov: en filtro SOLO se acepta la CURP exacta (QR o tecleada). Por nombre hay homónimos y casi se entregó mal una tarjeta.
   if (!lc) {
-    const t = limpiarTarjeta(texto);
-    if (tarjetaValida(t) && PAQ.byT[t]) return evaluarFiltro(PAQ.byT[t]);
-    const l = buscarNombre(texto);
-    if (!l.length) {
-      box.innerHTML = '<div class="vacio">🔎 No es de este día; buscando en todo el nominal…</div>';
-      const j = await nombreEnNominal(texto);
-      if (j && j.lista && j.lista.length) { box.innerHTML = ''; return listaNominal('f-coin', j, texto, curp => filtrar(curp)); }
-      box.innerHTML = `<div class="res mal"><div class="t">Sin resultados</div><p>${msgSinNombre(texto, j)}</p></div>`; beep(false); return;
-    }
-    box.innerHTML = ''; return listaCoincidencias('f-coin', l, texto, evaluarFiltro);
+    box.innerHTML = `<div class="res mal"><div class="t">Solo CURP</div><p>En filtro se escanea el QR de la CURP o se escribe la CURP completa (18 caracteres). No se busca por nombre ni por tarjeta: puede haber homónimos.</p><p class="hint" style="color:inherit">Para orientar a alguien por nombre usa <b>Consultar</b>.</p></div>`;
+    beep(false); return;
   }
   const curp = lc.curp; cajaCurp('f-curp', curp, lc.nombre);
   if (PAQ.byC[curp]) return evaluarFiltro(PAQ.byC[curp]);
@@ -921,10 +937,7 @@ async function filtrar(texto) {
   let html, motivo;
   if (!j) { motivo = 'NO CONVOCADO HOY'; html = `<div class="res mal"><div class="t">⛔ NO ESTÁ CONVOCADO HOY</div><p>No se pudo consultar su fecha (sin señal). Regrésale la CURP.</p></div>`; }
   else if (!j.encontrado) {
-    // Si el código trae nombre, se intenta por nombre entre los de hoy (CURP mal capturada en el nominal)
-    const l = lc.nombre ? buscarNombre(lc.nombre) : [];
-    if (l.length) { box.innerHTML = `<div class="res aviso"><div class="t">⚠️ La CURP no está en el nominal</div><p>Pero hay ${l.length} persona(s) de hoy con ese nombre: compara con su identificación.</p></div>`; return listaCoincidencias('f-coin', l, lc.nombre, evaluarFiltro); }
-    motivo = 'NO ESTA EN EL NOMINAL'; html = `<div class="res mal"><div class="t">⛔ NO ESTÁ EN EL NOMINAL</div><p>No hay tarjeta para esta CURP en este operativo. Regrésale la CURP.</p>${avisoEdad(curp)}</div>`;
+    motivo = 'NO ESTA EN EL NOMINAL'; html = `<div class="res mal"><div class="t">⛔ NO ESTÁ EN EL NOMINAL</div><p>No hay tarjeta para esta CURP en este operativo. Regrésale la CURP y avisa al supervisor (no se busca por nombre).</p>${avisoEdad(curp)}</div>`;
   }
   else if (!j.recibida) { motivo = 'TARJETA NO RECIBIDA'; html = `<div class="res mal"><div class="t">⛔ SU TARJETA NO LLEGÓ</div>${cctLinea({ cct: j.cct, esc: j.escuela, mun: j.municipio })}${avisoEdad(curp)}</div>`; }
   else { motivo = 'OTRA FECHA: ' + (j.fecha ? fechaLarga(j.fecha) : 'sin fecha');
@@ -1169,21 +1182,44 @@ function pintarSupervisorLocal() {
 async function actualizarCuadre() {
   $('s-act').textContent = '⏳ Consultando la hoja…';
   await sincronizar();
-  try { _cuadre = await llamar({ accion: 'cuadre', detalle: 1 }, 30000); $('s-act').textContent = 'Actualizado a las ' + horaAhora() + ' · ' + fechaLarga(_cuadre.fecha); pintarSupervisorLocal(); }
+  try { _cuadre = await llamar({ accion: 'cuadre', detalle: 1, fecha: SES.fecha }, 30000); $('s-act').textContent = 'Actualizado a las ' + horaAhora() + ' · ' + fechaLarga(_cuadre.fecha); pintarSupervisorLocal(); }
   catch (e) { $('s-act').textContent = '⛔ ' + e.message + ' (se muestran los datos de este celular)'; }
 }
 function pintarCuadre() {
-  const c = _cuadre, fis = lsGet('ent_fisico_' + SES.fecha, {}), ops = Object.keys(c.porOperador).sort();
+  const c = _cuadre, ops = Object.keys(c.porOperador).sort();
+  // El conteo físico guardado en la hoja se usa si en este celular no hay uno escrito
+  const fis = Object.assign({}, c.fisico || {}, lsGet('ent_fisico_' + c.fecha, {}));
+  // 14-nov: entregadas EN SEDE (lo físico de hoy, incluye convocados de otros días) separado de las de los convocados del día
+  $('s-sede').innerHTML = c.entregadasSede == null ? '' : `<div class="res info" style="margin:0 0 12px"><div class="t">📦 Entregadas hoy en sede: ${fmt(c.entregadasSede)}</div>
+    <p>${fmt(c.sedeDeEsteDia)} de los convocados de hoy + <b>${fmt(c.sedeDeOtrosDias)} de otros días</b> (esas cuentan en el día al que estaban convocados).</p>
+    <p>Convocados de hoy que ya recibieron: <b>${fmt(c.entregadasConvocados)}</b> · pendientes: <b>${fmt(c.pendientesConvocados)}</b></p>
+    <p>Acumulado del operativo: <b>${fmt(c.acumulado.entregadas)}</b> de ${fmt(c.acumulado.recibidas)} · pendientes ${fmt(c.acumulado.pendientes)}</p></div>`;
+  $('s-fis-guardar').hidden = !ops.length;
   $('s-ops').innerHTML = ops.map(k => { const f = fis[k], d = f === undefined || f === '' ? '' : Number(f) - c.porOperador[k];
     return `<tr><td>${esc(k)}</td><td class="num">${c.porOperador[k]}</td><td class="num"><input class="main-input" data-k="${esc(k)}" inputmode="numeric" value="${f == null ? '' : esc(f)}" style="width:80px;min-width:0;padding:6px;text-align:right"></td><td class="num ${d === '' ? '' : d === 0 ? 'dif-ok' : 'dif-mal'}">${d === '' ? '' : d === 0 ? '✓' : (d > 0 ? '+' : '') + d}</td></tr>`; }).join('') +
     `<tr><td><b>TOTAL</b></td><td class="num"><b>${c.entregadas}</b></td><td class="num"><b>${ops.reduce((a, k) => a + (Number(fis[k]) || 0), 0) || ''}</b></td><td></td></tr>`;
-  $('s-ops').querySelectorAll('input').forEach(i => i.onchange = () => { const f = lsGet('ent_fisico_' + SES.fecha, {}); f[i.dataset.k] = i.value.trim(); lsSet('ent_fisico_' + SES.fecha, f); pintarCuadre(); });
+  $('s-ops').querySelectorAll('input').forEach(i => i.onchange = () => { const f = lsGet('ent_fisico_' + c.fecha, {}); f[i.dataset.k] = i.value.trim(); lsSet('ent_fisico_' + c.fecha, f); $('s-fis-msg').textContent = '✏️ Sin guardar en la hoja'; pintarCuadre(); });
   const filaC = x => `<div class="it"><div><div class="nm">${esc(x.nombre)}</div><div class="sub">${esc(x.detalle || '')} ${esc(x.op)}${x.mesa ? ' · mesa ' + esc(x.mesa) : ''} · ${esc(x.hora)}</div>${cctHtml(x.cct)}</div></div>`;
   $('s-n-mesa').textContent = '(' + c.enMesa.length + ')'; $('s-mesa').innerHTML = c.enMesa.map(filaC).join('') || '<div class="vacio">✅ Ninguna: todo lo que salió de búsqueda está resuelto.</div>';
   $('s-n-dev').textContent = '(' + c.devueltas.length + ')'; $('s-dev').innerHTML = c.devueltas.map(filaC).join('') || '<div class="vacio">Ninguna.</div>';
   $('s-n-bus').textContent = '(' + c.enBusqueda.length + ')'; $('s-bus').innerHTML = c.enBusqueda.map(filaC).join('') || '<div class="vacio">Ninguna.</div>';
 }
 $('s-actualizar').onclick = actualizarCuadre;
+// Conteo físico al cierre → pestaña "Conteo fisico" y "Historico cuadres" de la hoja
+$('s-fis-guardar').onclick = async () => {
+  if (!_cuadre) return;
+  const c = _cuadre, fis = Object.assign({}, c.fisico || {}, lsGet('ent_fisico_' + c.fecha, {}));
+  const conteos = Object.keys(c.porOperador).map(k => ({ op: k, sistema: c.porOperador[k], fisico: fis[k] == null ? '' : fis[k] }));
+  if (!conteos.some(x => x.fisico !== '')) { toast('Escribe primero el conteo físico de al menos un operador', true); return; }
+  $('s-fis-guardar').disabled = true; $('s-fis-msg').textContent = '⏳ Guardando en la hoja…';
+  try {
+    const j = await llamar({ accion: 'fisico_guardar', fecha: c.fecha, conteos }, 45000);
+    if (!j.ok) throw new Error(j.error || 'No se guardó');
+    $('s-fis-msg').textContent = '✅ Guardado a las ' + horaAhora() + ' en "Conteo fisico" e "Historico cuadres".';
+    await actualizarCuadre();
+  } catch (e) { $('s-fis-msg').textContent = '⛔ ' + e.message + '. Tus números siguen en este celular: vuelve a intentar con señal.'; }
+  finally { $('s-fis-guardar').disabled = false; }
+};
 $('s-anular').onclick = () => {
   const v = $('s-anular-t').value, curp = extraerCurp(v), t = limpiarTarjeta(v), m = $('s-anular-m').value.trim();
   const r = curp ? PAQ.byC[curp] : PAQ.byT[t];
@@ -1301,13 +1337,52 @@ async function prepararLector(modo) {
     CAM.det = CAM.dets[modo] || null;
   }
   if (CAM.det) return true;
+  // 14-nov: sin lector nativo (iPhone y algunos Android) se lee en un proceso aparte (Worker) para que la imagen no se trabe
+  if (await lectorWorker()) { CAM.zx = 'wk'; return true; }
   if (!(await asegurarZXing())) return false;
   if (!CAM.zxs[modo]) {
-    const h = new Map(); h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, FMT[modo].map(f => ZXing.BarcodeFormat[ZXF[f]]).filter(x => x !== undefined)); h.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    const h = new Map(); h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, FMT[modo].map(f => ZXing.BarcodeFormat[ZXF[f]]).filter(x => x !== undefined));
     const zx = new ZXing.MultiFormatReader(); zx.setHints(h); CAM.zxs[modo] = zx;
   }
   CAM.zx = CAM.zxs[modo];
   return true;
+}
+// Lector de respaldo en Worker: recibe la imagen en gris y contesta el texto leído. Si no arranca, se usa el lector normal (más ligero).
+const WK_SRC = `let R = {}, ok = false;
+function lector(f, duro) { const k = f.join() + (duro ? '!' : ''); if (R[k]) return R[k];
+  const h = new Map(); h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, f.map(x => ZXing.BarcodeFormat[x]).filter(x => x !== undefined)); if (duro) h.set(ZXing.DecodeHintType.TRY_HARDER, true);
+  const r = new ZXing.MultiFormatReader(); r.setHints(h); return (R[k] = r); }
+self.onmessage = e => { const m = e.data;
+  if (m.urls) { for (const u of m.urls) { try { importScripts(u); if (self.ZXing) { ok = true; break; } } catch (x) {} } self.postMessage({ listo: ok }); return; }
+  let txt = '';
+  try { const lum = new Uint8ClampedArray(m.buf); const src = new ZXing.RGBLuminanceSource(lum, m.w, m.h);
+    txt = lector(m.f, m.duro).decodeWithState(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src))).getText(); } catch (x) { txt = ''; }
+  self.postMessage({ id: m.id, txt }); };`;
+async function lectorWorker() {
+  if (CAM.wk) return CAM.wkListo;
+  if (CAM.wkFallo || typeof Worker === 'undefined') return false;
+  try {
+    const url = URL.createObjectURL(new Blob([WK_SRC], { type: 'text/javascript' }));
+    const w = new Worker(url); CAM.wk = w; CAM.wkListo = false; CAM.wkVuelo = 0;
+    const listo = await new Promise(res => {
+      const t = setTimeout(() => res(false), 20000);
+      w.onmessage = e => { if ('listo' in e.data) { clearTimeout(t); res(!!e.data.listo); } };
+      w.onerror = () => { clearTimeout(t); res(false); };
+      w.postMessage({ urls: [new URL('zxing.min.js', location.href).href, 'https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js'] });
+    });
+    if (!listo) { try { w.terminate(); } catch (e) {} CAM.wk = null; CAM.wkFallo = true; return false; }
+    w.onmessage = e => { const m = e.data; if (m.id !== CAM.wkVuelo) return; CAM.wkVuelo = 0; if (m.txt && CAM.activo) { try { leidoCam(String(m.txt).trim()); } catch (x) { console.error(x); } } };
+    CAM.wkListo = true; return true;
+  } catch (e) { CAM.wk = null; CAM.wkFallo = true; return false; }
+}
+// Toma la imagen actual reducida (máx. 800 px) en tonos de gris
+function cuadroGris(v, maxLado) {
+  const k = Math.min(1, maxLado / Math.max(v.videoWidth, v.videoHeight)), W = Math.round(v.videoWidth * k), H = Math.round(v.videoHeight * k);
+  CAM.cv = CAM.cv || document.createElement('canvas'); if (CAM.cv.width !== W) CAM.cv.width = W; if (CAM.cv.height !== H) CAM.cv.height = H;
+  const cx = CAM.cv.getContext('2d', { willReadFrequently: true }); cx.drawImage(v, 0, 0, W, H);
+  const d = cx.getImageData(0, 0, W, H).data, g = new Uint8ClampedArray(W * H);
+  for (let i = 0, j = 0; j < g.length; i += 4, j++) g[j] = (d[i] * 306 + d[i + 1] * 601 + d[i + 2] * 117) >> 10;
+  return { W, H, g };
 }
 // Conecta la cámara al <video> del recuadro y arranca la lectura (sirve para abrir y para reiniciar)
 async function conectar(gen) {
@@ -1343,22 +1418,29 @@ async function abrirCam(btn) {
   estadoCam(CAM.modo === 'curp' ? '🔍 Apunta al QR o código de barras de la CURP…' : '🔍 Apunta al código de la tarjeta o al QR de la CURP…');
   clearInterval(CAM.wd); CAM.wd = setInterval(() => vigilar(gen), 1500);
 }
-// Vigilante: si la cámara se cerró, la imagen se congeló o el lector dejó de responder, se reinicia sola
+// Vigilante: si la cámara se cerró, la imagen se congeló o el lector dejó de responder, se reinicia sola.
+// 14-nov: menos sensible (el reinicio se veía como "parpadeo"): solo si la pista terminó, o la imagen lleva 8 s quieta y el celular
+// la marca sin señal, o 15 s quieta de plano; y como mucho un reinicio cada 20 s.
 async function vigilar(gen) {
   if (gen !== CAM.gen || !CAM.activo || document.hidden) return;
   const v = videoCam(), tr = pistaViva(), ahora = Date.now();
   if (v.currentTime !== CAM.lastT) { CAM.lastT = v.currentTime; CAM.lastTT = ahora; }
   if (tr && v.paused) v.play().catch(() => {});
-  const congelada = ahora - CAM.lastTT > 4000, lectorTrabado = ahora - CAM.cicloT > 5000;
-  if (tr && !congelada && !lectorTrabado) return;
-  if (tr && !congelada && lectorTrabado) {          // solo el lector se atoró: si es el nativo, se cambia al de respaldo
-    if (CAM.det && ++CAM.lentos >= 2) { CAM.sinNativo = true; await prepararLector(CAM.modo); }
-    CAM.cicloT = ahora; arrancarCiclo(); return;
+  const quieta = ahora - CAM.lastTT, sinSenal = !tr || tr.muted || v.readyState < 2;
+  const congelada = !tr || (quieta > 8000 && sinSenal) || quieta > 15000;
+  const lectorTrabado = ahora - CAM.cicloT > 6000;
+  if (!congelada) {
+    if (lectorTrabado) {                 // solo el lector se atoró: se cambia al de respaldo o se reinicia el Worker, sin tocar la cámara
+      if (CAM.det && ++CAM.lentos >= 2) { CAM.sinNativo = true; await prepararLector(CAM.modo); }
+      CAM.cicloT = ahora; arrancarCiclo();
+    }
+    if (CAM.wk && CAM.wkVuelo && ahora - CAM.wkT > 6000) { try { CAM.wk.terminate(); } catch (e) {} CAM.wk = null; CAM.wkVuelo = 0; await prepararLector(CAM.modo); }
+    return;
   }
-  if (CAM._reiniciando) return;
-  CAM._reiniciando = true;
+  if (CAM._reiniciando || ahora - (CAM.ultReinicio || 0) < 20000) return;
+  CAM._reiniciando = true; CAM.ultReinicio = ahora;
   try {
-    if (++CAM.reinicios > 6) { estadoCam('<span style="color:var(--rojo)">⚠️ La cámara no responde. Toca DETENER y vuelve a abrirla; si sigue, recarga la página.</span>'); return; }
+    if (++CAM.reinicios > 4) { estadoCam('<span style="color:var(--rojo)">⚠️ La cámara no responde. Toca DETENER y vuelve a abrirla; si sigue, recarga la página.</span>'); return; }
     estadoCam('🔄 Reiniciando cámara…');
     liberarStream(); await dormir(300);
     if (gen !== CAM.gen) return;
@@ -1374,7 +1456,7 @@ function videoCam() {
 }
 // Cerrar el recuadro. La cámara queda "caliente" 45 s para reabrir al instante; con liberar=true (cambio de pantalla) se apaga ya.
 function detenerCam(liberar) {
-  CAM.gen++; CAM.lid++; CAM.activo = false;
+  CAM.gen++; CAM.lid++; CAM.activo = false; CAM.wkVuelo = 0;
   clearTimeout(CAM.loop); clearInterval(CAM.wd);
   const v = videoCam();
   try { v.pause(); } catch (e) {}
@@ -1389,22 +1471,30 @@ async function ciclo(id) {
   if (id !== CAM.lid || !CAM.activo) return;
   CAM.cicloT = Date.now();
   const v = videoCam();
+  let espera = 120;
   if (v.readyState >= 2 && v.videoWidth) {
     let txt = '';
     try {
       if (CAM.det) { const r = await conTiempo(CAM.det.detect(v), 2500); if (r && r.length) txt = r[0].rawValue; CAM.lentos = 0; }
+      else if (CAM.zx === 'wk') {
+        // Worker: se manda un cuadro solo cuando terminó el anterior; la pantalla nunca espera al lector
+        if (!CAM.wkVuelo && CAM.wk) {
+          const c = cuadroGris(v, 800); CAM.wkN = (CAM.wkN || 0) + 1; CAM.wkVuelo = CAM.wkN; CAM.wkT = Date.now();
+          CAM.wk.postMessage({ id: CAM.wkVuelo, w: c.W, h: c.H, buf: c.g.buffer, f: FMT[CAM.modo].map(x => ZXF[x]), duro: CAM.wkN % 3 === 0 }, [c.g.buffer]);
+        }
+        espera = 70;
+      }
       else if (CAM.zx) {
-        // Respaldo: se analiza una imagen reducida (máx. 960 px) para no trabar celulares sencillos
-        const k = Math.min(1, 960 / Math.max(v.videoWidth, v.videoHeight)), W = Math.round(v.videoWidth * k), H = Math.round(v.videoHeight * k);
-        CAM.cv = CAM.cv || document.createElement('canvas'); if (CAM.cv.width !== W) CAM.cv.width = W; if (CAM.cv.height !== H) CAM.cv.height = H;
-        CAM.cv.getContext('2d', { willReadFrequently: true }).drawImage(v, 0, 0, W, H);
-        try { txt = CAM.zx.decodeWithState(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(CAM.cv)))).getText(); } catch (e) { txt = ''; }
+        // Sin Worker: imagen pequeña y con pausas para no trabar la pantalla
+        const c = cuadroGris(v, 640);
+        try { txt = CAM.zx.decodeWithState(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.RGBLuminanceSource(c.g, c.W, c.H)))).getText(); } catch (e) { txt = ''; }
+        espera = 250;
       }
     } catch (e) { if (e && e.message === 'tiempo') { CAM.lentos++; if (CAM.lentos >= 2) { CAM.sinNativo = true; await prepararLector(CAM.modo); } } }
     if (id !== CAM.lid || !CAM.activo) return;
     if (txt) { try { leidoCam(txt.trim()); } catch (e) { console.error(e); } }
   }
-  if (id === CAM.lid && CAM.activo) CAM.loop = setTimeout(() => ciclo(id), CAM.det ? 120 : 90);
+  if (id === CAM.lid && CAM.activo) CAM.loop = setTimeout(() => ciclo(id), espera);
 }
 function leidoCam(txt) {
   const ahora = Date.now(); let cod = txt;
