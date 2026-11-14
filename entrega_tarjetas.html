@@ -423,7 +423,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '14-nov-26 C';
+const APP_VERSION = '14-nov-26 D';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -1180,7 +1180,11 @@ function pintarSupervisorLocal() {
   PAQ.lista.forEach(r => { if (r.rec === 'RECIBIDA') c.rec++; const x = EST[r.t]; if (!x) return;
     if (x.e === E.BUSQUEDA) c.bus++; else if (x.e === E.MESA) c.mesa++; else if (x.e === E.ENTREGADA) c.ent++; else if (x.e === E.DEVUELTA) c.dev++; });
   const pct = c.rec ? Math.round(c.ent * 100 / c.rec) : 0;
-  $('s-kpis').innerHTML = kpi(c.conv, 'Convocados') + kpi(c.ent, 'Entregadas · ' + pct + '%') + kpi(c.rec - c.ent, 'En resguardo') + kpi(c.bus, 'En búsqueda') + kpi(c.mesa, 'En mesa', c.mesa > 0) + kpi(c.dev, 'No entregadas');
+  // 14-nov: "en mesa/canasta" y "en búsqueda" son PARTE de las sin entregar (no se suman): se muestran como dato informativo debajo
+  $('s-kpis').style.gridTemplateColumns = 'repeat(2,minmax(0,1fr))';
+  $('s-kpis').innerHTML = kpi(c.conv, 'Convocados') + kpi(c.ent, 'Entregadas · ' + pct + '%') +
+    `<div class="kpi" style="grid-column:1/-1"><b>${fmt(c.rec - c.ent)}</b><small>Sin entregar (en resguardo)</small>
+      <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #E5D9DE;font-size:.8rem;color:#666">De ellas: <b style="display:inline;font-size:.92rem">${fmt(c.mesa)}</b> estaban en mesa/canasta · <b style="display:inline;font-size:.92rem">${fmt(c.bus)}</b> en búsqueda${c.dev ? ` · <b style="display:inline;font-size:.92rem">${fmt(c.dev)}</b> quitadas por corrección` : ''}</div></div>`;
   if (_cuadre) pintarCuadre();
 }
 async function actualizarCuadre() {
