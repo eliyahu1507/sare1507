@@ -373,7 +373,9 @@ td.num,th.num{text-align:right}
     <div class="kpis" id="s-kpis"></div><div id="s-sede"></div>
     <div class="card"><div class="card-h"><span class="e">🧮</span><div><h2>Entregadas por operador</h2><small>Escribe lo que contó cada uno: la diferencia sale sola</small></div></div>
       <div class="tabla"><table><thead><tr><th>Operador</th><th class="num">Sistema</th><th class="num">Conteo físico</th><th class="num">Dif.</th></tr></thead><tbody id="s-ops"></tbody></table></div><button class="btn ok full" id="s-fis-guardar" hidden>💾 Guardar conteo físico en la hoja</button><p class="hint" id="s-fis-msg"></p></div>
-    <div class="card"><div class="card-h"><span class="e">⚠️</span><div><h2>En mesa sin resolver <span id="s-n-mesa"></span></h2><small>Salieron de búsqueda y no se entregaron ni regresaron</small></div></div><div class="card-b lista" id="s-mesa"></div></div>
+    <div class="card"><div class="card-h"><span class="e">📤</span><div><h2>Cierre del día</h2><small>Al terminar: actualiza los datos y manda el reporte al jefe por WhatsApp</small></div></div>
+      <div class="card-b"><button class="btn prim full" id="s-cierre" style="margin-top:0">📤 Preparar reporte de cierre</button><p class="hint" id="s-cierre-msg"></p></div></div>
+    <div class="card"><div class="card-h"><span class="e">⚠️</span><div><h2>No entregadas: en mesa / canasta <span id="s-n-mesa"></span></h2><small>Mesa las regresó o no se contaron · al cierre van a la caja de su CCT</small></div></div><div class="card-b lista" id="s-mesa"></div></div>
     <div class="card"><div class="card-h"><span class="e">↩</span><div><h2>No entregadas <span id="s-n-dev"></span></h2></div></div><div class="card-b lista" id="s-dev"></div></div>
     <div class="card"><div class="card-h"><span class="e">🔎</span><div><h2>Pasaron filtro y siguen en búsqueda <span id="s-n-bus"></span></h2></div></div><div class="card-b lista" id="s-bus"></div></div>
     <div class="card"><div class="card-h"><span class="e">🏷️</span><div><h2>Etiquetas de las cajas</h2><small>Una por día, con las CCT que se atienden</small></div></div>
@@ -421,7 +423,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '14-nov-26 A';
+const APP_VERSION = '14-nov-26 C';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -1020,10 +1022,10 @@ function pintarBusqueda() {
 function cajaPorCct() {
   const m = {};
   PAQ.lista.forEach(r => {
-    const x = (m[r.cct] = m[r.cct] || { cct: r.cct, esc: r.esc, tar: 0, ent: 0, mesa: 0, dev: 0, pend: [] });
+    const x = (m[r.cct] = m[r.cct] || { cct: r.cct, esc: r.esc, tar: 0, ent: 0, mesa: 0, dev: 0, pend: [], canasta: [] });
     if (r.rec !== 'RECIBIDA') return;
     x.tar++; const s = EST[r.t];
-    if (s && s.e === E.ENTREGADA) x.ent++; else if (s && s.e === E.MESA) x.mesa++; else { if (s && s.e === E.DEVUELTA) x.dev++; x.pend.push(r); }
+    if (s && s.e === E.ENTREGADA) x.ent++; else if (s && s.e === E.MESA) { x.mesa++; x.canasta.push(r); } else { if (s && s.e === E.DEVUELTA) x.dev++; x.pend.push(r); }
   });
   return Object.keys(m).sort().map(k => m[k]);
 }
@@ -1033,15 +1035,17 @@ function pintarCaja() {
   $('b-caja').innerHTML = l.map(x => `<tr><td>${cctHtml(x.cct)}</td><td class="num">${fmt(x.tar)}</td><td class="num">${fmt(x.ent)}</td><td class="num${x.mesa ? ' pend-n' : ''}">${fmt(x.mesa)}</td><td class="num"><b>${fmt(x.pend.length)}</b></td></tr>`).join('') +
     `<tr><td><b>TOTAL</b></td><td class="num"><b>${fmt(t.tar)}</b></td><td class="num"><b>${fmt(t.ent)}</b></td><td class="num"><b>${fmt(t.mesa)}</b></td><td class="num"><b>${fmt(t.caja)}</b></td></tr>`;
   const cont = lsGet('ent_corte_' + SES.fecha, {});
-  $('b-corte-av').innerHTML = (t.mesa ? `<div class="res aviso" style="margin-bottom:10px"><div class="t">⚠️ ${t.mesa} en mesa sin resolver</div><p>Antes del corte, que cada mesa haga su conteo de expedientes. Las que mesa regresó sin entregar siguen "en mesa": si están en la caja, salen como +1 en su CCT (compáralas con la lista En mesa del Supervisor).</p></div>`
+  // 14-nov: al cierre, las de mesa/canasta que no se entregaron REGRESAN a la caja de su CCT: ya cuentan en "Deben quedar"
+  $('b-corte-av').innerHTML = (t.mesa ? `<div class="res aviso" style="margin-bottom:10px"><div class="t">🧺 ${t.mesa} sin entregar en mesa / canasta</div><p>Primero que cada mesa haga su conteo de expedientes. Las que sigan sin entregar <b>regrésalas a la caja de su CCT</b> antes de contar: ya están incluidas en "Deben quedar" (en "Ver" aparecen como 🧺).</p></div>`
     : _corteGuardado ? `<div class="res ok" style="margin-bottom:10px"><div class="t">✅ Corte guardado ${esc(_corteGuardado)}</div><p>Si vuelves a contar, guárdalo otra vez: queda el último.</p></div>` : '');
-  $('b-corte').innerHTML = l.map(x => { const v = cont[x.cct], d = v === undefined || v === '' ? '' : Number(v) - x.pend.length;
-    return `<tr><td>${cctHtml(x.cct)}</td><td class="num"><b>${fmt(x.pend.length)}</b></td><td class="num"><input class="main-input" data-cct="${esc(x.cct)}" inputmode="numeric" value="${v == null ? '' : esc(v)}" style="width:76px;min-width:0;padding:6px;text-align:right"></td><td class="num ${d === '' ? '' : d === 0 ? 'dif-ok' : 'dif-mal'}">${d === '' ? '' : d === 0 ? '✓' : (d > 0 ? '+' : '') + d}</td><td><button class="btn borde" data-ver="${esc(x.cct)}" style="padding:4px 8px;font-size:.68rem">Ver</button></td></tr>`; }).join('');
+  $('b-corte').innerHTML = l.map(x => { const deben = x.pend.length + x.canasta.length, v = cont[x.cct], d = v === undefined || v === '' ? '' : Number(v) - deben;
+    return `<tr><td>${cctHtml(x.cct)}</td><td class="num"><b>${fmt(deben)}</b></td><td class="num"><input class="main-input" data-cct="${esc(x.cct)}" inputmode="numeric" value="${v == null ? '' : esc(v)}" style="width:76px;min-width:0;padding:6px;text-align:right"></td><td class="num ${d === '' ? '' : d === 0 ? 'dif-ok' : 'dif-mal'}">${d === '' ? '' : d === 0 ? '✓' : (d > 0 ? '+' : '') + d}</td><td><button class="btn borde" data-ver="${esc(x.cct)}" style="padding:4px 8px;font-size:.68rem">Ver</button></td></tr>`; }).join('');
   $('b-corte').querySelectorAll('input').forEach(i => i.onchange = () => { const c = lsGet('ent_corte_' + SES.fecha, {}); c[i.dataset.cct] = i.value.replace(/\D/g, ''); lsSet('ent_corte_' + SES.fecha, c); pintarCaja(); });
   $('b-corte').querySelectorAll('[data-ver]').forEach(b => b.onclick = () => {
     const x = cajaPorCct().find(y => y.cct === b.dataset.ver); if (!x) return;
-    abrirModal('Deben quedar en la caja · ' + x.cct, x.pend.length + ' sobres · ' + x.esc,
-      '<div class="lista">' + x.pend.slice().sort((a, c) => a.n.localeCompare(c.n)).map(r => `<div class="it"><div><div class="nm">${esc(r.n)}</div><div class="sub">Tarjeta …${esc(r.t.slice(-8))}${EST[r.t] && EST[r.t].e === E.DEVUELTA ? ' · devuelta: ' + esc(EST[r.t].d || '') : ''}</div></div></div>`).join('') + '</div>' || '<div class="vacio">Ninguna: todo se entregó.</div>');
+    const todas = x.pend.concat(x.canasta);
+    abrirModal('Deben quedar en la caja · ' + x.cct, todas.length + ' sobres · ' + x.esc,
+      todas.length ? '<div class="lista">' + todas.sort((a, c) => a.n.localeCompare(c.n)).map(r => `<div class="it"><div><div class="nm">${EST[r.t] && EST[r.t].e === E.MESA ? '🧺 ' : ''}${esc(r.n)}</div><div class="sub">Tarjeta …${esc(r.t.slice(-8))}${EST[r.t] && EST[r.t].e === E.MESA ? ' · regresó de mesa sin entregar' : EST[r.t] && EST[r.t].e === E.DEVUELTA ? ' · devuelta: ' + esc(EST[r.t].d || '') : ''}</div></div></div>`).join('') + '</div>' : '<div class="vacio">Ninguna: todo se entregó.</div>');
   });
 }
 $('b-corte-guardar').onclick = async () => {
@@ -1051,7 +1055,7 @@ $('b-corte-guardar').onclick = async () => {
   try {
     await sincronizar();
     if (COLA.length) throw new Error('Hay ' + COLA.length + ' movimientos sin enviar: busca señal y vuelve a intentar');
-    const r = await llamar({ accion: 'corte', nota: $('b-corte-nota').value.trim(), cortes: l.map(x => ({ cct: x.cct, contadas: cont[x.cct] === undefined ? '' : cont[x.cct] })) }, 30000);
+    const r = await llamar({ accion: 'corte', fecha: SES.fecha, nota: $('b-corte-nota').value.trim(), cortes: l.map(x => ({ cct: x.cct, contadas: cont[x.cct] === undefined ? '' : cont[x.cct] })) }, 30000);
     _corteGuardado = 'a las ' + horaAhora() + ' por ' + SES.op;
     const dif = r.filas.filter(x => x.diferencia !== '' && x.diferencia !== 0);
     $('b-corte-msg').textContent = `✅ Guardado en la pestaña "Cortes": ${r.filas.length} CCT · ${fmt(r.pendientes)} deben quedar en caja` + (dif.length ? ` · ⚠️ ${dif.length} con diferencia` : ' · todo cuadra') + '.';
@@ -1200,11 +1204,55 @@ function pintarCuadre() {
     `<tr><td><b>TOTAL</b></td><td class="num"><b>${c.entregadas}</b></td><td class="num"><b>${ops.reduce((a, k) => a + (Number(fis[k]) || 0), 0) || ''}</b></td><td></td></tr>`;
   $('s-ops').querySelectorAll('input').forEach(i => i.onchange = () => { const f = lsGet('ent_fisico_' + c.fecha, {}); f[i.dataset.k] = i.value.trim(); lsSet('ent_fisico_' + c.fecha, f); $('s-fis-msg').textContent = '✏️ Sin guardar en la hoja'; pintarCuadre(); });
   const filaC = x => `<div class="it"><div><div class="nm">${esc(x.nombre)}</div><div class="sub">${esc(x.detalle || '')} ${esc(x.op)}${x.mesa ? ' · mesa ' + esc(x.mesa) : ''} · ${esc(x.hora)}</div>${cctHtml(x.cct)}</div></div>`;
-  $('s-n-mesa').textContent = '(' + c.enMesa.length + ')'; $('s-mesa').innerHTML = c.enMesa.map(filaC).join('') || '<div class="vacio">✅ Ninguna: todo lo que salió de búsqueda está resuelto.</div>';
+  $('s-n-mesa').textContent = '(' + c.enMesa.length + ')'; $('s-mesa').innerHTML = c.enMesa.map(filaC).join('') || '<div class="vacio">✅ Ninguna: todo lo que salió de búsqueda se entregó.</div>';
   $('s-n-dev').textContent = '(' + c.devueltas.length + ')'; $('s-dev').innerHTML = c.devueltas.map(filaC).join('') || '<div class="vacio">Ninguna.</div>';
   $('s-n-bus').textContent = '(' + c.enBusqueda.length + ')'; $('s-bus').innerHTML = c.enBusqueda.map(filaC).join('') || '<div class="vacio">Ninguna.</div>';
 }
 $('s-actualizar').onclick = actualizarCuadre;
+// ── 14-nov: reporte de cierre para WhatsApp. Se arma con datos recién consultados de la hoja (no con lo del celular) ──
+function textoCierre(c) {
+  const pct = (a, b) => b ? Math.round(a * 1000 / b) / 10 + '%' : '0%';
+  const dia = ((LOGIN && LOGIN.calendario) || []).find(x => x.fecha === c.fecha), sede = dia && dia.escuelas[0] ? dia.escuelas[0].sede : '';
+  const fis = Object.assign({}, c.fisico || {}, lsGet('ent_fisico_' + c.fecha, {})), ops = Object.keys(c.porOperador).sort();
+  const totFis = ops.reduce((a, k) => a + (fis[k] !== undefined && fis[k] !== '' ? Number(fis[k]) : 0), 0), hayFis = ops.some(k => fis[k] !== undefined && fis[k] !== '');
+  const L = [];
+  L.push('*SARE 1507 · CIERRE DE ENTREGA DE TARJETAS*', '*' + fechaLarga(c.fecha).toUpperCase() + '*' + (sede ? '\n📍 ' + sede : ''), '');
+  L.push('*📦 Entregadas hoy en sede: ' + fmt(c.entregadasSede) + '*', '   • De los convocados de hoy: ' + fmt(c.sedeDeEsteDia), '   • De otros días: ' + fmt(c.sedeDeOtrosDias), '');
+  L.push('*👥 Convocados de hoy*', '   • Convocados: ' + fmt(c.convocados) + ' · tarjetas recibidas: ' + fmt(c.tarjetas),
+    '   • Pasaron filtro: ' + fmt(c.filtroOk) + ' · enviadas a mesa: ' + fmt(c.enviadasAMesa),
+    '   • Ya recibieron: ' + fmt(c.entregadasConvocados) + ' (' + pct(c.entregadasConvocados, c.tarjetas) + ')', '   • Pendientes: ' + fmt(c.pendientesConvocados), '');
+  L.push('*📊 Acumulado del operativo*', '   • ' + fmt(c.acumulado.entregadas) + ' de ' + fmt(c.acumulado.recibidas) + ' (' + pct(c.acumulado.entregadas, c.acumulado.recibidas) + ') · pendientes ' + fmt(c.acumulado.pendientes), '');
+  if (c.enMesa.length || c.enBusqueda.length || c.devueltas.length) {
+    L.push('*⚠️ No entregadas / por resolver*');
+    if (c.enMesa.length) L.push('   • No entregadas (regresaron de mesa / canasta): ' + c.enMesa.length);
+    if (c.enBusqueda.length) L.push('   • Pasaron filtro y siguen en búsqueda: ' + c.enBusqueda.length);
+    if (c.devueltas.length) L.push('   • No entregadas: ' + c.devueltas.length);
+    L.push('');
+  }
+  L.push('*🧾 Entregadas por operador' + (hayFis ? ' (sistema / físico)' : '') + '*');
+  ops.forEach(k => { const f = fis[k], tieneF = f !== undefined && f !== '', d = tieneF ? Number(f) - c.porOperador[k] : 0;
+    L.push('   • ' + k + ': ' + c.porOperador[k] + (tieneF ? ' / ' + f + (d ? ' (' + (d > 0 ? '+' : '') + d + ')' : ' ✓') : '')); });
+  L.push('   *TOTAL: ' + fmt(c.entregadasSede) + (hayFis ? ' / ' + fmt(totFis) : '') + '*', '');
+  L.push('_Datos de la hoja a las ' + horaAhora() + ' · ' + (USUARIO && USUARIO.NOMBRE ? USUARIO.NOMBRE : 'Supervisor') + '_');
+  return L.join('\n');
+}
+$('s-cierre').onclick = async () => {
+  $('s-cierre').disabled = true; $('s-cierre-msg').textContent = '⏳ Enviando lo pendiente y consultando la hoja…';
+  try {
+    await actualizarCuadre();
+    if (!_cuadre || _cuadre.fecha !== SES.fecha) throw new Error('No se pudo consultar la hoja');
+    $('s-cierre-msg').textContent = '';
+    const t = textoCierre(_cuadre), pendientes = COLA.length;
+    abrirModal('📤 Reporte de cierre', 'Revísalo y envíalo. ' + (pendientes ? '⚠️ Este celular aún tiene ' + pendientes + ' por enviar.' : 'Datos completos de la hoja.'),
+      `<div style="white-space:pre-wrap;font-size:.8rem;line-height:1.4;background:var(--gris);border-radius:10px;padding:10px 12px;max-height:45vh;overflow:auto">${esc(t).replace(/\*([^*\n]+)\*/g, '<b>$1</b>').replace(/_([^_\n]+)_/g, '<i>$1</i>')}</div>
+       <a class="btn ok full" style="text-align:center;text-decoration:none" href="https://wa.me/?text=${encodeURIComponent(t)}" target="_blank" rel="noopener">💬 Enviar por WhatsApp</a>
+       ${navigator.share ? '<button class="btn prim full" id="cierre-share">📤 Compartir con otra app</button>' : ''}
+       <button class="btn borde full" id="cierre-copy">📋 Copiar el texto</button>`);
+    if ($('cierre-share')) $('cierre-share').onclick = () => navigator.share({ title: 'Cierre ' + fechaLarga(_cuadre.fecha), text: t }).catch(() => {});
+    $('cierre-copy').onclick = async () => { try { await navigator.clipboard.writeText(t); toast('✅ Reporte copiado'); } catch (e) { toast('No se pudo copiar', true); } };
+  } catch (e) { $('s-cierre-msg').textContent = '⛔ ' + e.message + '. Intenta con señal.'; }
+  finally { $('s-cierre').disabled = false; }
+};
 // Conteo físico al cierre → pestaña "Conteo fisico" y "Historico cuadres" de la hoja
 $('s-fis-guardar').onclick = async () => {
   if (!_cuadre) return;
