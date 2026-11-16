@@ -1,125 +1,72 @@
-<!DOCTYPE html><html class="light" lang="es"><head>
+<!DOCTYPE html><html lang="es"><head>
 <meta charset="utf-8">
-<meta content="width=device-width, initial-scale=1.0" name="viewport">
-<title>SARE 1507 Panel de Herramientas - Inicio</title>
-<!-- Google Fonts: Montserrat for Headlines, Inter for Body -->
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<!-- Material Symbols -->
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "tertiary-fixed": "#b7ede5",
-                        "on-tertiary-fixed-variant": "#174f49",
-                        "on-surface-variant": "#564242",
-                        "on-secondary-fixed": "#281800",
-                        "primary-container": "#6f1223",
-                        "on-tertiary-container": "#77aca5",
-                        "on-secondary-container": "#785a2a",
-                        "secondary-fixed": "#ffddb0",
-                        "tertiary": "#002825",
-                        "error-container": "#ffdad6",
-                        "primary-fixed-dim": "#ffb2b6",
-                        "surface": "#f7f9ff",
-                        "on-secondary-fixed-variant": "#5d4214",
-                        "on-error": "#ffffff",
-                        "on-tertiary": "#ffffff",
-                        "surface-container-low": "#f1f4f9",
-                        "surface-dim": "#d7dadf",
-                        "on-background": "#181c20",
-                        "inverse-surface": "#2d3135",
-                        "surface-container-highest": "#e0e3e8",
-                        "primary-fixed": "#ffdada",
-                        "surface-bright": "#f7f9ff",
-                        "on-primary": "#ffffff",
-                        "on-primary-fixed": "#40000d",
-                        "tertiary-fixed-dim": "#9bd1c9",
-                        "outline": "#897172",
-                        "tertiary-container": "#00403b",
-                        "on-primary-fixed-variant": "#832231",
-                        "secondary-container": "#fdd499",
-                        "surface-variant": "#e0e3e8",
-                        "background": "#f7f9ff",
-                        "primary": "#4d0011",
-                        "on-surface": "#181c20",
-                        "on-secondary": "#ffffff",
-                        "on-primary-container": "#f87b86",
-                        "error": "#ba1a1a",
-                        "surface-container": "#ebeef3",
-                        "inverse-on-surface": "#eef1f6",
-                        "outline-variant": "#dcc0c0",
-                        "on-tertiary-fixed": "#00201d",
-                        "surface-container-lowest": "#ffffff",
-                        "inverse-primary": "#ffb2b6",
-                        "surface-tint": "#a33a46",
-                        "secondary-fixed-dim": "#e8c087",
-                        "on-error-container": "#93000a",
-                        "secondary": "#77592a",
-                        "surface-container-high": "#e5e8ee"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                    "spacing": {
-                        "sm": "12px",
-                        "gutter": "24px",
-                        "base": "8px",
-                        "lg": "40px",
-                        "xl": "64px",
-                        "md": "24px",
-                        "margin": "32px",
-                        "xs": "4px"
-                    },
-                    "fontFamily": {
-                        "body-lg": ["Inter"],
-                        "body-md": ["Inter"],
-                        "headline-lg": ["Montserrat"],
-                        "body-sm": ["Inter"],
-                        "headline-sm": ["Montserrat"],
-                        "label-md": ["Inter"],
-                        "label-sm": ["Inter"],
-                        "headline-md": ["Montserrat"],
-                        "headline-xl": ["Montserrat"]
-                    },
-                    "fontSize": {
-                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
-                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
-                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                        "label-md": ["14px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
-                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
-                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
-                    }
-                },
-            },
-        }
-    </script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#691C32">
+<title>SARE 1507 · Panel de herramientas</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,500,1,0&display=swap" rel="stylesheet">
 <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .action-card {
-            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
-        }
-        .action-card:hover {
-            transform: translateY(-4px);
-        }
-        .action-card:active {
-            transform: scale(0.98);
-        }
-    </style>
+/* 16-nov-26: menú compacto por grupos, con el estilo de la app de entrega (círculo dorado, tarjetas blancas, guinda institucional) */
+:root{--guinda:#691C32;--guinda-o:#4A0E29;--guinda-c:#8A2A47;--dorado:#BC955C;--dorado-c:#E6D3A8;--fondo:#F6F3F4;--texto:#2B2224;--texto-s:#6E6266;--borde:#EADDE3;--sombra:rgba(74,14,41,.10)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--texto);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.4}
+.ms{font-family:'Material Symbols Outlined';font-weight:normal;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+/* Barra superior */
+.top{background:#fff;border-bottom:3px solid var(--dorado);position:sticky;top:0;z-index:20}
+.top-in{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;align-items:center;gap:12px}
+.top img{height:34px}
+.top .marca{font:800 .95rem Montserrat,sans-serif;color:var(--guinda);line-height:1.1;border-left:1px solid var(--borde);padding-left:12px}
+.top .marca small{display:block;font:500 .7rem Inter,sans-serif;color:var(--texto-s)}
+.top .usr{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--texto-s);text-align:right}
+.top .usr button{border:1px solid var(--borde);background:#fff;border-radius:999px;width:36px;height:36px;display:grid;place-items:center;color:var(--guinda);cursor:pointer}
+/* Saludo y buscador */
+.hero{background:linear-gradient(135deg,var(--guinda-o),var(--guinda) 60%,var(--guinda-c));color:#fff}
+.hero-in{max-width:1180px;margin:0 auto;padding:18px 16px 54px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px}
+.hero h1{margin:0;font:700 1.35rem Montserrat,sans-serif}
+.hero p{margin:2px 0 0;font-size:.85rem;opacity:.85}
+.buscar{margin-left:auto;flex:1 1 260px;max-width:380px;position:relative}
+.buscar input{width:100%;border:0;border-radius:12px;padding:11px 14px 11px 40px;font:500 .9rem Inter,sans-serif;color:var(--texto);box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.buscar .ms{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--texto-s);font-size:20px}
+main{max-width:1180px;margin:-38px auto 0;padding:0 16px 24px;position:relative}
+/* Operativo destacado */
+.destacado{display:flex;align-items:center;gap:16px;background:#fff;border:2px solid var(--dorado);border-radius:18px;padding:14px 16px;box-shadow:0 8px 24px var(--sombra);transition:transform .15s,box-shadow .15s}
+.destacado:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(74,14,41,.16)}
+.destacado .ic{width:64px;height:64px;font-size:34px}
+.destacado h2{margin:0;font:800 1.1rem Montserrat,sans-serif;color:var(--guinda)}
+.destacado p{margin:2px 0 6px;font-size:.82rem;color:var(--texto-s)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font:600 .7rem Montserrat,sans-serif;border-radius:999px;padding:3px 9px;background:#F7EEF1;color:var(--guinda);border:1px solid var(--borde)}
+.chip.vivo{background:var(--guinda);color:#fff;border-color:var(--guinda)}
+.ir{margin-left:auto;flex:0 0 auto;background:var(--guinda);color:#fff;border-radius:12px;padding:10px 16px;font:700 .85rem Montserrat,sans-serif;display:flex;align-items:center;gap:4px}
+/* Ícono en círculo dorado (como los botones de función de la app de entrega) */
+.ic{flex:0 0 auto;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;font-size:24px;color:var(--c,var(--guinda));background:radial-gradient(circle at 32% 28%,#fff 0,#f7ecd2 45%,#e3c27a 100%);box-shadow:inset -3px -4px 8px rgba(154,110,30,.25),0 2px 6px rgba(74,14,41,.12)}
+/* Grupos y herramientas */
+.grupo{margin-top:22px}
+.grupo h3{margin:0 0 8px;font:700 .72rem Montserrat,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-s);display:flex;align-items:center;gap:8px}
+.grupo h3::after{content:'';flex:1;height:1px;background:var(--borde)}
+.lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.her{position:relative;display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--borde);border-left:5px solid var(--c,var(--guinda));border-radius:14px;padding:10px 12px;min-height:74px;box-shadow:0 2px 8px var(--sombra);transition:transform .12s,box-shadow .12s}
+.her:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(74,14,41,.14)}
+.her:active{transform:scale(.99)}
+.her b{display:block;font:700 .9rem Montserrat,sans-serif;color:var(--texto)}
+.her small{display:block;font-size:.76rem;color:var(--texto-s);line-height:1.3;margin-top:1px}
+.her .tag{display:inline-block;margin-top:4px;font:600 .64rem Montserrat,sans-serif;letter-spacing:.02em;border-radius:6px;padding:2px 6px;background:#F3EEF0;color:var(--texto-s)}
+.her .tag.lock{background:#FFF4E0;color:#8A5A00}
+.her .fl{margin-left:auto;color:#C9B8BF;font-size:20px}
+.vacio{display:none;text-align:center;color:var(--texto-s);padding:30px 0}
+.nota{margin-top:24px;display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--borde);border-radius:12px;padding:10px 14px;font-size:.78rem;color:var(--texto-s)}
+footer{border-top:1px solid var(--borde);background:#fff;margin-top:24px}
+footer div{max-width:1180px;margin:0 auto;padding:12px 16px;font-size:.74rem;color:var(--texto-s);display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:space-between}
+@media (max-width:600px){
+  .top .marca small{display:none}.top img{height:28px}.top #usuario-conectado{display:none}
+  .hero-in{padding:14px 16px 50px}.hero h1{font-size:1.1rem}.buscar{max-width:none;margin-left:0}
+  .destacado{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:4px 12px}.destacado .ic{width:48px;height:48px;font-size:26px}.destacado h2{font-size:1rem}.ir{grid-column:1/-1;margin:8px 0 0;justify-content:center}
+  .lista{grid-template-columns:1fr;gap:8px}.her{min-height:64px}
+}
+</style>
 </head>
-<body class="bg-surface text-on-surface min-h-screen flex flex-col font-body-md text-body-md">
-
+<body>
 <!-- ════════ PANTALLA DE ACCESO (LOGIN BÁSICO) ════════ -->
 <div id="login-overlay" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#4d0011 0%,#6f1223 60%,#832231 100%);display:flex;align-items:center;justify-content:center;padding:24px;">
   <div style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:36px 32px;box-shadow:0 20px 60px rgba(0,0,0,.35);">
@@ -142,179 +89,60 @@
 
 <!-- ════════ CONTENIDO PROTEGIDO ════════ -->
 <div id="app-content" style="display:none;">
-<!-- Top Navigation Bar -->
-<header class="bg-surface-container-lowest border-b border-outline-variant sticky top-0 z-50">
-<nav class="flex justify-between items-center w-full px-margin py-base max-w-screen-xl mx-auto h-16">
-<div class="flex items-center gap-md">
-<span class="font-headline-md text-headline-md font-bold text-primary">SARE 1507 Panel de Herramientas</span>
-</div>
-<div class="hidden md:flex items-center gap-gutter h-full">
-<a class="font-label-md text-label-md text-primary border-b-2 border-primary pb-1 h-full flex items-center" href="#">Inicio</a>
-<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors h-full flex items-center" href="#">Operativo</a>
-<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors h-full flex items-center" href="#">Consultas</a>
-<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors h-full flex items-center" href="#">Módulos</a>
-</div>
-<div class="flex items-center gap-sm">
-<span id="usuario-conectado" style="font-family:Inter,sans-serif;font-size:.78rem;color:#564242;margin-right:4px;"></span>
-<button class="p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">
-<span class="material-symbols-outlined">account_circle</span>
-</button>
-<button id="btn-logout" class="p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant" title="Cerrar sesión">
-<span class="material-symbols-outlined">logout</span>
-</button>
-</div>
-</nav>
-</header>
-<main class="flex-grow max-w-screen-xl mx-auto w-full px-margin py-xl">
-<!-- Hero Section -->
-<section class="mb-xl text-center">
-<div class="flex justify-center mb-md">
-<div class="container">
-        <img class="logo-institucional" src="https://framework-gb.cdn.gob.mx/landing/img/logoheader.svg" alt="Gobierno de México">
-</div>
-<h1 class="font-headline-lg text-headline-lg text-primary mb-xs">José Elías Cervantes Jiménez</h1>
-<p class="font-headline-sm text-headline-sm text-secondary mb-md">Enlace informático — SARE 1507 ECATEPEC</p>
-<div class="max-w-2xl mx-auto">
-<p class="font-body-lg text-body-lg text-on-surface-variant">
-                    Bienvenido al sistema de control operativo de becas. Por favor, selecciona la plataforma con la que vas a trabajar:
-                </p>
-</div>
-</section>
-<!-- Action Cards Grid -->
-<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mt-lg">
-<!-- Card 1: Operativo -->
-<a href="entrega_tarjetas.html" class="action-card group flex flex-col items-start p-gutter bg-primary-container rounded-xl shadow-sm text-left border border-primary/20">
-<div class="bg-white/10 p-sm rounded-lg mb-md text-white group-hover:bg-white/20 transition-colors">
-<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">dataset</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm text-white mb-sm">Operativo entrega de tarjetas</h3>
-<p class="font-body-sm text-body-sm text-white/80 mb-md">Gestión operativa para Secundaria, BUEMS y JEF.</p>
-<div class="mt-auto flex items-center gap-xs text-white font-label-md">
-                    Acceder <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</div>
-</a>
-<!-- Card 2: Entrega de Tarjetas -->
-<a href="capturista_v3.1.html" class="action-card group flex flex-col items-start p-gutter bg-secondary-container rounded-xl shadow-sm text-left border border-on-secondary-container/10">
-<div class="bg-on-secondary-container/10 p-sm rounded-lg mb-md text-on-secondary-container group-hover:bg-on-secondary-container/20 transition-colors">
-<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">credit_card</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm text-on-secondary-container mb-sm">Entrega de Tarjetas</h3>
-<p class="font-body-sm text-body-sm text-on-secondary-container/80 mb-md">Módulo especializado para el registro y entrega de plásticos (Capturista).</p>
-<div class="mt-auto flex items-center gap-xs text-on-secondary-container font-label-md">
-                    Iniciar captura <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</div>
-</a>
-<!-- Card 3: Historial de Procesos Operativos -->
-<a href="validacion_brcu_historicos_sare1507.html" class="action-card group flex flex-col items-start p-gutter rounded-xl shadow-sm text-left border" style="background-color:#EEF1DF; border-color:#A8B884;">
-<div class="p-sm rounded-lg mb-md transition-colors" style="background-color:#8A9A5B;">
-<span class="material-symbols-outlined text-4xl text-white" style="font-variation-settings: 'FILL' 1;">history_edu</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm mb-sm" style="color:#5C6B3A;">Historial de Procesos Operativos</h3>
-<p class="font-body-sm text-body-sm mb-md" style="color:#6F7A52;">Consultar nominal y registros de todos los ciclos operativos al mes de junio de 2026.</p>
-<div class="mt-auto flex items-center gap-xs font-label-md" style="color:#5C6B3A;">
-                    Consultar historial <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</div>
-</a>
-<!-- Card 4: Escáner CURP (QR) -->
-<a href="escaner_curp_qr.html" class="action-card group flex flex-col items-start p-gutter rounded-xl shadow-sm text-left border" style="background-color:#E3EEFB; border-color:#9CC0E8;">
-<div class="p-sm rounded-lg mb-md transition-colors" style="background-color:#2F6FB5;">
-<span class="material-symbols-outlined text-4xl text-white" style="font-variation-settings: 'FILL' 1;">qr_code_scanner</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm mb-sm" style="color:#1D4E89;">Escáner CURP (QR)</h3>
-<p class="font-body-sm text-body-sm mb-md" style="color:#3C6592;">Escanea el código QR del formato impreso para capturar la CURP sin teclearla. Funciona desde tu teléfono y puede enviar el resultado directo a la PC.</p>
-<div class="mt-auto flex items-center gap-xs font-label-md" style="color:#1D4E89;">
-                    Escanear código <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</div>
-</a>
-<!-- Card 5: Receptor CURP (PC) -->
-<a href="receptor_curp.html" class="action-card group flex flex-col items-start p-gutter rounded-xl shadow-sm text-left border" style="background-color:#EDE7F6; border-color:#B39DDB;">
-<div class="p-sm rounded-lg mb-md transition-colors" style="background-color:#5E35B1;">
-<span class="material-symbols-outlined text-4xl text-white" style="font-variation-settings: 'FILL' 1;">desktop_windows</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm mb-sm" style="color:#4527A0;">Receptor CURP (PC)</h3>
-<p class="font-body-sm text-body-sm mb-md" style="color:#5E4C8A;">Abre esto en la PC para recibir en vivo las CURP que escanee el teléfono, sin capturarlas a mano.</p>
-<div class="mt-auto flex items-center gap-xs font-label-md" style="color:#4527A0;">
-                    Abrir receptor <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</div>
-</a>
-<!-- Card 6: Recepción de Tarjetas -->
-<a href="escaner_tarjetas.html" class="action-card group flex flex-col items-start p-gutter rounded-xl shadow-sm text-left border" style="background-color:#FFF3E0; border-color:#FFCC80;">
-<div class="p-sm rounded-lg mb-md transition-colors" style="background-color:#E65100;">
-<span class="material-symbols-outlined text-4xl text-white" style="font-variation-settings: 'FILL' 1;">barcode_scanner</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm mb-sm" style="color:#BF360C;">Recepción de Tarjetas</h3>
-<p class="font-body-sm text-body-sm mb-md" style="color:#8D3300;">Escaneo y control de tarjetas físicas en operativo de recepción. Detecta duplicados, lleva conteo por caja y genera archivo para el supervisor.</p>
-<div class="mt-auto flex items-center gap-xs font-label-md" style="color:#BF360C;">
-                    Iniciar escaneo <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</div>
-</a>
-<!-- Card 7: Administración de Recepción -->
-<a href="impresion_tarjetas.html" class="action-card group flex flex-col items-start p-gutter rounded-xl shadow-sm text-left border" style="background-color:#E0F2F1; border-color:#80CBC4;">
-<div class="p-sm rounded-lg mb-md transition-colors" style="background-color:#00695C;">
-<span class="material-symbols-outlined text-4xl text-white" style="font-variation-settings: 'FILL' 1;">print</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm mb-sm" style="color:#004D40;">Administración de Recepción</h3>
-<p class="font-body-sm text-body-sm mb-md" style="color:#00695C;">Etiquetas para las cajas antes de salir al operativo, monitor e impresión por caja y CCT. 🔒 Solo José Elías Cervantes y José Eduardo Noh.</p>
-<div class="mt-auto flex items-center gap-xs font-label-md" style="color:#004D40;">
-                    Abrir administración <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</div>
-</a>
-<!-- Card 7b: Trámites -->
-<a href="tramites.html" class="action-card group flex flex-col items-start p-gutter rounded-xl shadow-sm text-left border" style="background-color:#E8EAF6; border-color:#9FA8DA;">
-<div class="p-sm rounded-lg mb-md transition-colors" style="background-color:#283593;">
-<span class="material-symbols-outlined text-4xl text-white" style="font-variation-settings: 'FILL' 1;">assignment</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm mb-sm" style="color:#1A237E;">TRÁMITES</h3>
-<p class="font-body-sm text-body-sm mb-md" style="color:#283593;">Consulta del estatus de trámites por CURP (escaneo o captura), altas, bajas, estadísticas y preparación de copias de contrato con ubicación del expediente.</p>
-<div class="mt-auto flex items-center gap-xs font-label-md" style="color:#1A237E;">
-                    Consultar trámites <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</div>
-</a>
-<!-- Card 8: Seguimiento Carteles -->
-<a href="seguimiento_carteles.html" class="action-card group flex flex-col items-start p-gutter rounded-xl shadow-sm text-left border" style="background-color:#F9F0F3; border-color:#C48A9E;">
-<div class="p-sm rounded-lg mb-md transition-colors" style="background-color:#6B1C3E;">
-<span class="material-symbols-outlined text-4xl text-white" style="font-variation-settings: 'FILL' 1;">campaign</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm mb-sm" style="color:#4A0E29;">Seguimiento Carteles</h3>
-<p class="font-body-sm text-body-sm mb-md" style="color:#6B1C3E;">Registro fotográfico y de video por CCT durante la pega de carteles. Exporta evidencias organizadas por CCT para subir a OneDrive.</p>
-<div class="mt-auto flex items-center gap-xs font-label-md" style="color:#4A0E29;">
-                    Iniciar ruta <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</div>
-</a>
-<!-- Card 9: Inventario Cómputo -->
-<a href="Inventario_computo_SARE_1507.html" class="action-card group flex flex-col items-start p-gutter rounded-xl shadow-sm text-left border" style="background-color:#F3EEF7; border-color:#B39CC8;">
-<div class="p-sm rounded-lg mb-md transition-colors" style="background-color:#4A235A;">
-<span class="material-symbols-outlined text-4xl text-white" style="font-variation-settings: 'FILL' 1;">computer</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm mb-sm" style="color:#2D1238;">Inventario Cómputo</h3>
-<p class="font-body-sm text-body-sm mb-md" style="color:#4A235A;">138 equipos · 22 resguardantes · SARE Ecatepec y CABB Coacalco. Búsqueda por serie/TAG y registro fotográfico para ORE.</p>
-<div class="mt-auto flex items-center gap-xs font-label-md" style="color:#2D1238;">
-                    Ver inventario <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</div>
-</a>
-</section>
-<!-- Info Notice -->
-<div class="mt-xl p-md bg-surface-container-low border border-outline-variant rounded-lg flex items-center gap-md">
-<span class="material-symbols-outlined text-secondary">info</span>
-<p class="font-body-sm text-body-sm text-on-surface-variant">
-                Sus credenciales de acceso están activas. El sistema cerrará sesión automáticamente tras 8 horas de inactividad por seguridad institucional.
-            </p>
-</div>
+<header class="top"><div class="top-in">
+  <img src="https://framework-gb.cdn.gob.mx/landing/img/logoheader.svg" alt="Gobierno de México">
+  <div class="marca">SARE 1507 ECATEPEC<small>Panel de herramientas · Becas para el Bienestar</small></div>
+  <div class="usr"><span id="usuario-conectado"></span><button id="btn-logout" title="Cerrar sesión" aria-label="Cerrar sesión"><span class="ms">logout</span></button></div>
+</div></header>
+
+<section class="hero"><div class="hero-in">
+  <div><h1 id="saludo">Bienvenido</h1><p id="hoy-txt">Elige la herramienta con la que vas a trabajar.</p></div>
+  <label class="buscar"><span class="ms">search</span><input id="filtro" type="search" placeholder="Buscar herramienta…" autocomplete="off"></label>
+</div></section>
+
+<main>
+  <!-- Operativo en curso: la herramienta principal, separada de las demás para que no se confunda con el escáner -->
+  <a href="entrega_tarjetas.html" class="destacado her-k" data-k="operativo entrega tarjetas filtro busqueda mesa supervisor bueems jef secundaria">
+    <span class="ic ms" style="--c:var(--guinda)">how_to_reg</span>
+    <div>
+      <h2>Operativo entrega de tarjetas</h2>
+      <p>La app del operativo en sede: Filtro, Búsqueda, Mesa y Supervisor. BUEEMS, JEF y Secundaria.</p>
+      <div class="chips"><span class="chip vivo">Operativo en curso</span><span class="chip">🪪 Filtro</span><span class="chip">🔎 Búsqueda</span><span class="chip">🤝 Mesa</span><span class="chip">📊 Supervisor</span></div>
+    </div>
+    <span class="ir">Entrar <span class="ms">arrow_forward</span></span>
+  </a>
+
+  <div class="grupo"><h3><span class="ms">credit_card</span>Tarjetas</h3><div class="lista">
+    <a href="escaner_tarjetas.html" class="her her-k" style="--c:#E65100" data-k="recepcion tarjetas escaneo cajas duplicados conteo">
+      <span class="ic ms">barcode_scanner</span><div><b>Recepción de tarjetas</b><small>Escanea las tarjetas que llegan: conteo por caja y duplicados.</small><span class="tag">Al recibir las cajas</span></div><span class="fl ms">chevron_right</span></a>
+    <a href="impresion_tarjetas.html" class="her her-k" style="--c:#00695C" data-k="administracion recepcion etiquetas cajas monitor impresion">
+      <span class="ic ms">print</span><div><b>Administración de recepción</b><small>Etiquetas de cajas, monitor e impresión por caja y CCT.</small><span class="tag lock">🔒 Solo J. Elías y J. Eduardo</span></div><span class="fl ms">chevron_right</span></a>
+    <a href="capturista_v3.1.html" class="her her-k" style="--c:#785A2A" data-k="capturista entrega tarjetas registro plasticos oficina captura">
+      <span class="ic ms">edit_document</span><div><b>Capturista de entrega</b><small>Registro de entrega de plásticos en oficina (no es la app del operativo).</small><span class="tag">Oficina · PC</span></div><span class="fl ms">chevron_right</span></a>
+  </div></div>
+
+  <div class="grupo"><h3><span class="ms">qr_code_2</span>CURP y consultas</h3><div class="lista">
+    <a href="escaner_curp_qr.html" class="her her-k" style="--c:#2F6FB5" data-k="escaner curp qr telefono pc capturar">
+      <span class="ic ms">qr_code_scanner</span><div><b>Escáner CURP → PC</b><small>Lee el QR de la CURP con el teléfono y lo manda a la PC. No registra entregas.</small><span class="tag">Teléfono · se usa con el Receptor</span></div><span class="fl ms">chevron_right</span></a>
+    <a href="receptor_curp.html" class="her her-k" style="--c:#5E35B1" data-k="receptor curp pc recibir escaneo">
+      <span class="ic ms">desktop_windows</span><div><b>Receptor CURP (PC)</b><small>Recibe en la PC las CURP que escanea el teléfono.</small><span class="tag">PC · se usa con el Escáner</span></div><span class="fl ms">chevron_right</span></a>
+    <a href="validacion_brcu_historicos_sare1507.html" class="her her-k" style="--c:#6B7A3F" data-k="historial procesos operativos nominal registros ciclos">
+      <span class="ic ms">history_edu</span><div><b>Historial de procesos operativos</b><small>Nominal y registros de los ciclos operativos (a junio de 2026).</small><span class="tag">Consulta</span></div><span class="fl ms">chevron_right</span></a>
+    <a href="tramites.html" class="her her-k" style="--c:#283593" data-k="tramites estatus curp altas bajas estadisticas contrato expediente">
+      <span class="ic ms">assignment</span><div><b>Trámites</b><small>Estatus por CURP, altas, bajas, estadísticas y copias de contrato.</small><span class="tag">Consulta</span></div><span class="fl ms">chevron_right</span></a>
+  </div></div>
+
+  <div class="grupo"><h3><span class="ms">work</span>Campo y oficina</h3><div class="lista">
+    <a href="seguimiento_carteles.html" class="her her-k" style="--c:#6B1C3E" data-k="carteles seguimiento fotos video cct evidencias onedrive">
+      <span class="ic ms">campaign</span><div><b>Seguimiento de carteles</b><small>Fotos y video por CCT en la pega de carteles; evidencias para OneDrive.</small><span class="tag lock">🔒 Con NIP</span></div><span class="fl ms">chevron_right</span></a>
+    <a href="Inventario_computo_SARE_1507.html" class="her her-k" style="--c:#4A235A" data-k="inventario computo equipos resguardantes serie tag ore">
+      <span class="ic ms">computer</span><div><b>Inventario de cómputo</b><small>138 equipos · 22 resguardantes · SARE Ecatepec y CABB Coacalco.</small><span class="tag lock">🔒 Con NIP</span></div><span class="fl ms">chevron_right</span></a>
+  </div></div>
+
+  <p class="vacio" id="vacio">No hay herramientas con ese nombre.</p>
+  <div class="nota"><span class="ms" style="color:var(--dorado)">info</span>La sesión se cierra sola tras 8 horas por seguridad. Uso exclusivo de personal autorizado.</div>
 </main>
-<!-- Footer -->
-<footer class="bg-surface-container-low border-t border-outline-variant mt-auto">
-<div class="flex flex-col md:flex-row justify-between items-center w-full px-margin py-md gap-sm max-w-screen-xl mx-auto">
-<div class="flex flex-col items-center md:items-start">
-<span class="font-label-md text-label-md text-on-surface-variant mb-1">© 2026 SARE 1507</span>
-<p class="font-body-sm text-body-sm text-secondary">Coordinación Territorial Ecatepec. Uso Exclusivo de Personal Autorizado.</p>
-</div>
-<div class="flex gap-md">
-<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Privacidad</a>
-<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Términos</a>
-<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Soporte Técnico</a>
-</div>
-</div>
-</footer>
+<footer><div><span>© 2026 SARE 1507 · Coordinación Territorial Ecatepec</span><span>Becas para el Bienestar Benito Juárez</span></div></footer>
 </div> <!-- /#app-content -->
 
 <!-- ════════ LÓGICA DE AUTENTICACIÓN ════════ -->
@@ -491,36 +319,29 @@
 })();
 </script>
 
-<!-- Interactive Layer: Ripple effect for cards -->
+<!-- ════════ SALUDO, FECHA Y BUSCADOR (no toca el acceso) ════════ -->
 <script>
-        document.querySelectorAll('.action-card').forEach(card => {
-            card.addEventListener('click', function(e) {
-                let x = e.clientX - e.target.getBoundingClientRect().left;
-                let y = e.clientY - e.target.getBoundingClientRect().top;
-
-                let ripples = document.createElement('span');
-                ripples.style.left = x + 'px';
-                ripples.style.top = y + 'px';
-                ripples.style.position = 'absolute';
-                ripples.style.width = '0';
-                ripples.style.height = '0';
-                ripples.style.background = 'rgba(255,255,255,0.3)';
-                ripples.style.borderRadius = '50%';
-                ripples.style.transform = 'translate(-50%, -50%)';
-                ripples.style.transition = 'width 0.5s, height 0.5s';
-
-                this.appendChild(ripples);
-
-                setTimeout(() => {
-                    ripples.style.width = '500px';
-                    ripples.style.height = '500px';
-                }, 10);
-
-                setTimeout(() => {
-                    ripples.remove();
-                }, 1000);
-            });
-        });
-    </script>
-
+(function(){
+  var lbl = document.getElementById('usuario-conectado'), sal = document.getElementById('saludo');
+  function nombrePropio(n){
+    // "CERVANTES JIMENEZ JOSE ELIAS" → "José Elias" (nombre de pila al final, como en la lista del panel)
+    var p = String(n || '').trim().split(/\s+/); if (!p[0]) return '';
+    var pila = p.length > 2 ? p.slice(2).join(' ') : p[p.length - 1];
+    if (/^JOSE ELIAS CERVANTES/.test(n)) pila = 'JOSE ELIAS';
+    return pila.toLowerCase().replace(/(^|\s)\S/g, function(x){ return x.toUpperCase(); });
+  }
+  function pintar(){ var n = lbl.textContent.trim(); sal.textContent = n ? 'Hola, ' + nombrePropio(n) : 'Bienvenido'; }
+  new MutationObserver(pintar).observe(lbl, { childList: true, characterData: true, subtree: true }); pintar();
+  try { document.getElementById('hoy-txt').textContent = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, function(c){ return c.toUpperCase(); }) + ' · elige la herramienta con la que vas a trabajar.'; } catch (e) {}
+  // Buscador: filtra por nombre y palabras clave, sin acentos
+  var norm = function(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+  var items = [].slice.call(document.querySelectorAll('.her-k'));
+  document.getElementById('filtro').addEventListener('input', function(){
+    var q = norm(this.value).trim(), vis = 0;
+    items.forEach(function(a){ var ok = !q || (norm(a.textContent) + ' ' + a.dataset.k).indexOf(q) >= 0; a.style.display = ok ? '' : 'none'; if (ok) vis++; });
+    document.querySelectorAll('.grupo').forEach(function(g){ g.style.display = [].some.call(g.querySelectorAll('.her-k'), function(a){ return a.style.display !== 'none'; }) ? '' : 'none'; });
+    document.getElementById('vacio').style.display = vis ? 'none' : 'block';
+  });
+})();
+</script>
 </body></html>
