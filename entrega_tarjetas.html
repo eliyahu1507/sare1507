@@ -122,6 +122,7 @@ main{max-width:1000px;margin:0 auto;padding:16px max(12px,env(safe-area-inset-le
 .grp-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
 .grp-h .cnt{font-family:Montserrat,sans-serif;font-weight:800;font-size:.75rem;color:var(--guinda)}
 .chip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:.66rem;font-weight:800;font-family:Montserrat,sans-serif;white-space:nowrap}
+.c-hom{background:#C62828;color:#fff;font-weight:800}.hom-box{background:#FDECEC;border:2px solid #C62828;border-radius:10px;padding:8px 10px;margin:8px 0;color:#7A1010;font-size:.86rem}.hom-box ul{margin:4px 0 0 18px;padding:0}.hom-box li{margin:2px 0}.mun-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.mun-chips button{border:1px solid #D9C7CE;background:#fff;border-radius:999px;padding:4px 10px;font:600 .75rem Montserrat,sans-serif;color:var(--guinda);cursor:pointer}
 .c-ok{background:var(--verde-bg);color:var(--verde)}.c-mal{background:var(--rojo-bg);color:var(--rojo)}.c-av{background:var(--ambar-bg);color:var(--ambar)}.c-in{background:var(--azul-bg);color:var(--azul)}.c-gr{background:var(--gris);color:var(--texto-s)}
 mark.hit{background:#B9F5C8;color:#1A5C2A;border-radius:3px;padding:0 2px}
 .kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}
@@ -254,7 +255,7 @@ td.num,th.num{text-align:right}
     <div class="stat"><b id="st-pend">0</b><small>En resguardo</small></div>
     <div class="stat"><b id="st-tot">0</b><small>Nominal total</small></div>
   </div>
-  <div class="mini-cal-wrap" id="minical-wrap" hidden><div class="mini-cal-label">📅 Calendario de entrega</div><div class="mini-cal-row" id="minical"></div></div>
+  <div class="mini-cal-wrap" id="minical-wrap" hidden><div class="mini-cal-label">📅 Calendario de entrega</div><div class="mini-cal-row" id="minical"></div><div class="mun-chips" id="mun-chips"></div></div>
   <div class="elab">✏️ Elaborado por <strong>JOSE ELIAS CERVANTES JIMENEZ</strong></div>
 </header>
 
@@ -277,6 +278,9 @@ td.num,th.num{text-align:right}
           <label class="lbl" for="acc-fecha">Día del operativo</label>
           <select class="main-input" id="acc-fecha" style="width:100%"></select>
           <p class="hint" id="acc-fecha-info"></p>
+          <label class="lbl" for="acc-lugar">Lugar de entrega</label>
+          <select class="main-input" id="acc-lugar" style="width:100%"><option value="">Sede del operativo (lo normal)</option><option value="CABB COACALCO">CABB Coacalco</option><option value="CABB ECATEPEC">CABB Ecatepec</option><option value="REZAGO">Fecha de rezago (otra sede)</option></select>
+          <p class="hint" id="acc-lugar-info"></p>
           <label class="lbl">Elige tu función: se descargan los convocados y empiezas</label>
           <div class="roles" id="acc-roles">
             <button class="rol" data-rol="FILTRO"><span>🪪</span>Filtro de CURP<small>Recibe y escanea la CURP</small></button>
@@ -347,6 +351,7 @@ td.num,th.num{text-align:right}
         <button class="btn-scan-big" data-cam="ambos" id="m-cam" data-continuo="1"><span class="ic">📷</span><span class="tx"><b>CONTAR MIS EXPEDIENTES</b><small>Escanea la CURP de cada expediente · la cámara se queda abierta</small></span></button>
         <div class="vc" data-vc></div><div class="scan-status" data-st></div>
         <div class="search-row"><input class="main-input" id="m-inp" autocomplete="off" placeholder="Tarjeta, CURP o nombre…"><button class="btn prim" data-buscar="m-inp">BUSCAR</button></div>
+        <p class="hint">🔫 ¿Tienes escáner de mano (USB con OTG o Bluetooth)? Solo escanea la CURP de cada expediente: no hace falta tocar el cuadro.</p>
         <div id="m-res"></div><div id="m-coin" class="lista"></div>
         <div id="m-acc" hidden>
           <button class="btn ok full xl" id="m-entregar">✅ ENTREGAR TARJETA</button>
@@ -403,6 +408,8 @@ td.num,th.num{text-align:right}
       <div class="card-b"><div id="ses-datos"></div>
         <button class="btn full" id="ses-sync">🔄 Sincronizar ahora</button>
         <div id="ses-rapido"></div>
+        <button class="btn full" id="ses-cam"></button>
+        <button class="btn full" id="ses-voz"></button>
         <button class="btn full" id="ses-rol">Cambiar de función o de día</button>
         <button class="btn full" id="ses-bajar">⬇️ Volver a descargar la lista del día</button>
         <button class="btn mal full" id="ses-salir">Cerrar sesión y borrar datos de este celular</button>
@@ -423,7 +430,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '14-nov-26 E';
+const APP_VERSION = '16-nov-26 A';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -551,9 +558,11 @@ async function llamar(payload, ms) {
 // ════════════════════════════════════════════════════════════
 function armarPaquete(p) {
   const ix = {}; p.cols.forEach((c, i) => { ix[c] = i; });
-  const byT = {}, byC = {}, lista = [];
+  const byT = {}, byC = {}, lista = [], H = p.homonimos || {};
   p.filas.forEach(f => {
-    const r = { t: String(f[ix.TARJETA] || ''), c: String(f[ix.CURP] || ''), n: f[ix.NOMBRE], cct: f[ix.CCT], esc: f[ix.ESCUELA], mun: f[ix.MUNICIPIO], rec: f[ix.RECEPCION], prog: f[ix.PROGRAMA], id: f[ix.ID] };
+    const r = { t: String(f[ix.TARJETA] || ''), c: String(f[ix.CURP] || ''), n: f[ix.NOMBRE], cct: f[ix.CCT], esc: f[ix.ESCUELA], mun: f[ix.MUNICIPIO], rec: f[ix.RECEPCION], prog: f[ix.PROGRAMA], id: f[ix.ID],
+      caja: f[ix.CAJA] || '', cons: f[ix.CONSECUTIVO] || '' };
+    r.hom = (H[r.t] || []).map(a => ({ t: String(a[0] || ''), c: a[1], cct: a[2], f: a[3], caja: a[4], cons: a[5], mun: a[6] }));
     r.nn = norm(r.n);
     if (r.t) byT[r.t] = r; if (r.c) byC[r.c] = r; lista.push(r);
   });
@@ -598,7 +607,7 @@ async function descargar(fecha) {
 
 // Un movimiento se aplica en el celular al momento y se envía en segundo plano
 function registrar(evento, r, detalle) {
-  const ev = { id: uid(), evento, tarjeta: r ? r.t : '', curp: r ? r.c : '', detalle: detalle || '', hora: horaAhora(), dia: hoyISO(), rol: SES.rol, op: SES.op, mesa: SES.mesa, fecha: SES.fecha };
+  const ev = { id: uid(), evento, tarjeta: r ? r.t : '', curp: r ? r.c : '', detalle: detalle || '', hora: horaAhora(), dia: hoyISO(), lugar: SES.lugar || '', rol: SES.rol, op: SES.op, mesa: SES.mesa, fecha: SES.fecha };
   COLA.push(ev);
   if (r && r.t) {
     const nuevo = { FILTRO_OK: (EST[r.t] && EST[r.t].e === E.MESA) ? E.MESA : E.BUSQUEDA, A_MESA: E.MESA, ENTREGADA: E.ENTREGADA, DEVUELTA: E.DEVUELTA, ANULAR_ENTREGA: E.DEVUELTA }[evento];
@@ -666,9 +675,9 @@ function pintarMiniCal() {
 }
 // 14-nov: al tocar un día ya atendido se ve cuántas se entregaron y cuántas faltan de cada CCT (consulta ligera a la hoja, con señal)
 let _avance = null;
-async function cargarAvance() {
-  if (_avance && Date.now() - _avance.t < 60000) return _avance.d;
-  const d = await llamar({ accion: 'avance' }, 20000); if (!d || !d.ok) throw new Error((d && d.error) || 'sin datos');
+async function cargarAvance(fresco) {
+  if (!fresco && _avance && Date.now() - _avance.t < 60000) return _avance.d;
+  const d = await llamar({ accion: 'avance', fresco: fresco ? 1 : 0 }, 20000); if (!d || !d.ok) throw new Error((d && d.error) || 'sin datos');
   _avance = { t: Date.now(), d }; return d;
 }
 function verDia(f) {
@@ -792,7 +801,7 @@ function refrescarVista() {
 }
 function cabecera() {
   $('b-rol').hidden = false; $('b-rol').textContent = ROLES[SES.rol];
-  $('b-dia').hidden = false; $('b-dia').textContent = '📅 ' + fechaLarga(SES.fecha);
+  $('b-dia').hidden = false; $('b-dia').textContent = '📅 ' + fechaLarga(SES.fecha) + (SES.lugar ? ' · 📍 ' + SES.lugar : '');
   $('h-sub').textContent = SES.op + (SES.fecha !== hoyISO() ? ' · ⚠️ día distinto a hoy' : '');
   $('pie').textContent = `v${APP_VERSION} · ${PAQ ? fmt(PAQ.lista.length) + ' convocados descargados' : ''}`;
 }
@@ -814,8 +823,12 @@ function prepararPaso2() {
   // 13-nov: si hoy es día del operativo se propone hoy (antes se quedaba el día de la sesión anterior)
   sel.value = dias.some(d => d.fecha === hoy) ? hoy : (SES && SES.fecha && dias.some(d => d.fecha === SES.fecha)) ? SES.fecha : ((dias.find(d => d.fecha > hoy) || dias[dias.length - 1] || {}).fecha || '');
   sel.onchange = infoFecha; infoFecha();
+  // 16-nov: en día de operativo lo normal es la sede; fuera del calendario se conserva el último lugar elegido (CABB / rezago)
+  $('acc-lugar').value = dias.some(d => d.fecha === hoy) ? '' : ((SES && SES.lugar) || '');
+  $('acc-lugar').onchange = infoLugar; infoLugar();
   document.querySelectorAll('#acc-roles .rol').forEach(b => { b.disabled = !rolPermitido(b.dataset.rol); b.onclick = () => iniciarRol(b.dataset.rol); });
 }
+function infoLugar() { const l = $('acc-lugar').value; $('acc-lugar-info').textContent = l ? '📍 Las entregas quedarán registradas en ' + $('acc-lugar').selectedOptions[0].textContent + ' (cuentan en el municipio del becario como fuera de operativo).' : ''; }
 function infoFecha() {
   const d = ((LOGIN && LOGIN.calendario) || []).find(x => x.fecha === $('acc-fecha').value);
   $('acc-fecha-info').textContent = d ? d.escuelas.length + ' escuelas' + (d.fecha !== hoyISO() ? ' · ⚠️ No es la fecha de hoy.' : '') : '';
@@ -844,7 +857,7 @@ async function iniciarRol(rol, fechaDirecta) {
   document.querySelectorAll('#acc-roles .rol').forEach(b => { b.disabled = true; });
   $('acc-msg').textContent = local ? '⚡ Lista del día ya descargada: cambiando de función…' : '⏳ Descargando convocados y calendario…';
   try {
-    SES = Object.assign({}, SES, { rol, mesa: '', fecha });   // en mesa el operador se identifica por su nombre del panel
+    SES = Object.assign({}, SES, { rol, mesa: '', fecha, lugar: $('acc-lugar').value || '' });   // en mesa el operador se identifica por su nombre del panel
     if (!local) {
       try { await descargar(fecha); }
       catch (e) { if (e.clave || !lsGet(kPaq(fecha), null)) throw e; toast('Sin señal: se usa la lista que ya tenía el celular', true); }
@@ -866,7 +879,25 @@ function nuevoDia() {
   $('acc-msg').textContent = '📅 Es un nuevo día: elige tu función para hoy. Lo de ayer ya quedó guardado' + (COLA.length ? ' (se siguen enviando ' + COLA.length + ' pendientes)' : '') + '.';
   return true;
 }
-function arrancar() { pestañas(); cabecera(); pintarMiniCal(); pintarSync(); pintarStats(); ver(SES.rol); sincronizar(); }
+function arrancar() { pestañas(); cabecera(); pintarMiniCal(); pintarSync(); pintarStats(); ver(SES.rol); sincronizar(); pintarMunicipios(); }
+// 16-nov: avance por MUNICIPIO en la pantalla principal (con señal; se actualiza cada 5 min). Al tocarlo se ve el detalle.
+const nomMun = k => k.replace(/ DE (MORELOS|BERRIOZABAL)$/, '').toLowerCase().replace(/(^|\s)\S/g, x => x.toUpperCase());
+async function pintarMunicipios(fresco) {
+  const box = $('mun-chips'); if (!box) return;
+  try {
+    const av = await cargarAvance(fresco), mu = av.municipios || {};
+    box.innerHTML = Object.keys(mu).sort().map(k => { const x = mu[k]; return `<button data-mun="${esc(k)}">📍 ${esc(nomMun(k))}: ${x.rec ? Math.round(x.ent * 100 / x.rec) : 0}% (${fmt(x.ent)} de ${fmt(x.rec)})</button>`; }).join('');
+    box.querySelectorAll('button').forEach(b => b.onclick = () => verMunicipios(av));
+  } catch (e) {}
+}
+setInterval(() => { if (SES && SES.rol && navigator.onLine) { _avance = null; pintarMunicipios(); } }, 300000);
+function verMunicipios(av) {
+  const mu = av.municipios || {};
+  abrirModal('📍 Avance por municipio', 'Datos de la hoja a las ' + String(av.hora).slice(-8, -3),
+    `<div class="tabla"><table><thead><tr><th>Municipio</th><th class="num">Recibidas</th><th class="num">Entregadas</th><th class="num">Pendientes</th><th class="num">%</th><th class="num">Fuera de operativo</th></tr></thead><tbody>` +
+    Object.keys(mu).sort().map(k => { const x = mu[k]; return `<tr><td><b>${esc(nomMun(k))}</b><div class="sub" style="font-size:.72rem;color:var(--texto-s)">${fmt(x.conv)} convocados</div></td><td class="num">${fmt(x.rec)}</td><td class="num">${fmt(x.ent)}</td><td class="num">${fmt(x.rec - x.ent)}</td><td class="num">${x.rec ? Math.round(x.ent * 1000 / x.rec) / 10 : 0}%</td><td class="num">${fmt(x.fuera)}${x.fuera ? '<div class="sub" style="font-size:.7rem">' + esc(Object.keys(x.lugares).map(l => l + ': ' + x.lugares[l]).join(' · ')) + '</div>' : ''}</td></tr>`; }).join('') +
+    `</tbody></table></div><p class="hint">"Fuera de operativo" = entregadas en CABB o en fecha de rezago (se elige en "Lugar de entrega" al entrar).</p>`);
+}
 
 // ════════════════════════════════════════════════════════════
 //  PRESENTACIÓN DE UN BECARIO/TUTOR
@@ -884,7 +915,26 @@ function chipEstado(x) {
   const c = { [E.ENTREGADA]: 'c-ok', [E.MESA]: 'c-in', [E.BUSQUEDA]: 'c-av', [E.DEVUELTA]: 'c-mal' }[x.e] || 'c-gr';
   return `<span class="chip ${c}">${esc(x.e === E.DEVUELTA ? 'NO ENTREGADA' : x.e)}</span>`;
 }
-function datos(r, xl) { return `<div class="n">${esc(r.n)}</div><p>${esc(r.c)}</p>${cctLinea(r, xl)}`; }
+function datos(r, xl) { if (r.hom && r.hom.length) avisarHom(r); return `<div class="n">${esc(r.n)} ${chipHom(r)}</div><p>${esc(r.c)}</p>${cctLinea(r, xl)}${bloqueHom(r)}`; }
+// 16-nov: HOMÓNIMOS como en el operativo Rita Cetina: marca roja, los datos de los otros y alerta de voz
+const chipHom = r => r && r.hom && r.hom.length ? '<span class="chip c-hom">⚠️ HOMÓNIMO</span>' : '';
+const fCorta = f => f ? f.slice(8, 10) + '/' + f.slice(5, 7) : 'sin fecha';
+function bloqueHom(r) {
+  if (!r || !r.hom || !r.hom.length) return '';
+  return `<div class="hom-box"><b>⚠️ HOMÓNIMO: ${r.hom.length === 1 ? 'hay otra persona' : 'hay ' + r.hom.length + ' personas más'} con este nombre.</b> Verifica CURP, CCT y día antes de entregar.
+    <div style="margin-top:4px"><b>Esta tarjeta:</b> ${esc(r.c)} · ${esc(r.cct)}${r.caja ? ' · caja ' + esc(r.caja) : ''}${r.cons ? ' · consecutivo ' + esc(r.cons) : ''}</div>
+    <ul>${r.hom.map(h => `<li>${esc(h.c)} · ${esc(h.cct)} · ${h.f === (PAQ && PAQ.fecha) ? '<b>TAMBIÉN HOY</b>' : esc(fCorta(h.f))}${h.caja ? ' · caja ' + esc(h.caja) : ''}${h.cons ? ' · cons. ' + esc(h.cons) : ''}</li>`).join('')}</ul></div>`;
+}
+const _hablado = {};
+function hablar(txt) {
+  if (!lsGet('ent_voz', true) || !window.speechSynthesis) return;
+  try { const m = new SpeechSynthesisUtterance(txt); m.lang = 'es-MX'; const v = speechSynthesis.getVoices().find(x => /^es/i.test(x.lang)); if (v) m.voice = v; speechSynthesis.cancel(); speechSynthesis.speak(m); } catch (e) {}
+}
+function avisarHom(r) {
+  if (_hablado[r.t] && Date.now() - _hablado[r.t] < 15000) return; _hablado[r.t] = Date.now();
+  const hoy = r.hom.some(h => h.f === (PAQ && PAQ.fecha));
+  setTimeout(() => hablar(hoy ? 'Alerta. Homónimo del mismo día. Verifica la CURP y la CCT.' : 'Alerta. Beneficiario homónimo. Verifica CURP, CCT y fecha de atención.'), 300);
+}
 // Recuadro con lo que trae la CURP (como en el nominal anterior): sexo, nacimiento y edad
 function cajaCurp(boxId, curp, nombre) {
   const d = datosCurp(curp);
@@ -909,7 +959,7 @@ const msgSinNombre = (texto, j) => !j ? `No está en los convocados del ${esc(fe
   : `No encontré "${esc(texto)}" en todo el nominal. Revisa cómo se escribe o usa la CURP.`;
 function listaCoincidencias(boxId, l, q, fn) {
   $(boxId).innerHTML = `<p class="hint" style="margin:10px 0 6px">${l.length} coincidencia(s) en los convocados del día. Toca para revisar:</p>` +
-    l.map(r => `<button class="it" data-t="${r.t}"><div><div class="nm">${marcar(r.n, q)}</div><div class="sub">${esc(r.c)}</div>${cctHtml(r.cct)}</div>${chipEstado(EST[r.t])}</button>`).join('');
+    l.map(r => `<button class="it" data-t="${r.t}"><div><div class="nm">${marcar(r.n, q)} ${chipHom(r)}</div><div class="sub">${esc(r.c)}</div>${cctHtml(r.cct)}</div>${chipEstado(EST[r.t])}</button>`).join('');
   $(boxId).querySelectorAll('button').forEach(b => b.onclick = () => { $(boxId).innerHTML = ''; fn(PAQ.byT[b.dataset.t]); });
 }
 const kpi = (v, t, alerta) => `<div class="kpi${alerta ? ' alerta' : ''}"><b>${fmt(v)}</b><small>${t}</small></div>`;
@@ -986,11 +1036,36 @@ function buscarTarjeta(texto) {
   if (!r) { box.innerHTML = `<div class="res mal"><div class="t">⛔ ESTA TARJETA NO ES DE HOY</div><p>…${esc(t.slice(-8))}: no está en los convocados de este día. Regrésala a su CCT.</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
   if (x && x.e === E.ENTREGADA) { box.innerHTML = `<div class="res mal"><div class="t">⛔ YA SE ENTREGÓ</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
   if (x && x.e === E.MESA) { yaEnMesa(r, x); return; }
+  if (!x || x.e !== E.BUSQUEDA) {
+    // 16-nov: si es homónimo y el OTRO sí pasó por filtro, casi seguro es el sobre equivocado
+    const enFila = (r.hom || []).filter(h => EST[h.t] && EST[h.t].e === E.BUSQUEDA && PAQ.byT[h.t]);
+    if (enFila.length) return sobreDeHomonimo(r, x, enFila);
+    return confirmarSinFiltro(r, x);
+  }
   aMesa(r, x);
 }
-function aMesa(r, x) {
+// Todo debe pasar por filtro: si no hay registro, búsqueda lo confirma y queda como evidencia ("SIN FILTRO") en el cuadre
+function confirmarSinFiltro(r, x) {
+  $('b-res').innerHTML = `<div class="res aviso"><div class="t">⚠️ NO PASÓ POR FILTRO</div>${datos(r)}${x && x.e === E.DEVUELTA ? `<p>Estaba como NO ENTREGADA (${esc(x.d || 'sin causal')}).</p>` : ''}
+    <p><b>Su CURP no se ha escaneado en filtro.</b> Todo debe pasar por filtro: pide que la escaneen ahí antes de mandar el sobre.</p>
+    <p class="hint" style="color:inherit">Si filtro ya la escaneó y tiene mala señal, puede tardar unos segundos en aparecer.</p>
+    <button class="btn ok full" id="b-sf-si">Filtro ya la revisó: mandar a mesa</button><button class="btn borde full" id="b-sf-no" style="margin-top:6px">Esperar (no mandar)</button></div>`;
+  beep(false); vibrar([120, 60, 120]);
+  $('b-sf-si').onclick = () => aMesa(r, EST[r.t], 'SIN FILTRO (confirmado en búsqueda)');
+  $('b-sf-no').onclick = () => { $('b-res').innerHTML = ''; };
+}
+function sobreDeHomonimo(r, x, enFila) {
+  $('b-res').innerHTML = `<div class="res mal"><div class="t">⛔ ESTE SOBRE ES DE OTRA PERSONA CON EL MISMO NOMBRE</div>
+    <p><b>Sobre escaneado (NO pasó por filtro):</b><br>${esc(r.n)} · ${esc(r.c)} · ${esc(r.cct)}${r.caja ? ' · caja ' + esc(r.caja) : ''}${r.cons ? ' · cons. ' + esc(r.cons) : ''}</p>
+    <p><b>Quien sí pasó por filtro:</b></p><ul style="margin:0 0 8px 18px">${enFila.map(h => `<li>${esc(h.c)} · ${esc(h.cct)}${h.caja ? ' · caja ' + esc(h.caja) : ''}${h.cons ? ' · cons. ' + esc(h.cons) : ''}</li>`).join('')}</ul>
+    <p><b>Regresa este sobre a su paquete y busca el correcto (CURP, caja y consecutivo de arriba).</b></p>
+    <button class="btn borde full" id="b-hom-si">Es esta persona y sí está en la fila</button></div>`;
+  beep(false); vibrar([300, 100, 300]); hablar('Alto. Este sobre es de un homónimo. Busca el sobre correcto.');
+  $('b-hom-si').onclick = () => confirmarSinFiltro(r, x);
+}
+function aMesa(r, x, detalle) {
   const sinFiltro = !x || x.e !== E.BUSQUEDA, devuelta = x && x.e === E.DEVUELTA;
-  registrar('A_MESA', r, '');
+  registrar('A_MESA', r, detalle || '');
   $('b-res').innerHTML = `<div class="res ok"><div class="t">✅ A MESA</div>${datos(r)}${devuelta ? `<p><b>Estaba como NO ENTREGADA (${esc(x.d || 'sin causal')}).</b></p>` : sinFiltro ? '<p><b>⚠️ No pasó por filtro: confirma que la persona está en la fila.</b></p>' : ''}</div>`;
   beep(true); vibrar(80);
   LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'ok', txt: 'A mesa' }); guardarLog(); pintarBusqueda();
@@ -1004,7 +1079,7 @@ function yaEnMesa(r, x) {
 function porCct(lista, extra) {
   const g = {}; lista.forEach(r => { (g[r.cct] = g[r.cct] || []).push(r); });
   return Object.keys(g).sort().map(c => `<div class="grp"><div class="grp-h">${cctHtml(c)}<span class="cnt">${g[c].length}</span><span class="sub" style="font-size:.74rem;color:var(--texto-s)">${esc(g[c][0].esc)}</span></div><div class="lista">${g[c].sort((a, b) => a.nn.localeCompare(b.nn)).map(r =>
-    `<div class="it"><div><div class="nm">${esc(r.n)}</div><div class="sub">${esc(extra ? extra(r) : textoEstado(EST[r.t]))}</div></div>${chipEstado(EST[r.t])}</div>`).join('')}</div></div>`).join('');
+    `<div class="it"><div><div class="nm">${esc(r.n)} ${chipHom(r)}</div><div class="sub">${esc(extra ? extra(r) : textoEstado(EST[r.t]))}</div></div>${chipEstado(EST[r.t])}</div>`).join('')}</div></div>`).join('');
 }
 function pintarBusqueda() {
   const pend = [], dev = []; let mesa = 0, ent = 0;
@@ -1104,7 +1179,8 @@ function mesaMostrar(r) {
       beep(false); return; }
     registrar('ENTREGADA', r);
     LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'ok', txt: 'Entregada (conteo)' }); guardarLog();
-    box.innerHTML = `<div class="res ok"><div class="t">✅ CONTADA COMO ENTREGADA</div><div class="n">${esc(r.n)}</div><p>${cctHtml(r.cct)}</p></div>`;
+    box.innerHTML = `<div class="res ok"><div class="t">✅ CONTADA COMO ENTREGADA</div><div class="n">${esc(r.n)} ${chipHom(r)}</div><p>${cctHtml(r.cct)}</p>${r.hom && r.hom.length ? bloqueHom(r) + '<p><b>Confirma que la tarjeta que se entregó es la de esta caja y consecutivo.</b></p>' : ''}</div>`;
+    if (r.hom && r.hom.length) avisarHom(r);
     beep(true); vibrar(80); pintarMesa(); return;
   }
   _mesaR = r;
@@ -1192,6 +1268,7 @@ async function actualizarCuadre() {
   await sincronizar();
   try { _cuadre = await llamar({ accion: 'cuadre', detalle: 1, fecha: SES.fecha }, 30000); $('s-act').textContent = 'Actualizado a las ' + horaAhora() + ' · ' + fechaLarga(_cuadre.fecha); pintarSupervisorLocal(); }
   catch (e) { $('s-act').textContent = '⛔ ' + e.message + ' (se muestran los datos de este celular)'; }
+  pintarMunicipios(true);
 }
 function pintarCuadre() {
   const c = _cuadre, ops = Object.keys(c.porOperador).sort();
@@ -1201,7 +1278,8 @@ function pintarCuadre() {
   $('s-sede').innerHTML = c.entregadasSede == null ? '' : `<div class="res info" style="margin:0 0 12px"><div class="t">📦 Entregadas hoy en sede: ${fmt(c.entregadasSede)}</div>
     <p>${fmt(c.sedeDeEsteDia)} de los convocados de hoy + <b>${fmt(c.sedeDeOtrosDias)} de otros días</b> (esas cuentan en el día al que estaban convocados).</p>
     <p>Convocados de hoy que ya recibieron: <b>${fmt(c.entregadasConvocados)}</b> · pendientes: <b>${fmt(c.pendientesConvocados)}</b></p>
-    <p>Acumulado del operativo: <b>${fmt(c.acumulado.entregadas)}</b> de ${fmt(c.acumulado.recibidas)} · pendientes ${fmt(c.acumulado.pendientes)}</p></div>`;
+    <p>Acumulado del operativo: <b>${fmt(c.acumulado.entregadas)}</b> de ${fmt(c.acumulado.recibidas)} · pendientes ${fmt(c.acumulado.pendientes)}</p>
+    ${c.aMesaSinFiltro ? `<p style="color:var(--rojo)"><b>⚠️ ${fmt(c.aMesaSinFiltro)} enviadas a mesa SIN pasar por filtro</b> (la lista está en el cuadre del día de la hoja). Reforzar filtro.</p>` : ''}</div>`;
   $('s-fis-guardar').hidden = !ops.length;
   $('s-ops').innerHTML = ops.map(k => { const f = fis[k], d = f === undefined || f === '' ? '' : Number(f) - c.porOperador[k];
     return `<tr><td>${esc(k)}</td><td class="num">${c.porOperador[k]}</td><td class="num"><input class="main-input" data-k="${esc(k)}" inputmode="numeric" value="${f == null ? '' : esc(f)}" style="width:80px;min-width:0;padding:6px;text-align:right"></td><td class="num ${d === '' ? '' : d === 0 ? 'dif-ok' : 'dif-mal'}">${d === '' ? '' : d === 0 ? '✓' : (d > 0 ? '+' : '') + d}</td></tr>`; }).join('') +
@@ -1224,8 +1302,12 @@ function textoCierre(c) {
   L.push('*📦 Entregadas hoy en sede: ' + fmt(c.entregadasSede) + '*', '   • De los convocados de hoy: ' + fmt(c.sedeDeEsteDia), '   • De otros días: ' + fmt(c.sedeDeOtrosDias), '');
   L.push('*👥 Convocados de hoy*', '   • Convocados: ' + fmt(c.convocados) + ' · tarjetas recibidas: ' + fmt(c.tarjetas),
     '   • Pasaron filtro: ' + fmt(c.filtroOk) + ' · enviadas a mesa: ' + fmt(c.enviadasAMesa),
+    ...(c.aMesaSinFiltro ? ['   • ⚠️ Enviadas a mesa sin pasar por filtro: ' + fmt(c.aMesaSinFiltro)] : []),
     '   • Ya recibieron: ' + fmt(c.entregadasConvocados) + ' (' + pct(c.entregadasConvocados, c.tarjetas) + ')', '   • Pendientes: ' + fmt(c.pendientesConvocados), '');
-  L.push('*📊 Acumulado del operativo*', '   • ' + fmt(c.acumulado.entregadas) + ' de ' + fmt(c.acumulado.recibidas) + ' (' + pct(c.acumulado.entregadas, c.acumulado.recibidas) + ') · pendientes ' + fmt(c.acumulado.pendientes), '');
+  L.push('*📊 Acumulado del operativo*', '   • ' + fmt(c.acumulado.entregadas) + ' de ' + fmt(c.acumulado.recibidas) + ' (' + pct(c.acumulado.entregadas, c.acumulado.recibidas) + ') · pendientes ' + fmt(c.acumulado.pendientes));
+  const mu = _avance && _avance.d && _avance.d.municipios;
+  if (mu) Object.keys(mu).sort().forEach(k => { const x = mu[k]; L.push('   • ' + k + ': ' + fmt(x.ent) + ' de ' + fmt(x.rec) + ' (' + pct(x.ent, x.rec) + ')' + (x.fuera ? ' · ' + fmt(x.fuera) + ' fuera de operativo' : '')); });
+  L.push('');
   if (c.enMesa.length || c.enBusqueda.length || c.devueltas.length) {
     L.push('*⚠️ No entregadas / por resolver*');
     if (c.enMesa.length) L.push('   • No entregadas (regresaron de mesa / canasta): ' + c.enMesa.length);
@@ -1245,6 +1327,7 @@ $('s-cierre').onclick = async () => {
   try {
     await actualizarCuadre();
     if (!_cuadre || _cuadre.fecha !== SES.fecha) throw new Error('No se pudo consultar la hoja');
+    try { await cargarAvance(true); pintarMunicipios(); } catch (e) {}
     $('s-cierre-msg').textContent = '';
     const t = textoCierre(_cuadre), pendientes = COLA.length;
     abrirModal('📤 Reporte de cierre', 'Revísalo y envíalo. ' + (pendientes ? '⚠️ Este celular aún tiene ' + pendientes + ' por enviar.' : 'Datos completos de la hoja.'),
@@ -1314,6 +1397,13 @@ function pintarSesion() {
   $('ses-datos').innerHTML = `<p><b>${esc(SES.op)}</b><br>${ROLES[SES.rol]}${SES.mesa ? ' · mesa ' + esc(SES.mesa) : ''}<br>${esc(fechaLarga(SES.fecha))} · ${fmt(PAQ.lista.length)} convocados descargados<br>Calendario completo: ${IDX ? fmt(IDX.m.size) + ' CURP' : 'no descargado'}<br>Por enviar: ${COLA.length}${_ultSync ? ' · última sincronización ' + new Date(_ultSync).toLocaleTimeString('es-MX') : ''}</p>`;
 }
 $('ses-sync').onclick = () => { sincronizar(); toast('Sincronizando…'); };
+function pintarOpciones() {
+  $('ses-cam').textContent = CAM.simple ? '📷 Cámara: MODO SIMPLE (como Rita Cetina) · toca para volver al normal' : '📷 Cámara: modo normal · si se traba, toca para usar el modo simple';
+  $('ses-voz').textContent = lsGet('ent_voz', true) ? '🔊 Alerta de voz de homónimos: ACTIVADA' : '🔇 Alerta de voz de homónimos: apagada';
+}
+$('ses-cam').onclick = () => { CAM.simple = !CAM.simple; lsSet('ent_cam_simple', CAM.simple); detenerCam(true); pintarOpciones(); toast(CAM.simple ? 'Modo simple de cámara activado' : 'Modo normal de cámara'); };
+$('ses-voz').onclick = () => { lsSet('ent_voz', !lsGet('ent_voz', true)); pintarOpciones(); if (lsGet('ent_voz', true)) hablar('Alerta de voz activada'); };
+setTimeout(pintarOpciones, 0);
 $('ses-rol').onclick = () => mostrarAcceso(2);
 $('ses-bajar').onclick = async () => {
   const b = $('ses-bajar'); b.disabled = true; b.textContent = '⏳ Descargando…';
@@ -1327,10 +1417,48 @@ $('ses-salir').onclick = async () => {
   location.reload();
 };
 
+// 16-nov: si el celular se bloquea o se cierra la app con movimientos pendientes, se intenta mandarlos en ese momento
+// (si la hoja ya los tenía, no se duplican). Al cerrar la pestaña con pendientes, el navegador pregunta antes.
+function enviarAlSalir() {
+  if (!COLA.length || !SES || !SES.rol) return;
+  try {
+    const g = COLA[0], lote = COLA.filter(e => e.rol === g.rol && e.op === g.op && e.mesa === g.mesa && e.fecha === g.fecha).slice(0, 50);
+    fetch(URL_ENTREGA, { method: 'POST', keepalive: true, body: JSON.stringify({ clave: CLAVE_APP, claveOp: SES.claveOp, op: g.op, cupo: USUARIO ? USUARIO.CUPO : '', rol: g.rol, mesa: g.mesa, fecha: g.fecha, version: APP_VERSION, lugar: SES.lugar || '', accion: 'eventos', eventos: lote }) }).catch(() => {});
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) enviarAlSalir(); });
+window.addEventListener('pagehide', enviarAlSalir);
+window.addEventListener('beforeunload', e => { if (COLA.length) { e.preventDefault(); e.returnValue = ''; } });
+
 // ════════════════════════════════════════════════════════════
 //  ENTRADA DE TEXTO (teclado o escáner de mano: escribe y da Enter)
 // ════════════════════════════════════════════════════════════
 const ACCION = { 'f-inp': filtrar, 'b-inp': buscarTarjeta, 'm-inp': mesaEscanear, 'c-inp': consultar };
+// 16-nov: ESCÁNER DE MANO (USB con OTG o Bluetooth). Escribe como teclado muy rápido y termina con Enter: se reconoce aunque
+// nadie haya tocado el cuadro de texto (así no sale el teclado del celular). Lo tecleado por una persona no se confunde (es más lento).
+let KB = { buf: '', t: 0, n: 0, gaps: 0 };
+document.addEventListener('keydown', e => {
+  const a = document.activeElement;
+  if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable)) return;
+  if (!SES || !SES.rol || !PAQ || !$('modal').hidden) return;
+  const ahora = performance.now();
+  if (e.key === 'Enter' || e.key === 'Tab') {
+    const b = KB.buf.trim(), rapido = KB.n >= 10 && KB.gaps / Math.max(1, KB.n - 1) < 60;
+    KB = { buf: '', t: 0, n: 0, gaps: 0 };
+    if (b && rapido) { e.preventDefault(); escaneoMano(b); }
+    return;
+  }
+  if (!e.key || e.key.length !== 1) return;
+  if (ahora - KB.t > 150) KB = { buf: '', t: ahora, n: 0, gaps: 0 }; else KB.gaps += ahora - KB.t;
+  KB.buf += e.key; KB.n++; KB.t = ahora;
+});
+function escaneoMano(txt) {
+  const fn = { FILTRO: filtrar, BUSQUEDA: buscarTarjeta, MESA: mesaEscanear, CONSULTA: consultar }[_vista];
+  if (!fn) return;
+  Promise.resolve().then(() => fn(txt)).catch(err => console.error(err));
+  const sec = { FILTRO: 'f-res', BUSQUEDA: 'b-res', MESA: 'm-res', CONSULTA: 'c-res' }[_vista];
+  setTimeout(() => { const el = $(sec); el && el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150);
+}
 function ejecutar(id) { const v = $(id).value.trim(); if (v) { $(id).value = ''; ACCION[id](v); } }
 Object.keys(ACCION).forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ejecutar(id); } }));
 document.querySelectorAll('[data-buscar]').forEach(b => b.onclick = () => ejecutar(b.dataset.buscar));
@@ -1463,12 +1591,29 @@ async function abrirCam(btn) {
   vc.classList.add('active'); btn.classList.add('activo');
   const b = btn.querySelector('b'); if (!b.dataset.t) b.dataset.t = b.textContent; b.textContent = 'DETENER CÁMARA';
   estadoCam(pistaViva() ? '' : 'Abriendo cámara…');
+  if (CAM.simple) return abrirSimple(gen);
   if (!(await prepararLector(CAM.modo))) { if (gen === CAM.gen) estadoCam('<span style="color:var(--rojo)">📶 No cargó el lector por la señal: usa el escáner de mano o busca WiFi.</span>'); return; }
   if (gen !== CAM.gen) return;
   try { if (!(await conectar(gen))) return; }
   catch (e) { if (gen === CAM.gen) estadoCam('<span style="color:var(--rojo)">⚠️ ' + (e.name === 'NotAllowedError' ? 'Permiso denegado: activa la cámara en el candado de la barra de direcciones.' : 'No se pudo abrir la cámara. Cierra otras apps que la usen y toca otra vez el botón.') + '</span>'); return; }
   estadoCam(CAM.modo === 'curp' ? '🔍 Apunta al QR o código de barras de la CURP…' : '🔍 Apunta al código de la tarjeta o al QR de la CURP…');
   clearInterval(CAM.wd); CAM.wd = setInterval(() => vigilar(gen), 1500);
+}
+// 16-nov: MODO SIMPLE (como en el operativo Rita Cetina): el lector maneja la cámara solo, a 1280 px, y se cierra tras cada lectura.
+// Se activa en Sesión para el celular que tenga problemas con el modo normal.
+CAM.simple = lsGet('ent_cam_simple', false);
+async function abrirSimple(gen) {
+  liberarStream();
+  if (!(await asegurarZXing())) { if (gen === CAM.gen) estadoCam('<span style="color:var(--rojo)">📶 No cargó el lector por la señal: usa el escáner de mano o busca WiFi.</span>'); return; }
+  if (gen !== CAM.gen) return;
+  try {
+    const h = new Map(); h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, FMT[CAM.modo].map(f => ZXing.BarcodeFormat[ZXF[f]]).filter(x => x !== undefined)); h.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    CAM.rd = new ZXing.BrowserMultiFormatReader(h);
+    await CAM.rd.decodeFromConstraints({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } } }, videoCam(), res => {
+      if (res && CAM.activo && gen === CAM.gen) { try { leidoCam(String(res.getText()).trim()); } catch (e) { console.error(e); } }
+    });
+    if (gen === CAM.gen) estadoCam('🔍 Apunta al código… <small>(modo simple: se cierra después de cada lectura)</small>');
+  } catch (e) { if (gen === CAM.gen) estadoCam('<span style="color:var(--rojo)">⚠️ ' + (e.name === 'NotAllowedError' ? 'Permiso denegado: activa la cámara.' : 'No se pudo abrir la cámara. Toca el botón otra vez.') + '</span>'); }
 }
 // Vigilante: si la cámara se cerró, la imagen se congeló o el lector dejó de responder, se reinicia sola.
 // 14-nov: menos sensible (el reinicio se veía como "parpadeo"): solo si la pista terminó, o la imagen lleva 8 s quieta y el celular
@@ -1509,6 +1654,7 @@ function videoCam() {
 // Cerrar el recuadro. La cámara queda "caliente" 45 s para reabrir al instante; con liberar=true (cambio de pantalla) se apaga ya.
 function detenerCam(liberar) {
   CAM.gen++; CAM.lid++; CAM.activo = false; CAM.wkVuelo = 0;
+  if (CAM.rd) { try { CAM.rd.reset(); } catch (e) {} CAM.rd = null; }
   clearTimeout(CAM.loop); clearInterval(CAM.wd);
   const v = videoCam();
   try { v.pause(); } catch (e) {}
@@ -1562,8 +1708,8 @@ function leidoCam(txt) {
   CAM.ult = clave; CAM.ultT = ahora;
   vibrar(60);
   const fn = { FILTRO: filtrar, BUSQUEDA: buscarTarjeta, MESA: mesaEscanear, CONSULTA: consultar }[_vista];
-  estadoCam('✅ Leído: <strong>' + esc(esCurp ? clave : '…' + cod.slice(-8)) + '</strong> · ' + (CAM.continuo ? 'la cámara sigue abierta para el siguiente' : ''));
-  if (!CAM.continuo) detenerCam();
+  estadoCam('✅ Leído: <strong>' + esc(esCurp ? clave : '…' + cod.slice(-8)) + '</strong> · ' + (CAM.continuo && !CAM.rd ? 'la cámara sigue abierta para el siguiente' : 'toca el botón para la siguiente'));
+  if (!CAM.continuo || CAM.rd) detenerCam();
   if (fn) Promise.resolve().then(() => fn(esCurp ? txt : cod)).catch(e => console.error(e));
   const sec = { FILTRO: 'f-res', BUSQUEDA: 'b-res', MESA: 'm-res', CONSULTA: 'c-res' }[_vista];
   if (sec) setTimeout(() => { const el = $(sec); el && el.scrollIntoView({ behavior: 'smooth', block: CAM.continuo ? 'nearest' : 'center' }); }, 150);
