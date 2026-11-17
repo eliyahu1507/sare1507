@@ -370,7 +370,8 @@ td.num,th.num{text-align:right}
     <div class="card"><div class="card-h"><span class="e">🧮</span><div><h2>Entregadas por operador</h2><small>Escribe lo que contó cada uno: la diferencia sale sola</small></div></div>
       <div class="tabla"><table><thead><tr><th>Operador</th><th class="num">Sistema</th><th class="num">Conteo físico</th><th class="num">Dif.</th></tr></thead><tbody id="s-ops"></tbody></table></div><button class="btn ok full" id="s-fis-guardar" hidden>💾 Guardar conteo físico en la hoja</button><p class="hint" id="s-fis-msg"></p></div>
     <div class="card"><div class="card-h"><span class="e">📤</span><div><h2>Cierre del día</h2><small>Al terminar: actualiza los datos y manda el reporte al jefe por WhatsApp</small></div></div>
-      <div class="card-b"><button class="btn prim full" id="s-cierre" style="margin-top:0">📤 Preparar reporte de cierre</button><p class="hint" id="s-cierre-msg"></p></div></div>
+      <div class="card-b"><button class="btn prim full" id="s-cierre" style="margin-top:0">📤 Preparar reporte de cierre</button><p class="hint" id="s-cierre-msg"></p>
+        <button class="btn ok full" id="s-captura">📊 Excel para captura (entregas por operador)</button><p class="hint" id="s-captura-msg">Después del cuadre: lista de lo entregado por cada operador (becario, CURP, CCT y tarjeta) para que captura sepa a quién pedir evidencias.</p></div></div>
     <div class="card"><div class="card-h"><span class="e">⚠️</span><div><h2>No entregadas: en mesa / canasta <span id="s-n-mesa"></span></h2><small>Mesa las regresó o no se contaron · al cierre van a la caja de su CCT</small></div></div><div class="card-b lista" id="s-mesa"></div></div>
     <div class="card"><div class="card-h"><span class="e">↩</span><div><h2>No entregadas <span id="s-n-dev"></span></h2></div></div><div class="card-b lista" id="s-dev"></div></div>
     <div class="card"><div class="card-h"><span class="e">🔎</span><div><h2>Pasaron filtro y siguen en búsqueda <span id="s-n-bus"></span></h2></div></div><div class="card-b lista" id="s-bus"></div></div>
@@ -420,7 +421,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '16-nov-26 B';
+const APP_VERSION = '17-nov-26 A';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -1312,6 +1313,58 @@ function textoCierre(c) {
   L.push('_Datos de la hoja a las ' + horaAhora() + ' · ' + (USUARIO && USUARIO.NOMBRE ? USUARIO.NOMBRE : 'Supervisor') + '_');
   return L.join('\n');
 }
+// ── 17-nov: EXCEL PARA CAPTURA. Con los datos recién consultados de la hoja: hoja "Resumen" (operador y cuántas) y
+// hoja "Detalle" (operador, becario, CCT, tarjeta). La tarjeta va como TEXTO para que Excel no la redondee.
+// Se comparte directo a WhatsApp si el celular lo permite; si no, se descarga. Sin señal para la librería: CSV equivalente.
+async function cargarXLSX() {
+  if (window.XLSX) return true;
+  return new Promise(res => { const s = document.createElement('script'); const t = setTimeout(() => res(false), 20000);
+    s.onload = () => { clearTimeout(t); res(!!window.XLSX); }; s.onerror = () => { clearTimeout(t); res(false); };
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; document.head.appendChild(s); });
+}
+function filasCaptura(c) {
+  const det = c.entregadasPorOperador || {}, ops = Object.keys(det).sort(), filas = [];
+  ops.forEach(k => det[k].slice().sort((a, b) => String(a.nombre).localeCompare(String(b.nombre))).forEach((x, i) => filas.push([k, i + 1, x.nombre, String(x.curp || ''), x.cct, String(x.tarjeta)])));
+  return { ops, det, filas };
+}
+async function compartirArchivo(blob, nombre, texto) {
+  const f = new File([blob], nombre, { type: blob.type });
+  if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: nombre, text: texto }); return 'compartido'; } catch (e) { if (e && e.name === 'AbortError') return 'cancelado'; } }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  return 'descargado';
+}
+$('s-captura').onclick = async () => {
+  const btn = $('s-captura'), msg = $('s-captura-msg'); btn.disabled = true; msg.textContent = '⏳ Enviando lo pendiente y consultando la hoja…';
+  try {
+    await actualizarCuadre();
+    if (!_cuadre || _cuadre.fecha !== SES.fecha || !_cuadre.entregadasPorOperador) throw new Error('No se pudo consultar la hoja');
+    const c = _cuadre, { ops, det, filas } = filasCaptura(c), fc = fechaLarga(c.fecha), fArch = c.fecha.split('-').reverse().join('-');
+    if (!filas.length) throw new Error('No hay entregas registradas en este día');
+    const dia = ((LOGIN && LOGIN.calendario) || []).find(x => x.fecha === c.fecha), sede = dia && dia.escuelas[0] ? dia.escuelas[0].sede : '';
+    const texto = 'Captura · entregas del ' + fc + ': ' + fmt(filas.length) + ' tarjetas de ' + ops.length + ' operadores.' + (COLA.length ? ' (Ojo: este celular aún tiene ' + COLA.length + ' por enviar)' : '');
+    let blob, nombre;
+    if (await cargarXLSX()) {
+      const wb = XLSX.utils.book_new();
+      const res = [['SARE 1507 · ENTREGAS PARA CAPTURA'], [fc.toUpperCase() + (sede ? ' · ' + sede : '')], ['Generado: ' + new Date().toLocaleString('es-MX') + ' · datos de la hoja central después del cuadre'], [],
+        ['OPERADOR', 'TARJETAS ENTREGADAS']].concat(ops.map(k => [k, det[k].length]), [['TOTAL', filas.length]]);
+      const w1 = XLSX.utils.aoa_to_sheet(res); w1['!cols'] = [{ wch: 52 }, { wch: 22 }]; XLSX.utils.book_append_sheet(wb, w1, 'Resumen');
+      const aoa = [['OPERADOR', 'No.', 'NOMBRE DEL BECARIO', 'CURP', 'CCT', 'NÚMERO DE TARJETA']].concat(filas);
+      const w2 = XLSX.utils.aoa_to_sheet(aoa);
+      for (let r = 1; r < aoa.length; r++) { const ref = XLSX.utils.encode_cell({ r, c: 5 }); w2[ref] = { t: 's', v: aoa[r][5] }; }
+      w2['!cols'] = [{ wch: 44 }, { wch: 5 }, { wch: 42 }, { wch: 21 }, { wch: 13 }, { wch: 20 }]; w2['!autofilter'] = { ref: 'A1:F' + aoa.length };
+      XLSX.utils.book_append_sheet(wb, w2, 'Detalle');
+      blob = new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      nombre = 'Captura_entregas_' + fArch + '.xlsx';
+    } else {
+      const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+      const csv = ['OPERADOR,No.,NOMBRE DEL BECARIO,CURP,CCT,NUMERO DE TARJETA'].concat(filas.map(f => [q(f[0]), f[1], q(f[2]), q(f[3]), q(f[4]), '="' + f[5] + '"'].join(','))).join('\r\n');
+      blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }); nombre = 'Captura_entregas_' + fArch + '.csv';
+    }
+    const r = await compartirArchivo(blob, nombre, texto);
+    msg.textContent = (r === 'compartido' ? '✅ Compartido: ' : r === 'cancelado' ? 'Se canceló el envío. Archivo listo: ' : '✅ Descargado: ') + nombre + ' · ' + fmt(filas.length) + ' tarjetas, ' + ops.length + ' operadores.' + (r === 'descargado' ? ' Mándalo por WhatsApp desde tus descargas.' : '');
+  } catch (e) { msg.textContent = '⛔ ' + e.message + '. Intenta con señal.'; }
+  finally { btn.disabled = false; }
+};
 $('s-cierre').onclick = async () => {
   $('s-cierre').disabled = true; $('s-cierre-msg').textContent = '⏳ Enviando lo pendiente y consultando la hoja…';
   try {
