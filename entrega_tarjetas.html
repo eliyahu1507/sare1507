@@ -421,7 +421,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '17-nov-26 A';
+const APP_VERSION = '17-nov-26 B';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -1360,8 +1360,19 @@ $('s-captura').onclick = async () => {
       const csv = ['OPERADOR,No.,NOMBRE DEL BECARIO,CURP,CCT,NUMERO DE TARJETA'].concat(filas.map(f => [q(f[0]), f[1], q(f[2]), q(f[3]), q(f[4]), '="' + f[5] + '"'].join(','))).join('\r\n');
       blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }); nombre = 'Captura_entregas_' + fArch + '.csv';
     }
-    const r = await compartirArchivo(blob, nombre, texto);
-    msg.textContent = (r === 'compartido' ? '✅ Compartido: ' : r === 'cancelado' ? 'Se canceló el envío. Archivo listo: ' : '✅ Descargado: ') + nombre + ' · ' + fmt(filas.length) + ' tarjetas, ' + ops.length + ' operadores.' + (r === 'descargado' ? ' Mándalo por WhatsApp desde tus descargas.' : '');
+    // 17-nov B: el celular solo permite compartir un archivo justo al tocar un botón: primero se prepara y luego se envía con un toque
+    const f = new File([blob], nombre, { type: blob.type }), puede = !!(navigator.canShare && navigator.canShare({ files: [f] }));
+    msg.textContent = '✅ Listo: ' + nombre;
+    abrirModal('📊 Excel para captura', fc + ' · ' + fmt(filas.length) + ' tarjetas · ' + ops.length + ' operadores',
+      `<div style="font-size:.85rem;background:var(--gris);border-radius:10px;padding:10px 12px;max-height:38vh;overflow:auto">${ops.map(k => `<div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0"><span>${esc(k)}</span><b>${det[k].length}</b></div>`).join('')}<div style="display:flex;justify-content:space-between;border-top:1px solid var(--borde);margin-top:4px;padding-top:4px"><b>TOTAL</b><b>${fmt(filas.length)}</b></div></div>
+       ${COLA.length ? '<p style="color:var(--rojo);font-size:.82rem">⚠️ Este celular aún tiene ' + COLA.length + ' por enviar.</p>' : ''}
+       ${puede ? '<button class="btn ok full" id="cap-wa">💬 Enviar por WhatsApp</button><p class="hint">Se abre el menú de compartir: elige WhatsApp y el chat de captura.</p>' : '<p class="hint">Este navegador no permite mandar archivos directo a WhatsApp: descárgalo y adjúntalo en el chat de captura.</p>'}
+       <button class="btn borde full" id="cap-dl">⬇️ Descargar el archivo</button>`);
+    if ($('cap-wa')) $('cap-wa').onclick = async () => {
+      try { await navigator.share({ files: [f], title: nombre, text: texto }); $('modal').hidden = true; toast('✅ Excel enviado'); }
+      catch (e) { if (!e || e.name !== 'AbortError') toast('No se pudo compartir: usa Descargar', true); }
+    };
+    $('cap-dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000); toast('⬇️ Descargado: ' + nombre); };
   } catch (e) { msg.textContent = '⛔ ' + e.message + '. Intenta con señal.'; }
   finally { btn.disabled = false; }
 };
