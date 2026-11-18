@@ -139,6 +139,22 @@ label.lbl{display:block;font-family:Montserrat,sans-serif;font-weight:800;font-s
 .causales{display:grid;gap:6px;margin-top:8px}
 .causal{border:2px solid var(--gris);background:#fff;border-radius:10px;padding:10px;text-align:left;font-weight:700;font-size:.86rem}
 .causal[aria-pressed=true]{border-color:var(--rojo);background:var(--rojo-bg)}
+/* 18-nov: incidencias */
+.inc-btns{display:grid;gap:8px}
+.btn.inc-r{background:#FFF3E0;color:#8A3B00;border:2px solid #FFA040}
+.btn.inc-c{background:#FDECEC;color:#9B1C1C;border:2px solid #FF6B6B}
+.inc-pasos{background:#FFF8E1;border-left:4px solid #FFA040;border-radius:8px;padding:8px 10px;font-size:.84rem;margin:0 0 10px}
+.inc-pasos.grave{background:#FDECEC;border-left-color:#C62828}
+.inc-pasos ol{margin:4px 0 0 18px;padding:0}.inc-pasos li{margin:2px 0}
+.op-r{display:flex;gap:8px;align-items:center;padding:6px 2px;font-weight:600;font-size:.88rem}
+.op-r input{width:18px;height:18px;accent-color:var(--guinda)}
+.inc-sel{background:#E8F5E9;border:1px solid #A5D6A7;border-radius:8px;padding:8px 10px;margin-top:6px;font-size:.85rem}
+.inc-it{border:1px solid var(--gris);border-left:6px solid #FFA040;border-radius:10px;padding:9px 10px;margin:0 0 8px;background:#fff}
+.inc-it.cru{border-left-color:#C62828;background:#FFF5F5}.inc-it.ok{border-left-color:#2E7D32}
+.inc-it .nm{font-weight:800}.inc-it .sub{font-size:.78rem;color:#555;margin-top:2px}
+.inc-it .acc{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.inc-it .acc .btn{margin:0;padding:7px 10px;font-size:.78rem}
+.inc-alerta{background:#C62828;color:#fff;border-radius:12px;padding:10px 12px;margin:0 0 12px;font-weight:700}
+.c-inc{background:#FFE0B2;color:#8A3B00}.c-cru{background:#FFCDD2;color:#9B1C1C}
 table{width:100%;border-collapse:collapse;font-size:.82rem}
 th,td{text-align:left;padding:7px 9px;border-bottom:1px solid #F5EFF2;vertical-align:top}
 th{font-family:Montserrat,sans-serif;font-size:.64rem;text-transform:uppercase;color:#666;background:rgba(0,0,0,.04)}
@@ -358,6 +374,9 @@ td.num,th.num{text-align:right}
           <button class="btn full" id="m-cancelar">Cancelar</button>
         </div>
       </div></div>
+    <div class="card"><div class="card-h"><span class="e">⚠️</span><div><h2>Incidencias en mi mesa</h2><small>Detén la entrega, avisa al padre o tutor y al supervisor, y regístrala aquí</small></div></div>
+      <div class="card-b inc-btns"><button class="btn inc-r full" id="m-inc-r">📝 Me equivoqué en el acuse / contrato (reimpresión)</button>
+        <button class="btn inc-c full" id="m-inc-c">🔴 Se entregó una tarjeta a otro becario</button></div></div>
     <div class="kpis" id="m-kpis"></div><div id="m-fin"></div>
     <div class="card"><div class="card-h"><span class="e">🗂️</span><div><h2>Mis expedientes contados</h2><small>Este número debe coincidir con los expedientes de tu paquete</small></div></div><div class="card-b"><div class="lista" id="m-log"></div></div></div>
   </section>
@@ -366,7 +385,11 @@ td.num,th.num{text-align:right}
   <section id="v-SUPERVISOR" hidden>
     <div class="card"><div class="card-h"><span class="e">📊</span><div><h2>Avance y cuadre</h2><small id="s-act">—</small></div></div>
       <div class="card-b"><button class="btn prim full" id="s-actualizar" style="margin-top:0">Actualizar</button></div></div>
-    <div class="kpis" id="s-kpis"></div><div id="s-sede"></div>
+    <div class="kpis" id="s-kpis"></div><div id="s-inc-alerta"></div><div id="s-sede"></div>
+    <div class="card"><div class="card-h"><span class="e">🚨</span><div><h2>Incidencias <span id="s-n-inc"></span></h2><small>Reimpresión de contrato y entregas cruzadas · pestaña Incidencias de la hoja</small></div></div>
+      <div class="card-b"><div class="inc-btns" style="margin-bottom:10px"><button class="btn inc-r full" id="s-inc-r">📝 Registrar reimpresión de contrato</button><button class="btn inc-c full" id="s-inc-c">🔴 Registrar entrega cruzada</button></div>
+        <div id="s-inc"><div class="vacio">Toca Actualizar para ver las incidencias.</div></div>
+        <button class="btn borde full" id="s-inc-sol">📤 Solicitud de reimpresión (WhatsApp)</button></div></div>
     <div class="card"><div class="card-h"><span class="e">🧮</span><div><h2>Entregadas por operador</h2><small>Escribe lo que contó cada uno: la diferencia sale sola</small></div></div>
       <div class="tabla"><table><thead><tr><th>Operador</th><th class="num">Sistema</th><th class="num">Conteo físico</th><th class="num">Dif.</th></tr></thead><tbody id="s-ops"></tbody></table></div><button class="btn ok full" id="s-fis-guardar" hidden>💾 Guardar conteo físico en la hoja</button><p class="hint" id="s-fis-msg"></p></div>
     <div class="card"><div class="card-h"><span class="e">📤</span><div><h2>Cierre del día</h2><small>Al terminar: actualiza los datos y manda el reporte al jefe por WhatsApp</small></div></div>
@@ -421,13 +444,15 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '17-nov-26 C';
+const APP_VERSION = '18-nov-26 A';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
 const SUPERVISORES = { '159415': 'JOSE ELIAS CERVANTES JIMENEZ', '1500585': 'JOSE EDUARDO NOH CRUZ', '1501991': 'GONZALEZ LINDA NOHEMI JAZMIN' };
 const ROLES = { FILTRO: '🪪 Filtro', BUSQUEDA: '🔎 Búsqueda', MESA: '🤝 Mesa', SUPERVISOR: '📊 Supervisor' };
-const E = { BUSQUEDA: 'EN BUSQUEDA', MESA: 'EN MESA', ENTREGADA: 'ENTREGADA', DEVUELTA: 'DEVUELTA' };
+const E = { BUSQUEDA: 'EN BUSQUEDA', MESA: 'EN MESA', ENTREGADA: 'ENTREGADA', DEVUELTA: 'DEVUELTA', REIMP: 'REIMPRESION', CRUZADA: 'ENTREGA CRUZADA', RETENIDA: 'RETENIDA' };
+const E_INC = [E.REIMP, E.CRUZADA, E.RETENIDA];   // 18-nov: incidencias: la tarjeta queda en resguardo y no se entrega
+const esInc = x => !!(x && E_INC.includes(x.e));
 const SYNC_MS = 8000;
 
 // ════════════════════════════════════════════════════════════
@@ -597,11 +622,14 @@ async function descargar(fecha) {
 }
 
 // Un movimiento se aplica en el celular al momento y se envía en segundo plano
-function registrar(evento, r, detalle) {
-  const ev = { id: uid(), evento, tarjeta: r ? r.t : '', curp: r ? r.c : '', detalle: detalle || '', hora: horaAhora(), dia: hoyISO(), lugar: SES.lugar || '', rol: SES.rol, op: SES.op, mesa: SES.mesa, fecha: SES.fecha };
+function registrar(evento, r, detalle, extra) {
+  const ev = Object.assign({ id: uid(), evento, tarjeta: r ? r.t : '', curp: r ? r.c : '', detalle: detalle || '', hora: horaAhora(), dia: hoyISO(), lugar: SES.lugar || '', rol: SES.rol, op: SES.op, mesa: SES.mesa, fecha: SES.fecha }, extra || {});
   COLA.push(ev);
   if (r && r.t) {
-    const nuevo = { FILTRO_OK: (EST[r.t] && EST[r.t].e === E.MESA) ? E.MESA : E.BUSQUEDA, A_MESA: E.MESA, ENTREGADA: E.ENTREGADA, DEVUELTA: E.DEVUELTA, ANULAR_ENTREGA: E.DEVUELTA }[evento];
+    const x0 = EST[r.t], firmado = ev.acuse === 'FIRMADO';
+    const nuevo = esInc(x0) && !['REIMPRESO', 'RECUPERADA', 'CRUZADA'].includes(evento) ? null : { FILTRO_OK: (x0 && x0.e === E.MESA) ? E.MESA : E.BUSQUEDA, A_MESA: E.MESA, ENTREGADA: E.ENTREGADA, DEVUELTA: E.DEVUELTA, ANULAR_ENTREGA: E.DEVUELTA,
+      REIMPRESION: E.REIMP, REIMPRESO: E.DEVUELTA, RECUPERADA: firmado ? E.REIMP : E.DEVUELTA,
+      CRUZADA: ev.recuperada === 'SI' ? (firmado ? E.REIMP : E.DEVUELTA) : E.CRUZADA }[evento];
     if (nuevo) { const x = { e: nuevo, ev: evento, d: detalle || '', op: SES.op, m: SES.mesa, h: ev.hora, pend: 1 };
       if (nuevo === E.ENTREGADA) { x.eop = SES.op; x.em = SES.mesa; x.eh = ev.hora; } EST[r.t] = x; }
   }
@@ -908,12 +936,13 @@ function textoEstado(x) {
   if (x.e === E.MESA) return `En mesa desde ${esc(x.h)}`;
   if (x.e === E.BUSQUEDA) return `En búsqueda desde ${esc(x.h)}`;
   if (x.e === E.DEVUELTA) return `No entregada: ${esc(x.d)} (${esc(x.op)}${x.m ? ', mesa ' + esc(x.m) : ''})`;
+  if (esInc(x)) return `${esc(x.d)} (${esc(x.op)}${x.m ? ', mesa ' + esc(x.m) : ''} · ${esc(x.h)})`;
   return '';
 }
 function chipEstado(x) {
   if (!x) return '<span class="chip c-gr">Sin movimiento</span>';
-  const c = { [E.ENTREGADA]: 'c-ok', [E.MESA]: 'c-in', [E.BUSQUEDA]: 'c-av', [E.DEVUELTA]: 'c-mal' }[x.e] || 'c-gr';
-  return `<span class="chip ${c}">${esc(x.e === E.DEVUELTA ? 'NO ENTREGADA' : x.e)}</span>`;
+  const c = { [E.ENTREGADA]: 'c-ok', [E.MESA]: 'c-in', [E.BUSQUEDA]: 'c-av', [E.DEVUELTA]: 'c-mal', [E.REIMP]: 'c-inc', [E.CRUZADA]: 'c-cru', [E.RETENIDA]: 'c-cru' }[x.e] || 'c-gr';
+  return `<span class="chip ${c}">${esc(x.e === E.DEVUELTA ? 'NO ENTREGADA' : x.e === E.REIMP ? 'REIMPRESIÓN' : x.e)}</span>`;
 }
 function datos(r, xl) { if (r.hom && r.hom.length) avisarHom(r); return `<div class="n">${esc(r.n)} ${chipHom(r)}</div><p>${esc(r.c)}</p>${cctLinea(r, xl)}${bloqueHom(r)}`; }
 // 16-nov: HOMÓNIMOS como en el operativo Rita Cetina: marca roja, los datos de los otros y alerta de voz
@@ -1004,6 +1033,7 @@ function evaluarFiltro(r) {
   let html, ok = false, motivo = '';
   if (r.rec !== 'RECIBIDA') { motivo = 'TARJETA NO RECIBIDA'; html = `<div class="res mal"><div class="t">⛔ SU TARJETA NO LLEGÓ</div>${datos(r)}<p>Está convocado hoy, pero su tarjeta no se recibió. Avisa al supervisor.</p>${avisoEdad(r.c)}</div>`; }
   else if (x && x.e === E.ENTREGADA) { motivo = 'YA ENTREGADA'; html = `<div class="res mal"><div class="t">⛔ YA SE ENTREGÓ</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; }
+  else if (esInc(x)) { motivo = 'INCIDENCIA: ' + x.e; html = bloqueInc(r, x, true); }
   else if (x && (x.e === E.BUSQUEDA || x.e === E.MESA)) { html = `<div class="res aviso"><div class="t">⚠️ YA PASÓ POR FILTRO</div>${datos(r, true)}<p>${textoEstado(x)}. No hace falta registrarla otra vez.</p></div>`; }
   else { ok = true; const regreso = x && x.e === E.DEVUELTA;
     html = `<div class="res ok"><div class="t">✅ PASA A BÚSQUEDA${regreso ? ' (REGRESÓ)' : ''}</div>${datos(r, true)}${regreso ? `<p><b>Antes no se entregó: ${esc(x.d)}.</b> Verifica que ya traiga lo que faltaba.</p>` : ''}${docsPara(r.c)}<p class="hint" style="color:inherit;margin-top:8px">✏️ Anota la CCT en la copia de la CURP y pásala a búsqueda.</p></div>`; }
@@ -1035,6 +1065,7 @@ function buscarTarjeta(texto) {
   const r = PAQ.byT[t], x = r ? EST[t] : null;
   if (!r) { box.innerHTML = `<div class="res mal"><div class="t">⛔ ESTA TARJETA NO ES DE HOY</div><p>…${esc(t.slice(-8))}: no está en los convocados de este día. Regrésala a su CCT.</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
   if (x && x.e === E.ENTREGADA) { box.innerHTML = `<div class="res mal"><div class="t">⛔ YA SE ENTREGÓ</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
+  if (esInc(x)) { box.innerHTML = bloqueInc(r, x); beep(false); vibrar([200, 80, 200]); return; }
   if (x && x.e === E.MESA) { yaEnMesa(r, x); return; }
   if (!x || x.e !== E.BUSQUEDA) {
     // 16-nov: si es homónimo y el OTRO sí pasó por filtro, casi seguro es el sobre equivocado
@@ -1163,13 +1194,20 @@ function mesaEscanear(texto) {
   let r = null; const curp = extraerCurp(texto), t = limpiarTarjeta(texto);
   if (curp) r = PAQ.byC[curp] || null;
   else if (tarjetaValida(t)) r = PAQ.byT[t] || null;
-  else { const l = buscarNombre(texto); if (l.length) return listaCoincidencias('m-coin', l, texto, mesaMostrar);
+  else { const l = buscarNombre(texto); if (l.length) return listaCoincidencias('m-coin', l, texto, destinoMesa);
     box.innerHTML = `<div class="res mal"><div class="t">Sin resultados</div><p>Escanea la tarjeta o la CURP.</p></div>`; beep(false); return; }
+  if (!r && INC_PEND && tarjetaValida(t)) r = { t, c: '', n: 'Tarjeta …' + t.slice(-8) + ' (no es de los convocados de hoy)', cct: '' };
   if (!r) { box.innerHTML = `<div class="res mal"><div class="t">⛔ NO ESTÁ EN LOS CONVOCADOS DE HOY</div><p>${curp ? esc(curp) : '…' + esc(t.slice(-8))} no está en la lista de este día.</p><p>Revisa que el expediente sea de hoy; si la CURP no lee bien, prueba con el número de tarjeta o el nombre, y avisa al supervisor.</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
+  destinoMesa(r);
+}
+// 18-nov: si el operador tocó "Error en el acuse" o "Entregué a otro becario", el siguiente escaneo NO cuenta: abre la incidencia
+function destinoMesa(r) {
+  if (INC_PEND) { const tipo = INC_PEND; INC_PEND = ''; $('m-res').innerHTML = ''; try { detenerCam(); } catch (e) {} return abrirIncidencia(tipo, r); }
   mesaMostrar(r);
 }
 function mesaMostrar(r) {
   const box = $('m-res'), x = EST[r.t];
+  if (esInc(x)) { box.innerHTML = bloqueInc(r, x); beep(false); vibrar([300, 100, 300]); return; }
   if (x && x.e === E.ENTREGADA) { box.innerHTML = `<div class="res mal"><div class="t">⛔ YA SE ENTREGÓ</div>${datos(r)}<p>${textoEstado(x)}</p></div>`; beep(false); vibrar([200, 80, 200]); return; }
   if (_modoMesa === 'conteo') {
     if (x && x.e === E.DEVUELTA) {
@@ -1248,24 +1286,221 @@ function pedirQuitar(r) {
 }
 
 // ════════════════════════════════════════════════════════════
+//  18-nov: INCIDENCIAS — reimpresión de contrato y entrega cruzada
+//  Mesa: el operador detiene la entrega, avisa al padre/tutor y al supervisor, regresa la tarjeta al paquete de su CCT
+//  y la registra aquí. La tarjeta queda bloqueada (no se cuenta ni se manda a mesa) hasta que el supervisor la resuelva.
+// ════════════════════════════════════════════════════════════
+let INC_PEND = '';
+const MOT_REIMP = ['NOMBRE MAL ESCRITO', 'CURP INCORRECTA', 'NÚMERO DE TARJETA INCORRECTO', 'FECHA INCORRECTA', 'FIRMA O HUELLA EN LUGAR EQUIVOCADO', 'TACHADURAS O ENMENDADURAS', 'DATOS DE OTRO BECARIO', 'OTRO'];
+const MOT_CRUZ = ['HOMÓNIMO (MISMO NOMBRE)', 'NO SE REVISARON LOS DATOS DEL SOBRE', 'NO SE PREGUNTARON LOS DATOS AL INICIAR', 'SOBRES O EXPEDIENTES REVUELTOS EN LA MESA', 'OTRO'];
+function bloqueInc(r, x, filtro) {
+  const t = x.e === E.REIMP ? '⛔ CONTRATO EN REIMPRESIÓN' : x.e === E.CRUZADA ? '⛔ ENTREGA CRUZADA' : '⛔ TARJETA RETENIDA';
+  const p = x.e === E.REIMP ? (filtro ? 'Su contrato se está reimprimiendo por un error en el llenado. Hoy no se le puede entregar: se le avisará cuando esté listo.' : 'No se entrega hasta que llegue el contrato nuevo. Regresa la tarjeta al paquete de su CCT (resguardo).')
+    : x.e === E.CRUZADA ? 'Esta tarjeta se le entregó a otro becario y no se ha recuperado. Avisa al supervisor de inmediato.'
+    : 'Este becario se llevó la tarjeta de otra persona. No se le entrega la suya hasta que devuelva la otra. Avisa al supervisor.';
+  return `<div class="res mal"><div class="t">${t}</div>${datos(r)}<p><b>${p}</b></p><p class="sub">${esc(x.d || '')}</p></div>`;
+}
+function pedirIncidencia(tipo) {
+  INC_PEND = tipo; cerrarMesa(true); $('m-coin').innerHTML = '';
+  const cru = tipo === 'CRUZADA';
+  $('m-res').innerHTML = `<div class="res ${cru ? 'mal' : 'aviso'}"><div class="t">${cru ? '🔴 Tarjeta entregada a otro becario' : '📝 Error en el acuse / contrato'}</div>
+    <p><b>Escanea ${cru ? 'la tarjeta que se entregó por error (o la CURP de su dueño)' : 'la CURP o la tarjeta del becario afectado'}</b> con la cámara o el escáner, o escribe su nombre en el cuadro de búsqueda.</p>
+    <p class="hint" style="color:inherit">Este escaneo <b>no</b> se cuenta como entregada: se usa para la incidencia.</p><button class="btn full" id="inc-x">Cancelar</button></div>`;
+  $('inc-x').onclick = () => { INC_PEND = ''; $('m-res').innerHTML = ''; };
+  setTimeout(() => $('m-res').scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+}
+$('m-inc-r').onclick = () => pedirIncidencia('REIMPRESION');
+$('m-inc-c').onclick = () => pedirIncidencia('CRUZADA');
+// Búsqueda dentro de una ventana (supervisor, y para elegir a quién se llevó la tarjeta): CURP, tarjeta o nombre de los convocados de hoy
+function buscarPersonas(q) {
+  const lc = leerCodigoCurp(q), t = limpiarTarjeta(q);
+  if (lc) return PAQ.byC[lc.curp] ? [PAQ.byC[lc.curp]] : [];
+  if (tarjetaValida(t)) return [PAQ.byT[t] || { t, c: '', n: 'Tarjeta …' + t.slice(-8) + ' (no es de los convocados de hoy)', cct: '' }];
+  return buscarNombre(q).slice(0, 12);
+}
+function selectorPersona(inp, box, alElegir) {
+  const ir = () => { const q = $(inp).value.trim(); if (!q) return; const l = buscarPersonas(q);
+    $(box).innerHTML = l.length ? l.map((r, i) => `<button class="it" data-i="${i}"><div><div class="nm">${esc(r.n)} ${chipHom(r)}</div><div class="sub">${esc(r.c)}${r.cct ? ' · ' + esc(r.cct) : ''}${r.caja ? ' · caja ' + esc(r.caja) : ''}${r.cons ? ' · cons. ' + esc(r.cons) : ''}</div></div>${chipEstado(EST[r.t])}</button>`).join('')
+      : '<div class="vacio">Sin coincidencias en los convocados de hoy. Escribe la CURP completa o el número de tarjeta.</div>';
+    $(box).querySelectorAll('button').forEach(b => b.onclick = () => alElegir(l[+b.dataset.i])); };
+  $(inp).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ir(); } });
+  return ir;
+}
+function elegirParaIncidencia(tipo) {
+  abrirModal(tipo === 'CRUZADA' ? '🔴 Entrega cruzada' : '📝 Reimpresión de contrato', tipo === 'CRUZADA' ? '¿De quién es la tarjeta que se entregó por error?' : '¿De qué becario es el acuse con error?',
+    `<div class="search-row"><input class="main-input" id="inc-bq" autocomplete="off" placeholder="CURP, tarjeta o nombre…"><button class="btn prim" id="inc-bq-b">BUSCAR</button></div><div class="lista" id="inc-bl" style="margin-top:8px"></div>`);
+  const ir = selectorPersona('inc-bq', 'inc-bl', r => abrirIncidencia(tipo, r));
+  $('inc-bq-b').onclick = ir; setTimeout(() => $('inc-bq').focus(), 50);
+}
+function opsConocidos() {
+  const s = new Set(); if (_cuadre) Object.keys(_cuadre.porOperador || {}).forEach(k => s.add(k.split(' · ')[0]));
+  return [...s].sort();
+}
+function abrirIncidencia(tipo, r) {
+  const x = EST[r.t], cru = tipo === 'CRUZADA', sup = SES.rol === 'SUPERVISOR';
+  if (x && x.e === E.CRUZADA) { toast('Esta tarjeta ya está como ENTREGA CRUZADA: el supervisor la resuelve', true); return; }
+  if (!cru && x && x.e === E.REIMP) { toast('Esta tarjeta ya está en reimpresión', true); return; }
+  if (!cru && x && x.e === E.RETENIDA) { toast('Tarjeta retenida por entrega cruzada: primero se resuelve esa', true); return; }
+  const ficha = `<div class="res info" style="margin:0 0 10px"><div class="n">${esc(r.n)} ${chipHom(r)}</div>${r.c ? `<p>${esc(r.c)}</p>` : ''}${r.cct ? cctLinea(r) : ''}<p class="sub">Tarjeta …${esc(r.t.slice(-8))}${r.caja ? ' · caja ' + esc(r.caja) : ''}${r.cons ? ' · consecutivo ' + esc(r.cons) : ''} ${x ? chipEstado(x) : ''}</p></div>`;
+  const pasos = cru
+    ? `<div class="inc-pasos grave"><b>🚨 Es grave. Haz esto en este orden:</b><ol><li>Si la persona sigue en la sede, <b>pídele la tarjeta en ese momento</b>.</li><li>Avisa al supervisor o al jefe <b>de inmediato</b>.</li><li>Separa los expedientes y acuses de los dos becarios.</li><li>Registra aquí lo que pasó.</li></ol></div>`
+    : `<div class="inc-pasos"><b>Antes de registrar:</b><ol><li>Detén la entrega.</li><li>Explica al padre, madre o tutor y al becario que su contrato se va a reimprimir y que se le avisará para recoger la tarjeta.</li><li>Avisa al supervisor.</li><li>Regresa la tarjeta al paquete de su CCT.</li></ol></div>`;
+  const motivos = (cru ? MOT_CRUZ : MOT_REIMP).map(c => `<button class="causal" data-c="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('');
+  const ops = opsConocidos();
+  abrirModal(cru ? '🔴 Entrega cruzada' : '📝 Reimpresión de contrato', cru ? 'Tarjeta entregada a otro becario' : 'Error en el llenado del acuse / contrato',
+    ficha + pasos +
+    (cru ? `<label class="lbl">¿Quién se llevó esta tarjeta?</label>
+      <div class="search-row"><input class="main-input" id="inc-rq" autocomplete="off" placeholder="CURP, tarjeta o nombre del que se la llevó…"><button class="btn prim" id="inc-rq-b">BUSCAR</button></div>
+      <div class="lista" id="inc-rl" style="margin-top:6px"></div><div id="inc-rsel"></div>
+      <input class="main-input" id="inc-rn" placeholder="…o escribe su nombre si no aparece" style="width:100%;margin-top:6px">
+      <label class="lbl">¿Ya se recuperó la tarjeta?</label>
+      <label class="op-r"><input type="radio" name="inc-rec" value="NO" checked> No: se fue con ella</label>
+      <label class="op-r"><input type="radio" name="inc-rec" value="SI"> Sí: la devolvió en este momento</label>
+      <div id="inc-acuse" hidden><label class="lbl">¿El acuse quedó firmado por la persona equivocada?</label>
+        <label class="op-r"><input type="radio" name="inc-ac" value="FIRMADO" checked> Sí: hay que reimprimir el contrato</label>
+        <label class="op-r"><input type="radio" name="inc-ac" value="LIMPIO"> No: el acuse está limpio</label></div>` : '') +
+    `<label class="lbl">${cru ? '¿Cómo pasó?' : '¿Qué error tiene el acuse?'}</label><div class="causales" id="inc-mot">${motivos}</div>
+     <label class="lbl">${cru ? '¿Quién entregó la tarjeta?' : '¿Quién llenó el acuse?'}</label>
+     ${sup ? '' : `<label class="op-r"><input type="radio" name="inc-q" value="YO" checked> Yo (${esc(SES.op)})</label><label class="op-r"><input type="radio" name="inc-q" value="OTRO"> Otro operador</label>`}
+     <input class="main-input" id="inc-quien" list="inc-ops" autocomplete="off" placeholder="Nombre del operador" style="width:100%;${sup ? '' : 'display:none'}"><datalist id="inc-ops">${ops.map(o => `<option value="${esc(o)}">`).join('')}</datalist>
+     <input class="main-input" id="inc-nota" placeholder="Nota (opcional)" style="width:100%;margin-top:8px">
+     <button class="btn ${cru ? 'mal' : 'prim'} full" id="inc-ok" style="margin-top:12px">${cru ? '🔴 Registrar entrega cruzada' : '📝 Registrar reimpresión'}</button>
+     <button class="btn full" id="inc-no" style="margin-top:6px">Cancelar</button>`);
+  let motivo = '', recibio = null;
+  $('inc-mot').querySelectorAll('button').forEach(b => b.onclick = () => { motivo = b.dataset.c; $('inc-mot').querySelectorAll('button').forEach(y => y.setAttribute('aria-pressed', y === b)); });
+  document.querySelectorAll('input[name=inc-q]').forEach(i => i.onchange = () => { const otro = document.querySelector('input[name=inc-q]:checked').value === 'OTRO'; $('inc-quien').style.display = otro ? '' : 'none'; if (otro) $('inc-quien').focus(); });
+  if (cru) {
+    const ir = selectorPersona('inc-rq', 'inc-rl', y => {
+      if (y.t === r.t) { toast('Es la misma tarjeta: elige a la persona que se la llevó', true); return; }
+      recibio = y; $('inc-rl').innerHTML = '';
+      $('inc-rsel').innerHTML = `<div class="inc-sel">✅ Se la llevó: <b>${esc(y.n)}</b>${y.c ? ' · ' + esc(y.c) : ''}${y.cct ? ' · ' + esc(y.cct) : ''} <button class="btn borde" id="inc-rsel-x" style="padding:3px 8px;font-size:.7rem;margin:0 0 0 6px">Cambiar</button></div>`;
+      $('inc-rsel-x').onclick = () => { recibio = null; $('inc-rsel').innerHTML = ''; };
+    });
+    $('inc-rq-b').onclick = ir;
+    document.querySelectorAll('input[name=inc-rec]').forEach(i => i.onchange = () => { $('inc-acuse').hidden = document.querySelector('input[name=inc-rec]:checked').value !== 'SI'; });
+  }
+  $('inc-no').onclick = () => { $('modal').hidden = true; };
+  $('inc-ok').onclick = () => {
+    if (!motivo) { toast(cru ? 'Elige cómo pasó' : 'Elige qué error tiene el acuse', true); return; }
+    const qRad = document.querySelector('input[name=inc-q]:checked'), quien = (sup || (qRad && qRad.value === 'OTRO')) ? $('inc-quien').value.trim().toUpperCase() : SES.op;
+    if (!quien) { toast('Escribe quién ' + (cru ? 'entregó la tarjeta' : 'llenó el acuse'), true); $('inc-quien').focus(); return; }
+    const nota = $('inc-nota').value.trim(), extra = { motivo, quien, nota };
+    if (cru) {
+      const rn = $('inc-rn').value.trim().toUpperCase();
+      if (!recibio && !rn) { toast('Indica quién se llevó la tarjeta (búscalo o escribe su nombre)', true); return; }
+      Object.assign(extra, { recibioCurp: recibio ? recibio.c : '', recibioTarjeta: recibio && recibio.cct ? recibio.t : '', recibioNombre: recibio ? recibio.n : rn,
+        recuperada: document.querySelector('input[name=inc-rec]:checked').value, acuse: (document.querySelector('input[name=inc-ac]:checked') || {}).value || '' });
+    }
+    $('modal').hidden = true;
+    registrar(tipo, r, '', extra);
+    if (cru && extra.recuperada === 'NO' && recibio && recibio.cct) EST[recibio.t] = { e: E.RETENIDA, ev: 'RETENER', d: 'RETENIDA: SE LLEVÓ LA TARJETA DE ' + r.n, op: SES.op, m: SES.mesa, h: horaAhora(), pend: 1 };
+    LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'mal', txt: (cru ? 'Entrega cruzada' : 'Reimpresión') + ' · ' + motivo }); guardarLog(); guardarEstado();
+    const aviso = cru ? textoAvisoCruzada(r, extra) : '';
+    const html = cru
+      ? `<div class="res mal"><div class="t">🔴 ENTREGA CRUZADA REGISTRADA</div><div class="n">${esc(r.n)}</div><p>Se la llevó: <b>${esc(extra.recibioNombre || '—')}</b></p>
+         <p><b>${extra.recuperada === 'SI' ? (extra.acuse === 'FIRMADO' ? 'Tarjeta recuperada: queda en resguardo para reimprimir su contrato.' : 'Tarjeta recuperada: regrésala al paquete de su CCT.') : 'Queda POR RECUPERAR. Avisa ya al jefe.'}</b></p>
+         <a class="btn ok full" style="text-align:center;text-decoration:none" href="https://wa.me/?text=${encodeURIComponent(aviso)}" target="_blank" rel="noopener">📲 Avisar al jefe por WhatsApp</a></div>`
+      : `<div class="res aviso"><div class="t">📝 REIMPRESIÓN REGISTRADA</div><div class="n">${esc(r.n)}</div><p>${esc(motivo)} · llenó el acuse: ${esc(quien)}</p><p><b>Regresa la tarjeta al paquete de su CCT.</b> No se cuenta como entregada.</p></div>`;
+    if (_vista === 'MESA') { $('m-res').innerHTML = html; pintarMesa(); setTimeout(() => $('m-res').scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }
+    else { abrirModal(cru ? '🔴 Registrada' : '📝 Registrada', 'Se envía a la hoja central', html); setTimeout(cargarIncidencias, 5000); }
+    if (cru) hablar('Entrega cruzada registrada. Avisa al jefe.');
+    beep(false); vibrar([150, 80, 150]);
+  };
+}
+function textoAvisoCruzada(r, x) {
+  const L = ['*🚨 ENTREGA CRUZADA · SARE 1507*', fechaLarga(SES.fecha) + ' · ' + horaAhora().slice(0, 5) + (SES.lugar ? ' · ' + SES.lugar : ''), '',
+    '*Tarjeta entregada por error:* …' + r.t.slice(-6), '*Dueño:* ' + r.n + (r.c ? ' · ' + r.c : '') + (r.cct ? ' · ' + r.cct : '') + (r.caja ? ' · caja ' + r.caja : '') + (r.cons ? ' · cons. ' + r.cons : ''),
+    '*Se la llevó:* ' + (x.recibioNombre || '—') + (x.recibioCurp ? ' · ' + x.recibioCurp : ''),
+    '*Entregó:* ' + x.quien + (SES.mesa ? ' · mesa ' + SES.mesa : ''), '*Cómo pasó:* ' + x.motivo.toLowerCase(),
+    '*Estatus:* ' + (x.recuperada === 'SI' ? 'RECUPERADA en el momento' + (x.acuse === 'FIRMADO' ? ' (acuse a reimprimir)' : '') : 'POR RECUPERAR'), x.nota ? '*Nota:* ' + x.nota : '', '_Registró: ' + SES.op + '_'];
+  return L.filter(l => l !== '').join('\n');
+}
+// ── Supervisor: lista de incidencias (de la hoja) y cómo se resuelven ──
+let _inc = null;
+async function cargarIncidencias() {
+  try { const j = await llamar({ accion: 'incidencias' }, 25000); _inc = j.incidencias || []; pintarIncidencias(); }
+  catch (e) { if ($('s-inc')) $('s-inc').innerHTML = `<div class="vacio">⛔ ${esc(e.message)}</div>`; }
+}
+const INC_FIN = ['ENTREGADA', 'CANCELADA'];
+function pintarAlertaCruzadas() {
+  const local = PAQ ? PAQ.lista.filter(r => EST[r.t] && EST[r.t].e === E.CRUZADA).length : 0;
+  const hoja = _inc ? _inc.filter(x => x.TIPO === 'CRUZADA' && x.ESTATUS === 'POR RECUPERAR').length : 0, n = Math.max(local, hoja);
+  if ($('s-inc-alerta')) $('s-inc-alerta').innerHTML = n ? `<div class="inc-alerta">🚨 ${n} tarjeta${n > 1 ? 's' : ''} entregada${n > 1 ? 's' : ''} a otro becario POR RECUPERAR · revisa "Incidencias"</div>` : '';
+}
+function pintarIncidencias() {
+  if (!_inc) return;
+  const ab = _inc.filter(x => !INC_FIN.includes(x.ESTATUS)), hoyF = SES.fecha;
+  const cru = ab.filter(x => x.TIPO === 'CRUZADA' && x.ESTATUS === 'POR RECUPERAR'), rei = ab.filter(x => x.TIPO === 'REIMPRESION' && x.ESTATUS === 'SOLICITAR REIMPRESIÓN');
+  const lis = ab.filter(x => /LISTA PARA ENTREGAR/.test(x.ESTATUS) && !(x.TIPO === 'CRUZADA' && ab.some(y => y.TIPO === 'REIMPRESION' && y.TARJETA === x.TARJETA)));
+  const cerr = _inc.filter(x => INC_FIN.includes(x.ESTATUS) && String(x.FECHA_OPERATIVO).slice(0, 10) === hoyF);
+  $('s-n-inc').textContent = '(' + (cru.length + rei.length) + ' por atender)';
+  const it = (x, cls, acc) => `<div class="inc-it ${cls}"><div class="nm">${esc(x.BECARIO || 'Tarjeta …' + x.TARJETA.slice(-8))}</div>
+    <div class="sub">${esc(x.FOLIO)} · ${esc(x.CURP)} · ${esc(x.CCT)}${x.CAJA ? ' · caja ' + esc(x.CAJA) : ''}${x.CONSECUTIVO ? ' · cons. ' + esc(x.CONSECUTIVO) : ''} · tarjeta …${esc(x.TARJETA.slice(-6))}</div>
+    <div class="sub"><b>${esc(x.MOTIVO)}</b> · ${x.TIPO === 'CRUZADA' ? 'entregó' : 'llenó'}: ${esc(x.SE_EQUIVOCO)} · ${esc(x.REGISTRO)}</div>
+    ${x.TIPO === 'CRUZADA' ? `<div class="sub">Se la llevó: <b>${esc(x.RECIBIO_NOMBRE || x.RECIBIO_CURP || '—')}</b>${x.RECIBIO_CURP ? ' · ' + esc(x.RECIBIO_CURP) : ''}</div>` : ''}
+    <div class="sub">Estatus: <b>${esc(x.ESTATUS)}</b>${x.NOTA ? ' · ' + esc(x.NOTA) : ''}</div>${acc ? `<div class="acc">${acc}</div>` : ''}</div>`;
+  let h = '';
+  if (cru.length) h += `<label class="lbl" style="color:#C62828">🔴 Entregas cruzadas por recuperar (${cru.length})</label>` + cru.map(x => it(x, 'cru', `<button class="btn ok" data-recup="${x.TARJETA}">✅ Se recuperó la tarjeta</button>`)).join('');
+  if (rei.length) h += `<label class="lbl" style="color:#8A3B00">📝 Contratos por reimprimir (${rei.length})</label>` + rei.map(x => it(x, '', `<button class="btn prim" data-reimp="${x.TARJETA}">📄 Llegó el contrato nuevo</button>`)).join('');
+  if (lis.length) h += `<label class="lbl" style="color:#2E7D32">✅ Listas para entregar en resguardo (${lis.length})</label>` + lis.map(x => it(x, 'ok', '')).join('');
+  if (cerr.length) h += `<label class="lbl">Cerradas hoy (${cerr.length})</label>` + cerr.map(x => it(x, 'ok', '')).join('');
+  $('s-inc').innerHTML = h || '<div class="vacio">✅ Sin incidencias pendientes.</div>';
+  const rDe = x => PAQ.byT[x.TARJETA] || { t: x.TARJETA, c: x.CURP, n: x.BECARIO, cct: x.CCT };
+  $('s-inc').querySelectorAll('[data-reimp]').forEach(b => b.onclick = () => {
+    const x = _inc.find(y => y.TARJETA === b.dataset.reimp && y.TIPO === 'REIMPRESION' && !INC_FIN.includes(y.ESTATUS));
+    abrirModal('📄 Contrato reimpreso', x.BECARIO, `<div class="res info"><p>¿Ya tienes el contrato nuevo de <b>${esc(x.BECARIO)}</b>?</p><p>La tarjeta queda <b>lista para entregar</b>: se entrega cuando regrese el becario (rezago o CABB).</p></div>
+      <input class="main-input" id="rp-nota" placeholder="Nota (opcional)" style="width:100%;margin-top:8px"><button class="btn ok full" id="rp-si" style="margin-top:10px">Sí, llegó el contrato nuevo</button>`);
+    $('rp-si').onclick = () => { registrar('REIMPRESO', rDe(x), '', { nota: $('rp-nota').value.trim() }); x.ESTATUS = 'CONTRATO RECIBIDO · LISTA PARA ENTREGAR'; $('modal').hidden = true; pintarIncidencias(); setTimeout(cargarIncidencias, 5000); };
+  });
+  $('s-inc').querySelectorAll('[data-recup]').forEach(b => b.onclick = () => {
+    const x = _inc.find(y => y.TARJETA === b.dataset.recup && y.TIPO === 'CRUZADA' && y.ESTATUS === 'POR RECUPERAR');
+    abrirModal('✅ Tarjeta recuperada', x.BECARIO, `<div class="res info"><p>Tarjeta de <b>${esc(x.BECARIO)}</b> recuperada de <b>${esc(x.RECIBIO_NOMBRE || x.RECIBIO_CURP || '—')}</b>.</p><p>Si quien se la llevó tiene su propia tarjeta retenida, queda <b>liberada</b>.</p></div>
+      <label class="lbl">¿El acuse quedó firmado por la persona equivocada?</label>
+      <label class="op-r"><input type="radio" name="rc-ac" value="FIRMADO" checked> Sí: reimprimir el contrato</label><label class="op-r"><input type="radio" name="rc-ac" value="LIMPIO"> No: la tarjeta queda lista para entregar</label>
+      <input class="main-input" id="rc-nota" placeholder="Nota: cómo y cuándo se recuperó" style="width:100%;margin-top:8px"><button class="btn ok full" id="rc-si" style="margin-top:10px">Registrar recuperación</button>`);
+    $('rc-si').onclick = () => { const acuse = document.querySelector('input[name=rc-ac]:checked').value;
+      registrar('RECUPERADA', rDe(x), '', { acuse, nota: $('rc-nota').value.trim() });
+      if (x.RECIBIO_TARJETA && EST[x.RECIBIO_TARJETA] && EST[x.RECIBIO_TARJETA].e === E.RETENIDA) EST[x.RECIBIO_TARJETA] = { e: E.DEVUELTA, ev: 'LIBERAR', d: 'LIBERADA', op: SES.op, h: horaAhora(), pend: 1 };
+      x.ESTATUS = acuse === 'FIRMADO' ? 'RECUPERADA · ACUSE A REIMPRIMIR' : 'RECUPERADA · LISTA PARA ENTREGAR'; $('modal').hidden = true; pintarIncidencias(); pintarAlertaCruzadas(); setTimeout(cargarIncidencias, 5000); };
+  });
+  pintarAlertaCruzadas();
+}
+$('s-inc-r').onclick = () => elegirParaIncidencia('REIMPRESION');
+$('s-inc-c').onclick = () => elegirParaIncidencia('CRUZADA');
+$('s-inc-sol').onclick = async () => {
+  if (!_inc) await cargarIncidencias();
+  const rei = (_inc || []).filter(x => x.TIPO === 'REIMPRESION' && x.ESTATUS === 'SOLICITAR REIMPRESIÓN');
+  if (!rei.length) { toast('No hay contratos por reimprimir'); return; }
+  const L = ['*SARE 1507 · SOLICITUD DE REIMPRESIÓN DE CONTRATO*', fechaLarga(hoyISO()) + ' · ' + rei.length + ' contrato' + (rei.length > 1 ? 's' : ''), ''];
+  rei.forEach((x, i) => L.push((i + 1) + '. *' + x.BECARIO + '*', '   CURP: ' + x.CURP + ' · ' + x.CCT + (x.ESCUELA ? ' · ' + x.ESCUELA : ''), '   Tarjeta: ' + x.TARJETA + ' · ' + x.FOLIO, '   Motivo: ' + x.MOTIVO.toLowerCase() + ' (' + x.SE_EQUIVOCO + ')', ''));
+  L.push('_Las tarjetas quedan en resguardo hasta recibir el contrato nuevo._');
+  const t = L.join('\n');
+  abrirModal('📤 Solicitud de reimpresión', rei.length + ' por reimprimir', `<div style="white-space:pre-wrap;font-size:.8rem;line-height:1.4;background:var(--gris);border-radius:10px;padding:10px 12px;max-height:45vh;overflow:auto">${esc(t).replace(/\*([^*\n]+)\*/g, '<b>$1</b>').replace(/_([^_\n]+)_/g, '<i>$1</i>')}</div>
+    <a class="btn ok full" style="text-align:center;text-decoration:none" href="https://wa.me/?text=${encodeURIComponent(t)}" target="_blank" rel="noopener">💬 Enviar por WhatsApp</a>`);
+};
+
+// ════════════════════════════════════════════════════════════
 //  4) SUPERVISOR
 // ════════════════════════════════════════════════════════════
 let _cuadre = null;
 function pintarSupervisorLocal() {
-  const c = { conv: PAQ.lista.length, rec: 0, bus: 0, mesa: 0, ent: 0, dev: 0 };
+  const c = { conv: PAQ.lista.length, rec: 0, bus: 0, mesa: 0, ent: 0, dev: 0, rei: 0, cru: 0 };
   PAQ.lista.forEach(r => { if (r.rec === 'RECIBIDA') c.rec++; const x = EST[r.t]; if (!x) return;
-    if (x.e === E.BUSQUEDA) c.bus++; else if (x.e === E.MESA) c.mesa++; else if (x.e === E.ENTREGADA) c.ent++; else if (x.e === E.DEVUELTA) c.dev++; });
+    if (x.e === E.BUSQUEDA) c.bus++; else if (x.e === E.MESA) c.mesa++; else if (x.e === E.ENTREGADA) c.ent++; else if (x.e === E.DEVUELTA) c.dev++;
+    else if (x.e === E.REIMP) c.rei++; else if (x.e === E.CRUZADA) c.cru++; });
+  pintarAlertaCruzadas();
   const pct = c.rec ? Math.round(c.ent * 100 / c.rec) : 0;
   // 14-nov: "en mesa/canasta" y "en búsqueda" son PARTE de las sin entregar (no se suman): se muestran como dato informativo debajo
   $('s-kpis').style.gridTemplateColumns = 'repeat(2,minmax(0,1fr))';
   $('s-kpis').innerHTML = kpi(c.conv, 'Convocados') + kpi(c.ent, 'Entregadas · ' + pct + '%') +
     `<div class="kpi" style="grid-column:1/-1"><b>${fmt(c.rec - c.ent)}</b><small>Sin entregar (en resguardo)</small>
-      <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #E5D9DE;font-size:.8rem;color:#666">De ellas: <b style="display:inline;font-size:.92rem">${fmt(c.mesa)}</b> estaban en mesa/canasta · <b style="display:inline;font-size:.92rem">${fmt(c.bus)}</b> en búsqueda${c.dev ? ` · <b style="display:inline;font-size:.92rem">${fmt(c.dev)}</b> quitadas por corrección` : ''}</div></div>`;
+      <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #E5D9DE;font-size:.8rem;color:#666">De ellas: <b style="display:inline;font-size:.92rem">${fmt(c.mesa)}</b> estaban en mesa/canasta · <b style="display:inline;font-size:.92rem">${fmt(c.bus)}</b> en búsqueda${c.dev ? ` · <b style="display:inline;font-size:.92rem">${fmt(c.dev)}</b> quitadas por corrección` : ''}${c.rei ? ` · <b style="display:inline;font-size:.92rem;color:#8A3B00">${fmt(c.rei)}</b> en reimpresión` : ''}${c.cru ? ` · <b style="display:inline;font-size:.92rem;color:#C62828">${fmt(c.cru)}</b> entregas cruzadas` : ''}</div></div>`;
   if (_cuadre) pintarCuadre();
 }
 async function actualizarCuadre() {
   $('s-act').textContent = '⏳ Consultando la hoja…';
   await sincronizar();
+  cargarIncidencias();
   try { _cuadre = await llamar({ accion: 'cuadre', detalle: 1, fecha: SES.fecha }, 30000); $('s-act').textContent = 'Actualizado a las ' + horaAhora() + ' · ' + fechaLarga(_cuadre.fecha); pintarSupervisorLocal(); }
   catch (e) { $('s-act').textContent = '⛔ ' + e.message + ' (se muestran los datos de este celular)'; }
   pintarMunicipios(true);
@@ -1313,6 +1548,15 @@ function textoCierre(c) {
     if (c.enMesa.length) L.push('   • No entregadas (regresaron de mesa / canasta): ' + c.enMesa.length);
     if (c.enBusqueda.length) L.push('   • Pasaron filtro y siguen en búsqueda: ' + c.enBusqueda.length);
     if (c.devueltas.length) L.push('   • No entregadas: ' + c.devueltas.length);
+    L.push('');
+  }
+  const inc = c.incidencias || [];
+  if (inc.length || c.incPorRecuperar) {
+    const rei = inc.filter(x => x.tipo === 'REIMPRESION'), cru = inc.filter(x => x.tipo === 'CRUZADA');
+    L.push('*🚨 Incidencias del día*');
+    if (rei.length) { L.push('   • 📝 Reimpresión de contrato: ' + rei.length); rei.forEach(x => L.push('      – ' + x.nombre + ' (' + x.cct + '): ' + x.motivo.toLowerCase() + ' · ' + x.quien)); }
+    if (cru.length) { L.push('   • 🔴 Entregas cruzadas: ' + cru.length + ' · por recuperar: ' + cru.filter(x => x.estatus === 'POR RECUPERAR').length); cru.forEach(x => L.push('      – Tarjeta de ' + x.nombre + ' → se la llevó ' + x.recibio + ' · ' + x.quien + ' · ' + x.estatus.toLowerCase())); }
+    if (c.incPorRecuperar) L.push('   • ⚠️ Total de tarjetas por recuperar en el operativo: ' + c.incPorRecuperar);
     L.push('');
   }
   L.push('*🧾 Entregadas por operador' + (hayFis ? ' (sistema / físico)' : '') + '*');
