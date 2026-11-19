@@ -154,7 +154,13 @@ label.lbl{display:block;font-family:Montserrat,sans-serif;font-weight:800;font-s
 .inc-it .nm{font-weight:800}.inc-it .sub{font-size:.78rem;color:#555;margin-top:2px}
 .inc-it .acc{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.inc-it .acc .btn{margin:0;padding:7px 10px;font-size:.78rem}
 .inc-alerta{background:#C62828;color:#fff;border-radius:12px;padding:10px 12px;margin:0 0 12px;font-weight:700}
-.c-inc{background:#FFE0B2;color:#8A3B00}.c-cru{background:#FFCDD2;color:#9B1C1C}
+.c-inc{background:#FFE0B2;color:#8A3B00}
+/* 18-nov B: historial de procesos anteriores */
+.hist{border:2px solid #1565C0;background:#E3F2FD;color:#0D3B73;border-radius:12px;padding:10px 12px;margin-top:10px}
+.hist .t{font-family:Montserrat,sans-serif;font-weight:800;font-size:.95rem;margin-bottom:4px}
+.hist.pos{border-color:#D08A1A;background:#FFF8E1;color:#5C3600}.hist.no{border-color:#bbb;background:#f5f5f5;color:#555}
+.hist ul{margin:4px 0 6px 18px;padding:0;font-size:.84rem}.hist li{margin:3px 0}
+.hist .ir{background:#0D47A1;color:#fff;border-radius:8px;padding:8px 10px;font-weight:700;font-size:.86rem;margin-top:6px}.c-cru{background:#FFCDD2;color:#9B1C1C}
 table{width:100%;border-collapse:collapse;font-size:.82rem}
 th,td{text-align:left;padding:7px 9px;border-bottom:1px solid #F5EFF2;vertical-align:top}
 th{font-family:Montserrat,sans-serif;font-size:.64rem;text-transform:uppercase;color:#666;background:rgba(0,0,0,.04)}
@@ -444,7 +450,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '18-nov-26 A';
+const APP_VERSION = '18-nov-26 B';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -495,7 +501,7 @@ function leerCodigoCurp(txt) {
   if (!m) return null;
   const c = m[0].split(''); [4, 5, 6, 7, 8, 9, 17].forEach(i => { if (c[i] === 'O') c[i] = '0'; });
   const p = String(txt).split('|'), fix = x => String(x || '').replace(/[#?�]/g, 'Ñ').toUpperCase().trim();
-  return { curp: c.join(''), nombre: p.length >= 5 ? [fix(p[4]), fix(p[2]), fix(p[3])].filter(Boolean).join(' ') : '' };
+  return { curp: c.join(''), nombre: p.length >= 5 ? [fix(p[4]), fix(p[2]), fix(p[3])].filter(Boolean).join(' ') : '', nom: p.length >= 5 ? fix(p[4]) : '', ap1: p.length >= 5 ? fix(p[2]) : '', ap2: p.length >= 5 ? fix(p[3]) : '' };
 }
 const extraerCurp = t => (leerCodigoCurp(t) || {}).curp || '';
 // Documentos que debe traer, según la edad (díptico BUEMS)
@@ -907,7 +913,7 @@ function nuevoDia() {
   $('acc-msg').textContent = '📅 Es un nuevo día: elige tu función para hoy. Lo de ayer ya quedó guardado' + (COLA.length ? ' (se siguen enviando ' + COLA.length + ' pendientes)' : '') + '.';
   return true;
 }
-function arrancar() { pestañas(); cabecera(); pintarMiniCal(); pintarSync(); pintarStats(); ver(SES.rol); sincronizar(); pintarMunicipios(); }
+function arrancar() { pestañas(); cabecera(); pintarMiniCal(); pintarSync(); pintarStats(); ver(SES.rol); sincronizar(); pintarMunicipios(); if (SES.rol !== 'MESA') setTimeout(cargarHistorial, 6000); }
 // 16-nov: avance por MUNICIPIO en la pantalla principal (con señal; se actualiza cada 5 min). Al tocarlo se ve el detalle.
 const nomMun = k => k.replace(/ DE (MORELOS|BERRIOZABAL)$/, '').toLowerCase().replace(/(^|\s)\S/g, x => x.toUpperCase());
 async function pintarMunicipios(fresco) {
@@ -1016,9 +1022,12 @@ async function filtrar(texto) {
   let j = await buscarEnIndice(curp);
   if (!j) { try { j = await llamar({ accion: 'consulta', curp }, 12000); if (j.encontrado) j.recibida = j.recepcion === 'RECIBIDA'; } catch (e) { j = null; } }
   let html, motivo;
-  if (!j) { motivo = 'NO CONVOCADO HOY'; html = `<div class="res mal"><div class="t">⛔ NO ESTÁ CONVOCADO HOY</div><p>No se pudo consultar su fecha (sin señal). Regrésale la CURP.</p></div>`; }
+  let hist = null;
+  if (!j || !j.encontrado) { box.innerHTML = '<div class="vacio">⏳ No está en este operativo: revisando el historial de procesos anteriores…</div>'; hist = await historialDe(curp, lc); }
+  if (!j) { motivo = 'NO CONVOCADO HOY'; html = `<div class="res mal"><div class="t">⛔ NO ESTÁ CONVOCADO HOY</div><p>No se pudo consultar su fecha (sin señal). Regrésale la CURP.</p></div>${htmlHistorial(hist)}`; }
   else if (!j.encontrado) {
-    motivo = 'NO ESTA EN EL NOMINAL'; html = `<div class="res mal"><div class="t">⛔ NO ESTÁ EN EL NOMINAL</div><p>No hay tarjeta para esta CURP en este operativo. Regrésale la CURP y avisa al supervisor (no se busca por nombre).</p>${avisoEdad(curp)}</div>`;
+    motivo = hist && hist.seguro ? 'TARJETA DE PROCESO ANTERIOR: SARE LAS AMERICAS' : 'NO ESTA EN EL NOMINAL';
+    html = `<div class="res mal"><div class="t">⛔ NO ESTÁ EN EL NOMINAL DE ESTE OPERATIVO</div><p>${hist && (hist.seguro || (hist.posibles && hist.posibles.length)) ? 'No tiene tarjeta en este operativo.' : 'No hay tarjeta para esta CURP en este operativo. Regrésale la CURP y avisa al supervisor (no se busca por nombre).'}</p>${avisoEdad(curp)}</div>${htmlHistorial(hist)}`;
   }
   else if (!j.recibida) { motivo = 'TARJETA NO RECIBIDA'; html = `<div class="res mal"><div class="t">⛔ SU TARJETA NO LLEGÓ</div>${cctLinea({ cct: j.cct, esc: j.escuela, mun: j.municipio })}${avisoEdad(curp)}</div>`; }
   else { motivo = 'OTRA FECHA: ' + (j.fecha ? fechaLarga(j.fecha) : 'sin fecha');
@@ -1052,11 +1061,14 @@ function pintarFiltro() {
 // ════════════════════════════════════════════════════════════
 //  2) BÚSQUEDA
 // ════════════════════════════════════════════════════════════
-function buscarTarjeta(texto) {
+async function buscarTarjeta(texto) {
   const box = $('b-res'), curp = extraerCurp(texto);
   if (curp) {
     const r = PAQ.byC[curp];
-    if (!r) { box.innerHTML = `<div class="res mal"><div class="t">⛔ No está convocado hoy</div><p>${esc(curp)}</p></div>`; beep(false); return; }
+    if (!r) { box.innerHTML = `<div class="res mal"><div class="t">⛔ No está convocado hoy</div><p>${esc(curp)}</p></div>`; beep(false);
+      const j = await buscarEnIndice(curp);
+      if (j && !j.encontrado) { const lc = leerCodigoCurp(texto); box.innerHTML = `<div class="res mal"><div class="t">⛔ No está en el nominal de este operativo</div><p>${esc(curp)}</p></div>` + htmlHistorial(await historialDe(curp, lc)); }
+      return; }
     box.innerHTML = `<div class="res info"><div class="t">🔎 Buscar esta tarjeta</div>${datos(r, true)}<p>${chipEstado(EST[r.t])} ${textoEstado(EST[r.t])}</p><p class="hint" style="color:inherit">Al encontrarla, escanéala para mandarla a mesa.</p></div>`;
     return;
   }
@@ -1255,7 +1267,10 @@ function pintarMesa() {
   $('m-num').textContent = '· ' + SES.op;
   const mias = misEntregas(), devs = LOG.filter(l => l.tipo === 'mal').length;
   $('m-kpis').innerHTML = kpi(mias.length, 'Expedientes contados') + kpi(COLA.length, 'Por enviar', COLA.length > 0);
-  $('m-log').innerHTML = mias.slice().reverse().map((r, i) => `<div class="it"><div><div class="nm">${mias.length - i}. ${esc(r.n)}</div><div class="sub">${esc(r.c)} · ${esc(r.cct)} · ${esc(String(EST[r.t].eh || EST[r.t].h || '').slice(-8))}</div></div><button class="btn borde" data-quitar="${r.t}" style="padding:5px 9px;font-size:.7rem">Quitar</button></div>`).join('') || '<div class="vacio">Aún no entregas tarjetas.</div>';
+  // 18-nov B: en el orden en que se escanearon (1 = el primero) para pasar lista contra el paquete de expedientes
+  const hEnt = r => String(EST[r.t].eh || EST[r.t].h || '').slice(-8);
+  mias.sort((a, b) => hEnt(a) < hEnt(b) ? -1 : hEnt(a) > hEnt(b) ? 1 : 0);
+  $('m-log').innerHTML = (mias.length > 1 ? '<p class="hint" style="margin:0 0 6px">En el orden en que los escaneaste: 1 = el primero. Si no cuadra, pasa lista contra tus expedientes.</p>' : '') + mias.map((r, i) => `<div class="it"><div><div class="nm">${i + 1}. ${esc(r.n)}</div><div class="sub">${esc(r.c)} · ${esc(r.cct)} · ${esc(String(EST[r.t].eh || EST[r.t].h || '').slice(-8))}</div></div><button class="btn borde" data-quitar="${r.t}" style="padding:5px 9px;font-size:.7rem">Quitar</button></div>`).join('') || '<div class="vacio">Aún no entregas tarjetas.</div>';
   $('m-fin').innerHTML = !mias.length ? '' : COLA.length
     ? `<div class="res aviso" style="margin:0 0 10px"><div class="t">🟠 Faltan ${COLA.length} por enviar</div><p>Deja la app abierta con señal hasta que diga <b>Por enviar 0</b>. No cierres sesión ni borres nada.</p></div>`
     : `<div class="res ok" style="margin:0 0 10px"><div class="t">✅ Todo enviado a la hoja</div><p>Con <b>Por enviar 0</b> ya terminaste: <b>no quites ni borres nada</b>. Esta lista es solo del ${esc(fechaLarga(SES.fecha))}; mañana la app abre el día nuevo sola y empieza en 0.</p></div>`;
@@ -1286,12 +1301,107 @@ function pedirQuitar(r) {
 }
 
 // ════════════════════════════════════════════════════════════
+//  18-nov B: HISTORIAL DE PROCESOS ANTERIORES (BUEMS y JEF)
+//  Si la CURP no está en el nominal de este operativo, se busca en los mismos .csv del módulo "Historial de procesos
+//  anteriores" (ya publicados junto a esta página). Con CURP: coincidencia exacta. Sin CURP (mayo-junio y agosto 2026):
+//  por el nombre que trae el QR de la CURP y, si solo hay CURP tecleada, por sus 4 primeras letras (posible: se confirma
+//  preguntando el nombre). Si tiene tarjeta: se canaliza a la SARE del Centro de Servicios Administrativos Las Américas.
+// ════════════════════════════════════════════════════════════
+const SARE_AMERICAS = 'SARE ubicada en el CENTRO DE SERVICIOS ADMINISTRATIVOS LAS AMÉRICAS';
+const HIST_CON = [['bueems_feb.csv', 'BUEMS'], ['bueems.csv', 'BUEMS'], ['jef.csv', 'JEF']];
+const HIST_SIN = [['bueems_mayo_junio_2026.csv', 'BUEMS', 'MAYO-JUNIO 2026'], ['bueems_agosto_2026.csv', 'BUEMS', 'AGOSTO 2026'], ['jef_mayo_junio_2026.csv', 'JEF', 'MAYO-JUNIO 2026'], ['jef_agosto_2026.csv', 'JEF', 'AGOSTO 2026']];
+let HIST = null, _histP = null;
+const nH = t => String(t || '').toUpperCase().replace(/Ñ/g, '#').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/#/g, 'Ñ').replace(/[^A-ZÑ ]/g, ' ').replace(/\s+/g, ' ').trim();
+const PART_CURP = new Set('DA DAS DE DEL DER DI DIE DD EL LA LOS LAS LE LES MAC MC VAN VON Y'.split(' '));
+const MALAS_CURP = new Set('BACA BAKA BUEI BUEY CACA CACO CAGA CAGO CAKA CAKO COGE COGI COJA COJE COJI COJO COLA CULO FALO FETO GETA GUEI GUEY JETA JOTO KACA KACO KAGA KAGO KAKA KAKO KOGE KOGI KOJA KOJE KOJI KOJO KOLA KULO LILO LOCA LOCO LOKA LOKO MAME MAMO MEAR MEAS MEON MIAR MION MOCO MOKO MULA MULO NACA NACO PEDA PEDO PENE PIPI PITO POPO PUTA PUTO QULO RATA ROBA ROBE ROBO RUIN SENO TETA VACA VAGA VAGO VAKA VUEI VUEY WUEI WUEY'.split(' '));
+// 4 primeras letras de la CURP a partir de nombre y apellidos (reglas de RENAPO)
+function claveCurp(nom, ap1, ap2) {
+  const sp = w => { const t = nH(w).split(' ').filter(x => x && !PART_CURP.has(x)); return t.length ? t.join('') : nH(w).replace(/ /g, ''); };
+  let ns = nH(nom).split(' ').filter(x => x && !PART_CURP.has(x)); if (ns.length > 1 && ['JOSE', 'J', 'MARIA', 'MA', 'M'].includes(ns[0])) ns = ns.slice(1);
+  const a = sp(ap1), b = sp(ap2), L = x => x ? (x[0] === 'Ñ' ? 'X' : x[0]) : 'X';
+  let k = L(a) + ((a.slice(1).match(/[AEIOU]/) || ['X'])[0]) + L(b) + L(ns[0] || '');
+  if (MALAS_CURP.has(k)) k = k[0] + 'X' + k.slice(2);
+  return k;
+}
+// "NOMBRES APELLIDO1 APELLIDO2" → claves posibles (las partículas DE, LA… van con el apellido que sigue)
+function clavesDeNombre(full) {
+  const t = nH(full).split(' ').filter(Boolean), g = []; let buf = [];
+  for (const w of t) { buf.push(w); if (!PART_CURP.has(w)) { g.push(buf.join(' ')); buf = []; } } if (buf.length) g.push(buf.join(' '));
+  const out = new Set();
+  if (g.length >= 3) out.add(claveCurp(g.slice(0, -2).join(' '), g[g.length - 2], g[g.length - 1]));
+  if (g.length >= 2) out.add(claveCurp(g.slice(0, -1).join(' '), g[g.length - 1], ''));
+  return [...out];
+}
+function filasCSV(txt) {
+  const L = txt.replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim()); if (!L.length) return [];
+  const sep = L[0].split(';').length > L[0].split(',').length ? ';' : ',';
+  const parte = l => { const o = []; let c = '', q = false; for (let i = 0; i < l.length; i++) { const ch = l[i]; if (ch === '"') { if (q && l[i + 1] === '"') { c += '"'; i++; } else q = !q; } else if (ch === sep && !q) { o.push(c); c = ''; } else c += ch; } o.push(c); return o.map(x => x.trim()); };
+  const h = parte(L[0]).map(x => x.toUpperCase());
+  return L.slice(1).map(l => { const v = parte(l), o = {}; h.forEach((k, i) => { o[k] = v[i] || ''; }); return o; });
+}
+async function leerCSV(url) {
+  const r = await fetch(url, { cache: 'default' }); if (!r.ok) throw new Error(url + ': ' + r.status);
+  const b = await r.arrayBuffer();
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(b); } catch (e) { return new TextDecoder('windows-1252').decode(b); }
+}
+function cargarHistorial() {
+  if (_histP) return _histP;
+  _histP = (async () => {
+    const H = { porC: new Map(), sin: [], porK: new Map(), porN: new Map(), con: [] };
+    const res = await Promise.allSettled([...HIST_CON, ...HIST_SIN].map(a => leerCSV(a[0])));
+    let ok = 0;
+    HIST_CON.forEach((a, i) => { if (res[i].status !== 'fulfilled') return; ok++;
+      filasCSV(res[i].value).forEach(r => { const c = String(r.CURP || '').toUpperCase().trim(); if (c.length !== 18) return;
+        const nombre = (r['NOMBRE COMPLETO'] || [r['NOMBRE DEL BECARIO'] || r['NOMBRE DEL TUTOR'] || r.NOMBRE, r['PRIMER APELLIDO'], r['SEGUNDO APELLIDO']].join(' ')).replace(/\s+/g, ' ').trim().toUpperCase();
+        const x = { prog: a[1], proc: (r.PROCESO || '').toUpperCase(), cct: r.CCT || '', nombre, curp: c }, l = H.porC.get(c) || [];
+        if (!l.some(y => y.prog === x.prog && y.proc === x.proc)) { l.push(x); H.porC.set(c, l); if (l.length === 1) H.con.push(x); } }); });
+    HIST_SIN.forEach((a, k) => { const i = HIST_CON.length + k; if (res[i].status !== 'fulfilled') return; ok++;
+      filasCSV(res[i].value).forEach(r => { const nombre = String(r['NOMBRE COMPLETO'] || '').replace(/\s+/g, ' ').trim().toUpperCase(); if (!nombre) return;
+        const x = { prog: a[1], proc: a[2] + (r.FECHA ? ' (' + r.FECHA + ')' : ''), cct: r.CCT || '', esc: r['NOMBRE DE LA ESCUELA'] || '', nombre, nn: nH(nombre), sinCurp: true };
+        const j = H.sin.push(x) - 1; (H.porN.get(x.nn) || H.porN.set(x.nn, []).get(x.nn)).push(j);
+        clavesDeNombre(nombre).forEach(c => (H.porK.get(c) || H.porK.set(c, []).get(c)).push(j)); }); });
+    if (!ok) { _histP = null; throw new Error('Sin señal para descargar el historial'); }
+    HIST = H; return H;
+  })();
+  _histP.catch(() => { _histP = null; });
+  return _histP;
+}
+// Resultado: { seguro, lista, posibles } · seguro = por CURP o por nombre completo del QR
+async function historialDe(curp, lc) {
+  let H; try { H = await Promise.race([cargarHistorial(), new Promise((_, no) => setTimeout(() => no(new Error('tarda')), 15000))]); } catch (e) { return { error: e.message }; }
+  const lista = (H.porC.get(curp) || []).map(x => Object.assign({ como: 'CURP' }, x));
+  const nombre = lc && lc.nombre ? nH(lc.nombre) : '';
+  const porNom = nombre ? (H.porN.get(nombre) || []).map(j => Object.assign({ como: 'NOMBRE' }, H.sin[j])) : [];
+  const vistos = new Set(porNom.map(x => x.nombre + x.proc)), tiene = (x, w) => !w || (' ' + x.nn + ' ').includes(' ' + nH(w) + ' ');
+  // Misma clave de CURP; si el QR trae nombre: mismos apellidos y primer nombre (le puede faltar el segundo nombre) → seguro
+  let posibles = (H.porK.get(curp.slice(0, 4)) || []).map(j => H.sin[j]).filter(x => !vistos.has(x.nombre + x.proc));
+  if (nombre) { const ok = posibles.filter(x => tiene(x, lc.ap1) && tiene(x, lc.ap2) && tiene(x, nH(lc.nom).split(' ')[0])); porNom.push(...ok.map(x => Object.assign({ como: 'NOMBRE' }, x))); posibles = []; }
+  return { seguro: lista.length + porNom.length > 0, lista: lista.concat(porNom), posibles };
+}
+async function historialPorNombre(q) {
+  let H; try { H = await cargarHistorial(); } catch (e) { return null; }
+  const tk = nH(q).split(' ').filter(w => w.length > 1); if (!tk.length) return [];
+  const ok = x => { const b = ' ' + (x.nn || nH(x.nombre)) + ' '; return tk.every(w => b.includes(' ' + w + ' ')); };
+  return H.con.filter(ok).concat(H.sin.filter(ok)).slice(0, 15).map(x => Object.assign({ como: 'NOMBRE' }, x, { proc: x.sinCurp ? x.proc : (H.porC.get(x.curp) || [x]).map(y => y.prog + ' ' + y.proc).join(' · ') }));
+}
+function htmlHistorial(h) {
+  if (!h) return '';
+  if (h.error) return `<div class="hist no"><div class="t">🗂️ Historial de procesos anteriores</div><p>No se pudo revisar (${esc(h.error)}). Búscalo con señal en "Consultar".</p></div>`;
+  const li = x => `<li><b>${esc(x.prog)} · ${esc(x.proc || 'proceso anterior')}</b><br>${esc(x.nombre)}${x.curp ? ' · ' + esc(x.curp) : ''}${x.cct ? ' · ' + esc(x.cct) : ''}${x.esc ? ' · ' + esc(x.esc) : ''}${x.como === 'NOMBRE' && !h.porNombre ? ' <i>(coincide por nombre completo: confirma la escuela)</i>' : ''}</li>`;
+  const ir = `<div class="ir">➡️ Canalízalo a la ${SARE_AMERICAS}: ahí se entregan las tarjetas de procesos anteriores.</div>`;
+  if (h.porNombre) return `<div class="hist pos"><div class="t">🗂️ En el historial de procesos anteriores hay ${h.lista.length} con ese nombre</div><ul>${h.lista.map(li).join('')}</ul><p>Confirma con su CURP o su escuela. Si es la persona:</p>${ir}</div>`;
+  if (h.seguro) return `<div class="hist"><div class="t">🗂️ TIENE TARJETA DE UN PROCESO ANTERIOR</div><ul>${h.lista.map(li).join('')}</ul>${ir}</div>`;
+  if (h.posibles && h.posibles.length) return `<div class="hist pos"><div class="t">🔎 POSIBLE TARJETA DE UN PROCESO ANTERIOR</div><p>Ese listado no tiene CURP. Pregúntale su nombre completo y su escuela: ¿es alguno de estos?</p><ul>${h.posibles.slice(0, 6).map(li).join('')}</ul><p><b>Si coincide:</b></p>${ir}</div>`;
+  return `<div class="hist no"><div class="t">🗂️ Tampoco aparece en el historial de procesos anteriores (BUEMS y JEF)</div></div>`;
+}
+
+// ════════════════════════════════════════════════════════════
 //  18-nov: INCIDENCIAS — reimpresión de contrato y entrega cruzada
 //  Mesa: el operador detiene la entrega, avisa al padre/tutor y al supervisor, regresa la tarjeta al paquete de su CCT
 //  y la registra aquí. La tarjeta queda bloqueada (no se cuenta ni se manda a mesa) hasta que el supervisor la resuelva.
 // ════════════════════════════════════════════════════════════
 let INC_PEND = '';
-const MOT_REIMP = ['NOMBRE MAL ESCRITO', 'CURP INCORRECTA', 'NÚMERO DE TARJETA INCORRECTO', 'FECHA INCORRECTA', 'FIRMA O HUELLA EN LUGAR EQUIVOCADO', 'TACHADURAS O ENMENDADURAS', 'DATOS DE OTRO BECARIO', 'OTRO'];
+const MOT_REIMP = ['NOMBRE MAL ESCRITO', 'CURP INCORRECTA', 'NÚMERO DE TARJETA INCORRECTO', 'FECHA INCORRECTA', 'FIRMA O HUELLA EN LUGAR EQUIVOCADO', 'TACHADURAS O ENMENDADURAS', 'DATOS DE OTRO BECARIO', 'INE VENCIDA (NO SE REVISÓ LA VIGENCIA)', 'OTRO'];
 const MOT_CRUZ = ['HOMÓNIMO (MISMO NOMBRE)', 'NO SE REVISARON LOS DATOS DEL SOBRE', 'NO SE PREGUNTARON LOS DATOS AL INICIAR', 'SOBRES O EXPEDIENTES REVUELTOS EN LA MESA', 'OTRO'];
 function bloqueInc(r, x, filtro) {
   const t = x.e === E.REIMP ? '⛔ CONTRATO EN REIMPRESIÓN' : x.e === E.CRUZADA ? '⛔ ENTREGA CRUZADA' : '⛔ TARJETA RETENIDA';
@@ -1683,7 +1793,8 @@ async function consultar(texto) {
     cajaCurp('c-curp', lc.curp, lc.nombre);
     if (PAQ.byC[lc.curp]) { box.innerHTML = '<div class="lista">' + fila(PAQ.byC[lc.curp]) + '</div>'; return; }
     const j = await buscarEnIndice(lc.curp);
-    box.innerHTML = !j ? '<div class="vacio">Sin el calendario completo en el celular: vuelve a entrar con señal.</div>' : !j.encontrado ? '<div class="res mal"><div class="t">No está en el nominal</div></div>' :
+    if (j && !j.encontrado) { box.innerHTML = '<div class="vacio">⏳ Revisando el historial de procesos anteriores…</div>'; box.innerHTML = '<div class="res mal"><div class="t">No está en el nominal de este operativo</div></div>' + htmlHistorial(await historialDe(lc.curp, lc)); return; }
+    box.innerHTML = !j ? '<div class="vacio">Sin el calendario completo en el celular: vuelve a entrar con señal.</div>' :
       `<div class="res info"><div class="t">${j.fecha ? 'Convocado el ' + esc(fechaLarga(j.fecha)) + (j.cita ? ' · ' + esc(j.cita) + ' h' : '') : 'Aún sin fecha'}</div>${j.sede ? `<p><b>📍 ${esc(j.sede)}</b></p>` : ''}${cctLinea({ cct: j.cct, esc: j.escuela, mun: j.municipio })}<p>Tarjeta: ${j.recibida ? 'recibida' : 'NO RECIBIDA'}</p></div>`;
     return;
   }
@@ -1693,7 +1804,8 @@ async function consultar(texto) {
   box.innerHTML = '<div class="vacio">🔎 No es de este día; buscando en todo el nominal…</div>';
   const j = await nombreEnNominal(texto);
   if (j && j.lista && j.lista.length) { box.innerHTML = '<div id="c-coin"></div>'; return listaNominal('c-coin', j, texto, curp => consultar(curp)); }
-  box.innerHTML = `<div class="vacio">${msgSinNombre(texto, j)}</div>`;
+  const h = await historialPorNombre(texto);
+  box.innerHTML = `<div class="vacio">${msgSinNombre(texto, j)}</div>` + (h && h.length ? htmlHistorial({ seguro: false, lista: h, porNombre: true }) : '');
 }
 function pintarSesion() {
   const otros = ['FILTRO', 'BUSQUEDA', 'MESA', 'SUPERVISOR'].filter(r => r !== SES.rol && rolPermitido(r));
