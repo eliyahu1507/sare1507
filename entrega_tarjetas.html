@@ -155,6 +155,20 @@ label.lbl{display:block;font-family:Montserrat,sans-serif;font-weight:800;font-s
 .inc-it .acc{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.inc-it .acc .btn{margin:0;padding:7px 10px;font-size:.78rem}
 .inc-alerta{background:#C62828;color:#fff;border-radius:12px;padding:10px 12px;margin:0 0 12px;font-weight:700}
 .c-inc{background:#FFE0B2;color:#8A3B00}
+/* 19-nov: tablero */
+.tb-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:0 0 12px}
+.tb-k{background:#fff;border:1px solid var(--gris);border-radius:12px;padding:10px 12px}
+.tb-k b{display:block;font-family:Montserrat,sans-serif;font-size:1.45rem;color:var(--guinda);font-variant-numeric:tabular-nums}
+.tb-k span{font-size:.75rem;color:#555}
+.tb-ley{display:flex;gap:12px;flex-wrap:wrap;font-size:.74rem;color:#444;margin:4px 0 8px}
+.tb-ley i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.tb-bar{display:grid;grid-template-columns:52px 1fr 46px;gap:6px;align-items:center;font-size:.75rem;margin:5px 0}
+.tb-bar .tr{display:flex;height:16px;border-radius:5px;overflow:hidden;background:#ECE7E9}
+.tb-bar .tr span{display:block;height:100%}
+.tb-bar .p{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.tb-svg{width:100%;height:auto;display:block}
+.tb-rk{display:grid;grid-template-columns:30px 1fr auto;gap:6px;align-items:center;padding:5px 0;border-bottom:1px dashed var(--gris);font-size:.83rem}
+.tb-rk b{font-variant-numeric:tabular-nums}
 /* 18-nov B: historial de procesos anteriores */
 .hist{border:2px solid #1565C0;background:#E3F2FD;color:#0D3B73;border-radius:12px;padding:10px 12px;margin-top:10px}
 .hist .t{font-family:Montserrat,sans-serif;font-weight:800;font-size:.95rem;margin-bottom:4px}
@@ -396,7 +410,7 @@ td.num,th.num{text-align:right}
       <div class="card-b"><div class="inc-btns" style="margin-bottom:10px"><button class="btn inc-r full" id="s-inc-r">📝 Registrar reimpresión de contrato</button><button class="btn inc-c full" id="s-inc-c">🔴 Registrar entrega cruzada</button></div>
         <div id="s-inc"><div class="vacio">Toca Actualizar para ver las incidencias.</div></div>
         <button class="btn borde full" id="s-inc-sol">📤 Solicitud de reimpresión (WhatsApp)</button></div></div>
-    <div class="card"><div class="card-h"><span class="e">🧮</span><div><h2>Entregadas por operador</h2><small>Escribe lo que contó cada uno: la diferencia sale sola</small></div></div>
+    <div class="card"><div class="card-h"><span class="e">🧮</span><div><h2>Ranking de entregas por operador</h2><small>De mayor a menor · escribe lo que contó cada uno: la diferencia sale sola</small></div></div>
       <div class="tabla"><table><thead><tr><th>Operador</th><th class="num">Sistema</th><th class="num">Conteo físico</th><th class="num">Dif.</th></tr></thead><tbody id="s-ops"></tbody></table></div><button class="btn ok full" id="s-fis-guardar" hidden>💾 Guardar conteo físico en la hoja</button><p class="hint" id="s-fis-msg"></p></div>
     <div class="card"><div class="card-h"><span class="e">📤</span><div><h2>Cierre del día</h2><small>Al terminar: actualiza los datos y manda el reporte al jefe por WhatsApp</small></div></div>
       <div class="card-b"><button class="btn prim full" id="s-cierre" style="margin-top:0">📤 Preparar reporte de cierre</button><p class="hint" id="s-cierre-msg"></p>
@@ -410,6 +424,13 @@ td.num,th.num{text-align:right}
       <div class="card-b"><button class="btn borde full" id="u-cargar" style="margin-top:0">Ver y editar usuarios</button><div id="u-box"></div></div></div>
     <div class="card"><div class="card-h"><span class="e">✖</span><div><h2>Anular una entrega</h2><small>Solo si se registró por error: queda en resguardo</small></div></div>
       <div class="card-b"><input class="main-input" id="s-anular-t" placeholder="Tarjeta o CURP" style="width:100%"><input class="main-input" id="s-anular-m" placeholder="Motivo" style="width:100%;margin-top:8px"><button class="btn mal full" id="s-anular">Anular entrega</button></div></div>
+  </section>
+
+  <!-- ═════ TABLERO (19-nov) ═════ -->
+  <section id="v-TABLERO" hidden>
+    <div class="card"><div class="card-h"><span class="e">📈</span><div><h2>Tablero del operativo</h2><small id="t-hora">Avance por día de atención, acumulado y ranking</small></div></div>
+      <div class="card-b"><div class="inc-btns"><button class="btn prim full" id="t-act">🔄 Actualizar</button><button class="btn ok full" id="t-wa">💬 Enviar resumen al jefe (WhatsApp)</button></div></div></div>
+    <div id="t-cont"><div class="vacio">Toca Actualizar.</div></div>
   </section>
 
   <!-- ═════ CONSULTA ═════ -->
@@ -450,7 +471,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '18-nov-26 B';
+const APP_VERSION = '19-nov-26 A';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -459,6 +480,9 @@ const ROLES = { FILTRO: '🪪 Filtro', BUSQUEDA: '🔎 Búsqueda', MESA: '🤝 M
 const E = { BUSQUEDA: 'EN BUSQUEDA', MESA: 'EN MESA', ENTREGADA: 'ENTREGADA', DEVUELTA: 'DEVUELTA', REIMP: 'REIMPRESION', CRUZADA: 'ENTREGA CRUZADA', RETENIDA: 'RETENIDA' };
 const E_INC = [E.REIMP, E.CRUZADA, E.RETENIDA];   // 18-nov: incidencias: la tarjeta queda en resguardo y no se entrega
 const esInc = x => !!(x && E_INC.includes(x.e));
+// 19-nov: operadores de mayor a menor número de entregas (empate: por nombre) y medallas del podio
+const rankingOps = m => Object.keys(m || {}).sort((a, b) => m[b] - m[a] || a.localeCompare(b));
+const medalla = i => ['🥇', '🥈', '🥉'][i] || (i + 1) + '.';
 const SYNC_MS = 8000;
 
 // ════════════════════════════════════════════════════════════
@@ -813,7 +837,7 @@ function reloj() { const d = new Date(); $('reloj').textContent = d.toLocaleTime
 // ════════════════════════════════════════════════════════════
 function pestañas() {
   const ic = { FILTRO: '🪪', BUSQUEDA: '🔎', MESA: '🤝', SUPERVISOR: '📊' };
-  const t = [[SES.rol, ic[SES.rol], ROLES[SES.rol].slice(3)], ['CONSULTA', '🔍', 'Consultar'], ['SESION', '⚙️', 'Sesión']];
+  const t = [[SES.rol, ic[SES.rol], ROLES[SES.rol].slice(3)], ...(SES.rol === 'SUPERVISOR' ? [['TABLERO', '📈', 'Tablero']] : []), ['CONSULTA', '🔍', 'Consultar'], ['SESION', '⚙️', 'Sesión']];
   $('tabs').innerHTML = t.map(([k, i, l]) => `<button class="tab" data-v="${k}" aria-selected="false"><span class="i">${i}</span>${l}</button>`).join('');
   $('tabs').hidden = false;
   $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => ver(b.dataset.v));
@@ -832,6 +856,7 @@ function refrescarVista() {
   if (!SES || !PAQ) return;
   if (_vista === 'FILTRO') pintarFiltro(); else if (_vista === 'BUSQUEDA') pintarBusqueda(); else if (_vista === 'MESA') pintarMesa();
   else if (_vista === 'SUPERVISOR') pintarSupervisorLocal(); else if (_vista === 'SESION') pintarSesion();
+  else if (_vista === 'TABLERO') { if (_tab) pintarTablero(); else cargarTablero(); }
 }
 function cabecera() {
   $('b-rol').hidden = false; $('b-rol').textContent = ROLES[SES.rol];
@@ -1301,6 +1326,70 @@ function pedirQuitar(r) {
 }
 
 // ════════════════════════════════════════════════════════════
+//  19-nov: TABLERO DEL OPERATIVO (Supervisor y jefe)
+//  Cada tarjeta cuenta en su DÍA DE ATENCIÓN (si se entregó otro día, sube a su día: así el % de cada día siempre está al
+//  corriente) y, aparte, en el día en que se ENTREGÓ. La línea es el % acumulado del operativo al cierre de cada día.
+// ════════════════════════════════════════════════════════════
+let _tab = null;
+const C_SU = '#9F2241', C_DES = '#BC955C', C_PEN = '#ECE7E9';
+const pctN = (a, b) => b ? Math.round(a * 1000 / b) / 10 : 0;
+const dm = f => f.slice(8, 10) + '/' + f.slice(5, 7);
+async function cargarTablero() {
+  $('t-act').disabled = true; $('t-hora').textContent = '⏳ Consultando la hoja…';
+  try { _tab = await llamar({ accion: 'tablero', fresco: 1 }, 45000); pintarTablero(); }
+  catch (e) { $('t-hora').textContent = '⛔ ' + e.message; if (!_tab) $('t-cont').innerHTML = '<div class="vacio">No se pudo consultar: intenta con señal.</div>'; }
+  finally { $('t-act').disabled = false; }
+}
+function graficaAcumulado(dias) {
+  const p = dias.filter(d => d.acumRec > 0); if (p.length < 1) return '';
+  const W = 340, H = 170, L = 30, R = 22, T = 16, B = 26, n = p.length, x = i => L + (n === 1 ? (W - L - R) / 2 : i * (W - L - R) / (n - 1)), y = v => T + (100 - v) * (H - T - B) / 100;
+  const pts = p.map((d, i) => [x(i), y(pctN(d.acumEnt, d.acumRec)), pctN(d.acumEnt, d.acumRec), d.fecha]);
+  const grid = [0, 25, 50, 75, 100].map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#E5DFE1" stroke-width="1"/><text x="${L - 4}" y="${y(v) + 3}" text-anchor="end" font-size="9" fill="#777">${v}%</text>`).join('');
+  const area = `<path d="M${pts[0][0]},${y(0)} ${pts.map(q => 'L' + q[0] + ',' + q[1]).join(' ')} L${pts[n - 1][0]},${y(0)} Z" fill="${C_SU}" opacity=".12"/>`;
+  const linea = `<polyline points="${pts.map(q => q[0] + ',' + q[1]).join(' ')}" fill="none" stroke="${C_SU}" stroke-width="2.5" stroke-linejoin="round"/>`;
+  const salto = Math.ceil(n / 7);
+  const marcas = pts.map((q, i) => `<circle cx="${q[0]}" cy="${q[1]}" r="3.5" fill="#fff" stroke="${C_SU}" stroke-width="2"><title>${dm(q[3])}: ${q[2]}% acumulado</title></circle>` +
+    (i % salto === 0 || i === n - 1 ? `<text x="${q[0]}" y="${H - 8}" text-anchor="middle" font-size="9" fill="#555">${dm(q[3])}</text>` : '') +
+    (i === n - 1 || i % salto === 0 ? `<text x="${q[0]}" y="${q[1] - 7}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${C_SU}">${q[2]}%</text>` : '')).join('');
+  return `<svg class="tb-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Porcentaje acumulado entregado al cierre de cada día">${grid}${area}${linea}${marcas}</svg>`;
+}
+function pintarTablero() {
+  const t = _tab; if (!t) return;
+  $('t-hora').textContent = 'Datos de la hoja a las ' + String(t.hora).slice(-8, -3) + ' · cada tarjeta cuenta en su día de atención';
+  const op = t.dias.filter(d => d.rec > 0), ult = t.dias[t.dias.length - 1] || { acumRec: 0, acumEnt: 0 };
+  const rec = op.reduce((a, d) => a + d.rec, 0), ent = op.reduce((a, d) => a + d.ent, 0), hoyD = t.dias.find(d => d.fecha === t.hoy);
+  const kp = (v, l) => `<div class="tb-k"><b>${v}</b><span>${l}</span></div>`;
+  let h = `<div class="tb-kpis">${kp(pctN(ent, rec) + '%', 'Avance de los días ya atendidos')}${kp(fmt(ent) + ' / ' + fmt(rec), 'Entregadas / tarjetas recibidas')}${kp(fmt(rec - ent), 'Pendientes de esos días')}${kp(hoyD ? fmt(hoyD.sede) : '—', 'Entregadas hoy en sede' + (hoyD && hoyD.sedeOtros ? ' (' + fmt(hoyD.sedeOtros) + ' de otros días)' : ''))}</div>`;
+  h += `<div class="card"><div class="card-h"><span class="e">📈</span><div><h2>Avance acumulado al cierre de cada día</h2><small>Entregadas hasta ese día ÷ tarjetas de los días ya atendidos</small></div></div><div class="card-b">${graficaAcumulado(t.dias) || '<div class="vacio">Sin datos.</div>'}</div></div>`;
+  h += `<div class="card"><div class="card-h"><span class="e">📅</span><div><h2>Por día de atención</h2><small>% entregado de los convocados de cada día, al día de hoy</small></div></div><div class="card-b">
+    <div class="tb-ley"><span><i style="background:${C_SU}"></i>En su día</span><span><i style="background:${C_DES}"></i>Otro día después</span><span><i style="background:${C_PEN};border:1px solid #ccc"></i>Pendiente</span></div>
+    ${op.map(d => `<div class="tb-bar"><span>${dm(d.fecha)}</span><div class="tr" title="${d.suDia} en su día · ${d.despues} después · ${d.pend} pendientes"><span style="width:${pctN(d.suDia, d.rec)}%;background:${C_SU}"></span><span style="width:${pctN(d.despues, d.rec)}%;background:${C_DES}"></span></div><span class="p">${pctN(d.ent, d.rec)}%</span></div>`).join('')}
+    <div class="tabla" style="margin-top:10px"><table><thead><tr><th>Día</th><th>Municipio</th><th class="num">Tarjetas</th><th class="num">Entreg.</th><th class="num">Su día</th><th class="num">Después</th><th class="num">Pend.</th><th class="num">%</th></tr></thead><tbody>
+    ${op.map(d => `<tr><td>${dm(d.fecha)}</td><td>${esc(String(d.municipio).replace(/ DE (MORELOS|BERRIOZ[AÁ]BAL)/, ''))}</td><td class="num">${fmt(d.rec)}</td><td class="num">${fmt(d.ent)}</td><td class="num">${fmt(d.suDia)}</td><td class="num">${fmt(d.despues)}</td><td class="num">${fmt(d.pend)}</td><td class="num"><b>${pctN(d.ent, d.rec)}%</b></td></tr>`).join('')}
+    <tr><td colspan="2"><b>TOTAL</b></td><td class="num"><b>${fmt(rec)}</b></td><td class="num"><b>${fmt(ent)}</b></td><td class="num">${fmt(op.reduce((a, d) => a + d.suDia, 0))}</td><td class="num">${fmt(op.reduce((a, d) => a + d.despues, 0))}</td><td class="num"><b>${fmt(rec - ent)}</b></td><td class="num"><b>${pctN(ent, rec)}%</b></td></tr></tbody></table></div></div></div>`;
+  h += `<div class="card"><div class="card-h"><span class="e">📦</span><div><h2>Lo que se entregó cada día</h2><small>En sede, de ese día y de días anteriores; fuera de operativo = CABB / rezago</small></div></div><div class="card-b"><div class="tabla"><table><thead><tr><th>Día</th><th class="num">Entregadas</th><th class="num">De ese día</th><th class="num">De otros días</th><th class="num">Fuera de oper.</th><th class="num">% acumulado</th></tr></thead><tbody>
+    ${t.dias.filter(d => d.sede > 0 || d.rec > 0).map(d => `<tr><td>${dm(d.fecha)}${d.rec ? '' : ' <span class="chip c-gr">sin operativo</span>'}</td><td class="num"><b>${fmt(d.sede)}</b></td><td class="num">${fmt(d.sede - d.sedeOtros)}</td><td class="num">${fmt(d.sedeOtros)}</td><td class="num">${fmt(d.fuera)}</td><td class="num">${pctN(d.acumEnt, d.acumRec)}%</td></tr>`).join('')}</tbody></table></div></div></div>`;
+  const mu = t.municipios || {};
+  h += `<div class="card"><div class="card-h"><span class="e">🗺️</span><div><h2>Por municipio</h2><small>Días ya atendidos</small></div></div><div class="card-b">${Object.keys(mu).sort().map(k => { const x = mu[k];
+    return `<div class="tb-bar" style="grid-template-columns:92px 1fr 46px"><span>${esc(k.replace(/ DE (MORELOS|BERRIOZ[AÁ]BAL)/, ''))}</span><div class="tr" title="${x.ent} de ${x.rec}"><span style="width:${pctN(x.ent - x.fuera, x.rec)}%;background:${C_SU}"></span><span style="width:${pctN(x.fuera, x.rec)}%;background:${C_DES}"></span></div><span class="p">${pctN(x.ent, x.rec)}%</span></div><p class="hint" style="margin:0 0 6px">${fmt(x.ent)} de ${fmt(x.rec)} · pendientes ${fmt(x.rec - x.ent)}${x.fuera ? ' · ' + fmt(x.fuera) + ' fuera de operativo (dorado)' : ''}</p>`; }).join('') || '<div class="vacio">Sin datos.</div>'}</div></div>`;
+  h += `<div class="card"><div class="card-h"><span class="e">🏆</span><div><h2>Ranking de operadores</h2><small>Entregas de todo el operativo</small></div></div><div class="card-b">${(t.ranking || []).map((r, i) => `<div class="tb-rk"><span>${medalla(i)}</span><span>${esc(r.op)}<br><small style="color:#777">${r.dias} día${r.dias === 1 ? '' : 's'}</small></span><b>${fmt(r.n)}</b></div>`).join('') || '<div class="vacio">Sin entregas.</div>'}</div></div>`;
+  if (t.futuros && t.futuros.length) h += `<div class="card"><div class="card-h"><span class="e">🗓️</span><div><h2>Próximos días</h2><small>Tarjetas recibidas por atender</small></div></div><div class="card-b">${t.futuros.map(d => `<div class="tb-rk" style="grid-template-columns:52px 1fr auto"><span>${dm(d.fecha)}</span><span>${esc(String(d.municipio || '').replace(/ DE (MORELOS|BERRIOZ[AÁ]BAL)/, ''))}</span><b>${fmt(d.rec)}</b></div>`).join('')}</div></div>`;
+  $('t-cont').innerHTML = h;
+}
+function textoTablero(t) {
+  const op = t.dias.filter(d => d.rec > 0), rec = op.reduce((a, d) => a + d.rec, 0), ent = op.reduce((a, d) => a + d.ent, 0);
+  const L = ['*SARE 1507 · AVANCE DEL OPERATIVO DE ENTREGA*', fechaLarga(hoyISO()) + ' · ' + String(t.hora).slice(-8, -3) + ' h', '',
+    '*📊 Avance: ' + pctN(ent, rec) + '%* · ' + fmt(ent) + ' de ' + fmt(rec) + ' · pendientes ' + fmt(rec - ent), '', '*📅 Por día de atención* (entregadas / tarjetas · %)'];
+  op.forEach(d => L.push('   • ' + dm(d.fecha) + ': ' + fmt(d.ent) + '/' + fmt(d.rec) + ' · *' + pctN(d.ent, d.rec) + '%*' + (d.despues ? ' (' + d.despues + ' entregadas después)' : '')));
+  const mu = t.municipios || {}; if (Object.keys(mu).length) { L.push('', '*🗺️ Por municipio*'); Object.keys(mu).sort().forEach(k => { const x = mu[k]; L.push('   • ' + k + ': ' + fmt(x.ent) + '/' + fmt(x.rec) + ' · ' + pctN(x.ent, x.rec) + '%'); }); }
+  if ((t.ranking || []).length) { L.push('', '*🏆 Ranking de operadores (operativo)*'); t.ranking.slice(0, 10).forEach((r, i) => L.push('   ' + medalla(i) + ' ' + r.op + ': ' + fmt(r.n))); }
+  L.push('', '_' + (USUARIO && USUARIO.NOMBRE ? USUARIO.NOMBRE : 'Supervisor') + '_');
+  return L.join('\n');
+}
+$('t-act').onclick = cargarTablero;
+$('t-wa').onclick = () => { if (!_tab) { toast('Primero toca Actualizar', true); return; } window.open('https://wa.me/?text=' + encodeURIComponent(textoTablero(_tab)), '_blank'); };
+
+// ════════════════════════════════════════════════════════════
 //  18-nov B: HISTORIAL DE PROCESOS ANTERIORES (BUEMS y JEF)
 //  Si la CURP no está en el nominal de este operativo, se busca en los mismos .csv del módulo "Historial de procesos
 //  anteriores" (ya publicados junto a esta página). Con CURP: coincidencia exacta. Sin CURP (mayo-junio y agosto 2026):
@@ -1403,6 +1492,23 @@ function htmlHistorial(h) {
 let INC_PEND = '';
 const MOT_REIMP = ['NOMBRE MAL ESCRITO', 'CURP INCORRECTA', 'NÚMERO DE TARJETA INCORRECTO', 'FECHA INCORRECTA', 'FIRMA O HUELLA EN LUGAR EQUIVOCADO', 'TACHADURAS O ENMENDADURAS', 'DATOS DE OTRO BECARIO', 'INE VENCIDA (NO SE REVISÓ LA VIGENCIA)', 'OTRO'];
 const MOT_CRUZ = ['HOMÓNIMO (MISMO NOMBRE)', 'NO SE REVISARON LOS DATOS DEL SOBRE', 'NO SE PREGUNTARON LOS DATOS AL INICIAR', 'SOBRES O EXPEDIENTES REVUELTOS EN LA MESA', 'OTRO'];
+// 19-nov: la lista incluye los motivos que agregaron supervisor o búsqueda (pestaña "Motivos incidencias"); OTRO siempre al final
+function motivosDe(tipo) {
+  const base = (tipo === 'CRUZADA' ? MOT_CRUZ : MOT_REIMP).filter(m => m !== 'OTRO'), extra = ((LOGIN && LOGIN.motivosInc) || {})[tipo] || [];
+  return base.concat(extra.filter(m => !base.includes(m)), ['OTRO']);
+}
+const puedeAgregarMotivo = () => !!(LOGIN && (LOGIN.admin || LOGIN.busqueda));
+function htmlOtroMotivo() {
+  return `<div id="inc-otro-box" hidden><input class="main-input" id="inc-otro" maxlength="80" placeholder="Escribe el motivo (obligatorio)" style="width:100%;margin-top:6px">
+    ${puedeAgregarMotivo() ? '<label class="op-r"><input type="checkbox" id="inc-add" checked> Agregarlo a la lista para todos</label>' : '<p class="hint">Se registra con lo que escribas. El supervisor puede agregarlo a la lista.</p>'}</div>`;
+}
+function motivoElegido(motivo) {   // devuelve {motivo, nuevo} o null si falta escribirlo
+  if (motivo !== 'OTRO') return { motivo, nuevo: false };
+  const t = $('inc-otro').value.trim().toUpperCase().replace(/\s+/g, ' ');
+  if (!t) return null;
+  return { motivo: t, nuevo: !!($('inc-add') && $('inc-add').checked) };
+}
+function recordarMotivo(tipo, m) { if (!LOGIN) return; LOGIN.motivosInc = LOGIN.motivosInc || {}; const l = (LOGIN.motivosInc[tipo] = LOGIN.motivosInc[tipo] || []); if (!l.includes(m)) l.push(m); lsSet('ent_login', LOGIN); }
 function bloqueInc(r, x, filtro) {
   const t = x.e === E.REIMP ? '⛔ CONTRATO EN REIMPRESIÓN' : x.e === E.CRUZADA ? '⛔ ENTREGA CRUZADA' : '⛔ TARJETA RETENIDA';
   const p = x.e === E.REIMP ? (filtro ? 'Su contrato se está reimprimiendo por un error en el llenado. Hoy no se le puede entregar: se le avisará cuando esté listo.' : 'No se entrega hasta que llegue el contrato nuevo. Regresa la tarjeta al paquete de su CCT (resguardo).')
@@ -1455,7 +1561,7 @@ function abrirIncidencia(tipo, r) {
   const pasos = cru
     ? `<div class="inc-pasos grave"><b>🚨 Es grave. Haz esto en este orden:</b><ol><li>Si la persona sigue en la sede, <b>pídele la tarjeta en ese momento</b>.</li><li>Avisa al supervisor o al jefe <b>de inmediato</b>.</li><li>Separa los expedientes y acuses de los dos becarios.</li><li>Registra aquí lo que pasó.</li></ol></div>`
     : `<div class="inc-pasos"><b>Antes de registrar:</b><ol><li>Detén la entrega.</li><li>Explica al padre, madre o tutor y al becario que su contrato se va a reimprimir y que se le avisará para recoger la tarjeta.</li><li>Avisa al supervisor.</li><li>Regresa la tarjeta al paquete de su CCT.</li></ol></div>`;
-  const motivos = (cru ? MOT_CRUZ : MOT_REIMP).map(c => `<button class="causal" data-c="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('');
+  const motivos = motivosDe(tipo).map(c => `<button class="causal" data-c="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('');
   const ops = opsConocidos();
   abrirModal(cru ? '🔴 Entrega cruzada' : '📝 Reimpresión de contrato', cru ? 'Tarjeta entregada a otro becario' : 'Error en el llenado del acuse / contrato',
     ficha + pasos +
@@ -1469,7 +1575,7 @@ function abrirIncidencia(tipo, r) {
       <div id="inc-acuse" hidden><label class="lbl">¿El acuse quedó firmado por la persona equivocada?</label>
         <label class="op-r"><input type="radio" name="inc-ac" value="FIRMADO" checked> Sí: hay que reimprimir el contrato</label>
         <label class="op-r"><input type="radio" name="inc-ac" value="LIMPIO"> No: el acuse está limpio</label></div>` : '') +
-    `<label class="lbl">${cru ? '¿Cómo pasó?' : '¿Qué error tiene el acuse?'}</label><div class="causales" id="inc-mot">${motivos}</div>
+    `<label class="lbl">${cru ? '¿Cómo pasó?' : '¿Qué error tiene el acuse?'}</label><div class="causales" id="inc-mot">${motivos}</div>${htmlOtroMotivo()}
      <label class="lbl">${cru ? '¿Quién entregó la tarjeta?' : '¿Quién llenó el acuse?'}</label>
      ${sup ? '' : `<label class="op-r"><input type="radio" name="inc-q" value="YO" checked> Yo (${esc(SES.op)})</label><label class="op-r"><input type="radio" name="inc-q" value="OTRO"> Otro operador</label>`}
      <input class="main-input" id="inc-quien" list="inc-ops" autocomplete="off" placeholder="Nombre del operador" style="width:100%;${sup ? '' : 'display:none'}"><datalist id="inc-ops">${ops.map(o => `<option value="${esc(o)}">`).join('')}</datalist>
@@ -1477,7 +1583,8 @@ function abrirIncidencia(tipo, r) {
      <button class="btn ${cru ? 'mal' : 'prim'} full" id="inc-ok" style="margin-top:12px">${cru ? '🔴 Registrar entrega cruzada' : '📝 Registrar reimpresión'}</button>
      <button class="btn full" id="inc-no" style="margin-top:6px">Cancelar</button>`);
   let motivo = '', recibio = null;
-  $('inc-mot').querySelectorAll('button').forEach(b => b.onclick = () => { motivo = b.dataset.c; $('inc-mot').querySelectorAll('button').forEach(y => y.setAttribute('aria-pressed', y === b)); });
+  $('inc-mot').querySelectorAll('button').forEach(b => b.onclick = () => { motivo = b.dataset.c; $('inc-mot').querySelectorAll('button').forEach(y => y.setAttribute('aria-pressed', y === b));
+    $('inc-otro-box').hidden = motivo !== 'OTRO'; if (motivo === 'OTRO') $('inc-otro').focus(); });
   document.querySelectorAll('input[name=inc-q]').forEach(i => i.onchange = () => { const otro = document.querySelector('input[name=inc-q]:checked').value === 'OTRO'; $('inc-quien').style.display = otro ? '' : 'none'; if (otro) $('inc-quien').focus(); });
   if (cru) {
     const ir = selectorPersona('inc-rq', 'inc-rl', y => {
@@ -1492,9 +1599,12 @@ function abrirIncidencia(tipo, r) {
   $('inc-no').onclick = () => { $('modal').hidden = true; };
   $('inc-ok').onclick = () => {
     if (!motivo) { toast(cru ? 'Elige cómo pasó' : 'Elige qué error tiene el acuse', true); return; }
+    const me = motivoElegido(motivo); if (!me) { toast('Escribe el motivo', true); $('inc-otro').focus(); return; }
     const qRad = document.querySelector('input[name=inc-q]:checked'), quien = (sup || (qRad && qRad.value === 'OTRO')) ? $('inc-quien').value.trim().toUpperCase() : SES.op;
     if (!quien) { toast('Escribe quién ' + (cru ? 'entregó la tarjeta' : 'llenó el acuse'), true); $('inc-quien').focus(); return; }
-    const nota = $('inc-nota').value.trim(), extra = { motivo, quien, nota };
+    const nota = $('inc-nota').value.trim(), extra = { motivo: me.motivo, quien, nota };
+    if (me.nuevo) { extra.motivoNuevo = true; recordarMotivo(tipo, me.motivo); }
+    motivo = me.motivo;
     if (cru) {
       const rn = $('inc-rn').value.trim().toUpperCase();
       if (!recibio && !rn) { toast('Indica quién se llevó la tarjeta (búscalo o escribe su nombre)', true); return; }
@@ -1548,7 +1658,7 @@ function pintarIncidencias() {
     <div class="sub">${esc(x.FOLIO)} · ${esc(x.CURP)} · ${esc(x.CCT)}${x.CAJA ? ' · caja ' + esc(x.CAJA) : ''}${x.CONSECUTIVO ? ' · cons. ' + esc(x.CONSECUTIVO) : ''} · tarjeta …${esc(x.TARJETA.slice(-6))}</div>
     <div class="sub"><b>${esc(x.MOTIVO)}</b> · ${x.TIPO === 'CRUZADA' ? 'entregó' : 'llenó'}: ${esc(x.SE_EQUIVOCO)} · ${esc(x.REGISTRO)}</div>
     ${x.TIPO === 'CRUZADA' ? `<div class="sub">Se la llevó: <b>${esc(x.RECIBIO_NOMBRE || x.RECIBIO_CURP || '—')}</b>${x.RECIBIO_CURP ? ' · ' + esc(x.RECIBIO_CURP) : ''}</div>` : ''}
-    <div class="sub">Estatus: <b>${esc(x.ESTATUS)}</b>${x.NOTA ? ' · ' + esc(x.NOTA) : ''}</div>${acc ? `<div class="acc">${acc}</div>` : ''}</div>`;
+    <div class="sub">Estatus: <b>${esc(x.ESTATUS)}</b>${x.NOTA ? ' · ' + esc(x.NOTA) : ''}</div><div class="acc">${acc || ''}<button class="btn borde" data-motivo="${esc(x.FOLIO)}">✏️ Cambiar motivo</button></div></div>`;
   let h = '';
   if (cru.length) h += `<label class="lbl" style="color:#C62828">🔴 Entregas cruzadas por recuperar (${cru.length})</label>` + cru.map(x => it(x, 'cru', `<button class="btn ok" data-recup="${x.TARJETA}">✅ Se recuperó la tarjeta</button>`)).join('');
   if (rei.length) h += `<label class="lbl" style="color:#8A3B00">📝 Contratos por reimprimir (${rei.length})</label>` + rei.map(x => it(x, '', `<button class="btn prim" data-reimp="${x.TARJETA}">📄 Llegó el contrato nuevo</button>`)).join('');
@@ -1556,6 +1666,7 @@ function pintarIncidencias() {
   if (cerr.length) h += `<label class="lbl">Cerradas hoy (${cerr.length})</label>` + cerr.map(x => it(x, 'ok', '')).join('');
   $('s-inc').innerHTML = h || '<div class="vacio">✅ Sin incidencias pendientes.</div>';
   const rDe = x => PAQ.byT[x.TARJETA] || { t: x.TARJETA, c: x.CURP, n: x.BECARIO, cct: x.CCT };
+  $('s-inc').querySelectorAll('[data-motivo]').forEach(b => b.onclick = () => cambiarMotivo(_inc.find(y => y.FOLIO === b.dataset.motivo)));
   $('s-inc').querySelectorAll('[data-reimp]').forEach(b => b.onclick = () => {
     const x = _inc.find(y => y.TARJETA === b.dataset.reimp && y.TIPO === 'REIMPRESION' && !INC_FIN.includes(y.ESTATUS));
     abrirModal('📄 Contrato reimpreso', x.BECARIO, `<div class="res info"><p>¿Ya tienes el contrato nuevo de <b>${esc(x.BECARIO)}</b>?</p><p>La tarjeta queda <b>lista para entregar</b>: se entrega cuando regrese el becario (rezago o CABB).</p></div>
@@ -1574,6 +1685,25 @@ function pintarIncidencias() {
       x.ESTATUS = acuse === 'FIRMADO' ? 'RECUPERADA · ACUSE A REIMPRIMIR' : 'RECUPERADA · LISTA PARA ENTREGAR'; $('modal').hidden = true; pintarIncidencias(); pintarAlertaCruzadas(); setTimeout(cargarIncidencias, 5000); };
   });
   pintarAlertaCruzadas();
+}
+function cambiarMotivo(x) {
+  if (!x) return;
+  const tipo = x.TIPO === 'CRUZADA' ? 'CRUZADA' : 'REIMPRESION';
+  abrirModal('✏️ Cambiar motivo', x.FOLIO + ' · ' + x.BECARIO, `<div class="res info" style="margin:0 0 8px"><p>Motivo actual: <b>${esc(x.MOTIVO)}</b></p></div>
+    <label class="lbl">Nuevo motivo</label><div class="causales" id="inc-mot">${motivosDe(tipo).map(c => `<button class="causal" data-c="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('')}</div>${htmlOtroMotivo()}
+    <button class="btn ok full" id="cm-ok" style="margin-top:12px">Guardar motivo</button>`);
+  let motivo = '';
+  $('inc-mot').querySelectorAll('button').forEach(b => b.onclick = () => { motivo = b.dataset.c; $('inc-mot').querySelectorAll('button').forEach(y => y.setAttribute('aria-pressed', y === b));
+    $('inc-otro-box').hidden = motivo !== 'OTRO'; if (motivo === 'OTRO') $('inc-otro').focus(); });
+  $('cm-ok').onclick = async () => {
+    if (!motivo) { toast('Elige el motivo', true); return; }
+    const me = motivoElegido(motivo); if (!me) { toast('Escribe el motivo', true); return; }
+    $('cm-ok').disabled = true; $('cm-ok').textContent = '⏳ Guardando…';
+    try { const j = await llamar({ accion: 'motivoInc', folio: x.FOLIO, motivo: me.motivo, agregar: me.nuevo }, 25000);
+      x.MOTIVO = j.motivo; if (j.motivosInc && LOGIN) { LOGIN.motivosInc = j.motivosInc; lsSet('ent_login', LOGIN); }
+      $('modal').hidden = true; toast('✅ Motivo actualizado'); pintarIncidencias(); }
+    catch (e) { toast('⛔ ' + e.message, true); $('cm-ok').disabled = false; $('cm-ok').textContent = 'Guardar motivo'; }
+  };
 }
 $('s-inc-r').onclick = () => elegirParaIncidencia('REIMPRESION');
 $('s-inc-c').onclick = () => elegirParaIncidencia('CRUZADA');
@@ -1616,7 +1746,7 @@ async function actualizarCuadre() {
   pintarMunicipios(true);
 }
 function pintarCuadre() {
-  const c = _cuadre, ops = Object.keys(c.porOperador).sort();
+  const c = _cuadre, ops = rankingOps(c.porOperador);
   // El conteo físico guardado en la hoja se usa si en este celular no hay uno escrito
   const fis = Object.assign({}, c.fisico || {}, lsGet('ent_fisico_' + c.fecha, {}));
   // 14-nov: entregadas EN SEDE (lo físico de hoy, incluye convocados de otros días) separado de las de los convocados del día
@@ -1627,7 +1757,7 @@ function pintarCuadre() {
     ${c.aMesaSinFiltro ? `<p style="color:var(--rojo)"><b>⚠️ ${fmt(c.aMesaSinFiltro)} enviadas a mesa SIN pasar por filtro</b> (la lista está en el cuadre del día de la hoja). Reforzar filtro.</p>` : ''}</div>`;
   $('s-fis-guardar').hidden = !ops.length;
   $('s-ops').innerHTML = ops.map(k => { const f = fis[k], d = f === undefined || f === '' ? '' : Number(f) - c.porOperador[k];
-    return `<tr><td>${esc(k)}</td><td class="num">${c.porOperador[k]}</td><td class="num"><input class="main-input" data-k="${esc(k)}" inputmode="numeric" value="${f == null ? '' : esc(f)}" style="width:80px;min-width:0;padding:6px;text-align:right"></td><td class="num ${d === '' ? '' : d === 0 ? 'dif-ok' : 'dif-mal'}">${d === '' ? '' : d === 0 ? '✓' : (d > 0 ? '+' : '') + d}</td></tr>`; }).join('') +
+    return `<tr><td>${medalla(ops.indexOf(k))} ${esc(k)}</td><td class="num">${c.porOperador[k]}</td><td class="num"><input class="main-input" data-k="${esc(k)}" inputmode="numeric" value="${f == null ? '' : esc(f)}" style="width:80px;min-width:0;padding:6px;text-align:right"></td><td class="num ${d === '' ? '' : d === 0 ? 'dif-ok' : 'dif-mal'}">${d === '' ? '' : d === 0 ? '✓' : (d > 0 ? '+' : '') + d}</td></tr>`; }).join('') +
     `<tr><td><b>TOTAL</b></td><td class="num"><b>${c.entregadas}</b></td><td class="num"><b>${ops.reduce((a, k) => a + (Number(fis[k]) || 0), 0) || ''}</b></td><td></td></tr>`;
   $('s-ops').querySelectorAll('input').forEach(i => i.onchange = () => { const f = lsGet('ent_fisico_' + c.fecha, {}); f[i.dataset.k] = i.value.trim(); lsSet('ent_fisico_' + c.fecha, f); $('s-fis-msg').textContent = '✏️ Sin guardar en la hoja'; pintarCuadre(); });
   const filaC = x => `<div class="it"><div><div class="nm">${esc(x.nombre)}</div><div class="sub">${esc(x.detalle || '')} ${esc(x.op)}${x.mesa ? ' · mesa ' + esc(x.mesa) : ''} · ${esc(x.hora)}</div>${cctHtml(x.cct)}</div></div>`;
@@ -1640,7 +1770,7 @@ $('s-actualizar').onclick = actualizarCuadre;
 function textoCierre(c) {
   const pct = (a, b) => b ? Math.round(a * 1000 / b) / 10 + '%' : '0%';
   const dia = ((LOGIN && LOGIN.calendario) || []).find(x => x.fecha === c.fecha), sede = dia && dia.escuelas[0] ? dia.escuelas[0].sede : '';
-  const fis = Object.assign({}, c.fisico || {}, lsGet('ent_fisico_' + c.fecha, {})), ops = Object.keys(c.porOperador).sort();
+  const fis = Object.assign({}, c.fisico || {}, lsGet('ent_fisico_' + c.fecha, {})), ops = rankingOps(c.porOperador);
   const totFis = ops.reduce((a, k) => a + (fis[k] !== undefined && fis[k] !== '' ? Number(fis[k]) : 0), 0), hayFis = ops.some(k => fis[k] !== undefined && fis[k] !== '');
   const L = [];
   L.push('*SARE 1507 · CIERRE DE ENTREGA DE TARJETAS*', '*' + fechaLarga(c.fecha).toUpperCase() + '*' + (sede ? '\n📍 ' + sede : ''), '');
@@ -1669,9 +1799,9 @@ function textoCierre(c) {
     if (c.incPorRecuperar) L.push('   • ⚠️ Total de tarjetas por recuperar en el operativo: ' + c.incPorRecuperar);
     L.push('');
   }
-  L.push('*🧾 Entregadas por operador' + (hayFis ? ' (sistema / físico)' : '') + '*');
-  ops.forEach(k => { const f = fis[k], tieneF = f !== undefined && f !== '', d = tieneF ? Number(f) - c.porOperador[k] : 0;
-    L.push('   • ' + k + ': ' + c.porOperador[k] + (tieneF ? ' / ' + f + (d ? ' (' + (d > 0 ? '+' : '') + d + ')' : ' ✓') : '')); });
+  L.push('*🏆 Ranking de entregas por operador' + (hayFis ? ' (sistema / físico)' : '') + '*');
+  ops.forEach((k, i) => { const f = fis[k], tieneF = f !== undefined && f !== '', d = tieneF ? Number(f) - c.porOperador[k] : 0;
+    L.push('   ' + medalla(i) + ' ' + k + ': ' + c.porOperador[k] + (tieneF ? ' / ' + f + (d ? ' (' + (d > 0 ? '+' : '') + d + ')' : ' ✓') : '')); });
   L.push('   *TOTAL: ' + fmt(c.entregadasSede) + (hayFis ? ' / ' + fmt(totFis) : '') + '*', '');
   L.push('_Datos de la hoja a las ' + horaAhora() + ' · ' + (USUARIO && USUARIO.NOMBRE ? USUARIO.NOMBRE : 'Supervisor') + '_');
   return L.join('\n');
@@ -1686,7 +1816,8 @@ async function cargarXLSX() {
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; document.head.appendChild(s); });
 }
 function filasCaptura(c) {
-  const det = c.entregadasPorOperador || {}, ops = Object.keys(det).sort(), filas = [];
+  // 19-nov: de mayor a menor: captura ve primero a quien tiene más tarjetas por capturar
+  const det = c.entregadasPorOperador || {}, ops = Object.keys(det).sort((a, b) => det[b].length - det[a].length || a.localeCompare(b)), filas = [];
   ops.forEach(k => det[k].slice().sort((a, b) => String(a.nombre).localeCompare(String(b.nombre))).forEach((x, i) => filas.push([k, i + 1, x.nombre, String(x.curp || ''), x.cct, String(x.tarjeta)])));
   return { ops, det, filas };
 }
@@ -1709,8 +1840,9 @@ $('s-captura').onclick = async () => {
     if (await cargarXLSX()) {
       const wb = XLSX.utils.book_new();
       const res = [['SARE 1507 · ENTREGAS PARA CAPTURA'], [fc.toUpperCase() + (sede ? ' · ' + sede : '')], ['Generado: ' + new Date().toLocaleString('es-MX') + ' · datos de la hoja central después del cuadre'], [],
-        ['OPERADOR', 'TARJETAS ENTREGADAS']].concat(ops.map(k => [k, det[k].length]), [['TOTAL', filas.length]]);
-      const w1 = XLSX.utils.aoa_to_sheet(res); w1['!cols'] = [{ wch: 52 }, { wch: 22 }]; XLSX.utils.book_append_sheet(wb, w1, 'Resumen');
+        ['De mayor a menor: prioriza la captura de quien tiene más tarjetas.'], [],
+        ['LUGAR', 'OPERADOR', 'TARJETAS POR CAPTURAR', '% DEL DÍA']].concat(ops.map((k, i) => [i + 1, k, det[k].length, Math.round(det[k].length * 1000 / filas.length) / 10 + '%']), [['', 'TOTAL', filas.length, '100%']]);
+      const w1 = XLSX.utils.aoa_to_sheet(res); w1['!cols'] = [{ wch: 7 }, { wch: 52 }, { wch: 22 }, { wch: 11 }]; XLSX.utils.book_append_sheet(wb, w1, 'Resumen');
       const aoa = [['OPERADOR', 'No.', 'NOMBRE DEL BECARIO', 'CURP', 'CCT', 'NÚMERO DE TARJETA']].concat(filas);
       const w2 = XLSX.utils.aoa_to_sheet(aoa);
       for (let r = 1; r < aoa.length; r++) { const ref = XLSX.utils.encode_cell({ r, c: 5 }); w2[ref] = { t: 's', v: aoa[r][5] }; }
@@ -1727,7 +1859,7 @@ $('s-captura').onclick = async () => {
     const f = new File([blob], nombre, { type: blob.type }), puede = !!(navigator.canShare && navigator.canShare({ files: [f] }));
     msg.textContent = '✅ Listo: ' + nombre;
     abrirModal('📊 Excel para captura', fc + ' · ' + fmt(filas.length) + ' tarjetas · ' + ops.length + ' operadores',
-      `<div style="font-size:.85rem;background:var(--gris);border-radius:10px;padding:10px 12px;max-height:38vh;overflow:auto">${ops.map(k => `<div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0"><span>${esc(k)}</span><b>${det[k].length}</b></div>`).join('')}<div style="display:flex;justify-content:space-between;border-top:1px solid var(--borde);margin-top:4px;padding-top:4px"><b>TOTAL</b><b>${fmt(filas.length)}</b></div></div>
+      `<div style="font-size:.85rem;background:var(--gris);border-radius:10px;padding:10px 12px;max-height:38vh;overflow:auto"><p class="hint" style="margin:0 0 4px">De mayor a menor: captura prioriza a quien tiene más.</p>${ops.map((k, i) => `<div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0"><span>${medalla(i)} ${esc(k)}</span><b>${det[k].length}</b></div>`).join('')}<div style="display:flex;justify-content:space-between;border-top:1px solid var(--borde);margin-top:4px;padding-top:4px"><b>TOTAL</b><b>${fmt(filas.length)}</b></div></div>
        ${COLA.length ? '<p style="color:var(--rojo);font-size:.82rem">⚠️ Este celular aún tiene ' + COLA.length + ' por enviar.</p>' : ''}
        ${puede ? '<button class="btn ok full" id="cap-wa">💬 Enviar por WhatsApp</button><p class="hint">Se abre el menú de compartir: elige WhatsApp y el chat de captura.</p>' : '<p class="hint">Este navegador no permite mandar archivos directo a WhatsApp: descárgalo y adjúntalo en el chat de captura.</p>'}
        <button class="btn borde full" id="cap-dl">⬇️ Descargar el archivo</button>`);
