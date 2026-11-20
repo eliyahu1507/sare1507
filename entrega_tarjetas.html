@@ -169,6 +169,12 @@ label.lbl{display:block;font-family:Montserrat,sans-serif;font-weight:800;font-s
 .tb-svg{width:100%;height:auto;display:block}
 .tb-rk{display:grid;grid-template-columns:30px 1fr auto;gap:6px;align-items:center;padding:5px 0;border-bottom:1px dashed var(--gris);font-size:.83rem}
 .tb-rk b{font-variant-numeric:tabular-nums}
+.cct-r{display:grid;grid-template-columns:1fr 50px;gap:2px 8px;padding:7px 0;border-bottom:1px dashed var(--gris);font-size:.8rem}
+.cct-r .nm{font-weight:800}.cct-r .sub{font-size:.72rem;color:#555;grid-column:1/-1}
+.cct-r .p{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.cct-r .tr{grid-column:1/-1;display:flex;height:8px;border-radius:4px;overflow:hidden;background:#ECE7E9}.cct-r .tr span{display:block;height:100%}
+details.tb-d{margin:6px 0;border:1px solid var(--gris);border-radius:10px;padding:6px 10px;background:#fff}
+details.tb-d summary{cursor:pointer;font-weight:700;font-size:.82rem;color:var(--guinda)}
 /* 18-nov B: historial de procesos anteriores */
 .hist{border:2px solid #1565C0;background:#E3F2FD;color:#0D3B73;border-radius:12px;padding:10px 12px;margin-top:10px}
 .hist .t{font-family:Montserrat,sans-serif;font-weight:800;font-size:.95rem;margin-bottom:4px}
@@ -412,6 +418,8 @@ td.num,th.num{text-align:right}
         <button class="btn borde full" id="s-inc-sol">📤 Solicitud de reimpresión (WhatsApp)</button></div></div>
     <div class="card"><div class="card-h"><span class="e">🧮</span><div><h2>Ranking de entregas por operador</h2><small>De mayor a menor · escribe lo que contó cada uno: la diferencia sale sola</small></div></div>
       <div class="tabla"><table><thead><tr><th>Operador</th><th class="num">Sistema</th><th class="num">Conteo físico</th><th class="num">Dif.</th></tr></thead><tbody id="s-ops"></tbody></table></div><button class="btn ok full" id="s-fis-guardar" hidden>💾 Guardar conteo físico en la hoja</button><p class="hint" id="s-fis-msg"></p></div>
+    <div class="card"><div class="card-h"><span class="e">🏫</span><div><h2>Avance por CCT <span id="s-n-cct"></span></h2><small>Convocados del día · menor avance primero · se actualiza con Actualizar</small></div></div>
+      <div class="card-b" id="s-cct"><div class="vacio">Toca Actualizar.</div></div></div>
     <div class="card"><div class="card-h"><span class="e">📤</span><div><h2>Cierre del día</h2><small>Al terminar: actualiza los datos y manda el reporte al jefe por WhatsApp</small></div></div>
       <div class="card-b"><button class="btn prim full" id="s-cierre" style="margin-top:0">📤 Preparar reporte de cierre</button><p class="hint" id="s-cierre-msg"></p>
         <button class="btn ok full" id="s-captura">📊 Excel para captura (entregas por operador)</button><p class="hint" id="s-captura-msg">Después del cuadre: lista de lo entregado por cada operador (becario, CURP, CCT y tarjeta) para que captura sepa a quién pedir evidencias.</p></div></div>
@@ -471,7 +479,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '19-nov-26 A';
+const APP_VERSION = '19-nov-26 B';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -483,6 +491,14 @@ const esInc = x => !!(x && E_INC.includes(x.e));
 // 19-nov: operadores de mayor a menor número de entregas (empate: por nombre) y medallas del podio
 const rankingOps = m => Object.keys(m || {}).sort((a, b) => m[b] - m[a] || a.localeCompare(b));
 const medalla = i => ['🥇', '🥈', '🥉'][i] || (i + 1) + '.';
+// 19-nov B: fila de avance de un CCT (supervisor y tablero)
+const escCorta = t => String(t || '').replace(/ESCUELA PREPARATORIA OFICIAL/i, 'EPO').replace(/CENTRO DE BACHILLERATO TECNOL[OÓ]GICO/i, 'CBT').replace(/CENTRO DE ESTUDIOS TECNOL[OÓ]GICOS/i, 'CET').replace(/\s+/g, ' ').slice(0, 46);
+function filaCct(x, extra) {
+  const p = x.rec ? Math.round(x.ent * 1000 / x.rec) / 10 : 0, su = x.suDia != null ? x.suDia : x.ent;
+  return `<div class="cct-r"><span class="nm">${esc(x.cct)} · ${esc(escCorta(x.escuela))}</span><span class="p">${p}%</span>
+    <div class="tr"><span style="width:${x.rec ? su * 100 / x.rec : 0}%;background:#9F2241"></span><span style="width:${x.rec ? (x.ent - su) * 100 / x.rec : 0}%;background:#BC955C"></span></div>
+    <span class="sub">${fmt(x.ent)} de ${fmt(x.rec)} · pendientes <b>${fmt(x.rec - x.ent)}</b>${extra || ''}</span></div>`;
+}
 const SYNC_MS = 8000;
 
 // ════════════════════════════════════════════════════════════
@@ -1366,7 +1382,9 @@ function pintarTablero() {
     ${op.map(d => `<div class="tb-bar"><span>${dm(d.fecha)}</span><div class="tr" title="${d.suDia} en su día · ${d.despues} después · ${d.pend} pendientes"><span style="width:${pctN(d.suDia, d.rec)}%;background:${C_SU}"></span><span style="width:${pctN(d.despues, d.rec)}%;background:${C_DES}"></span></div><span class="p">${pctN(d.ent, d.rec)}%</span></div>`).join('')}
     <div class="tabla" style="margin-top:10px"><table><thead><tr><th>Día</th><th>Municipio</th><th class="num">Tarjetas</th><th class="num">Entreg.</th><th class="num">Su día</th><th class="num">Después</th><th class="num">Pend.</th><th class="num">%</th></tr></thead><tbody>
     ${op.map(d => `<tr><td>${dm(d.fecha)}</td><td>${esc(String(d.municipio).replace(/ DE (MORELOS|BERRIOZ[AÁ]BAL)/, ''))}</td><td class="num">${fmt(d.rec)}</td><td class="num">${fmt(d.ent)}</td><td class="num">${fmt(d.suDia)}</td><td class="num">${fmt(d.despues)}</td><td class="num">${fmt(d.pend)}</td><td class="num"><b>${pctN(d.ent, d.rec)}%</b></td></tr>`).join('')}
-    <tr><td colspan="2"><b>TOTAL</b></td><td class="num"><b>${fmt(rec)}</b></td><td class="num"><b>${fmt(ent)}</b></td><td class="num">${fmt(op.reduce((a, d) => a + d.suDia, 0))}</td><td class="num">${fmt(op.reduce((a, d) => a + d.despues, 0))}</td><td class="num"><b>${fmt(rec - ent)}</b></td><td class="num"><b>${pctN(ent, rec)}%</b></td></tr></tbody></table></div></div></div>`;
+    <tr><td colspan="2"><b>TOTAL</b></td><td class="num"><b>${fmt(rec)}</b></td><td class="num"><b>${fmt(ent)}</b></td><td class="num">${fmt(op.reduce((a, d) => a + d.suDia, 0))}</td><td class="num">${fmt(op.reduce((a, d) => a + d.despues, 0))}</td><td class="num"><b>${fmt(rec - ent)}</b></td><td class="num"><b>${pctN(ent, rec)}%</b></td></tr></tbody></table></div>
+    <label class="lbl" style="margin-top:12px">🏫 Detalle por CCT (toca un día)</label>
+    ${op.slice().reverse().map(d => { const l = (t.ccts || {})[d.fecha] || []; return `<details class="tb-d"${d.fecha === t.hoy ? ' open' : ''}><summary>${dm(d.fecha)} · ${l.length} CCT · ${pctN(d.ent, d.rec)}%</summary>${l.map(x => filaCct(x, x.ent > x.suDia ? ' · ' + fmt(x.ent - x.suDia) + ' después' : '')).join('') || '<div class="vacio">Sin datos.</div>'}</details>`; }).join('')}</div></div>`;
   h += `<div class="card"><div class="card-h"><span class="e">📦</span><div><h2>Lo que se entregó cada día</h2><small>En sede, de ese día y de días anteriores; fuera de operativo = CABB / rezago</small></div></div><div class="card-b"><div class="tabla"><table><thead><tr><th>Día</th><th class="num">Entregadas</th><th class="num">De ese día</th><th class="num">De otros días</th><th class="num">Fuera de oper.</th><th class="num">% acumulado</th></tr></thead><tbody>
     ${t.dias.filter(d => d.sede > 0 || d.rec > 0).map(d => `<tr><td>${dm(d.fecha)}${d.rec ? '' : ' <span class="chip c-gr">sin operativo</span>'}</td><td class="num"><b>${fmt(d.sede)}</b></td><td class="num">${fmt(d.sede - d.sedeOtros)}</td><td class="num">${fmt(d.sedeOtros)}</td><td class="num">${fmt(d.fuera)}</td><td class="num">${pctN(d.acumEnt, d.acumRec)}%</td></tr>`).join('')}</tbody></table></div></div></div>`;
   const mu = t.municipios || {};
@@ -1380,9 +1398,10 @@ function textoTablero(t) {
   const op = t.dias.filter(d => d.rec > 0), rec = op.reduce((a, d) => a + d.rec, 0), ent = op.reduce((a, d) => a + d.ent, 0);
   const L = ['*SARE 1507 · AVANCE DEL OPERATIVO DE ENTREGA*', fechaLarga(hoyISO()) + ' · ' + String(t.hora).slice(-8, -3) + ' h', '',
     '*📊 Avance: ' + pctN(ent, rec) + '%* · ' + fmt(ent) + ' de ' + fmt(rec) + ' · pendientes ' + fmt(rec - ent), '', '*📅 Por día de atención* (entregadas / tarjetas · %)'];
-  op.forEach(d => L.push('   • ' + dm(d.fecha) + ': ' + fmt(d.ent) + '/' + fmt(d.rec) + ' · *' + pctN(d.ent, d.rec) + '%*' + (d.despues ? ' (' + d.despues + ' entregadas después)' : '')));
+  op.forEach(d => { L.push('   • *' + dm(d.fecha) + ': ' + fmt(d.ent) + '/' + fmt(d.rec) + ' · ' + pctN(d.ent, d.rec) + '%*' + (d.despues ? ' (' + d.despues + ' entregadas después)' : ''));
+    ((t.ccts || {})[d.fecha] || []).forEach(x => L.push('      – ' + x.cct + ' ' + escCorta(x.escuela) + ': ' + fmt(x.ent) + '/' + fmt(x.rec) + ' · ' + pctN(x.ent, x.rec) + '%')); });
   const mu = t.municipios || {}; if (Object.keys(mu).length) { L.push('', '*🗺️ Por municipio*'); Object.keys(mu).sort().forEach(k => { const x = mu[k]; L.push('   • ' + k + ': ' + fmt(x.ent) + '/' + fmt(x.rec) + ' · ' + pctN(x.ent, x.rec) + '%'); }); }
-  if ((t.ranking || []).length) { L.push('', '*🏆 Ranking de operadores (operativo)*'); t.ranking.slice(0, 10).forEach((r, i) => L.push('   ' + medalla(i) + ' ' + r.op + ': ' + fmt(r.n))); }
+  if ((t.ranking || []).length) { L.push('', '*🏆 Ranking de operadores (operativo)*'); t.ranking.forEach((r, i) => L.push('   ' + medalla(i) + ' ' + r.op + ': ' + fmt(r.n))); }
   L.push('', '_' + (USUARIO && USUARIO.NOMBRE ? USUARIO.NOMBRE : 'Supervisor') + '_');
   return L.join('\n');
 }
@@ -1761,6 +1780,9 @@ function pintarCuadre() {
     `<tr><td><b>TOTAL</b></td><td class="num"><b>${c.entregadas}</b></td><td class="num"><b>${ops.reduce((a, k) => a + (Number(fis[k]) || 0), 0) || ''}</b></td><td></td></tr>`;
   $('s-ops').querySelectorAll('input').forEach(i => i.onchange = () => { const f = lsGet('ent_fisico_' + c.fecha, {}); f[i.dataset.k] = i.value.trim(); lsSet('ent_fisico_' + c.fecha, f); $('s-fis-msg').textContent = '✏️ Sin guardar en la hoja'; pintarCuadre(); });
   const filaC = x => `<div class="it"><div><div class="nm">${esc(x.nombre)}</div><div class="sub">${esc(x.detalle || '')} ${esc(x.op)}${x.mesa ? ' · mesa ' + esc(x.mesa) : ''} · ${esc(x.hora)}</div>${cctHtml(x.cct)}</div></div>`;
+  const pcc = c.porCct || [];
+  $('s-n-cct').textContent = pcc.length ? '(' + pcc.length + ')' : '';
+  $('s-cct').innerHTML = pcc.map(x => filaCct(x, (x.hoy !== x.ent ? ' · hoy ' + fmt(x.hoy) : '') + (x.mesa ? ' · en mesa ' + fmt(x.mesa) : '') + (x.inc ? ' · incidencias ' + fmt(x.inc) : ''))).join('') || '<div class="vacio">Sin convocados este día.</div>';
   $('s-n-mesa').textContent = '(' + c.enMesa.length + ')'; $('s-mesa').innerHTML = c.enMesa.map(filaC).join('') || '<div class="vacio">✅ Ninguna: todo lo que salió de búsqueda se entregó.</div>';
   $('s-n-dev').textContent = '(' + c.devueltas.length + ')'; $('s-dev').innerHTML = c.devueltas.map(filaC).join('') || '<div class="vacio">Ninguna.</div>';
   $('s-n-bus').textContent = '(' + c.enBusqueda.length + ')'; $('s-bus').innerHTML = c.enBusqueda.map(filaC).join('') || '<div class="vacio">Ninguna.</div>';
@@ -1797,6 +1819,11 @@ function textoCierre(c) {
     if (rei.length) { L.push('   • 📝 Reimpresión de contrato: ' + rei.length); rei.forEach(x => L.push('      – ' + x.nombre + ' (' + x.cct + '): ' + x.motivo.toLowerCase() + ' · ' + x.quien)); }
     if (cru.length) { L.push('   • 🔴 Entregas cruzadas: ' + cru.length + ' · por recuperar: ' + cru.filter(x => x.estatus === 'POR RECUPERAR').length); cru.forEach(x => L.push('      – Tarjeta de ' + x.nombre + ' → se la llevó ' + x.recibio + ' · ' + x.quien + ' · ' + x.estatus.toLowerCase())); }
     if (c.incPorRecuperar) L.push('   • ⚠️ Total de tarjetas por recuperar en el operativo: ' + c.incPorRecuperar);
+    L.push('');
+  }
+  if ((c.porCct || []).length) {
+    L.push('*🏫 Avance por CCT* (menor avance primero)');
+    c.porCct.forEach(x => L.push('   • ' + x.cct + ' ' + escCorta(x.escuela) + ': ' + fmt(x.ent) + '/' + fmt(x.rec) + ' · *' + x.pct + '%*' + (x.pend ? ' · pend. ' + fmt(x.pend) : ' ✓')));
     L.push('');
   }
   L.push('*🏆 Ranking de entregas por operador' + (hayFis ? ' (sistema / físico)' : '') + '*');
