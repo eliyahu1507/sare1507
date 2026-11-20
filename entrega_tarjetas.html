@@ -437,7 +437,8 @@ td.num,th.num{text-align:right}
   <!-- ═════ TABLERO (19-nov) ═════ -->
   <section id="v-TABLERO" hidden>
     <div class="card"><div class="card-h"><span class="e">📈</span><div><h2>Tablero del operativo</h2><small id="t-hora">Avance por día de atención, acumulado y ranking</small></div></div>
-      <div class="card-b"><div class="inc-btns"><button class="btn prim full" id="t-act">🔄 Actualizar</button><button class="btn ok full" id="t-wa">💬 Enviar resumen al jefe (WhatsApp)</button></div></div></div>
+      <div class="card-b"><div class="inc-btns"><button class="btn prim full" id="t-act">🔄 Actualizar</button><button class="btn ok full" id="t-wa">💬 Enviar resumen al jefe (WhatsApp)</button>
+        <button class="btn borde full" id="t-xls">📊 Reporte en Excel (ORE / captura)</button></div><p class="hint" id="t-xls-msg"></p></div></div>
     <div id="t-cont"><div class="vacio">Toca Actualizar.</div></div>
   </section>
 
@@ -479,7 +480,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '19-nov-26 B';
+const APP_VERSION = '19-nov-26 C';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -1388,7 +1389,7 @@ function pintarTablero() {
   h += `<div class="card"><div class="card-h"><span class="e">📦</span><div><h2>Lo que se entregó cada día</h2><small>En sede, de ese día y de días anteriores; fuera de operativo = CABB / rezago</small></div></div><div class="card-b"><div class="tabla"><table><thead><tr><th>Día</th><th class="num">Entregadas</th><th class="num">De ese día</th><th class="num">De otros días</th><th class="num">Fuera de oper.</th><th class="num">% acumulado</th></tr></thead><tbody>
     ${t.dias.filter(d => d.sede > 0 || d.rec > 0).map(d => `<tr><td>${dm(d.fecha)}${d.rec ? '' : ' <span class="chip c-gr">sin operativo</span>'}</td><td class="num"><b>${fmt(d.sede)}</b></td><td class="num">${fmt(d.sede - d.sedeOtros)}</td><td class="num">${fmt(d.sedeOtros)}</td><td class="num">${fmt(d.fuera)}</td><td class="num">${pctN(d.acumEnt, d.acumRec)}%</td></tr>`).join('')}</tbody></table></div></div></div>`;
   const mu = t.municipios || {};
-  h += `<div class="card"><div class="card-h"><span class="e">🗺️</span><div><h2>Por municipio</h2><small>Días ya atendidos</small></div></div><div class="card-b">${Object.keys(mu).sort().map(k => { const x = mu[k];
+  h += `<div class="card"><div class="card-h"><span class="e">🗺️</span><div><h2>Por municipio</h2><small>Todo el nominal del municipio (incluye días por atender)</small></div></div><div class="card-b">${Object.keys(mu).sort().map(k => { const x = mu[k];
     return `<div class="tb-bar" style="grid-template-columns:92px 1fr 46px"><span>${esc(k.replace(/ DE (MORELOS|BERRIOZ[AÁ]BAL)/, ''))}</span><div class="tr" title="${x.ent} de ${x.rec}"><span style="width:${pctN(x.ent - x.fuera, x.rec)}%;background:${C_SU}"></span><span style="width:${pctN(x.fuera, x.rec)}%;background:${C_DES}"></span></div><span class="p">${pctN(x.ent, x.rec)}%</span></div><p class="hint" style="margin:0 0 6px">${fmt(x.ent)} de ${fmt(x.rec)} · pendientes ${fmt(x.rec - x.ent)}${x.fuera ? ' · ' + fmt(x.fuera) + ' fuera de operativo (dorado)' : ''}</p>`; }).join('') || '<div class="vacio">Sin datos.</div>'}</div></div>`;
   h += `<div class="card"><div class="card-h"><span class="e">🏆</span><div><h2>Ranking de operadores</h2><small>Entregas de todo el operativo</small></div></div><div class="card-b">${(t.ranking || []).map((r, i) => `<div class="tb-rk"><span>${medalla(i)}</span><span>${esc(r.op)}<br><small style="color:#777">${r.dias} día${r.dias === 1 ? '' : 's'}</small></span><b>${fmt(r.n)}</b></div>`).join('') || '<div class="vacio">Sin entregas.</div>'}</div></div>`;
   if (t.futuros && t.futuros.length) h += `<div class="card"><div class="card-h"><span class="e">🗓️</span><div><h2>Próximos días</h2><small>Tarjetas recibidas por atender</small></div></div><div class="card-b">${t.futuros.map(d => `<div class="tb-rk" style="grid-template-columns:52px 1fr auto"><span>${dm(d.fecha)}</span><span>${esc(String(d.municipio || '').replace(/ DE (MORELOS|BERRIOZ[AÁ]BAL)/, ''))}</span><b>${fmt(d.rec)}</b></div>`).join('')}</div></div>`;
@@ -1406,6 +1407,94 @@ function textoTablero(t) {
   return L.join('\n');
 }
 $('t-act').onclick = cargarTablero;
+// 19-nov C: Excel del operativo para la ORE y para comparar con captura (datos de la hoja al momento)
+function hojaXLS(aoa, cols, opc) {
+  const w = XLSX.utils.aoa_to_sheet(aoa), o = opc || {};
+  if (cols) w['!cols'] = cols.map(c => ({ wch: c }));
+  const r0 = o.enc || 0;
+  for (let r = r0 + 1; r < aoa.length; r++) {
+    (o.texto || []).forEach(c => { const ref = XLSX.utils.encode_cell({ r, c }); if (w[ref]) w[ref] = { t: 's', v: String(aoa[r][c]) }; });
+    (o.pct || []).forEach(c => { const ref = XLSX.utils.encode_cell({ r, c }); if (w[ref] && typeof w[ref].v === 'number') w[ref].z = '0.0%'; });
+  }
+  if (o.filtro && aoa.length > r0 + 1) w['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: r0, c: 0 }, e: { r: aoa.length - 1, c: aoa[r0].length - 1 } }) };
+  return w;
+}
+const fDMA = f => f ? f.slice(8, 10) + '/' + f.slice(5, 7) + '/' + f.slice(0, 4) : '';
+const fr = (a, b) => b ? Math.round(a * 10000 / b) / 10000 : 0;
+function libroOperativo(t) {
+  const wb = XLSX.utils.book_new(), op = t.dias.filter(d => d.rec > 0), rec = op.reduce((a, d) => a + d.rec, 0), ent = op.reduce((a, d) => a + d.ent, 0);
+  const gen = 'Datos de la hoja central al ' + t.generado + (t.por ? ' · generó ' + t.por : '');
+  // Resumen
+  const prog = {}; Object.keys(t.ccts || {}).forEach(f => t.ccts[f].forEach(x => { const p = x.prog || 'SIN PROGRAMA', y = (prog[p] = prog[p] || { rec: 0, ent: 0 }); y.rec += x.rec; y.ent += x.ent; }));
+  const inc = {}; (t.incidenciasDet || []).forEach(r => { const k = r[2] + ' · ' + r[3]; inc[k] = (inc[k] || 0) + 1; });
+  const R = [['SARE 1507 · REPORTE DEL OPERATIVO DE ENTREGA DE TARJETAS'], [gen], [],
+    ['AVANCE DE LOS DÍAS YA ATENDIDOS'], ['Tarjetas recibidas', rec], ['Entregadas', ent], ['Pendientes', rec - ent], ['% entregado', fr(ent, rec)],
+    ['Días atendidos', op.length], ['Entregadas en su día de atención', op.reduce((a, d) => a + d.suDia, 0)], ['Entregadas otro día después', op.reduce((a, d) => a + d.despues, 0)], [],
+    ['POR MUNICIPIO (días ya atendidos)', 'Recibidas', 'Entregadas', 'Pendientes', '% entregado']];
+  const mAt = {}; Object.keys(t.ccts || {}).forEach(f => t.ccts[f].forEach(x => { const y = (mAt[x.mun] = mAt[x.mun] || { rec: 0, ent: 0 }); y.rec += x.rec; y.ent += x.ent; }));
+  Object.keys(mAt).sort().forEach(k => R.push([k, mAt[k].rec, mAt[k].ent, mAt[k].rec - mAt[k].ent, fr(mAt[k].ent, mAt[k].rec)]));
+  R.push([], ['POR MUNICIPIO (todo el nominal, incluye días por atender)', 'Recibidas', 'Entregadas', 'Pendientes', '% entregado', 'Fuera de operativo']);
+  Object.keys(t.municipios || {}).sort().forEach(k => { const x = t.municipios[k]; R.push([k, x.rec, x.ent, x.rec - x.ent, fr(x.ent, x.rec), x.fuera]); });
+  R.push([], ['POR PROGRAMA', 'Recibidas', 'Entregadas', 'Pendientes', '% entregado']);
+  Object.keys(prog).sort().forEach(k => R.push([k, prog[k].rec, prog[k].ent, prog[k].rec - prog[k].ent, fr(prog[k].ent, prog[k].rec)]));
+  if (Object.keys(inc).length) { R.push([], ['INCIDENCIAS (tipo · estatus)', 'Total']); Object.keys(inc).sort().forEach(k => R.push([k, inc[k]])); }
+  R.push([], ['CÓMO SE CUENTA'], ['• Cada tarjeta cuenta en su DÍA DE ATENCIÓN (fecha de convocatoria de su CCT). Si se entregó otro día, sube a su día.'],
+    ['• "Entregas por día" cuenta lo que se entregó cada día en sede (de ese día y de días anteriores) y fuera de operativo (CABB / rezago).'],
+    ['• Pendientes = tarjetas recibidas de días ya atendidos que no se han entregado (detalle en la hoja "Pendientes").'],
+    ['• Para comparar con captura: hoja "Entregadas", filtra por FECHA DE ENTREGA y OPERADOR.']);
+  const w0 = hojaXLS(R, [58, 14, 14, 14, 14, 18]);
+  [7].forEach(r => { const ref = 'B' + (r + 1); if (w0[ref]) w0[ref].z = '0.0%'; });
+  R.forEach((row, r) => { if (row.length >= 5 && typeof row[4] === 'number' && r > 12) { const ref = XLSX.utils.encode_cell({ r, c: 4 }); w0[ref].z = '0.0%'; } });
+  XLSX.utils.book_append_sheet(wb, w0, 'Resumen');
+  // Por día
+  const D = [['DÍA DE ATENCIÓN', 'MUNICIPIO', 'CONVOCADOS', 'TARJETAS RECIBIDAS', 'ENTREGADAS', 'EN SU DÍA', 'OTRO DÍA DESPUÉS', 'PENDIENTES', '% ENTREGADO', 'ENTREGADAS ESE DÍA EN SEDE', 'DE ESE DÍA', 'DE OTROS DÍAS', 'FUERA DE OPERATIVO', '% ACUMULADO AL CIERRE']];
+  t.dias.forEach(d => D.push([fDMA(d.fecha), d.rec ? d.municipio : 'SIN OPERATIVO', d.conv, d.rec, d.ent, d.suDia, d.despues, d.pend, d.rec ? fr(d.ent, d.rec) : '', d.sede, d.sede - d.sedeOtros, d.sedeOtros, d.fuera, fr(d.acumEnt, d.acumRec)]));
+  D.push(['TOTAL', '', op.reduce((a, d) => a + d.conv, 0), rec, ent, op.reduce((a, d) => a + d.suDia, 0), op.reduce((a, d) => a + d.despues, 0), rec - ent, fr(ent, rec), t.dias.reduce((a, d) => a + d.sede, 0), '', t.dias.reduce((a, d) => a + d.sedeOtros, 0), t.dias.reduce((a, d) => a + d.fuera, 0), '']);
+  (t.futuros || []).forEach(d => D.push([fDMA(d.fecha), d.municipio + ' (POR ATENDER)', d.conv, d.rec]));
+  XLSX.utils.book_append_sheet(wb, hojaXLS(D, [14, 28, 12, 12, 12, 11, 12, 12, 12, 14, 11, 12, 12, 14], { pct: [8, 13], filtro: true }), 'Por día');
+  // Por CCT
+  const C = [['DÍA DE ATENCIÓN', 'CCT', 'ESCUELA', 'MUNICIPIO', 'PROGRAMA', 'TARJETAS RECIBIDAS', 'ENTREGADAS', 'EN SU DÍA', 'OTRO DÍA DESPUÉS', 'PENDIENTES', '% ENTREGADO']];
+  Object.keys(t.ccts || {}).sort().forEach(f => t.ccts[f].slice().sort((a, b) => a.cct.localeCompare(b.cct)).forEach(x => C.push([fDMA(f), x.cct, x.escuela, x.mun, x.prog || '', x.rec, x.ent, x.suDia, x.ent - x.suDia, x.rec - x.ent, fr(x.ent, x.rec)])));
+  XLSX.utils.book_append_sheet(wb, hojaXLS(C, [14, 13, 50, 26, 10, 12, 12, 10, 12, 12, 12], { pct: [10], filtro: true }), 'Por CCT');
+  // Ranking
+  const K = [['LUGAR', 'OPERADOR', 'TARJETAS ENTREGADAS', 'DÍAS CON ENTREGAS', 'PROMEDIO POR DÍA']];
+  (t.ranking || []).forEach((r, i) => K.push([i + 1, r.op, r.n, r.dias, r.dias ? Math.round(r.n * 10 / r.dias) / 10 : '']));
+  XLSX.utils.book_append_sheet(wb, hojaXLS(K, [7, 46, 18, 16, 16], { filtro: true }), 'Ranking operadores');
+  // Detalle
+  const E1 = [['PROGRAMA', 'TARJETA', 'CURP', 'BECARIO', 'CCT', 'ESCUELA', 'MUNICIPIO', 'CAJA', 'CONSECUTIVO', 'DÍA DE ATENCIÓN', 'FECHA DE ENTREGA', 'CUÁNDO', 'OPERADOR', 'MESA', 'HORA DE ENTREGA', 'LUGAR (FUERA DE OPERATIVO)']]
+    .concat((t.entregadas || []).map(r => r.map((v, i) => i === 9 || i === 10 ? fDMA(v) : v)));
+  XLSX.utils.book_append_sheet(wb, hojaXLS(E1, [9, 20, 20, 40, 12, 40, 24, 6, 8, 13, 13, 20, 40, 6, 19, 22], { texto: [1, 2, 7, 8, 13], filtro: true }), 'Entregadas');
+  const P1 = [['PROGRAMA', 'TARJETA', 'CURP', 'BECARIO', 'CCT', 'ESCUELA', 'MUNICIPIO', 'CAJA', 'CONSECUTIVO', 'DÍA DE ATENCIÓN', 'ESTADO', 'DETALLE', 'ÚLTIMO OPERADOR', 'ACTUALIZADO']]
+    .concat((t.pendientes || []).map(r => r.map((v, i) => i === 9 ? fDMA(v) : v)));
+  XLSX.utils.book_append_sheet(wb, hojaXLS(P1, [9, 20, 20, 40, 12, 40, 24, 6, 8, 13, 26, 46, 36, 19], { texto: [1, 2, 7, 8], filtro: true }), 'Pendientes');
+  if ((t.incidenciasDet || []).length) {
+    const I1 = [['FOLIO', 'DÍA', 'TIPO', 'ESTATUS', 'TARJETA', 'CURP', 'BECARIO', 'CCT', 'MOTIVO', 'SE EQUIVOCÓ', 'REPORTÓ', 'SE LA LLEVÓ', 'NOTA']].concat(t.incidenciasDet.map(r => r.map((v, i) => i === 1 ? fDMA(v) : v)));
+    XLSX.utils.book_append_sheet(wb, hojaXLS(I1, [10, 12, 13, 30, 20, 20, 38, 12, 40, 34, 34, 34, 50], { texto: [4, 5], filtro: true }), 'Incidencias');
+  }
+  return wb;
+}
+$('t-xls').onclick = async () => {
+  const btn = $('t-xls'), msg = $('t-xls-msg'); btn.disabled = true; msg.textContent = '⏳ Consultando la hoja (puede tardar unos segundos)…';
+  try {
+    const [t, ok] = await Promise.all([llamar({ accion: 'reporteExcel' }, 90000), cargarXLSX()]);
+    if (!ok) throw new Error('No se pudo cargar el generador de Excel (sin señal)');
+    _tab = t; pintarTablero();
+    const blob = new Blob([XLSX.write(libroOperativo(t), { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const nombre = 'Reporte_operativo_entrega_' + hoyISO().split('-').reverse().join('-') + '_' + String(t.generado).slice(-8, -3).replace(':', 'h') + '.xlsx';
+    const op = t.dias.filter(d => d.rec > 0), rec = op.reduce((a, d) => a + d.rec, 0), ent = op.reduce((a, d) => a + d.ent, 0);
+    const texto = 'Reporte del operativo de entrega al ' + t.generado + ': ' + fmt(ent) + ' de ' + fmt(rec) + ' (' + pctN(ent, rec) + '%).';
+    const f = new File([blob], nombre, { type: blob.type }), puede = !!(navigator.canShare && navigator.canShare({ files: [f] }));
+    msg.textContent = '✅ Listo: ' + nombre;
+    abrirModal('📊 Reporte en Excel', fmt(ent) + ' de ' + fmt(rec) + ' entregadas · ' + pctN(ent, rec) + '%',
+      `<div style="font-size:.84rem;background:var(--gris);border-radius:10px;padding:10px 12px"><b>Hojas:</b> Resumen · Por día · Por CCT · Ranking operadores · Entregadas (${fmt((t.entregadas || []).length)}) · Pendientes (${fmt((t.pendientes || []).length)})${(t.incidenciasDet || []).length ? ' · Incidencias (' + t.incidenciasDet.length + ')' : ''}</div>
+       <p class="hint">Trae CURP y nombres: compártelo solo por canales oficiales.</p>
+       ${puede ? '<button class="btn ok full" id="xls-wa">💬 Enviar (WhatsApp, correo…)</button>' : ''}
+       <button class="btn borde full" id="xls-dl">⬇️ Descargar el archivo</button>`);
+    if ($('xls-wa')) $('xls-wa').onclick = async () => { try { await navigator.share({ files: [f], title: nombre, text: texto }); $('modal').hidden = true; toast('✅ Excel enviado'); } catch (e) { if (!e || e.name !== 'AbortError') toast('No se pudo compartir: usa Descargar', true); } };
+    $('xls-dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000); toast('⬇️ Descargado: ' + nombre); };
+  } catch (e) { msg.textContent = '⛔ ' + e.message; }
+  finally { btn.disabled = false; }
+};
 $('t-wa').onclick = () => { if (!_tab) { toast('Primero toca Actualizar', true); return; } window.open('https://wa.me/?text=' + encodeURIComponent(textoTablero(_tab)), '_blank'); };
 
 // ════════════════════════════════════════════════════════════
