@@ -480,7 +480,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '19-nov-26 C';
+const APP_VERSION = '20-nov-26 A';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -608,7 +608,9 @@ async function llamar(payload, ms) {
   try {
     const cuerpo = Object.assign({ clave: CLAVE_APP, claveOp: SES ? SES.claveOp : '', op: SES ? SES.op : '', cupo: USUARIO ? USUARIO.CUPO : '',
       rol: SES ? SES.rol : '', mesa: SES ? SES.mesa : '', fecha: SES ? SES.fecha : '', version: APP_VERSION }, payload);
-    const r = await fetch(URL_ENTREGA, { method: 'POST', body: JSON.stringify(cuerpo), signal: ctrl.signal, redirect: 'follow' });
+    let r;
+    try { r = await fetch(URL_ENTREGA, { method: 'POST', body: JSON.stringify(cuerpo), signal: ctrl.signal, redirect: 'follow' }); }
+    catch (e) { if (ctrl.signal.aborted) { const x = new Error('La hoja tardó más de ' + Math.round((ms || 20000) / 1000) + ' s en responder (mucha carga o mala señal)'); x.tarde = true; throw x; } throw new Error('Sin conexión con la hoja'); }
     const j = await r.json();
     if (!j.ok && j.error === 'CLAVE_OPERATIVO') { const e = new Error(j.mensaje); e.clave = true; throw e; }
     if (!j.ok) throw new Error(j.error || 'Error de la hoja');
@@ -616,6 +618,12 @@ async function llamar(payload, ms) {
   } finally { clearTimeout(t); }
 }
 
+// 20-nov: para consultas pesadas (cuadre, tablero): si se agota el tiempo se reintenta una vez; la hoja termina el cálculo
+// aunque el celular deje de esperar y lo guarda 2 min, así que el segundo intento suele llegar rápido.
+async function llamarPesado(payload, ms, aviso) {
+  try { return await llamar(payload, ms); }
+  catch (e) { if (!e.tarde) throw e; if (aviso) aviso(); return await llamar(payload, ms); }
+}
 // ════════════════════════════════════════════════════════════
 //  CONVOCADOS DEL DÍA, ÍNDICE DE FECHAS Y ESTADOS
 // ════════════════════════════════════════════════════════════
@@ -683,13 +691,24 @@ function registrar(evento, r, detalle, extra) {
   guardarEstado(); pintarSync(); pintarStats();
   setTimeout(sincronizar, 50);
 }
-async function sincronizar() {
+// 20-nov: menos llamadas a la hoja. Cada envío trae de regreso los cambios de los demás (una llamada en vez de dos) y, sin nada
+// por enviar, mesa y supervisor preguntan por cambios cada 3.er y 2.º ciclo (24 s y 16 s); filtro y búsqueda siguen cada 8 s.
+// Si el celular está bloqueado o en otra app y no hay pendientes, no pregunta.
+let _ciclo = 0, _reintento = null;
+async function sincronizar(forzar) {
   if (_syncEnCurso || !SES || !SES.rol) return;
+  _ciclo++;
+  if (!COLA.length && forzar !== true) {
+    if (document.hidden) return;
+    const cada = SES.rol === 'MESA' ? 3 : SES.rol === 'SUPERVISOR' ? 2 : 1;
+    if (_ciclo % cada && _ultSync && Date.now() - _ultSync < 60000) return;
+  }
   _syncEnCurso = true;
   try {
+    let alDia = false;
     while (COLA.length) {
       const g = COLA[0], lote = COLA.filter(e => e.rol === g.rol && e.op === g.op && e.mesa === g.mesa && e.fecha === g.fecha).slice(0, 50);
-      const j = await llamar({ accion: 'eventos', rol: g.rol, op: g.op, mesa: g.mesa, fecha: g.fecha, eventos: lote }, 30000);
+      const j = await llamar({ accion: 'eventos', rol: g.rol, op: g.op, mesa: g.mesa, fecha: g.fecha, eventos: lote, cursor: CURSOR }, 45000);
       const ids = new Set(lote.map(e => e.id));
       (j.resultados || []).forEach(x => {
         if (x.tarjeta && x.estado) EST[x.tarjeta] = x.estado;
@@ -697,13 +716,21 @@ async function sincronizar() {
           toast('⛔ ' + (r ? r.n + ': ' : '') + x.msg, true); beep(false); vibrar([200, 100, 200]);
           LOG.push({ h: horaAhora(), t: x.tarjeta, n: r ? r.n : '', tipo: 'mal', txt: 'No se registró: ' + x.msg }); guardarLog(); }
       });
-      COLA = COLA.filter(e => !ids.has(e.id)); guardarEstado();
+      COLA = COLA.filter(e => !ids.has(e.id));
+      if (j.cursor) { Object.keys(j.cambios || {}).forEach(t => { if (!COLA.some(e => e.tarjeta === t)) EST[t] = j.cambios[t]; }); CURSOR = j.cursor; alDia = true; }
+      guardarEstado();
     }
-    const s = await llamar({ accion: 'estados', cursor: CURSOR }, 20000);
-    Object.keys(s.cambios || {}).forEach(t => { if (!COLA.some(e => e.tarjeta === t)) EST[t] = s.cambios[t]; });
-    CURSOR = s.cursor || CURSOR; guardarEstado();
+    if (!alDia) {
+      const s = await llamar({ accion: 'estados', cursor: CURSOR }, 25000);
+      Object.keys(s.cambios || {}).forEach(t => { if (!COLA.some(e => e.tarjeta === t)) EST[t] = s.cambios[t]; });
+      CURSOR = s.cursor || CURSOR; guardarEstado();
+    }
     _syncError = ''; _ultSync = Date.now();
-  } catch (e) { _syncError = e.clave ? 'clave' : (e.message || 'sin conexión'); if (e.clave) toast('La clave del operativo cambió: vuelve a entrar', true); }
+  } catch (e) {
+    _syncError = e.clave ? 'clave' : (e.message || 'sin conexión'); if (e.clave) toast('La clave del operativo cambió: vuelve a entrar', true);
+    // La hoja estaba ocupada con otros envíos: se reintenta en 2 a 5 s en lugar de esperar el siguiente ciclo
+    if (COLA.length && /Ocupado|tardó/.test(e.message || '') && !_reintento) _reintento = setTimeout(() => { _reintento = null; sincronizar(true); }, 2000 + Math.random() * 3000);
+  }
   finally { _syncEnCurso = false; pintarSync(); pintarStats(); refrescarVista(); }
 }
 function pintarSync() {
@@ -929,7 +956,7 @@ async function iniciarRol(rol, fechaDirecta) {
   if (!rolPermitido(rol)) { $('acc-msg').textContent = '⛔ Esa función es solo para el personal autorizado.'; return; }
   const local = datosLocalesListos(fecha);
   // Con la lista ya en el celular, lo pendiente se sigue enviando en segundo plano (cada movimiento guarda su función); si hay que descargar, primero se envía
-  if (!local && COLA.length && SES && SES.rol && SES.rol !== rol) { await sincronizar(); if (COLA.length) { $('acc-msg').textContent = '⚠️ Hay ' + COLA.length + ' movimientos sin enviar: busca señal antes de cambiar de función.'; return; } }
+  if (!local && COLA.length && SES && SES.rol && SES.rol !== rol) { await sincronizar(true); if (COLA.length) { $('acc-msg').textContent = '⚠️ Hay ' + COLA.length + ' movimientos sin enviar: busca señal antes de cambiar de función.'; return; } }
   document.querySelectorAll('#acc-roles .rol').forEach(b => { b.disabled = true; });
   $('acc-msg').textContent = local ? '⚡ Lista del día ya descargada: cambiando de función…' : '⏳ Descargando convocados y calendario…';
   try {
@@ -1024,7 +1051,7 @@ function buscarNombre(q) {
 }
 // Si no está en los convocados del día, se busca por nombre en todo el nominal (en línea). Regresa null si no hubo respuesta.
 async function nombreEnNominal(q) {
-  try { return await llamar({ accion: 'nombre', q }, 12000); } catch (e) { return null; }
+  try { return await llamar({ accion: 'nombre', q }, 25000); } catch (e) { return null; }
 }
 function listaNominal(boxId, j, q, fn) {
   $(boxId).innerHTML = `<div class="res aviso"><div class="t">⚠️ No es de los convocados del ${esc(fechaLarga(SES.fecha))}</div><p>Encontré ${j.lista.length}${j.lista.length >= 15 ? ' o más' : ''} en el nominal con ese nombre. Toca para ver su fecha:</p></div>` +
@@ -1062,7 +1089,7 @@ async function filtrar(texto) {
   if (PAQ.byC[curp]) return evaluarFiltro(PAQ.byC[curp]);
   // No es de hoy: su fecha sale del calendario completo que ya está en el celular
   let j = await buscarEnIndice(curp);
-  if (!j) { try { j = await llamar({ accion: 'consulta', curp }, 12000); if (j.encontrado) j.recibida = j.recepcion === 'RECIBIDA'; } catch (e) { j = null; } }
+  if (!j) { try { j = await llamar({ accion: 'consulta', curp }, 20000); if (j.encontrado) j.recibida = j.recepcion === 'RECIBIDA'; } catch (e) { j = null; } }
   let html, motivo;
   let hist = null;
   if (!j || !j.encontrado) { box.innerHTML = '<div class="vacio">⏳ No está en este operativo: revisando el historial de procesos anteriores…</div>'; hist = await historialDe(curp, lc); }
@@ -1213,7 +1240,7 @@ $('b-corte-guardar').onclick = async () => {
   if (falt.length && !confirm(`Faltan ${falt.length} CCT por contar. ¿Guardar así? Las que no cuentes quedan en blanco.`)) return;
   $('b-corte-msg').textContent = '⏳ Enviando movimientos pendientes y guardando…'; $('b-corte-guardar').disabled = true;
   try {
-    await sincronizar();
+    await sincronizar(true);
     if (COLA.length) throw new Error('Hay ' + COLA.length + ' movimientos sin enviar: busca señal y vuelve a intentar');
     const r = await llamar({ accion: 'corte', fecha: SES.fecha, nota: $('b-corte-nota').value.trim(), cortes: l.map(x => ({ cct: x.cct, contadas: cont[x.cct] === undefined ? '' : cont[x.cct] })) }, 30000);
     _corteGuardado = 'a las ' + horaAhora() + ' por ' + SES.op;
@@ -1353,7 +1380,7 @@ const pctN = (a, b) => b ? Math.round(a * 1000 / b) / 10 : 0;
 const dm = f => f.slice(8, 10) + '/' + f.slice(5, 7);
 async function cargarTablero() {
   $('t-act').disabled = true; $('t-hora').textContent = '⏳ Consultando la hoja…';
-  try { _tab = await llamar({ accion: 'tablero', fresco: 1 }, 45000); pintarTablero(); }
+  try { _tab = await llamarPesado({ accion: 'tablero', fresco: 1 }, 75000); pintarTablero(); }
   catch (e) { $('t-hora').textContent = '⛔ ' + e.message; if (!_tab) $('t-cont').innerHTML = '<div class="vacio">No se pudo consultar: intenta con señal.</div>'; }
   finally { $('t-act').disabled = false; }
 }
@@ -1847,10 +1874,10 @@ function pintarSupervisorLocal() {
 }
 async function actualizarCuadre() {
   $('s-act').textContent = '⏳ Consultando la hoja…';
-  await sincronizar();
-  cargarIncidencias();
-  try { _cuadre = await llamar({ accion: 'cuadre', detalle: 1, fecha: SES.fecha }, 30000); $('s-act').textContent = 'Actualizado a las ' + horaAhora() + ' · ' + fechaLarga(_cuadre.fecha); pintarSupervisorLocal(); }
+  await sincronizar(true);
+  try { _cuadre = await llamarPesado({ accion: 'cuadre', detalle: 1, fecha: SES.fecha }, 75000, () => { $('s-act').textContent = '⏳ La hoja va lenta: reintentando…'; }); $('s-act').textContent = 'Actualizado a las ' + horaAhora() + ' · ' + fechaLarga(_cuadre.fecha); pintarSupervisorLocal(); }
   catch (e) { $('s-act').textContent = '⛔ ' + e.message + ' (se muestran los datos de este celular)'; }
+  cargarIncidencias();   // 20-nov: después del cuadre, no al mismo tiempo (antes competían por la hoja)
   pintarMunicipios(true);
 }
 function pintarCuadre() {
@@ -2063,7 +2090,7 @@ function pintarSesion() {
   $('ses-rapido').querySelectorAll('[data-rap]').forEach(b => b.onclick = () => iniciarRol(b.dataset.rap, SES.fecha));
   $('ses-datos').innerHTML = `<p><b>${esc(SES.op)}</b><br>${ROLES[SES.rol]}${SES.mesa ? ' · mesa ' + esc(SES.mesa) : ''}<br>${esc(fechaLarga(SES.fecha))} · ${fmt(PAQ.lista.length)} convocados descargados<br>Calendario completo: ${IDX ? fmt(IDX.m.size) + ' CURP' : 'no descargado'}<br>Por enviar: ${COLA.length}${_ultSync ? ' · última sincronización ' + new Date(_ultSync).toLocaleTimeString('es-MX') : ''}</p>`;
 }
-$('ses-sync').onclick = () => { sincronizar(); toast('Sincronizando…'); };
+$('ses-sync').onclick = () => { sincronizar(true); toast('Sincronizando…'); };
 function pintarOpciones() {
   $('ses-cam').textContent = CAM.simple ? '📷 Cámara: MODO SIMPLE (como Rita Cetina) · toca para volver al normal' : '📷 Cámara: modo normal · si se traba, toca para usar el modo simple';
   $('ses-voz').textContent = lsGet('ent_voz', true) ? '🔊 Alerta de voz de homónimos: ACTIVADA' : '🔇 Alerta de voz de homónimos: apagada';
@@ -2074,12 +2101,12 @@ setTimeout(pintarOpciones, 0);
 $('ses-rol').onclick = () => mostrarAcceso(2);
 $('ses-bajar').onclick = async () => {
   const b = $('ses-bajar'); b.disabled = true; b.textContent = '⏳ Descargando…';
-  try { await sincronizar(); await descargar(SES.fecha); cargarLocal(); pintarStats(); pintarMiniCal(); refrescarVista(); toast('✅ Lista del día actualizada'); }
+  try { await sincronizar(true); await descargar(SES.fecha); cargarLocal(); pintarStats(); pintarMiniCal(); refrescarVista(); toast('✅ Lista del día actualizada'); }
   catch (e) { toast('⛔ ' + (e.name === 'AbortError' ? 'Sin respuesta: revisa la señal' : e.message), true); }
   finally { b.disabled = false; b.textContent = '⬇️ Volver a descargar la lista del día'; pintarSesion(); }
 };
 $('ses-salir').onclick = async () => {
-  if (COLA.length) { await sincronizar(); if (COLA.length && !confirm(`Hay ${COLA.length} movimientos SIN ENVIAR. Si cierras ahora se pierden. ¿Cerrar de todos modos?`)) return; }
+  if (COLA.length) { await sincronizar(true); if (COLA.length && !confirm(`Hay ${COLA.length} movimientos SIN ENVIAR. Si cierras ahora se pierden. ¿Cerrar de todos modos?`)) return; }
   Object.keys(localStorage).forEach(k => { if (/^ent_/.test(k)) lsDel(k); });
   location.reload();
 };
@@ -2408,7 +2435,7 @@ document.addEventListener('visibilitychange', () => {
   else mostrarAcceso(1);
   setInterval(sincronizar, SYNC_MS); setInterval(nuevoDia, 60000);
   window.addEventListener('online', sincronizar);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { nuevoDia(); sincronizar(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { nuevoDia(); sincronizar(true); } });
 })();
 </script>
 </body>
