@@ -155,6 +155,24 @@ label.lbl{display:block;font-family:Montserrat,sans-serif;font-weight:800;font-s
 .inc-it .acc{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.inc-it .acc .btn{margin:0;padding:7px 10px;font-size:.78rem}
 .inc-alerta{background:#C62828;color:#fff;border-radius:12px;padding:10px 12px;margin:0 0 12px;font-weight:700}
 .c-inc{background:#FFE0B2;color:#8A3B00}
+/* 21-nov: pantalla de carga, escaneo simple y cambio de CURP */
+#carga{position:fixed;inset:0;z-index:9000;background:rgba(74,14,41,.94);display:flex;align-items:center;justify-content:center;padding:24px}
+#carga[hidden]{display:none}
+#carga .cg{background:#fff;border-radius:20px;padding:26px 22px;max-width:380px;width:100%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.35);border-top:6px solid var(--dorado)}
+#carga .sp{width:64px;height:64px;margin:0 auto 14px;border-radius:50%;border:7px solid #EFE3E7;border-top-color:var(--guinda);animation:gira 1s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+#carga b{display:block;font-family:Montserrat,sans-serif;font-size:1.25rem;color:var(--guinda);line-height:1.3}
+#carga .sb{font-size:1rem;color:#333;margin:10px 0 4px;font-weight:600}
+#carga .sg{font-size:.9rem;color:#666}
+#carga .tip{font-size:.82rem;color:#8A6D3B;background:#FBF4E6;border-radius:10px;padding:8px 10px;margin-top:14px}
+.btn-simple{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:10px 14px;margin:-4px 0 12px;border:3px solid #E0A100;border-radius:14px;background:#FFF6D6;color:#6B4A00;font-weight:800;font-size:1rem}
+.btn-simple .ic{font-size:1.7rem;line-height:1}.btn-simple small{display:block;font-weight:600;font-size:.74rem;color:#7A5A10}
+.btn-simple.on{background:#E0A100;color:#fff}.btn-simple.on small{color:#fff}
+.cam-ayuda{margin-top:8px}
+.cambio-it{background:#fff;border:1px solid #E5C77A;border-radius:10px;padding:9px 10px;margin:8px 0;color:#333}
+.cambio-it .nm{font-weight:800}.cambio-it .sub{font-size:.8rem;color:#555;margin-top:2px}
+.cambio-it .cu{font-family:ui-monospace,Menlo,monospace;font-size:.86rem;letter-spacing:.5px}.cambio-it .cu b{color:#C62828;background:#FFE3E3;border-radius:3px}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:8px 2px;font-size:.88rem;font-weight:600}.chk input{width:22px;height:22px;flex:none;accent-color:var(--guinda)}
 /* 19-nov: tablero */
 .tb-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:0 0 12px}
 .tb-k{background:#fff;border:1px solid var(--gris);border-radius:12px;padding:10px 12px}
@@ -415,7 +433,8 @@ td.num,th.num{text-align:right}
     <div class="card"><div class="card-h"><span class="e">🚨</span><div><h2>Incidencias <span id="s-n-inc"></span></h2><small>Reimpresión de contrato y entregas cruzadas · pestaña Incidencias de la hoja</small></div></div>
       <div class="card-b"><div class="inc-btns" style="margin-bottom:10px"><button class="btn inc-r full" id="s-inc-r">📝 Registrar reimpresión de contrato</button><button class="btn inc-c full" id="s-inc-c">🔴 Registrar entrega cruzada</button></div>
         <div id="s-inc"><div class="vacio">Toca Actualizar para ver las incidencias.</div></div>
-        <button class="btn borde full" id="s-inc-sol">📤 Solicitud de reimpresión (WhatsApp)</button></div></div>
+        <button class="btn borde full" id="s-inc-sol">📤 Solicitud de reimpresión (WhatsApp)</button>
+        <button class="btn borde full" id="s-cambio-curp">🔄 Rechazos con posible CAMBIO DE CURP</button></div></div>
     <div class="card"><div class="card-h"><span class="e">🧮</span><div><h2>Ranking de entregas por operador</h2><small>De mayor a menor · escribe lo que contó cada uno: la diferencia sale sola</small></div></div>
       <div class="tabla"><table><thead><tr><th>Operador</th><th class="num">Sistema</th><th class="num">Conteo físico</th><th class="num">Dif.</th></tr></thead><tbody id="s-ops"></tbody></table></div><button class="btn ok full" id="s-fis-guardar" hidden>💾 Guardar conteo físico en la hoja</button><p class="hint" id="s-fis-msg"></p></div>
     <div class="card"><div class="card-h"><span class="e">🏫</span><div><h2>Avance por CCT <span id="s-n-cct"></span></h2><small>Convocados del día · menor avance primero · se actualiza con Actualizar</small></div></div>
@@ -471,6 +490,7 @@ td.num,th.num{text-align:right}
 </div>
 <div id="print-area" aria-hidden="true"></div>
 
+<div id="carga" hidden role="alertdialog" aria-live="assertive"><div class="cg"><div class="sp"></div><b id="cg-t">Descargando datos…</b><div class="sb" id="cg-s"></div><div class="sg" id="cg-seg"></div><div class="tip" id="cg-tip">No cierres la app: con mala señal puede tardar hasta un minuto. Solo se descarga una vez al día.</div></div></div>
 <div class="modal-ov" id="modal" hidden><div class="modal"><div class="modal-h"><h2 id="modal-t"></h2><small id="modal-s"></small><button class="modal-x" id="modal-x" aria-label="Cerrar">✕</button></div><div class="modal-b" id="modal-b"></div></div></div>
 <div class="toast" id="toast" hidden></div>
 <video id="cam-video" playsinline muted hidden></video>
@@ -480,7 +500,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '20-nov-26 A';
+const APP_VERSION = '21-nov-26 A';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -624,6 +644,16 @@ async function llamarPesado(payload, ms, aviso) {
   try { return await llamar(payload, ms); }
   catch (e) { if (!e.tarde) throw e; if (aviso) aviso(); return await llamar(payload, ms); }
 }
+// 21-nov: PANTALLA DE CARGA grande mientras se descargan datos (antes era un texto pequeño y parecía que la app no hacía nada)
+let _cg = null;
+function cargaOn(titulo, paso) {
+  $('cg-t').textContent = titulo || 'Descargando datos…'; $('cg-s').textContent = paso || ''; $('carga').hidden = false;
+  const t0 = Date.now(); clearInterval(_cg);
+  const seg = () => { const n = Math.round((Date.now() - t0) / 1000); $('cg-seg').textContent = n ? '⏱️ ' + n + ' s' + (n > 20 ? ' · la señal está lenta, sigue esperando' : '') : ''; };
+  seg(); _cg = setInterval(seg, 1000);
+}
+function cargaPaso(paso) { if (!$('carga').hidden) $('cg-s').textContent = paso; }
+function cargaOff() { clearInterval(_cg); $('carga').hidden = true; }
 // ════════════════════════════════════════════════════════════
 //  CONVOCADOS DEL DÍA, ÍNDICE DE FECHAS Y ESTADOS
 // ════════════════════════════════════════════════════════════
@@ -647,27 +677,36 @@ async function buscarEnIndice(curp) {
   const cct = IDX.ccts[IDX.c[i]], e = (LOGIN && LOGIN.escuelas && LOGIN.escuelas[cct]) || {};
   return { encontrado: true, fecha: IDX.fechas[IDX.f[i]], cct, escuela: e.escuela || '', municipio: e.municipio || '', sede: e.sede || '', horario: e.horario || '', cita: e.cita || '', recibida: !!IDX.r[i] };
 }
+// 21-nov: si el celular no tuvo espacio para guardar algo, se conserva en memoria mientras la app esté abierta
+const MEM = { paq: {}, idx: null };
 function cargarLocal() {
-  const p = lsGet(kPaq(SES.fecha), null);
+  const p = lsGet(kPaq(SES.fecha), null) || MEM.paq[SES.fecha];
   if (!p) return false;
   PAQ = armarPaquete(p);
   const e = lsGet(kEst(SES.fecha), null);
   EST = e ? e.est : (p.estados || {}); CURSOR = e ? e.cursor : (p.cursor || 1);
-  IDX = armarIndice(lsGet('ent_idx', null));
+  IDX = armarIndice(lsGet('ent_idx', null) || MEM.idx);
   LOG = lsGet(kLog(), []);
   return true;
 }
 // ¿Ya está en el celular la lista de ese día, bajada hoy y con el calendario completo? Entonces no hace falta volver a bajarla:
 // lo que hicieron los demás llega solo con la sincronización (cada 8 s, solo los cambios).
+// 21-nov: basta con la lista del día bajada hoy. El calendario completo (índice), si faltara, se baja en segundo plano sin detener a nadie.
 function datosLocalesListos(fecha) {
-  const p = lsGet(kPaq(fecha), null);
-  return !!(p && p._ts && new Date(p._ts).toDateString() === new Date().toDateString() && lsGet('ent_idx', null));
+  const p = lsGet(kPaq(fecha), null) || MEM.paq[fecha];
+  return !!(p && p._ts && new Date(p._ts).toDateString() === new Date().toDateString());
+}
+async function asegurarIndice() {
+  if (lsGet('ent_idx', null) || MEM.idx) return;
+  try { const ix = await llamar({ accion: 'indice' }, 45000); MEM.idx = ix; lsSet('ent_idx', ix); IDX = armarIndice(ix); } catch (e) {}
 }
 function guardarEstado() { lsSet(kEst(SES.fecha), { est: EST, cursor: CURSOR }); lsSet('ent_cola', COLA); }
 function guardarLog() { if (LOG.length > 500) LOG = LOG.slice(-500); lsSet(kLog(), LOG); }
 async function descargar(fecha) {
-  const [p, ix] = await Promise.all([llamar({ accion: 'paquete', fecha }, 45000), llamar({ accion: 'indice' }, 45000).catch(() => null)]);
-  p._ts = Date.now();                       // cuándo se bajó: si es de hoy, cambiar de función no vuelve a descargar
+  let n = 0; const listo = x => { cargaPaso(++n === 1 ? '✅ 1 de 2 listo · falta poco…' : '✅ Datos descargados · guardando en el celular…'); return x; };
+  cargaPaso('Convocados del día y calendario completo (2 partes)…');
+  const [p, ix] = await Promise.all([llamar({ accion: 'paquete', fecha }, 45000).then(listo), llamar({ accion: 'indice' }, 45000).then(listo).catch(() => null)]);
+  p._ts = Date.now(); MEM.paq = { [fecha]: p }; if (ix) MEM.idx = ix;                       // cuándo se bajó: si es de hoy, cambiar de función no vuelve a descargar
   Object.keys(localStorage).forEach(k => { if (/^ent_(paq|est)_/.test(k) && !k.endsWith(fecha)) lsDel(k); });
   if (!lsSet(kPaq(fecha), p)) toast('El celular no tiene espacio para guardar la lista: funcionará solo con señal', true);
   if (!lsGet(kEst(fecha), null)) lsSet(kEst(fecha), { est: p.estados || {}, cursor: p.cursor || 1 });
@@ -939,7 +978,7 @@ function infoFecha() {
 $('acc-entrar').onclick = async () => {
   const clave = $('acc-clave').value.trim();
   if (!clave) { $('acc-msg').textContent = 'Escribe la clave del operativo.'; return; }
-  $('acc-msg').textContent = '⏳ Verificando…'; $('acc-entrar').disabled = true;
+  $('acc-msg').textContent = '⏳ Verificando…'; $('acc-entrar').disabled = true; cargaOn('Verificando la clave…', 'Conectando con la hoja central');
   try {
     SES = { claveOp: clave, op: USUARIO.NOMBRE.toUpperCase(), cupo: USUARIO.CUPO };
     LOGIN = await llamar({ accion: 'login' }, 30000);
@@ -948,7 +987,7 @@ $('acc-entrar').onclick = async () => {
     $('acc-msg').textContent = `✅ Nominal: ${fmt(LOGIN.total)} registros (${Object.keys(LOGIN.programas).join(', ')}).`;
     mostrarAcceso(2);
   } catch (e) { SES = null; $('acc-msg').textContent = '⛔ ' + (e.name === 'AbortError' ? 'Sin respuesta de la hoja: revisa la señal.' : e.message); }
-  finally { $('acc-entrar').disabled = false; }
+  finally { $('acc-entrar').disabled = false; cargaOff(); }
 };
 async function iniciarRol(rol, fechaDirecta) {
   const fecha = fechaDirecta || $('acc-fecha').value;
@@ -962,13 +1001,16 @@ async function iniciarRol(rol, fechaDirecta) {
   try {
     SES = Object.assign({}, SES, { rol, mesa: '', fecha, lugar: $('acc-lugar').value || '' });   // en mesa el operador se identifica por su nombre del panel
     if (!local) {
+      cargaOn('Descargando la lista del día', '');
       try { await descargar(fecha); }
-      catch (e) { if (e.clave || !lsGet(kPaq(fecha), null)) throw e; toast('Sin señal: se usa la lista que ya tenía el celular', true); }
+      catch (e) { if (e.clave || !(lsGet(kPaq(fecha), null) || MEM.paq[fecha])) throw e; toast('Sin señal: se usa la lista que ya tenía el celular', true); }
+      finally { cargaOff(); }
     }
     _cuadre = null;
     lsSet('ent_sesion', SES);
     if (!cargarLocal()) throw new Error('No se pudo guardar la lista en el celular');
-    arrancar();
+    arrancar(); asegurarIndice();
+    if (local) toast('⚡ ' + ROLES[rol].slice(3) + ': sin volver a descargar (la lista del día ya está en el celular)');
   } catch (e) { const m = '⛔ ' + (e.clave ? e.message : e.name === 'AbortError' ? 'La descarga tardó demasiado: busca mejor señal.' : e.message); $('acc-msg').textContent = m; toast(m, true); prepararPaso2(); }
 }
 // 13-nov: al abrir la app otro día (o si se quedó abierta de un día para otro) y hoy hay operativo, se pasa sola a elegir la función de HOY.
@@ -1092,20 +1134,23 @@ async function filtrar(texto) {
   if (!j) { try { j = await llamar({ accion: 'consulta', curp }, 20000); if (j.encontrado) j.recibida = j.recepcion === 'RECIBIDA'; } catch (e) { j = null; } }
   let html, motivo;
   let hist = null;
-  if (!j || !j.encontrado) { box.innerHTML = '<div class="vacio">⏳ No está en este operativo: revisando el historial de procesos anteriores…</div>'; hist = await historialDe(curp, lc); }
+  let cambio = [];
+  if (!j || !j.encontrado) { box.innerHTML = '<div class="vacio">⏳ No está en este operativo: revisando si cambió su CURP y el historial de procesos anteriores…</div>';
+    [hist, cambio] = await Promise.all([historialDe(curp, lc), cambioCurp(curp, lc)]); }
   if (!j) { motivo = 'NO CONVOCADO HOY'; html = `<div class="res mal"><div class="t">⛔ NO ESTÁ CONVOCADO HOY</div><p>No se pudo consultar su fecha (sin señal). Regrésale la CURP.</p></div>${htmlHistorial(hist)}`; }
   else if (!j.encontrado) {
-    motivo = hist && hist.seguro ? 'TARJETA DE PROCESO ANTERIOR: SARE LAS AMERICAS' : 'NO ESTA EN EL NOMINAL';
+    motivo = cambio.length ? 'NO ESTA EN EL NOMINAL: POSIBLE CAMBIO DE CURP' : hist && hist.seguro ? 'TARJETA DE PROCESO ANTERIOR: SARE LAS AMERICAS' : 'NO ESTA EN EL NOMINAL';
     html = `<div class="res mal"><div class="t">⛔ NO ESTÁ EN EL NOMINAL DE ESTE OPERATIVO</div><p>${hist && (hist.seguro || (hist.posibles && hist.posibles.length)) ? 'No tiene tarjeta en este operativo.' : 'No hay tarjeta para esta CURP en este operativo. Regrésale la CURP y avisa al supervisor (no se busca por nombre).'}</p>${avisoEdad(curp)}</div>${htmlHistorial(hist)}`;
   }
   else if (!j.recibida) { motivo = 'TARJETA NO RECIBIDA'; html = `<div class="res mal"><div class="t">⛔ SU TARJETA NO LLEGÓ</div>${cctLinea({ cct: j.cct, esc: j.escuela, mun: j.municipio })}${avisoEdad(curp)}</div>`; }
   else { motivo = 'OTRA FECHA: ' + (j.fecha ? fechaLarga(j.fecha) : 'sin fecha');
     html = `<div class="res mal"><div class="t">⛔ CONVOCADO PARA OTRA FECHA</div><div class="fecha-big">📅 ${esc(j.fecha ? fechaLarga(j.fecha).toUpperCase() : 'AÚN SIN FECHA')}${j.cita ? ' · ' + esc(j.cita) + ' H' : ''}</div>${j.sede ? `<p><b>📍 ${esc(j.sede)}</b></p>` : ''}${cctLinea({ cct: j.cct, esc: j.escuela, mun: j.municipio })}<p class="hint" style="color:inherit">Dile qué día le toca y regrésale la CURP.</p></div>`; }
-  box.innerHTML = html; beep(false); vibrar([200, 80, 200]);
+  if (cambio.length) html = htmlCambio(cambio, curp, true) + html;
+  box.innerHTML = html; beep(false); vibrar([200, 80, 200]); if (cambio.length) { hablar('Revisa: posible cambio de CURP'); conectarCambio(box, cambio, curp); }
   registrar('FILTRO_RECHAZO', { t: '', c: curp }, motivo);
   LOG.push({ h: horaAhora(), n: lc.nombre || curp, tipo: 'mal', txt: motivo }); guardarLog(); pintarFiltro();
 }
-function evaluarFiltro(r) {
+function evaluarFiltro(r, nota) {
   const x = EST[r.t], box = $('f-res');
   if (!$('f-curp').innerHTML) cajaCurp('f-curp', r.c, '');
   let html, ok = false, motivo = '';
@@ -1116,7 +1161,7 @@ function evaluarFiltro(r) {
   else { ok = true; const regreso = x && x.e === E.DEVUELTA;
     html = `<div class="res ok"><div class="t">✅ PASA A BÚSQUEDA${regreso ? ' (REGRESÓ)' : ''}</div>${datos(r, true)}${regreso ? `<p><b>Antes no se entregó: ${esc(x.d)}.</b> Verifica que ya traiga lo que faltaba.</p>` : ''}${docsPara(r.c)}<p class="hint" style="color:inherit;margin-top:8px">✏️ Anota la CCT en la copia de la CURP y pásala a búsqueda.</p></div>`; }
   box.innerHTML = html;
-  if (ok) { beep(true); vibrar(80); registrar('FILTRO_OK', r, x && x.e === E.DEVUELTA ? 'REGRESO (ESTABA NO ENTREGADA)' : ''); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'ok', txt: 'Pasa · ' + r.cct }); }
+  if (ok) { beep(true); vibrar(80); registrar('FILTRO_OK', r, [nota || '', x && x.e === E.DEVUELTA ? 'REGRESO (ESTABA NO ENTREGADA)' : ''].filter(String).join(' · ')); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'ok', txt: (nota ? 'Pasa con cambio de CURP · ' : 'Pasa · ') + r.cct }); }
   else if (motivo) { beep(false); vibrar([200, 80, 200]); registrar('FILTRO_RECHAZO', r, motivo); LOG.push({ h: horaAhora(), t: r.t, n: r.n, tipo: 'mal', txt: motivo }); }
   else beep(false);
   guardarLog(); pintarFiltro();
@@ -1368,6 +1413,59 @@ function pedirQuitar(r) {
   };
 
 }
+
+// ════════════════════════════════════════════════════════════
+//  21-nov: CAMBIO DE CURP
+//  Si la CURP no está en el nominal, se buscan becarios con el MISMO NOMBRE (el QR de la CURP lo trae) o con una CURP PARECIDA
+//  (misma fecha de nacimiento y sexo, casi las mismas letras). Un becario pudo cambiar su CURP en RENAPO después de registrarse.
+//  Solo con la confirmación del filtro (y sus comprobantes) pasa a búsqueda con la CURP registrada; queda anotado en la hoja.
+// ════════════════════════════════════════════════════════════
+function curpParecida(a, b) {
+  if (a.length !== 18 || b.length !== 18 || a === b || a.slice(4, 11) !== b.slice(4, 11)) return false;
+  let d = 0; [0, 1, 2, 3, 13, 14, 15].forEach(i => { if (a[i] !== b[i]) d++; }); return d <= 2;
+}
+async function cambioCurp(curp, lc) {
+  const nom = lc && lc.nombre ? nH(lc.nombre) : '', m = new Map();
+  PAQ.lista.forEach(r => { if (!r.c || r.c === curp) return; const mismoN = nom && nH(r.n) === nom, par = curpParecida(curp, r.c);
+    if (mismoN || par) m.set(r.c, { r, motivo: mismoN && par ? 'MISMO NOMBRE Y FECHA DE NACIMIENTO' : mismoN ? 'MISMO NOMBRE' : 'MISMA FECHA DE NACIMIENTO Y CURP PARECIDA', hoy: true }); });
+  try { const j = await llamar({ accion: 'curpSimilar', curp, nombre: lc ? lc.nombre : '' }, 15000);
+    (j.lista || []).forEach(x => { if (m.has(x.curp)) return; const r = PAQ.byC[x.curp];
+      m.set(x.curp, r ? { r, motivo: x.motivo, hoy: true } : { r: { t: x.tarjeta, c: x.curp, n: x.nombre, cct: x.cct, esc: x.escuela, mun: x.municipio, rec: x.recepcion }, motivo: x.motivo, hoy: false, fecha: x.fecha, estado: x.estado }); }); }
+  catch (e) {}
+  return [...m.values()];
+}
+const marcarDif = (a, b) => [...a].map((ch, i) => ch !== b[i] ? '<b>' + esc(ch) + '</b>' : esc(ch)).join('');
+function htmlCambio(l, curp, conBoton) {
+  return `<div class="res aviso"><div class="t">⚠️ ¿CAMBIÓ SU CURP?</div><p>Esta CURP no está registrada, pero hay ${l.length === 1 ? 'un becario' : l.length + ' becarios'} con el mismo nombre o una CURP casi igual. Pregunta si hizo un <b>cambio de CURP</b> (corrección o asociación en RENAPO) y pide la CURP anterior o el comprobante.</p>
+    ${l.map((x, i) => { const r = x.r, e = x.hoy ? EST[r.t] : x.estado, entregable = x.hoy && r.rec === 'RECIBIDA' && !(e && (e.e === E.ENTREGADA || esInc(e)));
+      return `<div class="cambio-it"><div class="nm">${esc(r.n)} ${x.hoy ? chipHom(r) : ''}</div>
+        <div class="sub">Registrada: <span class="cu">${marcarDif(r.c, curp)}</span></div><div class="sub">Presentó:&nbsp;&nbsp; <span class="cu">${esc(curp)}</span></div>
+        <div class="sub"><b>${esc(x.motivo)}</b> · ${esc(r.cct || '')}${r.esc ? ' ' + esc(escCorta(r.esc)) : ''}</div>
+        <div class="sub">${x.hoy ? 'Convocado HOY' : x.fecha ? 'Convocado el ' + esc(fechaLarga(x.fecha)) : 'Sin fecha'}${e ? ' · ' + chipEstado(e) : ''}${r.rec && r.rec !== 'RECIBIDA' ? ' · tarjeta no recibida' : ''}</div>
+        ${conBoton && entregable ? `<button class="btn ok full" style="margin-top:8px" data-cambio="${i}">✅ Es la misma persona: continuar con su CURP registrada</button>` : ''}</div>`; }).join('')}
+    <p class="hint" style="color:inherit">Las letras en rojo son las que cambian. Si no es la misma persona, se queda como rechazo.</p></div>`;
+}
+function conectarCambio(box, l, curp) {
+  box.querySelectorAll('[data-cambio]').forEach(b => b.onclick = () => {
+    const r = l[+b.dataset.cambio].r;
+    abrirModal('✅ Confirmar cambio de CURP', r.n, `<div class="res info" style="margin:0 0 10px"><p>Registrada: <span class="cu" style="font-family:monospace">${esc(r.c)}</span><br>Presentó: <span style="font-family:monospace">${esc(curp)}</span></p></div>
+      <label class="chk"><input type="checkbox" class="cc"> El nombre completo y la fecha de nacimiento coinciden</label>
+      <label class="chk"><input type="checkbox" class="cc"> Presentó la CURP anterior o el comprobante del cambio (o el tutor lo confirma con su identificación)</label>
+      <label class="chk"><input type="checkbox" class="cc"> La identificación del padre, madre o tutor está vigente</label>
+      <button class="btn ok full" id="cc-ok" style="margin-top:10px" disabled>Continuar: pasa a búsqueda</button><button class="btn full" id="cc-no" style="margin-top:6px">Cancelar</button>`);
+    const ch = [...document.querySelectorAll('#modal .cc')]; ch.forEach(c => c.onchange = () => { $('cc-ok').disabled = !ch.every(x => x.checked); });
+    $('cc-no').onclick = () => { $('modal').hidden = true; };
+    $('cc-ok').onclick = () => { $('modal').hidden = true; cajaCurp('f-curp', r.c, r.n); evaluarFiltro(r, 'CAMBIO DE CURP: PRESENTÓ ' + curp); };
+  });
+}
+$('s-cambio-curp').onclick = async () => {
+  abrirModal('🔄 Posible cambio de CURP', 'Rechazos "no está en el nominal" de todo el operativo', '<div class="vacio">⏳ Revisando los rechazos…</div>');
+  try { const j = await llamarPesado({ accion: 'rechazosCurp' }, 75000);
+    $('modal-b').innerHTML = `<p class="hint">Revisé ${fmt(j.revisados || 0)} CURP rechazadas. ${j.lista.length ? 'Estas se parecen a una CURP registrada cuya tarjeta <b>sigue sin entregarse</b>: conviene localizar al becario.' : '✅ Ninguna se parece a una CURP registrada pendiente.'}</p>` +
+      j.lista.map(x => `<div class="cambio-it"><div class="sub">Rechazada: <span class="cu">${esc(x.curp)}</span> · ${esc(x.rechazo.fecha ? fechaLarga(x.rechazo.fecha) : '')} · ${esc(x.rechazo.op)}</div>` +
+        x.candidatos.map(c => `<div class="nm" style="margin-top:6px">${esc(c.nombre)}</div><div class="sub">Registrada: <span class="cu">${marcarDif(c.curp, x.curp)}</span></div><div class="sub">${esc(c.cct)} ${esc(escCorta(c.escuela))} · ${c.fecha ? 'convocado el ' + esc(fechaLarga(c.fecha)) : 'sin fecha'}${c.estado ? ' · ' + chipEstado(c.estado) : ' · sin movimiento'}</div>`).join('') + '</div>').join(''); }
+  catch (e) { $('modal-b').innerHTML = `<div class="vacio">⛔ ${esc(e.message)}</div>`; }
+};
 
 // ════════════════════════════════════════════════════════════
 //  19-nov: TABLERO DEL OPERATIVO (Supervisor y jefe)
@@ -2068,7 +2166,9 @@ async function consultar(texto) {
     cajaCurp('c-curp', lc.curp, lc.nombre);
     if (PAQ.byC[lc.curp]) { box.innerHTML = '<div class="lista">' + fila(PAQ.byC[lc.curp]) + '</div>'; return; }
     const j = await buscarEnIndice(lc.curp);
-    if (j && !j.encontrado) { box.innerHTML = '<div class="vacio">⏳ Revisando el historial de procesos anteriores…</div>'; box.innerHTML = '<div class="res mal"><div class="t">No está en el nominal de este operativo</div></div>' + htmlHistorial(await historialDe(lc.curp, lc)); return; }
+    if (j && !j.encontrado) { box.innerHTML = '<div class="vacio">⏳ Revisando si cambió su CURP y el historial de procesos anteriores…</div>';
+      const [h, cb] = await Promise.all([historialDe(lc.curp, lc), cambioCurp(lc.curp, lc)]);
+      box.innerHTML = (cb.length ? htmlCambio(cb, lc.curp, false) : '') + '<div class="res mal"><div class="t">No está en el nominal de este operativo</div></div>' + htmlHistorial(h); return; }
     box.innerHTML = !j ? '<div class="vacio">Sin el calendario completo en el celular: vuelve a entrar con señal.</div>' :
       `<div class="res info"><div class="t">${j.fecha ? 'Convocado el ' + esc(fechaLarga(j.fecha)) + (j.cita ? ' · ' + esc(j.cita) + ' h' : '') : 'Aún sin fecha'}</div>${j.sede ? `<p><b>📍 ${esc(j.sede)}</b></p>` : ''}${cctLinea({ cct: j.cct, esc: j.escuela, mun: j.municipio })}<p>Tarjeta: ${j.recibida ? 'recibida' : 'NO RECIBIDA'}</p></div>`;
     return;
@@ -2095,15 +2195,15 @@ function pintarOpciones() {
   $('ses-cam').textContent = CAM.simple ? '📷 Cámara: MODO SIMPLE (como Rita Cetina) · toca para volver al normal' : '📷 Cámara: modo normal · si se traba, toca para usar el modo simple';
   $('ses-voz').textContent = lsGet('ent_voz', true) ? '🔊 Alerta de voz de homónimos: ACTIVADA' : '🔇 Alerta de voz de homónimos: apagada';
 }
-$('ses-cam').onclick = () => { CAM.simple = !CAM.simple; lsSet('ent_cam_simple', CAM.simple); detenerCam(true); pintarOpciones(); toast(CAM.simple ? 'Modo simple de cámara activado' : 'Modo normal de cámara'); };
+$('ses-cam').onclick = () => { CAM.simple = !CAM.simple; lsSet('ent_cam_simple', CAM.simple); detenerCam(true); pintarOpciones(); pintarBotonesSimple(); toast(CAM.simple ? 'Modo simple de cámara activado' : 'Modo normal de cámara'); };
 $('ses-voz').onclick = () => { lsSet('ent_voz', !lsGet('ent_voz', true)); pintarOpciones(); if (lsGet('ent_voz', true)) hablar('Alerta de voz activada'); };
 setTimeout(pintarOpciones, 0);
 $('ses-rol').onclick = () => mostrarAcceso(2);
 $('ses-bajar').onclick = async () => {
-  const b = $('ses-bajar'); b.disabled = true; b.textContent = '⏳ Descargando…';
+  const b = $('ses-bajar'); b.disabled = true; b.textContent = '⏳ Descargando…'; cargaOn('Actualizando la lista del día', '');
   try { await sincronizar(true); await descargar(SES.fecha); cargarLocal(); pintarStats(); pintarMiniCal(); refrescarVista(); toast('✅ Lista del día actualizada'); }
   catch (e) { toast('⛔ ' + (e.name === 'AbortError' ? 'Sin respuesta: revisa la señal' : e.message), true); }
-  finally { b.disabled = false; b.textContent = '⬇️ Volver a descargar la lista del día'; pintarSesion(); }
+  finally { cargaOff(); b.disabled = false; b.textContent = '⬇️ Volver a descargar la lista del día'; pintarSesion(); }
 };
 $('ses-salir').onclick = async () => {
   if (COLA.length) { await sincronizar(true); if (COLA.length && !confirm(`Hay ${COLA.length} movimientos SIN ENVIAR. Si cierras ahora se pierden. ¿Cerrar de todos modos?`)) return; }
@@ -2274,7 +2374,7 @@ async function conectar(gen) {
   arrancarCiclo();
   return true;
 }
-async function abrirCam(btn) {
+async function abrirCam(btn, forzarSimple) {
   if (CAM.btn === btn && CAM.activo) { detenerCam(); return; }
   detenerCam();
   const gen = ++CAM.gen;
@@ -2285,11 +2385,11 @@ async function abrirCam(btn) {
   vc.classList.add('active'); btn.classList.add('activo');
   const b = btn.querySelector('b'); if (!b.dataset.t) b.dataset.t = b.textContent; b.textContent = 'DETENER CÁMARA';
   estadoCam(pistaViva() ? '' : 'Abriendo cámara…');
-  if (CAM.simple) return abrirSimple(gen);
-  if (!(await prepararLector(CAM.modo))) { if (gen === CAM.gen) estadoCam('<span style="color:var(--rojo)">📶 No cargó el lector por la señal: usa el escáner de mano o busca WiFi.</span>'); return; }
+  if (CAM.simple || forzarSimple) return abrirSimple(gen);
+  if (!(await prepararLector(CAM.modo))) { if (gen === CAM.gen) estadoCam('<span style="color:var(--rojo)">📶 No cargó el lector por la señal: usa el escáner de mano o busca WiFi.</span>' + ayudaCam()); return; }
   if (gen !== CAM.gen) return;
   try { if (!(await conectar(gen))) return; }
-  catch (e) { if (gen === CAM.gen) estadoCam('<span style="color:var(--rojo)">⚠️ ' + (e.name === 'NotAllowedError' ? 'Permiso denegado: activa la cámara en el candado de la barra de direcciones.' : 'No se pudo abrir la cámara. Cierra otras apps que la usen y toca otra vez el botón.') + '</span>'); return; }
+  catch (e) { if (gen === CAM.gen) estadoCam('<span style="color:var(--rojo)">⚠️ ' + (e.name === 'NotAllowedError' ? 'Permiso denegado: activa la cámara en el candado de la barra de direcciones.' : 'No se pudo abrir la cámara. Cierra otras apps que la usen y toca otra vez el botón.') + '</span>' + ayudaCam()); return; }
   estadoCam(CAM.modo === 'curp' ? '🔍 Apunta al QR o código de barras de la CURP…' : '🔍 Apunta al código de la tarjeta o al QR de la CURP…');
   clearInterval(CAM.wd); CAM.wd = setInterval(() => vigilar(gen), 1500);
 }
@@ -2307,7 +2407,7 @@ async function abrirSimple(gen) {
       if (res && CAM.activo && gen === CAM.gen) { try { leidoCam(String(res.getText()).trim()); } catch (e) { console.error(e); } }
     });
     if (gen === CAM.gen) estadoCam('🔍 Apunta al código… <small>(modo simple: se cierra después de cada lectura)</small>');
-  } catch (e) { if (gen === CAM.gen) estadoCam('<span style="color:var(--rojo)">⚠️ ' + (e.name === 'NotAllowedError' ? 'Permiso denegado: activa la cámara.' : 'No se pudo abrir la cámara. Toca el botón otra vez.') + '</span>'); }
+  } catch (e) { if (gen === CAM.gen) estadoCam('<span style="color:var(--rojo)">⚠️ ' + (e.name === 'NotAllowedError' ? 'Permiso denegado: activa la cámara.' : 'No se pudo abrir la cámara. Toca el botón otra vez o recarga la app.') + '</span><div class="cam-ayuda"><button class="btn borde full" data-recargar="1">🔄 Recargar la app (no se pierde nada)</button></div>'); }
 }
 // Vigilante: si la cámara se cerró, la imagen se congeló o el lector dejó de responder, se reinicia sola.
 // 14-nov: menos sensible (el reinicio se veía como "parpadeo"): solo si la pista terminó, o la imagen lleva 8 s quieta y el celular
@@ -2331,12 +2431,13 @@ async function vigilar(gen) {
   if (CAM._reiniciando || ahora - (CAM.ultReinicio || 0) < 20000) return;
   CAM._reiniciando = true; CAM.ultReinicio = ahora;
   try {
-    if (++CAM.reinicios > 4) { estadoCam('<span style="color:var(--rojo)">⚠️ La cámara no responde. Toca DETENER y vuelve a abrirla; si sigue, recarga la página.</span>'); return; }
+    if (++CAM.reinicios > 4) { estadoCam('<span style="color:var(--rojo)">⚠️ La cámara no responde.</span>' + ayudaCam()); return; }
+    if (CAM.reinicios >= 2) estadoCam('🔄 Reiniciando cámara…' + ayudaCam());
     estadoCam('🔄 Reiniciando cámara…');
     liberarStream(); await dormir(300);
     if (gen !== CAM.gen) return;
     if (await conectar(gen)) estadoCam('🔍 Cámara lista otra vez: apunta al código…');
-  } catch (e) { estadoCam('<span style="color:var(--rojo)">⚠️ No se pudo reabrir la cámara. Toca el botón otra vez.</span>'); }
+  } catch (e) { estadoCam('<span style="color:var(--rojo)">⚠️ No se pudo reabrir la cámara.</span>' + ayudaCam()); }
   finally { CAM._reiniciando = false; }
 }
 // El <video> de la cámara es uno solo: se presta al recuadro del módulo y SIEMPRE regresa al <body> antes de limpiar el recuadro
@@ -2409,6 +2510,29 @@ function leidoCam(txt) {
   if (sec) setTimeout(() => { const el = $(sec); el && el.scrollIntoView({ behavior: 'smooth', block: CAM.continuo ? 'nearest' : 'center' }); }, 150);
 }
 document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => abrirCam(b));
+// 21-nov: ESCANEO SIMPLE a la vista, debajo de cada botón de cámara (antes solo estaba en Sesión y no lo encontraban).
+// Abre la cámara en modo simple solo esa vez; si la cámara normal falla, el mensaje ofrece cambiar a simple para siempre en ese celular.
+function ayudaCam() {
+  return '<div class="cam-ayuda"><button class="btn-simple" data-ir-simple="1"><span class="ic">⚡</span><span><b>USAR ESCANEO SIMPLE</b><small>Funciona en los celulares donde la cámara se traba</small></span></button>' +
+    '<button class="btn borde full" data-recargar="1">🔄 Recargar la app (no se pierde nada)</button></div>';
+}
+document.addEventListener('click', e => {
+  const s = e.target.closest('[data-ir-simple]'), rc = e.target.closest('[data-recargar]');
+  if (s) { const b = CAM.btn; CAM.simple = true; lsSet('ent_cam_simple', true); detenerCam(true); pintarOpciones(); pintarBotonesSimple(); toast('⚡ Escaneo simple activado en este celular'); if (b) setTimeout(() => abrirCam(b), 300); }
+  if (rc) { guardarEstado(); location.reload(); }
+});
+document.querySelectorAll('[data-cam]').forEach(b => {
+  const s = document.createElement('button'); s.className = 'btn-simple'; s.type = 'button'; s.dataset.simpleDe = '1';
+  s.onclick = () => { if (CAM.simple) { CAM.simple = false; lsSet('ent_cam_simple', false); detenerCam(true); pintarOpciones(); pintarBotonesSimple(); toast('Cámara normal'); return; }
+    abrirCam(b, true); };
+  b.insertAdjacentElement('afterend', s);
+});
+function pintarBotonesSimple() {
+  document.querySelectorAll('[data-simple-de]').forEach(s => { s.classList.toggle('on', !!CAM.simple);
+    s.innerHTML = CAM.simple ? '<span class="ic">⚡</span><span><b>ESCANEO SIMPLE ACTIVADO</b><small>El botón de arriba ya usa el modo simple · toca aquí para volver a la cámara normal</small></span>'
+      : '<span class="ic">⚡</span><span><b>¿NO ABRE O SE TRABA? ESCANEO SIMPLE</b><small>Abre la cámara en modo simple (como en Rita Cetina)</small></span>'; });
+}
+pintarBotonesSimple();
 // Al bloquear la pantalla o cambiar de app el celular corta la cámara: se apaga limpia y se reabre sola al volver
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { if (CAM.activo && CAM.btn) { CAM.reabrir = CAM.btn; detenerCam(true); } }
