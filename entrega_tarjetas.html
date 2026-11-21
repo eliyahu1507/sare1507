@@ -158,6 +158,16 @@ label.lbl{display:block;font-family:Montserrat,sans-serif;font-weight:800;font-s
 /* 21-nov: pantalla de carga, escaneo simple y cambio de CURP */
 #carga{position:fixed;inset:0;z-index:9000;background:rgba(74,14,41,.94);display:flex;align-items:center;justify-content:center;padding:24px}
 #carga[hidden]{display:none}
+/* 21-nov C: aviso grande de escaneos sin enviar */
+#pend-aviso{position:fixed;left:0;right:0;bottom:0;z-index:8000;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#E07800;color:#fff;box-shadow:0 -4px 16px rgba(0,0,0,.3);display:flex;gap:10px;align-items:center}
+#pend-aviso[hidden]{display:none}
+#pend-aviso.off{background:#C62828}
+#pend-aviso .num{font-family:Montserrat,sans-serif;font-size:2rem;font-weight:900;line-height:1;min-width:46px;text-align:center}
+#pend-aviso .tx{flex:1;font-size:.86rem;line-height:1.3}#pend-aviso .tx b{display:block;font-size:.98rem}
+#pend-aviso button{background:#fff;color:#8A3B00;border:none;border-radius:10px;padding:10px 12px;font-weight:800;font-size:.8rem;flex:none}
+body.con-pend main{padding-bottom:110px}
+.no-salir{text-align:center}.no-salir .big{font-family:Montserrat,sans-serif;font-size:3.6rem;font-weight:900;color:#C62828;line-height:1}
+.no-salir .t{font-family:Montserrat,sans-serif;font-weight:900;font-size:1.25rem;color:#C62828;margin:6px 0}
 .auto-sync{display:flex;align-items:center;gap:10px;border-radius:12px;padding:9px 12px;margin:0 0 12px;font-size:.84rem;font-weight:600;background:#EAF4EC;color:#1E5631;border:1px solid #B7D9BF}
 .auto-sync.run{background:#FFF6D6;color:#6B4A00;border-color:#E8CF7A;position:sticky;top:6px;z-index:50;box-shadow:0 3px 10px rgba(0,0,0,.12)}
 .auto-sync.err{background:#FDECEC;color:#9B1C1C;border-color:#F2B8B8}
@@ -495,6 +505,7 @@ td.num,th.num{text-align:right}
 </div>
 <div id="print-area" aria-hidden="true"></div>
 
+<div id="pend-aviso" hidden role="alert"><div class="num" id="pa-n">0</div><div class="tx"><b id="pa-t">ESCANEOS SIN ENVIAR</b><span id="pa-s">No cierres la app ni te salgas hasta que llegue a 0.</span></div><button id="pa-btn">Enviar ahora</button></div>
 <div id="carga" hidden role="alertdialog" aria-live="assertive"><div class="cg"><div class="sp"></div><b id="cg-t">Descargando datos…</b><div class="sb" id="cg-s"></div><div class="sg" id="cg-seg"></div><div class="tip" id="cg-tip"></div><button class="btn borde full" id="cg-btn" hidden style="margin-top:12px">Seguir trabajando mientras termina</button></div></div>
 <div class="modal-ov" id="modal" hidden><div class="modal"><div class="modal-h"><h2 id="modal-t"></h2><small id="modal-s"></small><button class="modal-x" id="modal-x" aria-label="Cerrar">✕</button></div><div class="modal-b" id="modal-b"></div></div></div>
 <div class="toast" id="toast" hidden></div>
@@ -505,7 +516,7 @@ td.num,th.num{text-align:right}
 // ════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN
 // ════════════════════════════════════════════════════════════
-const APP_VERSION = '21-nov-26 B';
+const APP_VERSION = '21-nov-26 C';
 const URL_ENTREGA = 'https://script.google.com/macros/s/AKfycby_6w6m64N4YswzV3ucfxX9njQYE1EPjiJXoAM8sZfLj2y3iNoIO4Mjy5bvP7zXoRULZA/exec';
 const CLAVE_APP = 'sare1507-0803a849ee47';
 // Supervisores base (siempre). Los demás permisos (supervisor, búsqueda) vienen de la pestaña Usuarios de la hoja al entrar con la clave.
@@ -779,7 +790,21 @@ async function sincronizar(forzar) {
   }
   finally { _syncEnCurso = false; pintarSync(); pintarStats(); refrescarVista(); }
 }
+// 21-nov C: mientras haya escaneos sin enviar, aviso GRANDE fijo abajo (aparece si llevan más de 5 s sin irse o si no hay señal)
+let _colaDesde = 0;
+function pintarPendientes() {
+  const a = $('pend-aviso'); if (!a) return;
+  if (!COLA.length || !SES || !SES.rol) { _colaDesde = 0; a.hidden = true; document.body.classList.remove('con-pend'); return; }
+  if (!_colaDesde) { _colaDesde = Date.now(); setTimeout(pintarPendientes, 5200); }
+  if (!_syncError && Date.now() - _colaDesde < 5000) return;
+  a.hidden = false; document.body.classList.add('con-pend'); a.classList.toggle('off', !!_syncError);
+  $('pa-n').textContent = COLA.length;
+  $('pa-t').textContent = (COLA.length === 1 ? 'ESCANEO SIN ENVIAR' : 'ESCANEOS SIN ENVIAR') + (_syncError ? ' · SIN SEÑAL' : ' · ENVIANDO…');
+  $('pa-s').textContent = _syncError ? 'Busca señal o WiFi. NO cierres la app ni te salgas: no llegan a la hoja hasta que se envíen.' : 'No cierres la app ni te salgas hasta que llegue a 0.';
+}
+$('pa-btn').onclick = async () => { $('pa-btn').disabled = true; $('pa-btn').textContent = '⏳'; await sincronizar(true); $('pa-btn').disabled = false; $('pa-btn').textContent = 'Enviar ahora'; if (!COLA.length) toast('✅ Todo enviado a la hoja'); };
 function pintarSync() {
+  pintarPendientes();
   const b = $('b-sync'); if (!SES || !SES.rol) { b.hidden = true; return; }
   b.hidden = false;
   if (_syncError) { b.className = 'badge off'; b.textContent = '🔴 Sin señal' + (COLA.length ? ' · ' + COLA.length + ' por enviar' : ''); }
@@ -1031,7 +1056,13 @@ function nuevoDia() {
   $('acc-msg').textContent = '📅 Es un nuevo día: elige tu función para hoy. Lo de ayer ya quedó guardado' + (COLA.length ? ' (se siguen enviando ' + COLA.length + ' pendientes)' : '') + '.';
   return true;
 }
-function arrancar() { pestañas(); cabecera(); pintarMiniCal(); pintarSync(); pintarStats(); ver(SES.rol); sincronizar(); pintarMunicipios(); if (SES.rol !== 'MESA') setTimeout(cargarHistorial, 6000); }
+function recordarPendientes() {
+  if (!COLA.length || !SES || !SES.rol || !$('modal').hidden) return;
+  abrirModal('⚠️ Tienes escaneos sin enviar', '', `<div class="no-salir"><div class="big">${COLA.length}</div><div class="t">SIN ENVIAR</div><p>Se están enviando ahora. <b>No cierres la app ni te salgas</b> hasta que el aviso de abajo llegue a 0.</p></div><button class="btn ok full" id="rp-ok">Entendido</button>`);
+  $('rp-ok').onclick = () => { $('modal').hidden = true; };
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && COLA.length) setTimeout(() => { if (COLA.length) recordarPendientes(); }, 4000); });
+function arrancar() { const habia = COLA.length; if (habia) setTimeout(() => { if (COLA.length) recordarPendientes(); }, 4000); pestañas(); cabecera(); pintarMiniCal(); pintarSync(); pintarStats(); ver(SES.rol); sincronizar(); pintarMunicipios(); if (SES.rol !== 'MESA') setTimeout(cargarHistorial, 6000); }
 // 16-nov: avance por MUNICIPIO en la pantalla principal (con señal; se actualiza cada 5 min). Al tocarlo se ve el detalle.
 const nomMun = k => k.replace(/ DE (MORELOS|BERRIOZABAL)$/, '').toLowerCase().replace(/(^|\s)\S/g, x => x.toUpperCase());
 async function pintarMunicipios(fresco) {
@@ -2248,7 +2279,32 @@ function pintarOpciones() {
 $('ses-cam').onclick = () => { CAM.simple = !CAM.simple; lsSet('ent_cam_simple', CAM.simple); detenerCam(true); pintarOpciones(); pintarBotonesSimple(); toast(CAM.simple ? 'Modo simple de cámara activado' : 'Modo normal de cámara'); };
 $('ses-voz').onclick = () => { lsSet('ent_voz', !lsGet('ent_voz', true)); pintarOpciones(); if (lsGet('ent_voz', true)) hablar('Alerta de voz activada'); };
 setTimeout(pintarOpciones, 0);
-$('ses-rol').onclick = () => mostrarAcceso(2);
+// 21-nov C: NO se puede cambiar de función/día ni cerrar sesión con escaneos sin enviar (a Mayra se le quedaron 15).
+// Primero se intenta enviar; si no se puede, ventana grande que lo impide. Solo el supervisor puede cambiar de función de todos modos
+// (lo pendiente se sigue enviando desde el celular); borrar lo pendiente exige escribir el número.
+async function puedeSalir(accion) {
+  if (!COLA.length) return true;
+  cargaOn('Enviando ' + COLA.length + ' escaneo' + (COLA.length > 1 ? 's' : '') + ' antes de salir', 'No cierres la app', 'Espera a que se envíe todo a la hoja central.');
+  try { await sincronizar(true); if (COLA.length) await sincronizar(true); } finally { cargaOff(); }
+  if (!COLA.length) { toast('✅ Todo enviado: ya puedes continuar'); return true; }
+  return await new Promise(res => {
+    const sup = SES.rol === 'SUPERVISOR' || esSupervisor(), n = COLA.length;
+    abrirModal('⛔ No te salgas todavía', '', `<div class="no-salir"><div class="big">${n}</div><div class="t">${n === 1 ? 'ESCANEO SIN ENVIAR' : 'ESCANEOS SIN ENVIAR'}</div>
+      <p>${_syncError ? '📶 No hay señal con la hoja central.' : 'La hoja todavía no los recibe.'} Si te sales ${accion === 'salir' ? 'y cierras sesión, <b>se pierden</b>' : 'ahora, <b>no llegan al cuadre</b>'}.</p>
+      <p><b>Busca señal o WiFi y toca "Enviar otra vez".</b> Cuando el número llegue a 0, ya puedes salir.</p></div>
+      <button class="btn ok full" id="ns-env" style="margin-top:10px">🔄 Enviar otra vez</button><button class="btn full" id="ns-no" style="margin-top:6px">Me quedo aquí</button>
+      ${accion === 'rol' && sup ? '<button class="btn borde full" id="ns-si" style="margin-top:14px">Cambiar de todos modos (se siguen enviando desde este celular)</button>' : ''}
+      ${accion === 'salir' ? `<details style="margin-top:14px"><summary class="hint">Borrar y perder los ${n} escaneos</summary><p class="hint">Escribe ${n} para confirmar que se pierden.</p><input class="main-input" id="ns-num" inputmode="numeric" style="width:100%"><button class="btn mal full" id="ns-borrar" style="margin-top:6px">Cerrar sesión y perderlos</button></details>` : ''}`);
+    $('modal-x').onclick = () => { $('modal').hidden = true; res(false); };
+    $('ns-no').onclick = () => { $('modal').hidden = true; res(false); };
+    $('ns-env').onclick = async () => { $('ns-env').disabled = true; $('ns-env').textContent = '⏳ Enviando…'; await sincronizar(true);
+      if (!COLA.length) { $('modal').hidden = true; toast('✅ Todo enviado: ya puedes continuar'); res(true); }
+      else { $('ns-env').disabled = false; $('ns-env').textContent = '🔄 Enviar otra vez (quedan ' + COLA.length + ')'; } };
+    if ($('ns-si')) $('ns-si').onclick = () => { $('modal').hidden = true; res(true); };
+    if ($('ns-borrar')) $('ns-borrar').onclick = () => { if ($('ns-num').value.trim() !== String(COLA.length)) { toast('Escribe el número exacto', true); return; } $('modal').hidden = true; res('perder'); };
+  });
+}
+$('ses-rol').onclick = async () => { if (await puedeSalir('rol')) mostrarAcceso(2); };
 $('ses-bajar').onclick = async () => {
   const b = $('ses-bajar'); b.disabled = true; b.textContent = '⏳ Descargando…'; cargaOn('Actualizando la lista del día', '');
   try { await sincronizar(true); await descargar(SES.fecha); cargarLocal(); pintarStats(); pintarMiniCal(); refrescarVista(); toast('✅ Lista del día actualizada'); }
@@ -2256,7 +2312,7 @@ $('ses-bajar').onclick = async () => {
   finally { cargaOff(); b.disabled = false; b.textContent = '⬇️ Volver a descargar la lista del día'; pintarSesion(); }
 };
 $('ses-salir').onclick = async () => {
-  if (COLA.length) { await sincronizar(true); if (COLA.length && !confirm(`Hay ${COLA.length} movimientos SIN ENVIAR. Si cierras ahora se pierden. ¿Cerrar de todos modos?`)) return; }
+  if (COLA.length && !(await puedeSalir('salir'))) return;
   Object.keys(localStorage).forEach(k => { if (/^ent_/.test(k)) lsDel(k); });
   location.reload();
 };
