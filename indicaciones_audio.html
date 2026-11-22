@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#691C32">
+<title>Indicaciones en audio</title>
+<style>
+:root{--g:#691C32;--g2:#9F2241;--d:#BC955C;--d2:#DDC9A3;--bg:#F6F2EE;--t:#1f1f1f;--m:#5a5a5a;--l:#E5DDD3}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--t);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+header{background:var(--g);color:#fff;padding:14px 16px 12px;border-bottom:5px solid var(--d)}
+header small{color:var(--d2);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase}
+header h1{margin:2px 0 0;font-size:1.25rem}
+main{max-width:640px;margin:0 auto;padding:12px 14px 140px}
+.aviso{background:#FFF6D6;border:1px solid #E8CF7A;color:#5C3D00;border-radius:12px;padding:10px 12px;font-size:.86rem;margin:0 0 12px}
+.aviso[hidden]{display:none}
+.bloques{display:grid;gap:10px}
+.bl{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:2px solid var(--l);background:#fff;border-radius:16px;padding:12px 14px;min-height:72px;font:inherit;color:inherit;cursor:pointer}
+.bl .n{flex:none;width:44px;height:44px;border-radius:50%;background:var(--g);color:#fff;display:grid;place-items:center;font-weight:800;font-size:1.15rem}
+.bl b{display:block;font-size:1.02rem}.bl span.s{font-size:.8rem;color:var(--m)}
+.bl.todo{background:var(--g);color:#fff;border-color:var(--g)}.bl.todo .n{background:var(--d);color:var(--g)}.bl.todo span.s{color:var(--d2)}
+.bl.on{border-color:var(--d);box-shadow:0 0 0 3px var(--d2)}
+.ajustes{background:#fff;border:1px solid var(--l);border-radius:14px;padding:10px 12px;margin:14px 0 0}
+.ajustes summary{font-weight:700;color:var(--g);cursor:pointer;padding:4px 0}
+.fila{display:flex;align-items:center;gap:10px;margin:10px 0;flex-wrap:wrap}
+.fila label{min-width:130px;font-size:.88rem;font-weight:600}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:2px solid var(--l);background:#fff;border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer}
+.seg button[aria-pressed=true]{border-color:var(--g);background:var(--g);color:#fff}
+select{font:inherit;padding:8px;border-radius:10px;border:2px solid var(--l);max-width:100%}
+.hint{font-size:.78rem;color:var(--m);margin:4px 0}
+/* reproductor fijo */
+#rep{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:4px solid var(--d);box-shadow:0 -6px 18px rgba(0,0,0,.15);padding:10px 14px calc(12px + env(safe-area-inset-bottom))}
+#rep .tit{font-size:.78rem;color:var(--m);display:flex;justify-content:space-between;gap:8px}
+#rep .txt{font-size:1.15rem;font-weight:700;color:var(--g);min-height:2.9em;margin:4px 0 8px;line-height:1.3}
+#rep .btns{display:flex;gap:8px}
+#rep .btns button{flex:1;border:none;border-radius:12px;padding:14px 8px;font:inherit;font-weight:800;font-size:1rem;cursor:pointer}
+#b-pausa{background:#EFE6D6;color:var(--g)}#b-parar{background:#C62828;color:#fff}
+/* pantalla grande para que también lo lean */
+#grande{position:fixed;inset:0;background:var(--g);color:#fff;z-index:50;display:flex;flex-direction:column;justify-content:center;padding:24px;text-align:center}
+#grande[hidden]{display:none}
+#grande .g{font-size:2.1rem;font-weight:800;line-height:1.25}
+#grande .p{color:var(--d2);margin-top:18px;font-size:1rem}
+#grande button{margin-top:26px;align-self:center;border:2px solid var(--d);background:transparent;color:#fff;border-radius:12px;padding:12px 20px;font:inherit;font-weight:700}
+.mis{display:grid;gap:8px;margin-top:6px}
+.mi{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--l);border-radius:12px;padding:8px 10px}
+.mi .nm{flex:1 1 160px;font-weight:600;font-size:.9rem}.mi .es{display:block;font-size:.75rem;color:var(--m);font-weight:400}
+.mi button{border:none;border-radius:9px;padding:8px 10px;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;background:#EFE6D6;color:var(--g)}
+.mi button.rec{background:var(--g2);color:#fff}
+#prompter{position:fixed;inset:0;background:#111;color:#fff;z-index:60;display:flex;flex-direction:column;padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
+#prompter[hidden]{display:none}
+#prompter .top{display:flex;justify-content:space-between;font-size:.9rem;color:#ccc}
+#prompter .dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#E53935;margin-right:6px;animation:lat 1s infinite}
+@keyframes lat{50%{opacity:.2}}
+#prompter .fr{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.9rem;font-weight:700;line-height:1.3;padding:10px}
+#prompter .sig{font-size:.95rem;color:#aaa;text-align:center;min-height:2.6em}
+#prompter .pb{display:flex;gap:8px;margin-top:10px}
+#prompter .pb button{flex:1;border:none;border-radius:12px;padding:16px 8px;font:inherit;font-weight:800;font-size:1rem}
+#p-sig{background:var(--d);color:#111}#p-fin{background:#2E7D32;color:#fff}#p-can{background:#444;color:#fff;flex:0 0 auto!important}
+@media (min-width:700px){#grande .g{font-size:3rem}}
+</style>
+</head>
+<body>
+<header>
+  <small>SARE 1507 · Entrega de tarjetas Beca Benito Juárez / JEF</small>
+  <h1>📢 Indicaciones en audio</h1>
+</header>
+<main>
+  <div class="aviso" id="sin-voz" hidden>⚠️ Este celular no tiene voz en español. Ve a <b>Ajustes → Texto a voz → Google</b> e instala los datos de voz de <b>Español (México)</b>; así también funciona sin señal.</div>
+  <p class="hint" style="margin:0 0 10px">Conecta el celular a la bocina (Bluetooth o cable) y toca un bloque. Primero suena un timbre para llamar la atención; después la voz da la indicación.</p>
+  <div class="bloques" id="bloques"></div>
+
+  <details class="ajustes" id="sec-mia">
+    <summary>🎙 Grabar con mi voz</summary>
+    <p class="hint">Graba cada bloque con tu propia voz. La pantalla te muestra frase por frase lo que hay que leer; tú tocas <b>Siguiente</b> al terminar cada una. Las grabaciones se guardan en este celular y suenan en lugar de la voz automática. Busca un lugar callado y habla a un palmo del celular.</p>
+    <div class="mis" id="mis"></div>
+  </details>
+  <details class="ajustes">
+    <summary>⚙️ Ajustes de la voz</summary>
+    <div class="fila"><label>Voz a usar</label><div class="seg" id="fuente"><button data-v="mia">🎙 Mi voz grabada</button><button data-v="cel">🤖 Voz del celular</button></div></div>
+    <p class="hint" style="margin-top:-4px">Con "Mi voz grabada", los bloques que no hayas grabado se leen con la voz del celular.</p>
+    <div class="fila"><label>Repetir cada bloque</label><div class="seg" id="rep-n"><button data-v="1">1 vez</button><button data-v="2">2 veces</button><button data-v="3">3 veces</button></div></div>
+    <div class="fila"><label>Velocidad</label><div class="seg" id="vel"><button data-v="0.8">Lenta</button><button data-v="0.9">Normal</button><button data-v="1">Rápida</button></div></div>
+    <div class="fila"><label>Timbre antes de hablar</label><div class="seg" id="timbre"><button data-v="1">Sí</button><button data-v="0">No</button></div></div>
+    <div class="fila"><label>Texto en grande</label><div class="seg" id="pantalla"><button data-v="1">Sí</button><button data-v="0">No</button></div></div>
+    <div class="fila"><label>Voz</label><select id="voz"></select></div>
+    <p class="hint">El texto en grande sirve para que quien esté cerca también lo lea. La pantalla no se apaga mientras habla.</p>
+  </details>
+</main>
+
+<div id="rep">
+  <div class="tit"><span id="r-bloque">Toca un bloque para empezar</span><span id="r-paso"></span></div>
+  <div class="txt" id="r-txt">—</div>
+  <div class="btns"><button id="b-pausa">⏸ Pausa</button><button id="b-parar">⏹ Detener</button></div>
+</div>
+<div id="prompter" hidden>
+  <div class="top"><span><span class="dot"></span>Grabando · <b id="p-blq"></b></span><span id="p-t">0:00</span></div>
+  <div class="fr" id="p-fr"></div>
+  <div class="sig" id="p-nx"></div>
+  <div class="pb"><button id="p-can">✖</button><button id="p-sig">Siguiente ▶</button><button id="p-fin" hidden>✅ Terminar y guardar</button></div>
+</div>
+<div id="grande" hidden><div class="g" id="g-txt"></div><div class="p" id="g-paso"></div><button id="g-cerrar">⏹ Detener</button></div>
+
+<script>
+'use strict';
+// ── Guion: frases cortas, con pausas, en el orden en que se piden los documentos ──
+const BLOQUES = [
+  { id: 'bienvenida', titulo: 'Bienvenida y cómo funciona', sub: 'Qué van a hacer hoy', frases: [
+    'Buenos días. Bienvenidas y bienvenidos a la entrega de tarjetas de la Beca Benito Juárez.',
+    'Por favor, mientras esperan su turno, vayan preparando sus documentos.',
+    'De cada documento se entrega solo una copia.',
+    'El único original que deben mostrar es la identificación oficial con fotografía, vigente.',
+    'Acomoden sus copias en el orden que les vamos a indicar.',
+    'Primero, en la entrada se revisa la CURP del estudiante.',
+    'Después esperan su turno aquí en las gradas.',
+    'En la mesa, el personal revisa sus documentos, llena el acuse y les entrega la tarjeta.',
+    'Con sus documentos en orden, la entrega es más rápida para todos. Gracias.'
+  ]},
+  { id: 'menor', titulo: 'Estudiantes de 15 a 17 años', sub: 'Vienen con su mamá, papá o tutor', frases: [
+    'Indicaciones para estudiantes de quince a diecisiete años.',
+    'El estudiante debe venir acompañado de su mamá, su papá o su tutor.',
+    'Ordenen una copia de cada documento, de esta manera.',
+    'Primero, los documentos del estudiante.',
+    'Uno: acta de nacimiento del estudiante.',
+    'Dos: CURP del estudiante, certificada.',
+    'Tres: comprobante de domicilio, no mayor a seis meses.',
+    'Después, los documentos de quien lo acompaña.',
+    'Cuatro: identificación oficial con fotografía, vigente. Esta se presenta en original y copia.',
+    'Cinco: acta de nacimiento de quien lo acompaña.',
+    'Seis: CURP de quien lo acompaña.',
+    'Atrás de la copia de la identificación, anoten el número de teléfono y el correo electrónico de quien acompaña al estudiante.',
+    'Repito el orden: acta, CURP y comprobante del estudiante. Luego identificación, acta y CURP de quien lo acompaña.'
+  ]},
+  { id: 'mayor', titulo: 'Estudiantes de 18 años o más', sub: 'Viene el estudiante', frases: [
+    'Indicaciones para estudiantes de dieciocho años o más.',
+    'El estudiante viene personalmente.',
+    'Ordenen una copia de cada documento, de esta manera.',
+    'Uno: identificación oficial con fotografía, vigente. Esta se presenta en original y copia.',
+    'Dos: acta de nacimiento.',
+    'Tres: CURP certificada.',
+    'Cuatro: comprobante de domicilio, no mayor a seis meses.',
+    'Atrás de la copia de la identificación, anoten su número de teléfono y su correo electrónico.',
+    'Repito el orden: identificación, acta de nacimiento, CURP y comprobante de domicilio.'
+  ]},
+  { id: 'aceptados', titulo: 'Documentos que sí se aceptan', sub: 'Identificación y comprobante de domicilio', frases: [
+    'Como identificación oficial con fotografía se acepta cualquiera de estas.',
+    'Credencial para votar, I N E.',
+    'Pasaporte.',
+    'Licencia de conducir.',
+    'Cartilla del servicio militar.',
+    'Credencial de algún servicio médico.',
+    'O constancia de identidad emitida por el ayuntamiento.',
+    'Todas deben estar vigentes.',
+    'Como comprobante de domicilio, no mayor a seis meses, se acepta un recibo de servicio,',
+    'o una constancia de domicilio emitida por la autoridad local o el ayuntamiento.'
+  ]},
+  { id: 'importante', titulo: 'Importante: lo que no se acepta', sub: 'Errores más comunes', frases: [
+    'Atención, por favor. Esto es importante.',
+    'La CURP del estudiante debe estar certificada por el Registro Civil.',
+    'De la I N E traigan copia. No se acepta escaneo.',
+    'No se aceptan actas de nacimiento en letra manuscrita.',
+    'Si el estudiante es extranjero, solo se aceptan documentos de México: carta de naturalización o pasaporte mexicano.',
+    'Si su comprobante es recibo de gas, debe estar completo, con el talón de pago.',
+    'Los recibos de Izzi o Totalplay solo se aceptan si incluyen teléfono.',
+    'No se aceptan recibos de teléfono celular.',
+    'Revisen que su identificación esté vigente.'
+  ]},
+  { id: 'datos', titulo: 'Datos que deben tener a la mano', sub: 'Para llenar el acuse más rápido', frases: [
+    'Tengan a la mano estos datos para llenar el acuse más rápido.',
+    'El número de celular del estudiante.',
+    'De quien lo acompaña: su ocupación, su domicilio con código postal, su celular y su correo electrónico.',
+    'Y los datos de un beneficiario: nombre completo, parentesco y número de celular.',
+    'Estudiantes mayores de edad: su celular, el número de su identificación y su correo.'
+  ]},
+  { id: 'cierre', titulo: 'Recordatorio final', sub: 'Turno, día de cita y trámite gratuito', frases: [
+    'Recuerden: solo se atiende a quien fue convocado el día de hoy.',
+    'El trámite es completamente gratuito. Nadie les debe pedir dinero.',
+    'Permanezcan en su lugar hasta que los llamen, y tengan sus documentos listos y en orden.',
+    'Gracias por su paciencia y su atención.'
+  ]}
+];
+const TODO = { id: 'todo', titulo: 'Todo seguido', sub: 'Las indicaciones completas, una tras otra' };
+
+// ── Ajustes (se recuerdan en este celular) ──
+const AJ = Object.assign({ fuente: 'mia', rep: '1', vel: '0.9', timbre: '1', pantalla: '0', voz: '' }, leer());
+function leer() { try { return JSON.parse(localStorage.getItem('ind_audio_aj') || '{}'); } catch (e) { return {}; } }
+function guardar() { try { localStorage.setItem('ind_audio_aj', JSON.stringify(AJ)); } catch (e) {} }
+const $ = id => document.getElementById(id);
+function segmento(id, clave) {
+  const box = $(id), pinta = () => box.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === AJ[clave]));
+  box.querySelectorAll('button').forEach(b => b.onclick = () => { AJ[clave] = b.dataset.v; guardar(); pinta(); });
+  pinta();
+}
+segmento('fuente', 'fuente'); segmento('rep-n', 'rep'); segmento('vel', 'vel'); segmento('timbre', 'timbre'); segmento('pantalla', 'pantalla');
+
+// ── Voces del celular ──
+let VOCES = [];
+function cargarVoces() {
+  const todas = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
+  VOCES = todas.filter(v => /^es/i.test(v.lang)).sort((a, b) => rango(a) - rango(b));
+  $('sin-voz').hidden = !!VOCES.length || !todas.length;
+  $('voz').innerHTML = VOCES.map((v, i) => `<option value="${i}">${v.name} (${v.lang})${v.localService ? '' : ' · requiere señal'}</option>`).join('') || '<option>Voz del sistema</option>';
+  const i = VOCES.findIndex(v => v.name === AJ.voz); if (i >= 0) $('voz').value = String(i);
+}
+const rango = v => (/es[-_]MX/i.test(v.lang) ? 0 : /es[-_](US|419)/i.test(v.lang) ? 1 : 2) + (v.localService ? 0 : 0.5);
+$('voz').onchange = () => { const v = VOCES[+$('voz').value]; AJ.voz = v ? v.name : ''; guardar(); };
+if (window.speechSynthesis) { cargarVoces(); speechSynthesis.onvoiceschanged = cargarVoces; }
+else $('sin-voz').hidden = false;
+
+// ── Bloques en pantalla ──
+$('bloques').innerHTML = [TODO, ...BLOQUES].map((b, i) => `<button class="bl${b.id === 'todo' ? ' todo' : ''}" data-id="${b.id}"><span class="n">${b.id === 'todo' ? '▶' : i}</span><span><b>${b.titulo}</b><span class="s">${b.sub}</span></span></button>`).join('');
+document.querySelectorAll('.bl').forEach(b => b.onclick = () => reproducir(b.dataset.id));
+
+// ── Reproducción: frase por frase (Chrome corta los textos largos), con timbre y repeticiones ──
+let cola = [], idx = 0, activo = false, pausado = false, lock = null, gen = 0;
+function reproducir(id) {
+  parar();
+  const lista = id === 'todo' ? BLOQUES : BLOQUES.filter(b => b.id === id), n = Number(AJ.rep) || 1;
+  cola = [];
+  lista.forEach(b => { const mia = AJ.fuente === 'mia' && GRAB[b.id]; for (let r = 0; r < (id === 'todo' ? 1 : n); r++) { cola.push({ timbre: true, b }); if (mia) cola.push({ grab: true, b }); else b.frases.forEach(f => cola.push({ f, b })); cola.push({ espera: 1500, b }); } });
+  document.querySelectorAll('.bl').forEach(x => x.classList.toggle('on', x.dataset.id === id));
+  activo = true; pausado = false; idx = 0; $('b-pausa').textContent = '⏸ Pausa';
+  if (AJ.pantalla === '1') $('grande').hidden = false;
+  pedirPantalla(); siguiente(++gen);
+}
+function siguiente(g) {
+  if (g !== gen || !activo || pausado) return;
+  if (idx >= cola.length) return terminar();
+  const x = cola[idx++], tot = cola.filter(c => c.f).length, num = cola.slice(0, idx).filter(c => c.f).length;
+  $('r-bloque').textContent = x.b.titulo; $('r-paso').textContent = x.f ? num + ' de ' + tot : '';
+  if (x.timbre) { if (AJ.timbre === '1') { timbre(); setTimeout(() => siguiente(g), 1300); } else siguiente(g); return; }
+  if (x.espera) { setTimeout(() => siguiente(g), x.espera); return; }
+  if (x.grab) { $('r-txt').textContent = '🎙 ' + x.b.titulo; $('g-txt').textContent = x.b.titulo; $('g-paso').textContent = 'Indicación con tu voz';
+    AUD.src = GRAB[x.b.id].url; AUD.playbackRate = 1; AUD.onended = () => setTimeout(() => siguiente(g), 450); AUD.onerror = AUD.onended;
+    AUD.play().catch(() => setTimeout(() => siguiente(g), 450)); return; }
+  $('r-txt').textContent = x.f; $('g-txt').textContent = x.f; $('g-paso').textContent = x.b.titulo;
+  if (!window.speechSynthesis) { setTimeout(() => siguiente(g), 2500); return; }
+  const u = new SpeechSynthesisUtterance(x.f), v = VOCES[+$('voz').value];
+  if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'es-MX';
+  u.rate = Number(AJ.vel) || 0.9; u.pitch = 1; u.volume = 1;
+  u.onend = () => setTimeout(() => siguiente(g), 450);
+  u.onerror = () => setTimeout(() => siguiente(g), 450);
+  speechSynthesis.speak(u);
+}
+function terminar() { activo = false; $('r-txt').textContent = '✅ Terminó. Toca otro bloque o el mismo para repetir.'; $('r-paso').textContent = ''; $('grande').hidden = true; document.querySelectorAll('.bl').forEach(x => x.classList.remove('on')); soltarPantalla(); }
+function parar() { gen++; activo = false; pausado = false; try { speechSynthesis.cancel(); } catch (e) {} try { AUD.onended = null; AUD.pause(); } catch (e) {} $('grande').hidden = true; soltarPantalla(); $('r-txt').textContent = '—'; $('r-paso').textContent = ''; document.querySelectorAll('.bl').forEach(x => x.classList.remove('on')); }
+$('b-parar').onclick = parar; $('g-cerrar').onclick = parar;
+$('b-pausa').onclick = () => {
+  if (!activo) return;
+  const enGrab = cola[idx - 1] && cola[idx - 1].grab && AUD.src && !AUD.ended;
+  if (!pausado) { pausado = true; if (enGrab) { AUD.pause(); } else { gen++; try { speechSynthesis.cancel(); } catch (e) {} idx = Math.max(0, idx - 1); } $('b-pausa').textContent = '▶ Seguir'; }
+  else { pausado = false; $('b-pausa').textContent = '⏸ Pausa'; if (enGrab) AUD.play().catch(() => {}); else siguiente(++gen); }
+};
+// ── Mi voz: grabaciones guardadas en el celular (IndexedDB) ──
+const AUD = new Audio(); let GRAB = {};
+function bd() { return new Promise((ok, mal) => { const r = indexedDB.open('ind_audio', 1); r.onupgradeneeded = () => r.result.createObjectStore('grab'); r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error); }); }
+async function bdOp(modo, fn) { const db = await bd(); return new Promise((ok, mal) => { const tx = db.transaction('grab', modo), st = tx.objectStore('grab'), r = fn(st); tx.oncomplete = () => ok(r && r.result); tx.onerror = () => mal(tx.error); }); }
+async function cargarGrab() {
+  GRAB = {};
+  try { const db = await bd(); await new Promise(ok => { const c = db.transaction('grab').objectStore('grab').openCursor();
+    c.onsuccess = () => { const k = c.result; if (!k) return ok(); GRAB[k.key] = Object.assign({}, k.value, { url: URL.createObjectURL(k.value.blob) }); k.continue(); }; c.onerror = ok; }); } catch (e) {}
+  pintarMis();
+}
+const mmss = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
+function pintarMis() {
+  $('mis').innerHTML = BLOQUES.map((b, i) => { const g = GRAB[b.id];
+    return `<div class="mi"><span class="nm">${i + 1}. ${b.titulo}<span class="es">${g ? '✅ Grabado · ' + mmss(g.seg) + ' · ' + new Date(g.fecha).toLocaleDateString('es-MX') : 'Sin grabar (usa la voz del celular)'}</span></span>
+      <button class="rec" data-a="rec" data-id="${b.id}">🎙 ${g ? 'Regrabar' : 'Grabar'}</button>${g ? `<button data-a="oir" data-id="${b.id}">▶</button><button data-a="bajar" data-id="${b.id}">⬇</button><button data-a="borrar" data-id="${b.id}">🗑</button>` : ''}</div>`; }).join('');
+  $('mis').querySelectorAll('button').forEach(x => x.onclick = () => accionMia(x.dataset.a, x.dataset.id));
+}
+async function accionMia(a, id) {
+  const b = BLOQUES.find(z => z.id === id), g = GRAB[id];
+  if (a === 'rec') return grabar(b);
+  if (a === 'oir') { parar(); AUD.onended = null; AUD.src = g.url; AUD.play().catch(() => {}); return; }
+  if (a === 'bajar') { const l = document.createElement('a'); l.href = g.url; l.download = (BLOQUES.indexOf(b) + 1) + '_' + id + extension(g.blob.type); document.body.appendChild(l); l.click(); l.remove(); return; }
+  if (a === 'borrar') { if (!confirm('¿Borrar tu grabación de "' + b.titulo + '"?')) return; await bdOp('readwrite', st => st.delete(id)); cargarGrab(); }
+}
+const extension = t => /mp4|aac|m4a/.test(t) ? '.m4a' : /ogg/.test(t) ? '.ogg' : '.webm';
+let REC = null;
+async function grabar(b) {
+  parar();
+  if (!navigator.mediaDevices || !window.MediaRecorder) { alert('Este navegador no permite grabar. Ábrelo en Chrome.'); return; }
+  let flujo; try { flujo = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+  catch (e) { alert('No se pudo usar el micrófono. Revisa que la página tenga permiso de micrófono.'); return; }
+  const tipo = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm'].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+  const mr = new MediaRecorder(flujo, tipo ? { mimeType: tipo } : undefined), partes = [], t0 = Date.now();
+  let i = 0, guardar = false;
+  const pinta = () => { $('p-fr').textContent = b.frases[i]; $('p-nx').textContent = b.frases[i + 1] ? 'Sigue: ' + b.frases[i + 1] : 'Es la última frase.'; const ult = i >= b.frases.length - 1; $('p-sig').hidden = ult; $('p-fin').hidden = !ult; };
+  const reloj = setInterval(() => { $('p-t').textContent = mmss((Date.now() - t0) / 1000); }, 500);
+  REC = { mr, flujo };
+  mr.ondataavailable = e => e.data && e.data.size && partes.push(e.data);
+  mr.onstop = async () => {
+    clearInterval(reloj); flujo.getTracks().forEach(t => t.stop()); $('prompter').hidden = true; soltarPantalla(); REC = null;
+    if (!guardar) return;
+    const blob = new Blob(partes, { type: mr.mimeType || tipo || 'audio/webm' }), seg = (Date.now() - t0) / 1000;
+    await bdOp('readwrite', st => st.put({ blob, seg, fecha: Date.now() }, b.id)); await cargarGrab();
+    AJ.fuente = 'mia'; guardar_(); document.querySelectorAll('#fuente button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === 'mia'));
+  };
+  $('p-blq').textContent = b.titulo; $('p-t').textContent = '0:00'; pinta(); $('prompter').hidden = false; pedirPantalla();
+  $('p-sig').onclick = () => { if (i < b.frases.length - 1) { i++; pinta(); } };
+  $('p-fin').onclick = () => { guardar = true; setTimeout(() => mr.stop(), 600); };
+  $('p-can').onclick = () => { guardar = false; mr.stop(); };
+  mr.start(1000);
+}
+function guardar_() { guardar(); }
+if (window.indexedDB) cargarGrab(); else $('sec-mia').hidden = true;
+
+// Timbre de dos tonos para llamar la atención (no necesita archivos)
+let AC = null;
+function timbre() {
+  try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); const t = AC.currentTime;
+    [[880, 0], [660, 0.38]].forEach(([f, d]) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t + d); g.gain.exponentialRampToValueAtTime(0.6, t + d + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.5);
+      o.connect(g); g.connect(AC.destination); o.start(t + d); o.stop(t + d + 0.55); }); } catch (e) {}
+}
+// La pantalla no se apaga mientras habla
+async function pedirPantalla() { try { if ('wakeLock' in navigator) lock = await navigator.wakeLock.request('screen'); } catch (e) {} }
+function soltarPantalla() { try { lock && lock.release(); } catch (e) {} lock = null; }
+document.addEventListener('visibilitychange', () => { if (!document.hidden && activo) pedirPantalla(); });
+</script>
+</body>
+</html>
